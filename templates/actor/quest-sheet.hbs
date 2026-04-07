@@ -1,0 +1,161 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1>{{actor.name}}</h1>
+  </header>
+
+  <section class="sheet-body">
+    <h2>Основное</h2>
+    <div class="grid two-col">
+      <label>Тип квеста
+        <input type="text" name="system.info.questType" value="{{system.info.questType}}">
+      </label>
+      <label>Статус
+        <input type="text" name="system.info.status" value="{{system.info.status}}">
+      </label>
+      <label>Регион
+        <input type="text" name="system.info.region" value="{{system.info.region}}">
+      </label>
+      <label>Выдал
+        <input type="text" name="system.info.issuer" value="{{system.info.issuer}}">
+      </label>
+      <label>Целевое поселение
+        <input type="text" name="system.info.targetSettlement" value="{{system.info.targetSettlement}}">
+      </label>
+      <label>Целевой POI
+        <input type="text" name="system.info.targetPOI" value="{{system.info.targetPOI}}">
+      </label>
+      <label>Целевая фракция
+        <input type="text" name="system.info.targetFaction" value="{{system.info.targetFaction}}">
+      </label>
+      <label>Сложность
+        <input type="number" name="system.info.difficulty" value="{{system.info.difficulty}}">
+      </label>
+      <label>Награда текстом
+        <input type="text" name="system.info.reward" value="{{system.info.reward}}">
+      </label>
+      <label>Срок
+        <input type="text" name="system.info.dueText" value="{{system.info.dueText}}">
+      </label>
+    </div>
+
+    <h2>Цепочка / Арка</h2>
+    <div class="grid two-col">
+      <label>Chain ID
+        <input type="text" name="system.chain.chainId" value="{{system.chain.chainId}}">
+      </label>
+      <label>Arc Type
+        <input type="text" name="system.chain.arcType" value="{{system.chain.arcType}}">
+      </label>
+      <label>Arc State
+        <input type="text" name="system.chain.arcState" value="{{system.chain.arcState}}">
+      </label>
+      <label>Step
+        <input type="number" name="system.chain.step" value="{{system.chain.step}}">
+      </label>
+      <label>Max Step
+        <input type="number" name="system.chain.maxStep" value="{{system.chain.maxStep}}">
+      </label>
+      <label>Next Quest Type
+        <input type="text" name="system.chain.nextQuestType" value="{{system.chain.nextQuestType}}">
+      </label>
+      <label>Auto Generate Next
+        <input type="checkbox" name="system.chain.autoGenerateNext" {{#if system.chain.autoGenerateNext}}checked{{/if}}>
+      </label>
+    </div>
+
+    <h2>Требования</h2>
+    <div class="grid two-col">
+      <label>Минимум rep settlement
+        <input type="number" name="system.requirements.minSettlementRep" value="{{system.requirements.minSettlementRep}}">
+      </label>
+      <label>Минимум rep faction
+        <input type="number" name="system.requirements.minFactionRep" value="{{system.requirements.minFactionRep}}">
+      </label>
+      <label>Требуемый персонаж
+        <input type="text" name="system.requirements.requiredCharacter" value="{{system.requirements.requiredCharacter}}">
+      </label>
+      <label>Требуемый статус
+        <input type="text" name="system.requirements.requiredQuestStatus" value="{{system.requirements.requiredQuestStatus}}">
+      </label>
+    </div>
+
+    <h2>Описание</h2>
+    <div class="status-card">
+      <p><b>Кратко</b></p>
+      <input type="text" name="system.description.summary" value="{{system.description.summary}}">
+      <p><b>Задача</b></p>
+      <textarea name="system.description.objective" rows="4">{{system.description.objective}}</textarea>
+      <p><b>Заметки</b></p>
+      <textarea name="system.description.notes" rows="4">{{system.description.notes}}</textarea>
+    </div>
+
+    <div class="status-grid">
+      <div class="status-card">
+        <h3>Награды</h3>
+        <div class="grid two-col">
+          <label>Серебро
+            <input type="number" name="system.rewards.silver" value="{{system.rewards.silver}}">
+          </label>
+          <label>Rep settlement
+            <input type="number" name="system.rewards.settlementRep" value="{{system.rewards.settlementRep}}">
+          </label>
+          <label>Rep faction
+            <input type="number" name="system.rewards.factionRep" value="{{system.rewards.factionRep}}">
+          </label>
+          <label>Получатель награды
+            <input type="text" name="system.rewards.rewardCharacter" value="{{system.rewards.rewardCharacter}}">
+          </label>
+          <label>Предмет
+            <input type="text" name="system.rewards.rewardItemName" value="{{system.rewards.rewardItemName}}">
+          </label>
+          <label>Тип предмета
+            <input type="text" name="system.rewards.rewardItemType" value="{{system.rewards.rewardItemType}}">
+          </label>
+          <label>Кол-во предмета
+            <input type="number" name="system.rewards.rewardItemQuantity" value="{{system.rewards.rewardItemQuantity}}">
+          </label>
+          <label>Выдано
+            <input type="checkbox" name="system.rewards.granted" {{#if system.rewards.granted}}checked{{/if}}>
+          </label>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <h3>Успех / Провал</h3>
+        <div class="grid two-col">
+          <label>Success Prosperity
+            <input type="number" name="system.effects.success.prosperity" value="{{system.effects.success.prosperity}}">
+          </label>
+          <label>Failure Prosperity
+            <input type="number" name="system.effects.failure.prosperity" value="{{system.effects.failure.prosperity}}">
+          </label>
+          <label>Success Danger
+            <input type="number" name="system.effects.success.danger" value="{{system.effects.success.danger}}">
+          </label>
+          <label>Failure Danger
+            <input type="number" name="system.effects.failure.danger" value="{{system.effects.failure.danger}}">
+          </label>
+          <label>Success Supply
+            <input type="number" name="system.effects.success.supply" value="{{system.effects.success.supply}}">
+          </label>
+          <label>Failure Supply
+            <input type="number" name="system.effects.failure.supply" value="{{system.effects.failure.supply}}">
+          </label>
+          <label>Удалить target POI
+            <input type="checkbox" name="system.effects.success.removeTargetPOI" {{#if system.effects.success.removeTargetPOI}}checked{{/if}}>
+          </label>
+          <label>Усилить target POI
+            <input type="checkbox" name="system.effects.failure.empowerTargetPOI" {{#if system.effects.failure.empowerTargetPOI}}checked{{/if}}>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="inventory-actions">
+      <a data-action="quest-check">Проверить доступность</a>
+      <a data-action="quest-success">Завершить</a>
+      <a data-action="quest-failure">Провал</a>
+      <a data-action="quest-continue">Продолжить цепочку</a>
+    </div>
+  </section>
+</form>

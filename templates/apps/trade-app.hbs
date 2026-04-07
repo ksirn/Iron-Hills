@@ -1,0 +1,161 @@
+<form class="iron-hills-sheet iron-hills-trade-window">
+  <header class="sheet-header">
+    <div class="hero-header">
+      <div>
+        <h1>Торговля: {{merchantName}}</h1>
+        <div class="hero-subline">
+          <span>Специализация: {{tradeSummary.specialty}}</span>
+          <span>Поселение: {{tradeSummary.settlement}}</span>
+          <span>Фракция: {{tradeSummary.faction}}</span>
+        </div>
+      </div>
+      <div class="hero-states">
+        <span class="state-pill">Богатство: {{tradeSummary.wealth}}</span>
+        <span class="state-pill">Наценка: x{{tradeSummary.markup}}</span>
+        <span class="state-pill">Репутация: {{tradeModifiers.relationScore}}</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="status-card">
+    <h2>Кто торгует</h2>
+    <label>Персонаж
+      <select data-trade-character-select>
+        <option value="">{{activeTradeCharacterName}}</option>
+        {{#each tradeCharacterOptions}}
+          <option value="{{this.uuid}}">{{this.name}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <p class="muted-text">Текущий персонаж: {{activeTradeCharacterName}}</p>
+  </div>
+
+  {{#unless hasActiveTradeCharacter}}
+    <div class="status-card">
+      <h2>Торговля недоступна</h2>
+      <p>Выбери персонажа для торговли.</p>
+    </div>
+  {{/unless}}
+
+  {{#if hasActiveTradeCharacter}}
+    <div class="hero-stats-grid">
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Монеты персонажа</div>
+        <div class="hero-stat-value">{{buyerCoins}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Богатство торговца</div>
+        <div class="hero-stat-value">{{merchantWealth}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Модификатор покупки</div>
+        <div class="hero-stat-value">x{{tradeModifiers.buyModifier}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Модификатор продажи</div>
+        <div class="hero-stat-value">x{{tradeModifiers.sellModifier}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Благополучие</div>
+        <div class="hero-stat-value">{{tradeSummary.settlementProsperity}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Снабжение</div>
+        <div class="hero-stat-value">{{tradeSummary.settlementSupply}}</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-title">Опасность</div>
+        <div class="hero-stat-value">{{tradeSummary.settlementDanger}}</div>
+      </div>
+    </div>
+
+    <div class="status-grid">
+      <div class="status-card">
+        <h2>Товары торговца</h2>
+
+        {{#if merchantStockView.length}}
+          {{#each merchantStockView}}
+            <div class="inventory-row trade-row trade-price-{{this.priceStateKey}}">
+            <div>
+                <b>{{this.icon}} {{this.name}}</b>
+                <div>
+                <span>{{this.kind}}</span>
+                <span> | {{this.tradeCategory}}</span>
+                <span> | Кол-во: {{this.quantity}}</span>
+                </div>
+                <div>
+                <span>База: {{this.unitBasePrice}}</span>
+                <span> | Цена: {{this.tradeBuyPrice}}</span>
+                <span> | Оценка: {{this.priceStateLabel}}</span>
+                </div>
+                <div>
+                <span>Разница: {{this.priceDelta}}</span>
+                <span> | {{this.priceDeltaPercent}}%</span>
+                </div>
+                {{#unless this.canAfford}}
+                <div class="muted-text">Недостаточно монет для покупки.</div>
+                {{/unless}}
+            </div>
+                <div class="inline-actions">
+                <a
+                    data-buy-item
+                    data-item-id="{{this.id}}"
+                    class="{{#unless this.canAfford}}is-disabled{{/unless}}"
+                    title="{{#unless this.canAfford}}Недостаточно монет{{/unless}}"
+                >
+                    Купить 1
+                </a>
+                </div>
+            </div>
+          {{/each}}
+        {{else}}
+          <p>У торговца нет товаров.</p>
+        {{/if}}
+      </div>
+
+      <div class="status-card">
+        <h2>Продать торговцу</h2>
+
+        {{#if playerSellToMerchantView.length}}
+          {{#each playerSellToMerchantView}}
+                    <div class="inventory-row trade-row trade-price-{{this.priceStateKey}}">
+                    <div>
+                        <b>{{this.icon}} {{this.name}}</b>
+                        <div>
+                        <span>{{this.kind}}</span>
+                        <span> | {{this.tradeCategory}}</span>
+                        <span> | Кол-во: {{this.quantity}}</span>
+                        </div>
+                        <div>
+                        <span>База: {{this.unitBasePrice}}</span>
+                        <span> | Выкуп: {{this.tradeSellPrice}}</span>
+                        <span> | Оценка: {{this.priceStateLabel}}</span>
+                        </div>
+                        <div>
+                        <span>Разница: {{this.priceDelta}}</span>
+                        <span> | {{this.priceDeltaPercent}}%</span>
+                        </div>
+                        {{#unless this.canMerchantBuy}}
+                        <div class="muted-text">У торговца не хватает богатства для выкупа.</div>
+                        {{/unless}}
+                    </div>
+                    <div class="inline-actions">
+                    <a
+                        data-sell-item
+                        data-item-id="{{this.id}}"
+                        data-seller-uuid="{{this.sellerUuid}}"
+                        class="{{#unless this.canMerchantBuy}}is-disabled{{/unless}}"
+                        title="{{#unless this.canMerchantBuy}}У торговца недостаточно богатства{{/unless}}"
+                    >
+                        Продать 1
+                    </a>
+                    </div>
+            </div>
+          {{/each}}
+        {{else}}
+          <p>У персонажа нет предметов для продажи.</p>
+        {{/if}}
+      </div>
+    </div>
+  {{/if}}
+</form>

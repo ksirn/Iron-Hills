@@ -1,0 +1,141 @@
+<section class="ih-combat-manager">
+  <div class="ih-cm-toolbar">
+    <a class="ih-btn ih-btn-small" data-select-controlled>Выделенные как союзники</a>
+    <a class="ih-btn ih-btn-small" data-select-targets>Таргеты как враги</a>
+    <a class="ih-btn ih-btn-small" data-clear-selection>Сбросить выбор</a>
+  </div>
+
+  <div class="ih-cm-toolbar">
+    <a class="ih-btn ih-btn-primary" data-start-encounter>Начать бой</a>
+    <a class="ih-btn ih-btn-small" data-next-turn>Передать ход</a>
+
+    {{#if isGM}}
+      <a class="ih-btn ih-btn-small" data-force-next-turn>Принудительно передать</a>
+    {{/if}}
+
+    <a class="ih-btn ih-btn-danger" data-end-encounter>Завершить бой</a>
+  </div>
+
+  <div class="ih-cm-summary">
+    <div class="ih-cm-pill">Выбрано: {{selectedCount}}</div>
+    <div class="ih-cm-pill">Активный: {{currentTurnName}}</div>
+    <div class="ih-cm-pill">Участников: {{participantsCount}}</div>
+  </div>
+
+  {{#if advanceTurnReason}}
+    <div class="ih-cm-summary">
+      <div class="ih-cm-pill">{{advanceTurnReason}}</div>
+    </div>
+  {{/if}}
+
+  {{#if activeParticipantSummary}}
+    <div class="ih-cm-summary">
+      <div class="ih-cm-pill">Ходит: {{activeParticipantSummary.name}}</div>
+      <div class="ih-cm-pill">Инициатива: {{activeParticipantSummary.initiative}}</div>
+      <div class="ih-cm-pill">Секунды: {{activeParticipantSummary.secondsLeft}}</div>
+      <div class="ih-cm-pill">Сторона: {{activeParticipantSummary.sideLabel}}</div>
+
+      {{#if activeParticipantSummary.isSkippingTurn}}
+        <div class="ih-cm-pill">Пропускает ход</div>
+      {{/if}}
+
+      {{#if activeParticipantSummary.hasPendingAction}}
+        <div class="ih-cm-pill">
+          Действие: {{activeParticipantSummary.pendingActionLabel}} ({{activeParticipantSummary.pendingActionRemainingSeconds}} сек.)
+        </div>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  <div class="ih-cm-grid">
+    {{#each tokens}}
+      <div class="ih-cm-card {{#if selected}}is-selected{{/if}} side-{{side}}" data-token-toggle="{{id}}">
+        <div class="ih-cm-avatar-wrap">
+          <img class="ih-cm-avatar" src="{{img}}" alt="{{name}}">
+        </div>
+
+        <div class="ih-cm-main">
+          <div class="ih-cm-name-row">
+            <span class="ih-cm-name">{{name}}</span>
+            <span class="ih-cm-side-pill side-{{side}}">{{sideLabel}}</span>
+          </div>
+
+          <div class="ih-cm-meta">
+            <span>{{actorType}}</span>
+            <span>Инициатива ~ {{initiativeHint}}</span>
+            {{#if controlled}}<span>Выбран</span>{{/if}}
+            {{#if targeted}}<span>Цель</span>{{/if}}
+          </div>
+
+          <div class="ih-cm-bars">
+            <div class="ih-mini-stat">
+              <span>Торс</span>
+              <b>{{torsoHp}} / {{torsoMax}}</b>
+            </div>
+            <div class="ih-mini-stat">
+              <span>Энергия</span>
+              <b>{{energy}} / {{energyMax}}</b>
+            </div>
+          </div>
+
+          <div class="ih-cm-side-switches">
+            <a class="ih-side-btn {{#if isAlly}}is-active{{/if}}" data-token-id="{{id}}" data-set-side="ally">A</a>
+            <a class="ih-side-btn {{#if isEnemy}}is-active{{/if}}" data-token-id="{{id}}" data-set-side="enemy">E</a>
+            <a class="ih-side-btn {{#if isNeutral}}is-active{{/if}}" data-token-id="{{id}}" data-set-side="neutral">N</a>
+          </div>
+        </div>
+      </div>
+    {{/each}}
+  </div>
+
+  {{#if combatActive}}
+    <div class="ih-cm-queue">
+      <div class="ih-cm-queue-title">Очередь хода</div>
+      {{#each queue}}
+        <div class="ih-cm-queue-row {{#if isCurrent}}is-current{{/if}} side-{{side}}">
+          <span><b>{{name}}</b></span>
+          <span>{{sideLabel}}</span>
+          <span>Init: {{initiative}}</span>
+          <span>{{secondsLeft}} сек</span>
+
+          <div class="ih-cm-condition-row">
+            {{#each conditions}}
+              {{#if active}}
+                <span class="ih-condition-dot condition-{{key}}"></span>
+              {{/if}}
+            {{/each}}
+          </div>
+
+          {{#if hasPendingAction}}
+            <div class="ih-manager-pending-action">
+              {{pendingActionLabel}} • {{pendingActionRemainingSeconds}} сек.
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="ih-cm-queue">
+      <div class="ih-cm-queue-title">Лента событий</div>
+
+      {{#if recentLog.length}}
+        <div class="ih-combat-feed manager-feed">
+          {{#each recentLog}}
+            <div class="ih-combat-feed-entry type-{{type}}">
+              <div class="ih-combat-feed-text">{{text}}</div>
+              <div class="ih-combat-feed-time">{{timestamp}}</div>
+            </div>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="ih-combat-pending-seconds">Пока нет событий.</div>
+      {{/if}}
+
+      {{#if isGM}}
+        <div class="ih-cm-toolbar">
+          <a class="ih-btn ih-btn-small" data-clear-combat-log>Очистить лог</a>
+        </div>
+      {{/if}}
+    </div>
+  {{/if}}
+</section>

@@ -1,0 +1,63 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1><input type="text" name="name" value="{{item.name}}"></h1>
+  </header>
+
+  <section class="sheet-body">
+    <div class="grid two-col">
+      <label>Тир
+        <input type="number" name="system.tier" value="{{system.tier}}">
+      </label>
+
+      <label>Качество
+        <select name="system.quality">
+          <option value="common" {{#if (eq system.quality "common")}}selected{{/if}}>Обычное</option>
+          <option value="fine" {{#if (eq system.quality "fine")}}selected{{/if}}>Хорошее</option>
+          <option value="masterwork" {{#if (eq system.quality "masterwork")}}selected{{/if}}>Мастерское</option>
+          <option value="legendary" {{#if (eq system.quality "legendary")}}selected{{/if}}>Легендарное</option>
+        </select>
+      </label>
+
+      <label>Вес
+        <input type="number" name="system.weight" value="{{system.weight}}">
+      </label>
+
+      <label>Количество
+        <input type="number" name="system.quantity" value="{{system.quantity}}">
+      </label>
+
+      <label>Урон
+        <input type="number" name="system.damage" value="{{system.damage}}">
+      </label>
+
+      <label>Затрата энергии
+        <input type="number" name="system.energyCost" value="{{system.energyCost}}">
+      </label>
+
+      <label>Навык
+        <select name="system.skill">
+          <option value="sword" {{#if (eq system.skill "sword")}}selected{{/if}}>Мечи</option>
+          <option value="axe" {{#if (eq system.skill "axe")}}selected{{/if}}>Топоры</option>
+          <option value="spear" {{#if (eq system.skill "spear")}}selected{{/if}}>Копья</option>
+          <option value="blunt" {{#if (eq system.skill "blunt")}}selected{{/if}}>Дробящее</option>
+          <option value="knife" {{#if (eq system.skill "knife")}}selected{{/if}}>Кинжалы</option>
+          <option value="unarmed" {{#if (eq system.skill "unarmed")}}selected{{/if}}>Без оружия</option>
+          <option value="bows" {{#if (eq system.skill "bows")}}selected{{/if}}>Луки</option>
+          <option value="crossbows" {{#if (eq system.skill "crossbows")}}selected{{/if}}>Арбалеты</option>
+          <option value="throwing" {{#if (eq system.skill "throwing")}}selected{{/if}}>Метательное</option>
+        </select>
+      </label>
+
+      <label>Тип урона
+        <select name="system.damageType">
+          <option value="physical" {{#if (eq system.damageType "physical")}}selected{{/if}}>Физический</option>
+          <option value="magical" {{#if (eq system.damageType "magical")}}selected{{/if}}>Магический</option>
+        </select>
+      </label>
+
+      <label>Двуручное
+        <input type="checkbox" name="system.twoHanded" {{checked system.twoHanded}}>
+      </label>
+    </div>
+  </section>
+</form>

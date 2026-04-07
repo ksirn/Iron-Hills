@@ -1,0 +1,30 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1><input type="text" name="name" value="{{item.name}}"></h1>
+  </header>
+
+  <section class="sheet-body">
+    <div class="grid two-col">
+      <label>Тир
+        <input type="number" name="system.tier" value="{{system.tier}}">
+      </label>
+
+      <label>Вес
+        <input type="number" name="system.weight" value="{{system.weight}}">
+      </label>
+
+      <label>Количество
+        <input type="number" name="system.quantity" value="{{system.quantity}}">
+      </label>
+
+      <label>Тип инструмента
+        <select name="system.craftType">
+          <option value="blacksmithing" {{#if (eq system.craftType "blacksmithing")}}selected{{/if}}>blacksmithing</option>
+          <option value="crafting" {{#if (eq system.craftType "crafting")}}selected{{/if}}>crafting</option>
+          <option value="alchemy" {{#if (eq system.craftType "alchemy")}}selected{{/if}}>alchemy</option>
+          <option value="cooking" {{#if (eq system.craftType "cooking")}}selected{{/if}}>cooking</option>
+        </select>
+      </label>
+    </div>
+  </section>
+</form>

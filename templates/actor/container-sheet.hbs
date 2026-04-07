@@ -1,0 +1,33 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1>{{actor.name}}</h1>
+  </header>
+
+  <section class="sheet-body">
+    <h2>Информация</h2>
+    <div class="grid two-col">
+      <label>Тема
+        <input type="text" name="system.info.theme" value="{{system.info.theme}}">
+      </label>
+      <label>Тир
+        <input type="number" name="system.info.tier" value="{{system.info.tier}}">
+      </label>
+      <label>Сложность замка
+        <input type="number" name="system.info.lockDifficulty" value="{{system.info.lockDifficulty}}">
+      </label>
+      <label>Опасность
+        <input type="number" name="system.info.danger" value="{{system.info.danger}}">
+      </label>
+    </div>
+
+    <h2>Содержимое</h2>
+    {{#each allItems}}
+      <div class="inventory-row">
+        <div>
+          <b>{{this.name}}</b>
+          <span>({{this.type}}, тир: {{this.system.tier}}, кол-во: {{this.system.quantity}})</span>
+        </div>
+      </div>
+    {{/each}}
+  </section>
+</form>

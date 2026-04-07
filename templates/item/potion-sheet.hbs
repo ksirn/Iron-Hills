@@ -1,0 +1,68 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1><input type="text" name="name" value="{{item.name}}"></h1>
+  </header>
+
+  <section class="sheet-body">
+    <div class="grid two-col">
+      <label>Тир
+        <input type="number" name="system.tier" value="{{system.tier}}">
+      </label>
+
+      <label>Качество
+        <select name="system.quality">
+          <option value="common" {{#if (eq system.quality "common")}}selected{{/if}}>Обычное</option>
+          <option value="fine" {{#if (eq system.quality "fine")}}selected{{/if}}>Хорошее</option>
+          <option value="masterwork" {{#if (eq system.quality "masterwork")}}selected{{/if}}>Мастерское</option>
+          <option value="legendary" {{#if (eq system.quality "legendary")}}selected{{/if}}>Легендарное</option>
+        </select>
+      </label>
+
+      <label>Вес
+        <input type="number" name="system.weight" value="{{system.weight}}">
+      </label>
+
+      <label>Количество
+        <input type="number" name="system.quantity" value="{{system.quantity}}">
+      </label>
+
+      <label>Сила
+        <input type="number" name="system.power" value="{{system.power}}">
+      </label>
+
+      <label>Action Type
+        <select name="system.actionType">
+          <option value="" {{#if (eq system.actionType "")}}selected{{/if}}>Нет</option>
+          <option value="heal-body" {{#if (eq system.actionType "heal-body")}}selected{{/if}}>Общее лечение тела</option>
+          <option value="heal-part" {{#if (eq system.actionType "heal-part")}}selected{{/if}}>Лечение части тела</option>
+          <option value="stop-minor-bleeding-global" {{#if (eq system.actionType "stop-minor-bleeding-global")}}selected{{/if}}>Остановить все малые кровотечения</option>
+          <option value="stabilize-body" {{#if (eq system.actionType "stabilize-body")}}selected{{/if}}>Общая стабилизация</option>
+          <option value="restore-energy" {{#if (eq system.actionType "restore-energy")}}selected{{/if}}>Восстановить энергию</option>
+          <option value="restore-mana" {{#if (eq system.actionType "restore-mana")}}selected{{/if}}>Восстановить ману</option>
+          <option value="bandage" {{#if (eq system.actionType "bandage")}}selected{{/if}}>Локальное лечение малого кровотечения</option>
+          <option value="tourniquet" {{#if (eq system.actionType "tourniquet")}}selected{{/if}}>Локальное лечение большого кровотечения</option>
+        </select>
+      </label>
+
+      <label>Scope применения
+        <select name="system.applicationScope">
+          <option value="targeted" {{#if (eq system.applicationScope "targeted")}}selected{{/if}}>Выбор части тела</option>
+          <option value="global" {{#if (eq system.applicationScope "global")}}selected{{/if}}>На всё тело / актёра</option>
+          <option value="auto" {{#if (eq system.applicationScope "auto")}}selected{{/if}}>Авто (системой)</option>
+        </select>
+      </label>
+
+      <label>Preset часть тела
+        <select name="system.targetPart">
+          <option value="" {{#if (eq system.targetPart "")}}selected{{/if}}>Нет preset</option>
+          <option value="head" {{#if (eq system.targetPart "head")}}selected{{/if}}>Голова</option>
+          <option value="torso" {{#if (eq system.targetPart "torso")}}selected{{/if}}>Торс</option>
+          <option value="leftArm" {{#if (eq system.targetPart "leftArm")}}selected{{/if}}>Левая рука</option>
+          <option value="rightArm" {{#if (eq system.targetPart "rightArm")}}selected{{/if}}>Правая рука</option>
+          <option value="leftLeg" {{#if (eq system.targetPart "leftLeg")}}selected{{/if}}>Левая нога</option>
+          <option value="rightLeg" {{#if (eq system.targetPart "rightLeg")}}selected{{/if}}>Правая нога</option>
+        </select>
+      </label>
+    </div>
+  </section>
+</form>

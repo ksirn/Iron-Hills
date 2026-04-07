@@ -1,0 +1,229 @@
+<div class="iron-hills-tools-app">
+  <div class="status-grid">
+    <div class="status-card">
+      <h3>Создать поселение</h3>
+      <div class="grid two-col">
+        <label>Название
+          <input type="text" name="settlement-name" value="Rivergate">
+        </label>
+        <label>Регион
+          <input type="text" name="settlement-region" value="Iron Hills">
+        </label>
+        <label>Тир
+          <input type="number" name="settlement-tier" value="1">
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="create-settlement">Создать поселение</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Генератор NPC</h3>
+      <div class="grid two-col">
+        <label>Роль
+          <select name="npc-role">
+            <option value="villager">Житель</option>
+            <option value="guard">Стражник</option>
+            <option value="bandit">Бандит</option>
+            <option value="mage">Маг</option>
+            <option value="crafter">Ремесленник</option>
+            <option value="hunter">Охотник</option>
+          </select>
+        </label>
+        <label>Тир
+          <input type="number" name="npc-tier" value="1">
+        </label>
+        <label>Фракция
+          <input type="text" name="npc-faction" value="">
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-npc">Создать NPC</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Генератор торговца</h3>
+      <div class="grid two-col">
+        <label>Специализация
+          <select name="merchant-specialty">
+            <option value="general">general</option>
+            <option value="blacksmith">blacksmith</option>
+            <option value="alchemist">alchemist</option>
+            <option value="hunter">hunter</option>
+            <option value="innkeeper">innkeeper</option>
+          </select>
+        </label>
+        <label>Тир
+          <input type="number" name="merchant-tier" value="1">
+        </label>
+        <label>Поселение
+          <input type="text" name="merchant-settlement" value="">
+        </label>
+        <label>Фракция
+          <input type="text" name="merchant-faction" value="">
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-merchant">Создать торговца</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Генератор контейнера</h3>
+      <div class="grid two-col">
+        <label>Тема
+          <select name="container-theme">
+            <option value="bandit">bandit</option>
+            <option value="ruins">ruins</option>
+            <option value="hunter">hunter</option>
+            <option value="alchemy">alchemy</option>
+          </select>
+        </label>
+        <label>Тир
+          <input type="number" name="container-tier" value="1">
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-container">Создать контейнер</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Слух поселения</h3>
+      <div class="grid two-col">
+        <label>Поселение
+          <select name="rumor-settlement">
+            {{#each settlements}}
+              <option value="{{this.id}}">{{this.name}}</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-rumor">Сгенерировать слух</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Недельный тик одного поселения</h3>
+      <div class="grid two-col">
+        <label>Поселение
+          <select name="tick-settlement">
+            {{#each settlements}}
+              <option value="{{this.id}}">{{this.name}}</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="advance-settlement">Сделать тик поселения</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Региональные инструменты</h3>
+      <div class="grid two-col">
+        <label>Регион
+          <select name="region-select">
+            {{#each regions}}
+              <option value="{{this}}">{{this}}</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="region-crisis">Сгенерировать кризис региона</a>
+        <a data-action="run-caravans">Прогнать караваны</a>
+        <a data-action="stabilize-region">Стабилизировать регион</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>POI генератор</h3>
+      <div class="grid two-col">
+        <label>Тип POI
+          <select name="poi-type">
+            <option value="camp">camp</option>
+            <option value="lair">lair</option>
+            <option value="ruins">ruins</option>
+            <option value="shrine">shrine</option>
+            <option value="road">road</option>
+          </select>
+        </label>
+        <label>Тир
+          <input type="number" name="poi-tier" value="1">
+        </label>
+        <label>Ближайшее поселение
+          <input type="text" name="poi-settlement" value="">
+        </label>
+        <label>Фракция
+          <input type="text" name="poi-faction" value="">
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-poi">Создать POI</a>
+        <a data-action="generate-poi-pack">Создать набор POI</a>
+        <a data-action="generate-regional-threat">Создать угрозу региона</a>
+        <a data-action="evolve-pois">Прогнать эволюцию POI</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Квесты</h3>
+      <div class="grid two-col">
+        <label>Тип квеста
+          <select name="quest-type">
+            <option value="auto">auto</option>
+            <option value="gathering">gathering</option>
+            <option value="delivery">delivery</option>
+            <option value="exploration">exploration</option>
+            <option value="combat">combat</option>
+            <option value="world">world</option>
+          </select>
+        </label>
+        <label>Целевое поселение
+          <input type="text" name="quest-settlement" value="">
+        </label>
+        <label>Тип арки
+          <select name="arc-type">
+            <option value="auto">auto</option>
+            <option value="crisis">crisis</option>
+            <option value="recovery">recovery</option>
+          </select>
+        </label>
+      </div>
+      <div class="inventory-actions">
+        <a data-action="generate-quest">Создать квест</a>
+        <a data-action="generate-quest-pack">Создать набор квестов</a>
+        <a data-action="generate-regional-quests">Создать региональные квесты</a>
+        <a data-action="generate-story-arc">Создать сюжетную арку</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Глобальный мир-тик</h3>
+      <p>Обновляет поселения, кризисы, стабилизацию, караваны, POI и торговцев.</p>
+      <div class="inventory-actions">
+        <a data-action="advance-world">Сделать глобальный тик мира</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Ресток всех торговцев</h3>
+      <p>Принудительно обновляет stock и price factor у всех merchant.</p>
+      <div class="inventory-actions">
+        <a data-action="restock-merchants">Обновить всех торговцев</a>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <h3>Отчёт по фракциям</h3>
+      <p>Показывает давление controllingFaction на поселения.</p>
+      <div class="inventory-actions">
+        <a data-action="faction-report">Сделать отчёт</a>
+      </div>
+    </div>
+  </div>
+</div>

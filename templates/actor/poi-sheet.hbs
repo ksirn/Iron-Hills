@@ -1,0 +1,84 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1>{{actor.name}}</h1>
+  </header>
+
+  <section class="sheet-body">
+    <h2>Основное</h2>
+    <div class="grid two-col">
+      <label>Тип POI
+        <input type="text" name="system.info.poiType" value="{{system.info.poiType}}">
+      </label>
+      <label>Регион
+        <input type="text" name="system.info.region" value="{{system.info.region}}">
+      </label>
+      <label>Ближайшее поселение
+        <input type="text" name="system.info.nearestSettlement" value="{{system.info.nearestSettlement}}">
+      </label>
+      <label>Тир
+        <input type="number" name="system.info.tier" value="{{system.info.tier}}">
+      </label>
+      <label>Опасность
+        <input type="number" name="system.info.danger" value="{{system.info.danger}}">
+      </label>
+      <label>Статус
+        <input type="text" name="system.info.status" value="{{system.info.status}}">
+      </label>
+      <label>Фракция
+        <input type="text" name="system.info.faction" value="{{system.info.faction}}">
+      </label>
+      <label>Тема
+        <input type="text" name="system.info.theme" value="{{system.info.theme}}">
+      </label>
+      <label>DC обнаружения
+        <input type="number" name="system.info.discoveryDC" value="{{system.info.discoveryDC}}">
+      </label>
+      <label>Дистанция
+        <input type="text" name="system.info.distance" value="{{system.info.distance}}">
+      </label>
+    </div>
+
+    <h2>Состояние</h2>
+    <div class="grid two-col">
+      <label>Рейтинг лута
+        <input type="number" name="system.state.lootRating" value="{{system.state.lootRating}}">
+      </label>
+      <label>Число обитателей
+        <input type="number" name="system.state.occupants" value="{{system.state.occupants}}">
+      </label>
+      <label>Уровень угрозы
+        <input type="number" name="system.state.threatLevel" value="{{system.state.threatLevel}}">
+      </label>
+      <label>Стадия эволюции
+        <input type="number" name="system.state.evolutionStage" value="{{system.state.evolutionStage}}">
+      </label>
+      <label>Контроль
+        <input type="number" name="system.state.control" value="{{system.state.control}}">
+      </label>
+      <label>Гарнизон
+        <input type="number" name="system.state.garrison" value="{{system.state.garrison}}">
+      </label>
+      <label>Тип базы
+        <input type="text" name="system.state.baseType" value="{{system.state.baseType}}">
+      </label>
+      <label>Последнее событие
+        <input type="text" name="system.state.lastGeneratedEvent" value="{{system.state.lastGeneratedEvent}}">
+      </label>
+    </div>
+
+    <h2>Заметки</h2>
+    <div class="status-card">
+      <textarea name="system.state.notes" rows="6">{{system.state.notes}}</textarea>
+    </div>
+
+    <h2>Содержимое POI</h2>
+    {{#each allItems}}
+      <div class="inventory-row">
+        <div>
+          <b>{{this.name}}</b>
+          <span>({{this.type}}, тир: {{this.system.tier}}, кол-во: {{this.system.quantity}})</span>
+        </div>
+      </div>
+    {{/each}}
+  </section>
+</form>

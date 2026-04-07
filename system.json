@@ -1,0 +1,68 @@
+{
+  "id": "iron-hills-system",
+  "title": "Iron Hills System",
+  "description": "Simulation-focused RPG system for Foundry VTT.",
+  "version": "0.0.1",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "authors": [
+    {
+      "name": "OpenAI + User"
+    }
+  ],
+  "esmodules": [
+    "module/iron-hills-system.mjs",
+    "module/world-sim-tools.mjs",
+    "module/quest-tools.mjs",
+    "module/reputation-tools.mjs"
+  ],
+"styles": [
+  "styles/iron-hills.css",
+  "styles/combat-hud.css"
+],
+  "languages": [
+    {
+      "lang": "ru",
+      "name": "Русский",
+      "path": "lang/ru.json"
+    }
+  ],
+  "primaryTokenAttribute": "resources.hp.torso",
+  "secondaryTokenAttribute": "resources.energy.value",
+  "documentTypes": {
+    "Actor": {
+      "character": { "htmlFields": [] },
+      "npc": { "htmlFields": [] },
+      "faction": { "htmlFields": [] },
+      "merchant": { "htmlFields": [] },
+      "container": { "htmlFields": [] },
+      "settlement": { "htmlFields": [] },
+      "poi": { "htmlFields": [] },
+      "quest": { "htmlFields": [] },
+      "relation": { "htmlFields": [] }
+    },
+    "Item": {
+      "weapon": { "htmlFields": [] },
+      "armor": { "htmlFields": [] },
+      "tool": { "htmlFields": [] },
+      "resource": { "htmlFields": [] },
+      "food": { "htmlFields": [] },
+      "material": { "htmlFields": [] },
+      "spell": { "htmlFields": [] },
+      "potion": { "htmlFields": [] },
+      "scroll": { "htmlFields": [] },
+      "throwable": { "htmlFields": [] },
+      "consumable": { "htmlFields": [] }
+    }
+  },
+  "grid": {
+    "distance": 1,
+    "units": "m"
+  },
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "license": "LICENSE.txt"
+}

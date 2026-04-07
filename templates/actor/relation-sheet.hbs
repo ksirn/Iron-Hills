@@ -1,0 +1,31 @@
+<form class="iron-hills-sheet">
+  <header class="sheet-header">
+    <h1>{{actor.name}}</h1>
+  </header>
+
+  <section class="sheet-body">
+    <h2>Связь / Репутация</h2>
+    <div class="grid two-col">
+      <label>Персонаж
+        <input type="text" name="system.info.characterName" value="{{system.info.characterName}}">
+      </label>
+      <label>Тип цели
+        <input type="text" name="system.info.targetType" value="{{system.info.targetType}}">
+      </label>
+      <label>Название цели
+        <input type="text" name="system.info.targetName" value="{{system.info.targetName}}">
+      </label>
+      <label>Счёт
+        <input type="number" name="system.info.score" value="{{system.info.score}}">
+      </label>
+      <label>Тир
+        <input type="text" name="system.info.tier" value="{{system.info.tier}}">
+      </label>
+    </div>
+
+    <h2>Заметки</h2>
+    <div class="status-card">
+      <textarea name="system.info.notes" rows="8">{{system.info.notes}}</textarea>
+    </div>
+  </section>
+</form>

@@ -1,0 +1,441 @@
+{
+  "Actor": {
+    "types": [
+      "character",
+      "npc",
+      "faction",
+      "merchant",
+      "container",
+      "settlement",
+      "poi"
+    ],
+    "templates": {
+      "commonResources": {
+        "resources": {
+          "hp": {
+            "head": { "value": 10, "max": 10 },
+            "torso": { "value": 30, "max": 30 },
+            "leftArm": { "value": 20, "max": 20 },
+            "rightArm": { "value": 20, "max": 20 },
+            "leftLeg": { "value": 20, "max": 20 },
+            "rightLeg": { "value": 20, "max": 20 }
+          },
+          "energy": { "value": 100, "max": 100 },
+          "mana": { "value": 50, "max": 50 },
+          "satiety": { "value": 100, "max": 100 },
+          "hydration": { "value": 100, "max": 100 },
+          "weight": { "value": 0, "max": 20 }
+        },
+        "conditions": {
+          "bleeding": 0,
+          "shock": 0,
+          "poison": 0,
+          "burning": 0,
+          "fractures": {
+            "leftArm": false,
+            "rightArm": false,
+            "leftLeg": false,
+            "rightLeg": false
+          }
+        }
+      }
+    },
+    "character": {
+      "templates": ["commonResources"],
+      "equipment": {
+        "rightHand": "",
+        "leftHand": "",
+        "armorHead": "",
+        "armorTorso": "",
+        "armorArms": "",
+        "armorLegs": ""
+      },
+      "quickSlots": {
+        "slot1": "",
+        "slot2": "",
+        "slot3": "",
+        "slot4": "",
+        "slot5": "",
+        "slot6": ""
+      },
+      "info": {
+        "race": "",
+        "age": 0
+      },
+      "combat": {
+        "defense": 6,
+        "unarmedDamage": 1
+      },
+      "skills": {
+        "athletics": { "value": 1, "exp": 0, "expNext": 25 },
+        "acrobatics": { "value": 1, "exp": 0, "expNext": 25 },
+        "endurance": { "value": 1, "exp": 0, "expNext": 25 },
+        "sword": { "value": 1, "exp": 0, "expNext": 25 },
+        "axe": { "value": 1, "exp": 0, "expNext": 25 },
+        "spear": { "value": 1, "exp": 0, "expNext": 25 },
+        "blunt": { "value": 1, "exp": 0, "expNext": 25 },
+        "knife": { "value": 1, "exp": 0, "expNext": 25 },
+        "unarmed": { "value": 1, "exp": 0, "expNext": 25 },
+        "bows": { "value": 1, "exp": 0, "expNext": 25 },
+        "crossbows": { "value": 1, "exp": 0, "expNext": 25 },
+        "throwing": { "value": 1, "exp": 0, "expNext": 25 },
+        "shields": { "value": 1, "exp": 0, "expNext": 25 },
+        "armor": { "value": 1, "exp": 0, "expNext": 25 },
+        "persuasion": { "value": 1, "exp": 0, "expNext": 25 },
+        "deception": { "value": 1, "exp": 0, "expNext": 25 },
+        "intimidation": { "value": 1, "exp": 0, "expNext": 25 },
+        "insight": { "value": 1, "exp": 0, "expNext": 25 },
+        "analysis": { "value": 1, "exp": 0, "expNext": 25 },
+        "history": { "value": 1, "exp": 0, "expNext": 25 },
+        "nature": { "value": 1, "exp": 0, "expNext": 25 },
+        "religion": { "value": 1, "exp": 0, "expNext": 25 },
+        "survival": { "value": 1, "exp": 0, "expNext": 25 },
+        "medicine": { "value": 1, "exp": 0, "expNext": 25 },
+        "perception": { "value": 1, "exp": 0, "expNext": 25 },
+        "blacksmithing": { "value": 1, "exp": 0, "expNext": 25 },
+        "crafting": { "value": 1, "exp": 0, "expNext": 25 },
+        "alchemy": { "value": 1, "exp": 0, "expNext": 25 },
+        "cooking": { "value": 1, "exp": 0, "expNext": 25 },
+        "fire": { "value": 1, "exp": 0, "expNext": 25 },
+        "water": { "value": 1, "exp": 0, "expNext": 25 },
+        "earth": { "value": 1, "exp": 0, "expNext": 25 },
+        "air": { "value": 1, "exp": 0, "expNext": 25 },
+        "life": { "value": 1, "exp": 0, "expNext": 25 },
+        "mind": { "value": 1, "exp": 0, "expNext": 25 }
+      }
+    },
+    "npc": {
+      "templates": ["commonResources"],
+      "combat": {
+        "defense": 6,
+        "unarmedDamage": 1
+      },
+      "equipment": {
+        "rightHand": "",
+        "leftHand": "",
+        "armorHead": "",
+        "armorTorso": "",
+        "armorArms": "",
+        "armorLegs": ""
+      },
+      "info": {
+        "role": "",
+        "faction": "",
+        "tier": 1
+      },
+      "skills": {
+        "athletics": { "value": 1, "exp": 0, "expNext": 25 },
+        "endurance": { "value": 1, "exp": 0, "expNext": 25 },
+        "sword": { "value": 1, "exp": 0, "expNext": 25 },
+        "axe": { "value": 1, "exp": 0, "expNext": 25 },
+        "spear": { "value": 1, "exp": 0, "expNext": 25 },
+        "knife": { "value": 1, "exp": 0, "expNext": 25 },
+        "unarmed": { "value": 1, "exp": 0, "expNext": 25 },
+        "throwing": { "value": 1, "exp": 0, "expNext": 25 },
+        "perception": { "value": 1, "exp": 0, "expNext": 25 },
+        "crafting": { "value": 1, "exp": 0, "expNext": 25 },
+        "blacksmithing": { "value": 1, "exp": 0, "expNext": 25 },
+        "alchemy": { "value": 1, "exp": 0, "expNext": 25 },
+        "cooking": { "value": 1, "exp": 0, "expNext": 25 },
+        "survival": { "value": 1, "exp": 0, "expNext": 25 },
+        "fire": { "value": 1, "exp": 0, "expNext": 25 },
+        "water": { "value": 1, "exp": 0, "expNext": 25 },
+        "earth": { "value": 1, "exp": 0, "expNext": 25 },
+        "air": { "value": 1, "exp": 0, "expNext": 25 },
+        "life": { "value": 1, "exp": 0, "expNext": 25 },
+        "mind": { "value": 1, "exp": 0, "expNext": 25 }
+      }
+    },
+    "merchant": {
+      "info": {
+        "specialty": "general",
+        "settlement": "",
+        "tier": 1,
+        "faction": ""
+      },
+      "economy": {
+        "wealth": 50,
+        "markup": 1.0
+      },
+      "market": {
+        "lastRestock": "",
+        "currentPriceFactor": 1.0,
+        "stockRating": 5
+      }
+    },
+    "container": {
+      "info": {
+        "theme": "bandit",
+        "tier": 1,
+        "lockDifficulty": 0,
+        "danger": 0
+      }
+    },
+    "settlement": {
+      "info": {
+        "region": "",
+        "tier": 1,
+        "population": 100,
+        "prosperity": 5,
+        "danger": 5,
+        "supply": 5,
+        "controllingFaction": "",
+        "tags": ""
+      },
+      "economy": {
+        "foodPrice": 1.0,
+        "materialsPrice": 1.0,
+        "alchemyPrice": 1.0,
+        "armsPrice": 1.0,
+        "lodgingPrice": 1.0,
+        "factionPressure": 0,
+        "merchantCount": 0,
+        "routeValue": 1,
+        "weeklySummary": ""
+      },
+      "regionSim": {
+        "activeCrisis": "",
+        "tradeBalance": 0,
+        "caravanTraffic": 0,
+        "lastCaravan": "",
+        "lastRegionEvent": "",
+        "stability": 5,
+        "militiaPower": 5
+      },
+      "history": {
+        "rumors": [],
+        "events": [],
+        "regionalEvents": []
+      }
+    },
+    "poi": {
+      "info": {
+        "poiType": "camp",
+        "region": "",
+        "nearestSettlement": "",
+        "tier": 1,
+        "danger": 3,
+        "status": "active",
+        "faction": "",
+        "theme": "bandit",
+        "discoveryDC": 6,
+        "distance": "1 день"
+      },
+      "state": {
+        "lootRating": 3,
+        "occupants": 3,
+        "threatLevel": 3,
+        "lastGeneratedEvent": "",
+        "notes": "",
+        "evolutionStage": 1,
+        "control": 3,
+        "garrison": 3,
+        "baseType": "outpost"
+      }
+    },
+    "faction": {
+      "name": "",
+      "power": 1,
+      "wealth": 1,
+      "region": "",
+      "goals": []
+    }
+  },
+  "Item": {
+    "types": [
+      "weapon",
+      "armor",
+      "tool",
+      "resource",
+      "food",
+      "material",
+      "spell",
+      "potion",
+      "scroll",
+      "throwable",
+      "consumable",
+      "quest",
+      "relation"
+    ],
+"relation": {
+  "info": {
+    "characterName": "",
+    "targetType": "settlement",
+    "targetName": "",
+    "score": 0,
+    "tier": "neutral",
+    "notes": ""
+  }
+},
+"quest": {
+  "info": {
+    "questType": "gathering",
+    "status": "active",
+    "region": "",
+    "issuer": "",
+    "targetSettlement": "",
+    "targetPOI": "",
+    "targetFaction": "",
+    "difficulty": 1,
+    "reward": "",
+    "dueText": ""
+  },
+  "description": {
+    "summary": "",
+    "objective": "",
+    "notes": ""
+  },
+  "chain": {
+    "chainId": "",
+    "arcType": "",
+    "arcState": "active",
+    "step": 1,
+    "maxStep": 1,
+    "nextQuestType": "",
+    "autoGenerateNext": false
+  },
+  "requirements": {
+    "minSettlementRep": 0,
+    "minFactionRep": 0,
+    "requiredCharacter": "",
+    "requiredQuestStatus": ""
+  },
+  "rewards": {
+    "silver": 0,
+    "settlementRep": 0,
+    "factionRep": 0,
+    "rewardCharacter": "",
+    "rewardItemName": "",
+    "rewardItemType": "",
+    "rewardItemQuantity": 0,
+    "granted": false
+  },
+  "effects": {
+    "success": {
+      "prosperity": 0,
+      "danger": 0,
+      "supply": 0,
+      "stability": 0,
+      "militiaPower": 0,
+      "tradeBalance": 0,
+      "caravanTraffic": 0,
+      "removeTargetPOI": false,
+      "resolveCrisis": false
+    },
+    "failure": {
+      "prosperity": 0,
+      "danger": 0,
+      "supply": 0,
+      "stability": 0,
+      "militiaPower": 0,
+      "tradeBalance": 0,
+      "caravanTraffic": 0,
+      "empowerTargetPOI": false
+    }
+  }
+},
+    "weapon": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 1,
+      "quantity": 1,
+      "damage": 2,
+      "damageType": "physical",
+      "skill": "sword",
+      "twoHanded": false,
+      "energyCost": 10
+    },
+    "armor": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 2,
+      "quantity": 1,
+      "slot": "torso",
+      "protection": {
+        "physical": 1,
+        "magical": 0
+      }
+    },
+    "food": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 1,
+      "quantity": 1,
+      "satiety": 20,
+      "hydration": 0
+    },
+    "tool": {
+      "tier": 1,
+      "weight": 1,
+      "quantity": 1,
+      "craftType": "blacksmithing"
+    },
+    "resource": {
+      "tier": 1,
+      "weight": 1,
+      "quantity": 1,
+      "category": "water"
+    },
+    "material": {
+      "tier": 1,
+      "weight": 1,
+      "quantity": 1,
+      "category": "metal"
+    },
+    "spell": {
+      "school": "life",
+      "manaCost": 0,
+      "energyCost": 0,
+      "power": 1,
+      "actionType": "",
+      "applicationScope": "targeted",
+      "targetActorMode": "selected-or-self",
+      "targetPart": ""
+    },
+    "potion": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 1,
+      "quantity": 1,
+      "power": 1,
+      "actionType": "",
+      "applicationScope": "global",
+      "targetActorMode": "self",
+      "targetPart": ""
+    },
+    "scroll": {
+      "school": "life",
+      "manaCost": 0,
+      "energyCost": 0,
+      "power": 1,
+      "actionType": "",
+      "applicationScope": "targeted",
+      "targetActorMode": "selected-or-self",
+      "targetPart": ""
+    },
+    "throwable": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 1,
+      "quantity": 1,
+      "effectType": "damage",
+      "damageType": "physical",
+      "power": 2,
+      "energyCost": 8,
+      "targetPart": "torso",
+      "appliesPoison": 0,
+      "appliesBurning": 0
+    },
+"consumable": {
+  "tier": 1,
+  "quality": "common",
+  "weight": 1,
+  "quantity": 1,
+  "power": 1,
+  "actionType": "",
+  "applicationScope": "targeted",
+  "targetActorMode": "selected-or-self",
+  "targetPart": ""
+}
+  }
+}

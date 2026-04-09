@@ -64,6 +64,18 @@ function getPartTrauma(hpNode) {
   };
 }
 
+// Строит строку tooltip для части тела
+function buildZoneTooltip(label, value, max, trauma) {
+  const parts = [`${label}: ${value}/${max}`];
+  if (trauma.destroyed)       parts.push("⚫ Разрушено");
+  if (trauma.majorBleeding)   parts.push(`🔴 Сильн. кровотечение: ${trauma.majorBleeding}`);
+  if (trauma.minorBleeding)   parts.push(`🟡 Мал. кровотечение: ${trauma.minorBleeding}`);
+  if (trauma.fracture)        parts.push("🟣 Перелом");
+  if (trauma.tourniquet)      parts.push("🔵 Жгут наложен");
+  if (trauma.splinted)        parts.push("🟢 Шина наложена");
+  return parts.join(" | ");
+}
+
 export class IronHillsCombatHudApp extends Application {
   constructor(options = {}) {
     super(options);
@@ -243,21 +255,8 @@ async _endTurnForActor() {
   this._refreshHud({ keepOnTop: true });
 }
 
-  async _endMyTurn() {
-    const actor = getHudActor();
-    if (!actor) {
-      ui.notifications.warn("Нет активного актёра для завершения хода.");
-      return;
-    }
-
-    const result = endTurnForActor(actor);
-    if (!result?.ok) {
-      ui.notifications.warn(result?.reason || "Не удалось завершить ход.");
-      return;
-    }
-
-    this._refreshHud({ keepOnTop: true });
-  }
+// _endMyTurn удалён: дублировал _endTurnForActor, но без advanceTurnIfReady.
+  // Все вызовы завершения хода идут через _endTurnForActor.
 
 async _nextTurn() {
   if (!isCombatActive()) {
@@ -362,54 +361,13 @@ canContinuePendingAction:
       canCancelPendingAction: Boolean(pendingAction),
 
       zones: [
-        {
-          key: "head",
-          label: "Голова",
-          value: num(hp.head?.value, 0),
-          max: num(hp.head?.max, 0),
-          cssClass: getZoneClass(hp.head?.value, hp.head?.max),
-          trauma: getPartTrauma(hp.head)
-        },
-        {
-          key: "torso",
-          label: "Торс",
-          value: num(hp.torso?.value, 0),
-          max: num(hp.torso?.max, 0),
-          cssClass: getZoneClass(hp.torso?.value, hp.torso?.max),
-          trauma: getPartTrauma(hp.torso)
-        },
-        {
-          key: "leftArm",
-          label: "Л. рука",
-          value: num(hp.leftArm?.value, 0),
-          max: num(hp.leftArm?.max, 0),
-          cssClass: getZoneClass(hp.leftArm?.value, hp.leftArm?.max),
-          trauma: getPartTrauma(hp.leftArm)
-        },
-        {
-          key: "rightArm",
-          label: "П. рука",
-          value: num(hp.rightArm?.value, 0),
-          max: num(hp.rightArm?.max, 0),
-          cssClass: getZoneClass(hp.rightArm?.value, hp.rightArm?.max),
-          trauma: getPartTrauma(hp.rightArm)
-        },
-        {
-          key: "leftLeg",
-          label: "Л. нога",
-          value: num(hp.leftLeg?.value, 0),
-          max: num(hp.leftLeg?.max, 0),
-          cssClass: getZoneClass(hp.leftLeg?.value, hp.leftLeg?.max),
-          trauma: getPartTrauma(hp.leftLeg)
-        },
-        {
-          key: "rightLeg",
-          label: "П. нога",
-          value: num(hp.rightLeg?.value, 0),
-          max: num(hp.rightLeg?.max, 0),
-          cssClass: getZoneClass(hp.rightLeg?.value, hp.rightLeg?.max),
-          trauma: getPartTrauma(hp.rightLeg)
-        }
+        { key: "head", label: "Голова", value: num(hp.head?.value, 0), max: num(hp.head?.max, 0), pct: Math.round(getRatio(hp.head?.value, hp.head?.max) * 100), cssClass: getZoneClass(hp.head?.value, hp.head?.max), trauma: getPartTrauma(hp.head), tooltip: buildZoneTooltip("Голова", num(hp.head?.value,0), num(hp.head?.max,0), getPartTrauma(hp.head)) },
+        { key: "torso", label: "Торс", value: num(hp.torso?.value, 0), max: num(hp.torso?.max, 0), pct: Math.round(getRatio(hp.torso?.value, hp.torso?.max) * 100), cssClass: getZoneClass(hp.torso?.value, hp.torso?.max), trauma: getPartTrauma(hp.torso), tooltip: buildZoneTooltip("Торс", num(hp.torso?.value,0), num(hp.torso?.max,0), getPartTrauma(hp.torso)) },
+        { key: "abdomen", label: "Живот", value: num(hp.abdomen?.value, 0), max: num(hp.abdomen?.max, 0), pct: Math.round(getRatio(hp.abdomen?.value, hp.abdomen?.max) * 100), cssClass: getZoneClass(hp.abdomen?.value, hp.abdomen?.max), trauma: getPartTrauma(hp.abdomen), tooltip: buildZoneTooltip("Живот", num(hp.abdomen?.value,0), num(hp.abdomen?.max,0), getPartTrauma(hp.abdomen)) },
+        { key: "leftArm", label: "Л. рука", value: num(hp.leftArm?.value, 0), max: num(hp.leftArm?.max, 0), pct: Math.round(getRatio(hp.leftArm?.value, hp.leftArm?.max) * 100), cssClass: getZoneClass(hp.leftArm?.value, hp.leftArm?.max), trauma: getPartTrauma(hp.leftArm), tooltip: buildZoneTooltip("Л. рука", num(hp.leftArm?.value,0), num(hp.leftArm?.max,0), getPartTrauma(hp.leftArm)) },
+        { key: "rightArm", label: "П. рука", value: num(hp.rightArm?.value, 0), max: num(hp.rightArm?.max, 0), pct: Math.round(getRatio(hp.rightArm?.value, hp.rightArm?.max) * 100), cssClass: getZoneClass(hp.rightArm?.value, hp.rightArm?.max), trauma: getPartTrauma(hp.rightArm), tooltip: buildZoneTooltip("П. рука", num(hp.rightArm?.value,0), num(hp.rightArm?.max,0), getPartTrauma(hp.rightArm)) },
+        { key: "leftLeg", label: "Л. нога", value: num(hp.leftLeg?.value, 0), max: num(hp.leftLeg?.max, 0), pct: Math.round(getRatio(hp.leftLeg?.value, hp.leftLeg?.max) * 100), cssClass: getZoneClass(hp.leftLeg?.value, hp.leftLeg?.max), trauma: getPartTrauma(hp.leftLeg), tooltip: buildZoneTooltip("Л. нога", num(hp.leftLeg?.value,0), num(hp.leftLeg?.max,0), getPartTrauma(hp.leftLeg)) },
+        { key: "rightLeg", label: "П. нога", value: num(hp.rightLeg?.value, 0), max: num(hp.rightLeg?.max, 0), pct: Math.round(getRatio(hp.rightLeg?.value, hp.rightLeg?.max) * 100), cssClass: getZoneClass(hp.rightLeg?.value, hp.rightLeg?.max), trauma: getPartTrauma(hp.rightLeg), tooltip: buildZoneTooltip("П. нога", num(hp.rightLeg?.value,0), num(hp.rightLeg?.max,0), getPartTrauma(hp.rightLeg)) }
       ],
 
       quickSlots: slotKeys.map(slotKey => {
@@ -429,6 +387,27 @@ canContinuePendingAction:
       leftHandName: actor.system?.equipment?.leftHand
         ? (actor.items.get(actor.system.equipment.leftHand)?.name || "Кулаки")
         : "Кулаки",
+
+      // Глобальные эффекты — показываются на портрете как иконки
+      globalEffects: [
+        { key: "stunned",  label: "Оглушение",   icon: "fa-dizzy",         color: "var(--ih-hp-warn)",   active: num(actor.system?.conditions?.stunned, 0) > 0,  value: num(actor.system?.conditions?.stunned, 0) },
+        { key: "poison",   label: "Яд",           icon: "fa-skull",         color: "var(--ih-food)",      active: num(actor.system?.conditions?.poison, 0) > 0,   value: num(actor.system?.conditions?.poison, 0) },
+        { key: "burning",  label: "Горение",      icon: "fa-fire",          color: "var(--ih-hp-bad)",    active: num(actor.system?.conditions?.burning, 0) > 0,  value: num(actor.system?.conditions?.burning, 0) },
+        { key: "shock",    label: "Шок",          icon: "fa-bolt",          color: "var(--ih-mana)",      active: num(actor.system?.conditions?.shock, 0) > 0,    value: num(actor.system?.conditions?.shock, 0) },
+        { key: "bleeding", label: "Кровотечение", icon: "fa-droplet",       color: "var(--ih-hp-crit)",   active: num(actor.system?.conditions?.bleeding, 0) > 0, value: num(actor.system?.conditions?.bleeding, 0) }
+      ],
+      hasGlobalEffects: [
+        num(actor.system?.conditions?.stunned, 0) > 0,
+        num(actor.system?.conditions?.poison, 0) > 0,
+        num(actor.system?.conditions?.burning, 0) > 0,
+        num(actor.system?.conditions?.shock, 0) > 0,
+        num(actor.system?.conditions?.bleeding, 0) > 0
+      ].some(Boolean),
+
+      // Флаги для управления доступностью действий
+      isGM: Boolean(game.user?.isGM),
+      canActFreely: !isCombatActive(),
+      canAttack: isCombatActive(),
 
       queue: (state.participants ?? []).map(participant => {
         const side = participant.side ?? "neutral";

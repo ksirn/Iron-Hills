@@ -15,7 +15,8 @@ import {
 
 export function getHitLocation(rollTotal) {
   if (rollTotal <= 2) return "head";
-  if (rollTotal <= 10) return "torso";
+  if (rollTotal <= 6) return "torso";
+  if (rollTotal <= 10) return "abdomen";
   if (rollTotal <= 13) return "leftArm";
   if (rollTotal <= 16) return "rightArm";
   if (rollTotal <= 18) return "leftLeg";
@@ -26,6 +27,7 @@ export function getHitLabel(key) {
   const labels = {
     head: "Голова",
     torso: "Торс",
+    abdomen: "Живот",
     leftArm: "Левая рука",
     rightArm: "Правая рука",
     leftLeg: "Левая нога",
@@ -50,7 +52,7 @@ export function getArmorSlotKey(slot) {
 
 export function getArmorSlotForLocation(locationKey) {
   if (locationKey === "head") return "armorHead";
-  if (locationKey === "torso") return "armorTorso";
+  if (locationKey === "torso" || locationKey === "abdomen") return "armorTorso";
   if (locationKey === "leftArm" || locationKey === "rightArm") return "armorArms";
   if (locationKey === "leftLeg" || locationKey === "rightLeg") return "armorLegs";
   return null;
@@ -110,6 +112,7 @@ function getAllLimbStatusMap(actor) {
   return {
     head: getLimbStatusInfo(actor, "head"),
     torso: getLimbStatusInfo(actor, "torso"),
+    abdomen: getLimbStatusInfo(actor, "abdomen"),
     leftArm: getLimbStatusInfo(actor, "leftArm"),
     rightArm: getLimbStatusInfo(actor, "rightArm"),
     leftLeg: getLimbStatusInfo(actor, "leftLeg"),

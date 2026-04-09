@@ -13,18 +13,55 @@
       "commonResources": {
         "resources": {
           "hp": {
-            "head": { "value": 10, "max": 10 },
-            "torso": { "value": 30, "max": 30 },
-            "leftArm": { "value": 20, "max": 20 },
-            "rightArm": { "value": 20, "max": 20 },
-            "leftLeg": { "value": 20, "max": 20 },
-            "rightLeg": { "value": 20, "max": 20 }
+            "head": {
+              "value": 10,
+              "max": 10
+            },
+            "torso": {
+              "value": 30,
+              "max": 30
+            },
+            "abdomen": {
+              "value": 25,
+              "max": 25
+            },
+            "leftArm": {
+              "value": 20,
+              "max": 20
+            },
+            "rightArm": {
+              "value": 20,
+              "max": 20
+            },
+            "leftLeg": {
+              "value": 20,
+              "max": 20
+            },
+            "rightLeg": {
+              "value": 20,
+              "max": 20
+            }
           },
-          "energy": { "value": 100, "max": 100 },
-          "mana": { "value": 50, "max": 50 },
-          "satiety": { "value": 100, "max": 100 },
-          "hydration": { "value": 100, "max": 100 },
-          "weight": { "value": 0, "max": 20 }
+          "energy": {
+            "value": 100,
+            "max": 100
+          },
+          "mana": {
+            "value": 50,
+            "max": 50
+          },
+          "satiety": {
+            "value": 100,
+            "max": 100
+          },
+          "hydration": {
+            "value": 100,
+            "max": 100
+          },
+          "weight": {
+            "value": 0,
+            "max": 20
+          }
         },
         "conditions": {
           "bleeding": 0,
@@ -35,13 +72,16 @@
             "leftArm": false,
             "rightArm": false,
             "leftLeg": false,
-            "rightLeg": false
+            "rightLeg": false,
+            "abdomen": false
           }
         }
       }
     },
     "character": {
-      "templates": ["commonResources"],
+      "templates": [
+        "commonResources"
+      ],
       "equipment": {
         "rightHand": "",
         "leftHand": "",
@@ -67,45 +107,187 @@
         "unarmedDamage": 1
       },
       "skills": {
-        "athletics": { "value": 1, "exp": 0, "expNext": 25 },
-        "acrobatics": { "value": 1, "exp": 0, "expNext": 25 },
-        "endurance": { "value": 1, "exp": 0, "expNext": 25 },
-        "sword": { "value": 1, "exp": 0, "expNext": 25 },
-        "axe": { "value": 1, "exp": 0, "expNext": 25 },
-        "spear": { "value": 1, "exp": 0, "expNext": 25 },
-        "blunt": { "value": 1, "exp": 0, "expNext": 25 },
-        "knife": { "value": 1, "exp": 0, "expNext": 25 },
-        "unarmed": { "value": 1, "exp": 0, "expNext": 25 },
-        "bows": { "value": 1, "exp": 0, "expNext": 25 },
-        "crossbows": { "value": 1, "exp": 0, "expNext": 25 },
-        "throwing": { "value": 1, "exp": 0, "expNext": 25 },
-        "shields": { "value": 1, "exp": 0, "expNext": 25 },
-        "armor": { "value": 1, "exp": 0, "expNext": 25 },
-        "persuasion": { "value": 1, "exp": 0, "expNext": 25 },
-        "deception": { "value": 1, "exp": 0, "expNext": 25 },
-        "intimidation": { "value": 1, "exp": 0, "expNext": 25 },
-        "insight": { "value": 1, "exp": 0, "expNext": 25 },
-        "analysis": { "value": 1, "exp": 0, "expNext": 25 },
-        "history": { "value": 1, "exp": 0, "expNext": 25 },
-        "nature": { "value": 1, "exp": 0, "expNext": 25 },
-        "religion": { "value": 1, "exp": 0, "expNext": 25 },
-        "survival": { "value": 1, "exp": 0, "expNext": 25 },
-        "medicine": { "value": 1, "exp": 0, "expNext": 25 },
-        "perception": { "value": 1, "exp": 0, "expNext": 25 },
-        "blacksmithing": { "value": 1, "exp": 0, "expNext": 25 },
-        "crafting": { "value": 1, "exp": 0, "expNext": 25 },
-        "alchemy": { "value": 1, "exp": 0, "expNext": 25 },
-        "cooking": { "value": 1, "exp": 0, "expNext": 25 },
-        "fire": { "value": 1, "exp": 0, "expNext": 25 },
-        "water": { "value": 1, "exp": 0, "expNext": 25 },
-        "earth": { "value": 1, "exp": 0, "expNext": 25 },
-        "air": { "value": 1, "exp": 0, "expNext": 25 },
-        "life": { "value": 1, "exp": 0, "expNext": 25 },
-        "mind": { "value": 1, "exp": 0, "expNext": 25 }
+        "athletics": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "acrobatics": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "endurance": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "sword": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "axe": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "spear": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "blunt": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "knife": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "unarmed": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "bows": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "crossbows": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "throwing": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "shields": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "armor": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "persuasion": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "deception": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "intimidation": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "insight": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "analysis": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "history": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "nature": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "religion": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "survival": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "medicine": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "perception": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "blacksmithing": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "crafting": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "alchemy": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "cooking": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "fire": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "water": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "earth": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "air": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "life": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "mind": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        }
       }
     },
     "npc": {
-      "templates": ["commonResources"],
+      "templates": [
+        "commonResources"
+      ],
       "combat": {
         "defense": 6,
         "unarmedDamage": 1
@@ -124,26 +306,106 @@
         "tier": 1
       },
       "skills": {
-        "athletics": { "value": 1, "exp": 0, "expNext": 25 },
-        "endurance": { "value": 1, "exp": 0, "expNext": 25 },
-        "sword": { "value": 1, "exp": 0, "expNext": 25 },
-        "axe": { "value": 1, "exp": 0, "expNext": 25 },
-        "spear": { "value": 1, "exp": 0, "expNext": 25 },
-        "knife": { "value": 1, "exp": 0, "expNext": 25 },
-        "unarmed": { "value": 1, "exp": 0, "expNext": 25 },
-        "throwing": { "value": 1, "exp": 0, "expNext": 25 },
-        "perception": { "value": 1, "exp": 0, "expNext": 25 },
-        "crafting": { "value": 1, "exp": 0, "expNext": 25 },
-        "blacksmithing": { "value": 1, "exp": 0, "expNext": 25 },
-        "alchemy": { "value": 1, "exp": 0, "expNext": 25 },
-        "cooking": { "value": 1, "exp": 0, "expNext": 25 },
-        "survival": { "value": 1, "exp": 0, "expNext": 25 },
-        "fire": { "value": 1, "exp": 0, "expNext": 25 },
-        "water": { "value": 1, "exp": 0, "expNext": 25 },
-        "earth": { "value": 1, "exp": 0, "expNext": 25 },
-        "air": { "value": 1, "exp": 0, "expNext": 25 },
-        "life": { "value": 1, "exp": 0, "expNext": 25 },
-        "mind": { "value": 1, "exp": 0, "expNext": 25 }
+        "athletics": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "endurance": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "sword": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "axe": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "spear": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "knife": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "unarmed": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "throwing": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "perception": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "crafting": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "blacksmithing": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "alchemy": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "cooking": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "survival": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "fire": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "water": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "earth": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "air": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "life": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "mind": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        }
       }
     },
     "merchant": {
@@ -257,83 +519,83 @@
       "quest",
       "relation"
     ],
-"relation": {
-  "info": {
-    "characterName": "",
-    "targetType": "settlement",
-    "targetName": "",
-    "score": 0,
-    "tier": "neutral",
-    "notes": ""
-  }
-},
-"quest": {
-  "info": {
-    "questType": "gathering",
-    "status": "active",
-    "region": "",
-    "issuer": "",
-    "targetSettlement": "",
-    "targetPOI": "",
-    "targetFaction": "",
-    "difficulty": 1,
-    "reward": "",
-    "dueText": ""
-  },
-  "description": {
-    "summary": "",
-    "objective": "",
-    "notes": ""
-  },
-  "chain": {
-    "chainId": "",
-    "arcType": "",
-    "arcState": "active",
-    "step": 1,
-    "maxStep": 1,
-    "nextQuestType": "",
-    "autoGenerateNext": false
-  },
-  "requirements": {
-    "minSettlementRep": 0,
-    "minFactionRep": 0,
-    "requiredCharacter": "",
-    "requiredQuestStatus": ""
-  },
-  "rewards": {
-    "silver": 0,
-    "settlementRep": 0,
-    "factionRep": 0,
-    "rewardCharacter": "",
-    "rewardItemName": "",
-    "rewardItemType": "",
-    "rewardItemQuantity": 0,
-    "granted": false
-  },
-  "effects": {
-    "success": {
-      "prosperity": 0,
-      "danger": 0,
-      "supply": 0,
-      "stability": 0,
-      "militiaPower": 0,
-      "tradeBalance": 0,
-      "caravanTraffic": 0,
-      "removeTargetPOI": false,
-      "resolveCrisis": false
+    "relation": {
+      "info": {
+        "characterName": "",
+        "targetType": "settlement",
+        "targetName": "",
+        "score": 0,
+        "tier": "neutral",
+        "notes": ""
+      }
     },
-    "failure": {
-      "prosperity": 0,
-      "danger": 0,
-      "supply": 0,
-      "stability": 0,
-      "militiaPower": 0,
-      "tradeBalance": 0,
-      "caravanTraffic": 0,
-      "empowerTargetPOI": false
-    }
-  }
-},
+    "quest": {
+      "info": {
+        "questType": "gathering",
+        "status": "active",
+        "region": "",
+        "issuer": "",
+        "targetSettlement": "",
+        "targetPOI": "",
+        "targetFaction": "",
+        "difficulty": 1,
+        "reward": "",
+        "dueText": ""
+      },
+      "description": {
+        "summary": "",
+        "objective": "",
+        "notes": ""
+      },
+      "chain": {
+        "chainId": "",
+        "arcType": "",
+        "arcState": "active",
+        "step": 1,
+        "maxStep": 1,
+        "nextQuestType": "",
+        "autoGenerateNext": false
+      },
+      "requirements": {
+        "minSettlementRep": 0,
+        "minFactionRep": 0,
+        "requiredCharacter": "",
+        "requiredQuestStatus": ""
+      },
+      "rewards": {
+        "silver": 0,
+        "settlementRep": 0,
+        "factionRep": 0,
+        "rewardCharacter": "",
+        "rewardItemName": "",
+        "rewardItemType": "",
+        "rewardItemQuantity": 0,
+        "granted": false
+      },
+      "effects": {
+        "success": {
+          "prosperity": 0,
+          "danger": 0,
+          "supply": 0,
+          "stability": 0,
+          "militiaPower": 0,
+          "tradeBalance": 0,
+          "caravanTraffic": 0,
+          "removeTargetPOI": false,
+          "resolveCrisis": false
+        },
+        "failure": {
+          "prosperity": 0,
+          "danger": 0,
+          "supply": 0,
+          "stability": 0,
+          "militiaPower": 0,
+          "tradeBalance": 0,
+          "caravanTraffic": 0,
+          "empowerTargetPOI": false
+        }
+      }
+    },
     "weapon": {
       "tier": 1,
       "quality": "common",
@@ -426,16 +688,16 @@
       "appliesPoison": 0,
       "appliesBurning": 0
     },
-"consumable": {
-  "tier": 1,
-  "quality": "common",
-  "weight": 1,
-  "quantity": 1,
-  "power": 1,
-  "actionType": "",
-  "applicationScope": "targeted",
-  "targetActorMode": "selected-or-self",
-  "targetPart": ""
-}
+    "consumable": {
+      "tier": 1,
+      "quality": "common",
+      "weight": 1,
+      "quantity": 1,
+      "power": 1,
+      "actionType": "",
+      "applicationScope": "targeted",
+      "targetActorMode": "selected-or-self",
+      "targetPart": ""
+    }
   }
 }

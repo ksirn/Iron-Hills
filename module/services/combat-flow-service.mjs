@@ -90,18 +90,13 @@ function scheduleCombatUiRefresh() {
   if (_combatUiRefreshScheduled) return;
   _combatUiRefreshScheduled = true;
 
-  queueMicrotask(() => {
+  // Один debounced вызов через rAF — достаточно для синхронизации с браузерным циклом.
+  // Тройной вызов (microtask + rAF + setTimeout) создавал лишние перерисовки и
+  // промежуточные состояния UI после каждого изменения боевого состояния.
+  requestAnimationFrame(() => {
     _combatUiRefreshScheduled = false;
     forceRefreshOpenCombatWindows();
   });
-
-  requestAnimationFrame(() => {
-    forceRefreshOpenCombatWindows();
-  });
-
-  window.setTimeout(() => {
-    forceRefreshOpenCombatWindows();
-  }, 30);
 }
 
 function notifyCombatUi() {
@@ -314,6 +309,7 @@ function getParticipantCurrentHp(actor) {
   return (
     Number(hp.head?.value ?? 0) +
     Number(hp.torso?.value ?? 0) +
+    Number(hp.abdomen?.value ?? 0) +
     Number(hp.leftArm?.value ?? 0) +
     Number(hp.rightArm?.value ?? 0) +
     Number(hp.leftLeg?.value ?? 0) +
@@ -449,7 +445,7 @@ function refreshDefeatedFlags(state) {
   return state;
 }
 
-const BODY_PART_KEYS = ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+const BODY_PART_KEYS = ["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"];
 
 function getBodyPartHpNode(actor, partKey) {
   return actor?.system?.resources?.hp?.[partKey] ?? null;
@@ -553,11 +549,71 @@ async function refreshDestroyedBodyParts(actor) {
 function getBodyPartLabel(partKey) {
   if (partKey === "head") return "Голова";
   if (partKey === "torso") return "Торс";
+  if (partKey === "abdomen") return "Живот";
   if (partKey === "leftArm") return "Левая рука";
   if (partKey === "rightArm") return "Правая рука";
   if (partKey === "leftLeg") return "Левая нога";
   if (partKey === "rightLeg") return "Правая нога";
   return partKey;
+}
+
+// Карта overflow для тика кровотечения — совпадает с логикой actor-sheet._applyDamage
+const LIMB_OVERFLOW_MAP = {
+  head:     "torso",
+  leftArm:  "torso",
+  rightArm: "torso",
+  leftLeg:  "abdomen",
+  rightLeg: "abdomen",
+  abdomen:  "torso",
+  torso:    "head"
+};
+
+// Применяет урон к конечности с overflow в соседнюю при уничтожении.
+// hpCache — изменяемый объект { partKey: currentHp } чтобы не читать устаревшие данные.
+async function applyLimbDamageWithOverflow(actor, partKey, damage, hpCache, logEntries, source, depth = 0) {
+  if (damage <= 0 || depth > 4) return;
+
+  let currentHp = hpCache[partKey] ?? Number(getBodyPartHpNode(actor, partKey)?.value ?? 0);
+
+  // Конечность уже уничтожена — overflow сразу
+  if (currentHp <= 0) {
+    const overflowTarget = LIMB_OVERFLOW_MAP[partKey];
+    if (overflowTarget) {
+      await applyLimbDamageWithOverflow(actor, overflowTarget, damage, hpCache, logEntries, source, depth + 1);
+    }
+    return;
+  }
+
+  const absorbed = Math.min(currentHp, damage);
+  const overflow = damage - absorbed;
+  const newHp = currentHp - absorbed;
+
+  hpCache[partKey] = newHp;
+  await actor.update({ [`system.resources.hp.${partKey}.value`]: newHp });
+
+  if (newHp <= 0) {
+    await actor.update({ [buildBodyPartStatusPath(partKey, "destroyed")]: true });
+    logEntries.push({
+      id: randomId("log"),
+      type: "condition-state",
+      text: `${actor.name}: ${getBodyPartLabel(partKey)} выведена из строя (${source}).`,
+      timestamp: nowStamp()
+    });
+
+    // Overflow в соседнюю конечность
+    if (overflow > 0) {
+      const overflowTarget = LIMB_OVERFLOW_MAP[partKey];
+      if (overflowTarget) {
+        logEntries.push({
+          id: randomId("log"),
+          type: "condition-tick",
+          text: `${actor.name}: ${overflow} HP переходит в ${getBodyPartLabel(overflowTarget)}.`,
+          timestamp: nowStamp()
+        });
+        await applyLimbDamageWithOverflow(actor, overflowTarget, overflow, hpCache, logEntries, source, depth + 1);
+      }
+    }
+  }
 }
 
 async function applyLocalLimbTurnStart(state, participant) {
@@ -566,65 +622,46 @@ async function applyLocalLimbTurnStart(state, participant) {
 
   await ensureActorBodyStatusStructure(actor);
 
-  const updates = {};
   const logEntries = [];
+  // Кэш текущих HP чтобы корректно считать overflow цепочки в одном тике
+  const hpCache = {};
+  for (const partKey of BODY_PART_KEYS) {
+    hpCache[partKey] = Number(getBodyPartHpNode(actor, partKey)?.value ?? 0);
+  }
 
   for (const partKey of BODY_PART_KEYS) {
-    const hpNode = getBodyPartHpNode(actor, partKey);
-    if (!hpNode) continue;
+    if (hpCache[partKey] <= 0) {
+      await actor.update({ [buildBodyPartStatusPath(partKey, "destroyed")]: true });
+      continue;
+    }
 
-    let currentHp = Number(hpNode.value ?? 0);
     const minorBleeding = Number(getBodyPartStatusValue(actor, partKey, "minorBleeding") || 0);
     const majorBleeding = Number(getBodyPartStatusValue(actor, partKey, "majorBleeding") || 0);
     const hasTourniquet = getBodyPartStatusBool(actor, partKey, "tourniquet");
 
-    if (currentHp <= 0) {
-      updates[buildBodyPartStatusPath(partKey, "destroyed")] = true;
-      continue;
-    }
-
     if (minorBleeding > 0) {
-      const damage = minorBleeding;
-      currentHp = Math.max(0, currentHp - damage);
-      updates[`system.resources.hp.${partKey}.value`] = currentHp;
-
       logEntries.push({
         id: randomId("log"),
         type: "condition-tick",
-        text: `${actor.name}: ${getBodyPartLabel(partKey)} теряет ${damage} HP от малого кровотечения.`,
+        text: `${actor.name}: ${getBodyPartLabel(partKey)} теряет ${minorBleeding} HP от малого кровотечения.`,
         timestamp: nowStamp()
       });
+      await applyLimbDamageWithOverflow(actor, partKey, minorBleeding, hpCache, logEntries, "малое кровотечение");
     }
 
     if (majorBleeding > 0 && !hasTourniquet) {
       const damage = majorBleeding * 2;
-      currentHp = Math.max(0, currentHp - damage);
-      updates[`system.resources.hp.${partKey}.value`] = currentHp;
-
       logEntries.push({
         id: randomId("log"),
         type: "condition-tick",
         text: `${actor.name}: ${getBodyPartLabel(partKey)} теряет ${damage} HP от сильного кровотечения.`,
         timestamp: nowStamp()
       });
-    }
-
-    if (currentHp <= 0) {
-      updates[buildBodyPartStatusPath(partKey, "destroyed")] = true;
-
-      logEntries.push({
-        id: randomId("log"),
-        type: "condition-state",
-        text: `${actor.name}: ${getBodyPartLabel(partKey)} выведена из строя.`,
-        timestamp: nowStamp()
-      });
+      await applyLimbDamageWithOverflow(actor, partKey, damage, hpCache, logEntries, "сильное кровотечение");
     }
   }
 
-  if (Object.keys(updates).length) {
-    await actor.update(updates);
-    await refreshDestroyedBodyParts(actor);
-  }
+  await refreshDestroyedBodyParts(actor);
 
   state.log = state.log ?? [];
   for (const entry of logEntries.reverse()) {
@@ -1531,6 +1568,7 @@ export async function advanceRound() {
 
   if (activeParticipant) {
     await applyLocalLimbTurnStart(state, activeParticipant);
+    await applyConditionTurnStart(state, activeParticipant);
     refreshDefeatedFlags(state);
   }
 
@@ -1576,6 +1614,7 @@ export async function advanceTurn() {
   setActiveParticipantByIndex(state, nextIndex);
 
   await applyLocalLimbTurnStart(state, next);
+  await applyConditionTurnStart(state, next);
   refreshDefeatedFlags(state);
 
   addCombatLog(`Ход: ${next.actorName}.`, "turn", {

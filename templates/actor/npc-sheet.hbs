@@ -1,253 +1,150 @@
-<form class="iron-hills-sheet">
-  <header class="sheet-header">
-    <h1>{{actor.name}}</h1>
-  </header>
+<form class="iron-hills-sheet npc-sheet">
 
-  <nav class="sheet-tabs tabs" data-group="primary">
-    <a class="item" data-tab="main">Основное</a>
-    <a class="item" data-tab="inventory">Инвентарь</a>
-    <a class="item" data-tab="combat">Бой</a>
-    <a class="item" data-tab="magic">Магия</a>
-  </nav>
-
-  <section class="sheet-body">
-    <div class="tab" data-group="primary" data-tab="main">
-      <h2>Параметры NPC</h2>
-      <div class="grid two-col">
-        <label>Роль
-          <input type="text" name="system.info.role" value="{{system.info.role}}">
-        </label>
-        <label>Фракция
-          <input type="text" name="system.info.faction" value="{{system.info.faction}}">
-        </label>
-        <label>Тир
-          <input type="number" name="system.info.tier" value="{{system.info.tier}}">
-        </label>
-        <label>Защита
-          <input type="number" name="system.combat.defense" value="{{system.combat.defense}}">
-        </label>
-        <label>Урон без оружия
-          <input type="number" name="system.combat.unarmedDamage" value="{{system.combat.unarmedDamage}}">
-        </label>
-      </div>
-
-      <h2>Тело</h2>
-      <div class="grid two-col">
-        <label>Голова <input type="number" name="system.resources.hp.head.value" value="{{system.resources.hp.head.value}}"></label>
-        <label>Торс <input type="number" name="system.resources.hp.torso.value" value="{{system.resources.hp.torso.value}}"></label>
-        <label>Левая рука <input type="number" name="system.resources.hp.leftArm.value" value="{{system.resources.hp.leftArm.value}}"></label>
-        <label>Правая рука <input type="number" name="system.resources.hp.rightArm.value" value="{{system.resources.hp.rightArm.value}}"></label>
-        <label>Левая нога <input type="number" name="system.resources.hp.leftLeg.value" value="{{system.resources.hp.leftLeg.value}}"></label>
-        <label>Правая нога <input type="number" name="system.resources.hp.rightLeg.value" value="{{system.resources.hp.rightLeg.value}}"></label>
-      </div>
-
-      <h2>Ресурсы</h2>
-      <div class="grid two-col">
-        <label>Энергия <input type="number" name="system.resources.energy.value" value="{{system.resources.energy.value}}"></label>
-        <label>Мана <input type="number" name="system.resources.mana.value" value="{{system.resources.mana.value}}"></label>
-        <label>Кровотечение <input type="number" name="system.conditions.bleeding" value="{{system.conditions.bleeding}}"></label>
-        <label>Шок <input type="number" name="system.conditions.shock" value="{{system.conditions.shock}}"></label>
-        <label>Яд <input type="number" name="system.conditions.poison" value="{{system.conditions.poison}}"></label>
-        <label>Горение <input type="number" name="system.conditions.burning" value="{{system.conditions.burning}}"></label>
-      </div>
+  {{!-- Шапка --}}
+  <div class="npc-header">
+    <div class="npc-portrait-wrap">
+      <img class="npc-portrait" src="{{actor.img}}" alt="{{actor.name}}">
     </div>
-
-    <div class="tab" data-group="primary" data-tab="inventory">
-      <h2>Экипировка</h2>
-      <div class="equipment-block">
-        <p>
-          <b>Правая рука:</b>
-          {{#if rightHandWeapon}}
-            {{rightHandWeapon.name}}
-            <a data-unequip-right>Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-
-        <p>
-          <b>Левая рука:</b>
-          {{#if leftHandWeapon}}
-            {{leftHandWeapon.name}}
-            <a data-unequip-left>Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-
-        <p>
-          <b>Голова:</b>
-          {{#if armorHead}}
-            {{armorHead.name}}
-            <a data-unequip-armor data-slot-key="armorHead">Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-
-        <p>
-          <b>Торс:</b>
-          {{#if armorTorso}}
-            {{armorTorso.name}}
-            <a data-unequip-armor data-slot-key="armorTorso">Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-
-        <p>
-          <b>Руки:</b>
-          {{#if armorArms}}
-            {{armorArms.name}}
-            <a data-unequip-armor data-slot-key="armorArms">Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-
-        <p>
-          <b>Ноги:</b>
-          {{#if armorLegs}}
-            {{armorLegs.name}}
-            <a data-unequip-armor data-slot-key="armorLegs">Снять</a>
-          {{else}}
-            —
-          {{/if}}
-        </p>
-      </div>
-
-      <h2>Оружие</h2>
-      {{#each weapons}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(урон: {{this.system.damage}}, навык: {{this.system.skill}}, кол-во: {{this.system.quantity}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-equip-right data-item-id="{{this.id}}">В правую руку</a>
-            <a data-equip-left data-item-id="{{this.id}}">В левую руку</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
+    <div class="npc-header-info">
+      <h1 class="npc-name">
+        <input type="text" name="name" value="{{actor.name}}" placeholder="Имя">
+      </h1>
+      <div class="npc-meta-row">
+        <div class="npc-meta-field">
+          <label>Роль</label>
+          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Бандит, торговец...">
         </div>
-      {{/each}}
-
-      <h2>Броня</h2>
-      {{#each armors}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(слот: {{this.system.slot}}, физ: {{this.system.protection.physical}}, маг: {{this.system.protection.magical}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-equip-armor data-item-id="{{this.id}}">Экипировать</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
+        <div class="npc-meta-field">
+          <label>Фракция</label>
+          <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="Гильдия...">
         </div>
-      {{/each}}
-
-      <h2>Еда</h2>
-      {{#each foods}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(сытость: {{this.system.satiety}}, жажда: {{this.system.hydration}}, кол-во: {{this.system.quantity}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-consume-food data-item-id="{{this.id}}">Использовать</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
+        <div class="npc-meta-field narrow">
+          <label>Ступень</label>
+          <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10">
         </div>
-      {{/each}}
-
-      <h2>Зелья</h2>
-      {{#each potions}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(эффект: {{this.system.effectType}}, сила: {{this.system.power}}, кол-во: {{this.system.quantity}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-use-potion data-item-id="{{this.id}}">Использовать</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
-        </div>
-      {{/each}}
-
-      <h2>Свитки</h2>
-      {{#each scrolls}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(школа: {{this.system.school}}, эффект: {{this.system.effectType}}, сила: {{this.system.power}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-use-scroll data-item-id="{{this.id}}">Использовать</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
-        </div>
-      {{/each}}
-
-      <h2>Метательное</h2>
-      {{#each throwables}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(сила: {{this.system.power}}, яд: {{this.system.appliesPoison}}, горение: {{this.system.appliesBurning}}, кол-во: {{this.system.quantity}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-use-throwable data-item-id="{{this.id}}">Бросить</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
-        </div>
-      {{/each}}
-
-      <h2>Расходники</h2>
-      {{#each consumables}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(эффект: {{this.system.effectType}}, сила: {{this.system.power}}, кол-во: {{this.system.quantity}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-use-consumable data-item-id="{{this.id}}">Использовать</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
-        </div>
-      {{/each}}
-    </div>
-
-    <div class="tab" data-group="primary" data-tab="combat">
-      <h2>Атаки</h2>
-
-      <div class="inventory-row">
-        <div><b>Правая рука</b></div>
-        <div class="inventory-actions">
-          <a data-attack="rightHand">Атаковать</a>
-        </div>
-      </div>
-
-      <div class="inventory-row">
-        <div><b>Левая рука</b></div>
-        <div class="inventory-actions">
-          <a data-attack="leftHand">Атаковать</a>
+        <div class="npc-meta-field narrow">
+          <label>Инициатива</label>
+          <input type="number" name="system.initiative" value="{{system.initiative}}" min="1">
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="tab" data-group="primary" data-tab="magic">
-      <h2>Заклинания</h2>
-      {{#each spells}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.name}}</b>
-            <span>(школа: {{this.system.school}}, эффект: {{this.system.effectType}}, сила: {{this.system.power}}, мана: {{this.system.manaCost}})</span>
-          </div>
-          <div class="inventory-actions">
-            <a data-cast-spell data-item-id="{{this.id}}">Сотворить</a>
-            <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-          </div>
+  {{!-- HP по частям тела (как у персонажа) --}}
+  <div class="npc-combat-block">
+    <div class="npc-section-title">Тело</div>
+    <div class="npc-body-grid">
+      {{#each zones}}
+      <div class="npc-body-part {{cssClass}}">
+        <div class="npc-body-part-bar">
+          <div class="npc-body-part-fill" style="width:{{pct}}%"></div>
         </div>
+        <div class="npc-body-part-info">
+          <span class="npc-body-part-name">{{label}}</span>
+          <span class="npc-body-part-hp">
+            <input type="number" name="system.resources.hp.{{key}}.value"
+                   value="{{value}}" class="npc-hp-input"> /
+            <input type="number" name="system.resources.hp.{{key}}.max"
+                   value="{{max}}" class="npc-hp-input muted">
+          </span>
+        </div>
+        {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor" title="Мал. кровотечение"></span>{{/if}}
+        {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="Сильн. кровотечение"></span>{{/if}}
+        {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture" title="Перелом"></span>{{/if}}
+        {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed" title="Уничтожено"></span>{{/if}}
+      </div>
       {{/each}}
     </div>
-  </section>
+  </div>
+
+  {{!-- Боевые параметры --}}
+  <div class="npc-combat-block">
+    <div class="npc-section-title">Бой</div>
+    <div class="npc-combat-grid">
+      <div class="npc-stat-field">
+        <label>Порог защиты</label>
+        <input type="number" name="system.combat.baseThreshold"
+               value="{{system.combat.baseThreshold}}" min="1" max="20">
+      </div>
+      <div class="npc-stat-field">
+        <label>Навык атаки</label>
+        <input type="number" name="system.combat.unarmedSkill"
+               value="{{system.combat.unarmedSkill}}" min="1" max="10">
+      </div>
+      <div class="npc-stat-field">
+        <label>Урон</label>
+        <input type="number" name="system.combat.unarmedDamage"
+               value="{{system.combat.unarmedDamage}}" min="1">
+      </div>
+      <div class="npc-stat-field">
+        <label>Щит</label>
+        <input type="checkbox" name="system.combat.shield"
+               {{#if system.combat.shield}}checked{{/if}}>
+      </div>
+    </div>
+  </div>
+
+  {{!-- Состояния --}}
+  <div class="npc-conditions-block">
+    <div class="npc-section-title">Состояния</div>
+    <div class="npc-conditions-grid">
+      <div class="npc-stat-field">
+        <label>Кровотечение</label>
+        <input type="number" name="system.conditions.bleeding" value="{{system.conditions.bleeding}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Яд</label>
+        <input type="number" name="system.conditions.poison" value="{{system.conditions.poison}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Шок</label>
+        <input type="number" name="system.conditions.shock" value="{{system.conditions.shock}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Горение</label>
+        <input type="number" name="system.conditions.burning" value="{{system.conditions.burning}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Оглушение</label>
+        <input type="number" name="system.conditions.stunned" value="{{system.conditions.stunned}}" min="0">
+      </div>
+    </div>
+  </div>
+
+  {{!-- Экипировка --}}
+  <div class="npc-inventory-block">
+    <div class="npc-section-title">Экипировка</div>
+    <div class="npc-equip-row">
+      <span class="npc-equip-label">П. рука:</span>
+      {{#if rightHandWeapon}}
+        <span class="npc-equip-item">{{rightHandWeapon.name}}</span>
+        <a class="ih-btn ih-btn-small" data-unequip-right>Снять</a>
+      {{else}}
+        <span class="npc-equip-empty">—</span>
+      {{/if}}
+    </div>
+    <div class="npc-equip-row">
+      <span class="npc-equip-label">Л. рука:</span>
+      {{#if leftHandWeapon}}
+        <span class="npc-equip-item">{{leftHandWeapon.name}}</span>
+        <a class="ih-btn ih-btn-small" data-unequip-left>Снять</a>
+      {{else}}
+        <span class="npc-equip-empty">—</span>
+      {{/if}}
+    </div>
+    <div class="npc-items-list">
+      {{#each allItems}}
+      <div class="npc-item-row">
+        <span class="npc-item-name">{{name}}</span>
+        <span class="npc-item-type muted-text">{{type}}</span>
+        {{#if (eq type "weapon")}}
+          <a class="ih-btn ih-btn-small" data-equip-right data-item-id="{{id}}">П</a>
+          <a class="ih-btn ih-btn-small" data-equip-left data-item-id="{{id}}">Л</a>
+        {{/if}}
+        <a class="ih-btn ih-btn-small ih-btn-danger" data-delete-item data-item-id="{{id}}">✕</a>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
 </form>

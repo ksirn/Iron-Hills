@@ -38,7 +38,10 @@ import {
   buildMagicSummary,
   buildTradeSummary,
   buildOverviewSummary,
-  buildSkillGroups
+  buildSkillGroups,
+  getAttackThreshold,
+  getFailureDegree,
+  getExpNextForSkill
 } from "../services/actor-state-service.mjs";
 import {
   getTradePriceModifiers,
@@ -588,6 +591,65 @@ if (actor.type === "character") {
   context.personalSellPreview = buildCharacterSellView(actor, demoMerchant);
 }
 
+// NPC — части тела как у character + hpPct/hpClass для каждой зоны
+if (actor.type === "npc") {
+  const hp = actor.system?.resources?.hp ?? {};
+
+  function zoneClass(val, max) {
+    const pct = max > 0 ? val / max : 0;
+    if (pct <= 0)    return "is-dead";
+    if (pct <= 0.25) return "is-critical";
+    if (pct <= 0.50) return "is-bad";
+    if (pct <= 0.75) return "is-warn";
+    return "is-good";
+  }
+
+  function zoneData(key, label, node) {
+    const val = Number(node?.value ?? 0);
+    const max = Number(node?.max ?? 0);
+    const pct = max > 0 ? Math.round((val / max) * 100) : 0;
+    const status = node?.status ?? {};
+    return {
+      key, label, value: val, max, pct,
+      cssClass: zoneClass(val, max),
+      trauma: {
+        minorBleeding: Number(status.minorBleeding ?? 0),
+        majorBleeding: Number(status.majorBleeding ?? 0),
+        fracture:   Boolean(status.fracture),
+        destroyed:  Boolean(status.destroyed),
+        splinted:   Boolean(status.splinted),
+        tourniquet: Boolean(status.tourniquet)
+      }
+    };
+  }
+
+  context.zones = [
+    zoneData("head",     "Голова",  hp.head),
+    zoneData("torso",    "Торс",    hp.torso),
+    zoneData("abdomen",  "Живот",   hp.abdomen),
+    zoneData("leftArm",  "Л. рука", hp.leftArm),
+    zoneData("rightArm", "П. рука", hp.rightArm),
+    zoneData("leftLeg",  "Л. нога", hp.leftLeg),
+    zoneData("rightLeg", "П. нога", hp.rightLeg),
+  ];
+}
+
+// Monster — одна полоска HP + броня/маг.броня (без частей тела)
+if (actor.type === "monster") {
+  const hpVal = Number(actor.system?.resources?.hp?.value ?? 0);
+  const hpMax = Number(actor.system?.resources?.hp?.max ?? 1);
+  const hpPct = Math.round(Math.max(0, Math.min(1, hpVal / Math.max(1, hpMax))) * 100);
+
+  let hpClass = "is-good";
+  if (hpPct <= 0)       hpClass = "is-dead";
+  else if (hpPct <= 25) hpClass = "is-critical";
+  else if (hpPct <= 50) hpClass = "is-bad";
+  else if (hpPct <= 75) hpClass = "is-warn";
+
+  context.hpPct   = hpPct;
+  context.hpClass = hpClass;
+}
+
     return context;
   }
 
@@ -861,36 +923,39 @@ if (actor.type === "character") {
     ui.notifications.info(`Действие "${pendingAction.label || "действие"}" завершено.`);
   }
 
-  async _applySkillExp(skillKey, label) {
+  async _applySkillExp(skillKey, label, amount = 1) {
     const actor = this._getActorForState();
     const skill = actor.system.skills?.[skillKey];
     if (!skill) return;
 
-    let newExp = (skill.exp ?? 0) + 1;
-    let newValue = skill.value ?? 1;
-    let expNext = skill.expNext ?? getExpNext(newValue);
+    const currentValue = Math.max(1, Number(skill.value ?? 1));
+    if (currentValue >= 10) return; // потолок
 
-    if (expNext && newExp >= expNext) {
-      newExp = newExp - expNext;
-      newValue += 1;
-      const nextExpNext = getExpNext(newValue);
+    let newExp = (skill.exp ?? 0) + amount;
+    // Экспоненциальная таблица: getExpNextForSkill(ступень)
+    const expNext = getExpNextForSkill(currentValue);
+
+    if (newExp >= expNext) {
+      const overflow = newExp - expNext;
+      const newValue = Math.min(10, currentValue + 1);
+      const nextExpNext = getExpNextForSkill(newValue);
 
       await actor.update({
-        [`system.skills.${skillKey}.exp`]: newExp,
+        [`system.skills.${skillKey}.exp`]: overflow,
         [`system.skills.${skillKey}.value`]: newValue,
         [`system.skills.${skillKey}.expNext`]: nextExpNext
       });
 
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> повышает навык <b>${label}</b> до уровня <b>${newValue}</b>!`
+        content: `<b>${actor.name}</b> повышает навык <b>${label}</b> до ступени <b>${newValue}</b>! (куб: d${newValue * 2})`
       });
-
       return;
     }
 
     await actor.update({
-      [`system.skills.${skillKey}.exp`]: newExp
+      [`system.skills.${skillKey}.exp`]: newExp,
+      [`system.skills.${skillKey}.expNext`]: expNext
     });
   }
 
@@ -932,7 +997,12 @@ if (actor.type === "character") {
 
     await targetActor.update({ [path]: newHP });
 
-    // Если конечность уничтожена этим ударом и есть переходящий урон
+    // Если летальная зона достигла 0 — персонаж мёртв
+    if (newHP <= 0 && (locationKey === "head" || locationKey === "torso")) {
+      await this._markActorDead(targetActor);
+    }
+
+    // Если есть переходящий урон и конечность уничтожена этим ударом
     if (overflow > 0 && newHP <= 0) {
       const overflowTarget = this._getOverflowTarget(locationKey);
       if (overflowTarget) {
@@ -2530,6 +2600,120 @@ async _sellToMerchant(itemId, sellerUuid = "") {
     return false;
   }
 
+
+  /**
+   * Отмечает персонажа как мёртвого — начинает отсчёт убывания резерва.
+   * Вызывается когда голова или торс достигают 0 HP.
+   */
+  async _markActorDead(actor) {
+    if (!actor || actor.type !== "character") return;
+    const sr = actor.system?.resources?.soulReserve;
+    if (sr?.isDead) return; // уже мёртв
+
+    await actor.update({
+      "system.resources.soulReserve.isDead": true,
+      "system.resources.soulReserve.daysSinceDeath": 1
+    });
+
+    await ChatMessage.create({
+      content: `
+        <div style="border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px;background:rgba(239,68,68,0.06);">
+          <b>☠ ${actor.name} погиб.</b><br>
+          Резерв души начинает угасать по 1 единице в день.<br>
+          <small>Воскресите персонажа пока резерв маны и энергии не иссяк.</small>
+        </div>
+      `
+    });
+  }
+
+  /**
+   * Воскрешение — сбрасывает флаг смерти, восстанавливает HP.
+   * @param {number} quality — качество воскрешения 1-10 (ступень церкви/свитка)
+   */
+  async _reviveActor(actor, quality = 1) {
+    if (!actor || actor.type !== "character") return;
+
+    // Восстановление HP в зависимости от качества
+    const hpRestorePct = Math.min(1, quality / 10);
+    const updates = {
+      "system.resources.soulReserve.isDead": false,
+      "system.resources.soulReserve.daysSinceDeath": 0
+    };
+
+    // HP частей тела
+    const parts = ["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const part of parts) {
+      const max = Number(actor.system?.resources?.hp?.[part]?.max ?? 0);
+      if (!max) continue;
+      const restored = Math.max(1, Math.floor(max * hpRestorePct));
+      updates[`system.resources.hp.${part}.value`] = restored;
+    }
+
+    // Сброс destroyed статусов
+    for (const part of parts) {
+      updates[`system.resources.hp.${part}.status.destroyed`] = false;
+    }
+
+    await actor.update(updates);
+
+    const qualityLabel = quality >= 8 ? "Отличное" : quality >= 5 ? "Хорошее" : "Слабое";
+    await ChatMessage.create({
+      content: `
+        <b>✦ ${actor.name} воскрешён.</b> Качество: ${qualityLabel} (ступень ${quality})<br>
+        HP восстановлено на ${Math.round(hpRestorePct * 100)}%.
+        ${quality <= 3 ? "<br><small>⚠ Персонаж ослаблен — могут быть дебафы.</small>" : ""}
+      `
+    });
+  }
+
+  /**
+   * Взрыв кубов (Exploding Dice).
+   * Если выпал максимум — предлагаем перейти на следующий куб.
+   * d2 не взрывается (это монетка).
+   *
+   * @param {number} skillValue — ступень навыка (1-10)
+   * @returns {{ total: number, rolls: number[], exploded: boolean }}
+   */
+  async _explodingDiceRoll(skillValue) {
+    const rolls = [];
+    let total = 0;
+    let currentDie = Math.max(2, skillValue * 2);
+    let exploded = false;
+
+    while (true) {
+      const roll = await new Roll(`1d${currentDie}`).evaluate();
+      const result = roll.total;
+      rolls.push({ die: currentDie, result });
+      total = result; // берём последний результат (не сумму)
+
+      // d2 не взрывается
+      if (currentDie === 2) break;
+
+      // Не максимум — стоп
+      if (result < currentDie) break;
+
+      // Максимум — предлагаем продолжить
+      const nextDie = Math.min(currentDie + 2, 20);
+      if (nextDie === currentDie) break; // уже d20, некуда расти
+
+      const confirmed = await Dialog.confirm({
+        title: "Взрыв куба!",
+        content: `
+          <p>Выпало <b>${result}</b> на d${currentDie} — максимум!</p>
+          <p>Перейти на <b>d${nextDie}</b>? Результат может быть и хуже.</p>
+          <p style="opacity:0.6;font-size:11px">Отмена — зафиксировать ${result}</p>
+        `
+      });
+
+      if (!confirmed) break;
+
+      exploded = true;
+      currentDie = nextDie;
+    }
+
+    return { total, rolls, exploded };
+  }
+
 async _performAttack({
   hand = null,
   skillKey,
@@ -2614,21 +2798,38 @@ if (!derivedConditions.canMeleeAttack) {
       }
     }
 
-    const dieSize = Math.max(2, skill.value * 2);
-    const difficulty = Number(targetActor.system.combat?.defense ?? 6);
+    // ── PATCH 5: Новая боевая формула ──────────────────────────────
+    // ШАГ 1: Взрыв кубов — бросок навыка
+    const { total: rollTotal, rolls: rollHistory, exploded } =
+      await this._explodingDiceRoll(skill.value);
 
+    const dieSize = Math.max(2, skill.value * 2);
+
+    // ШАГ 2: Порог попадания цели
+    const threshold = getAttackThreshold(targetActor, {
+      hasShield: false, // TODO: определять щит цели
+      isLying: Boolean(targetActor.system?.conditions?.prone),
+      isStunned: Number(targetActor.system?.conditions?.stunned ?? 0) > 0,
+      surroundCount: 0, // TODO: считать окружение
+      inDarkness: false
+    });
+
+    // Штраф атакующего снижает результат броска
     const attackPenalty =
       Number(encumbrance.attackPenalty) +
       Number(injuries.meleePenalty ?? injuries.attackPenalty ?? 0);
+    const effectiveRoll = rollTotal - attackPenalty;
 
-    const formula = attackPenalty > 0 ? `1d${dieSize} - ${attackPenalty}` : `1d${dieSize}`;
-
-    const attackRoll = await new Roll(formula).evaluate();
-    const success = attackRoll.total >= difficulty;
+    // ШАГ 3: Попал или нет
+    const failDegree = getFailureDegree(effectiveRoll, threshold, dieSize);
+    const success = !failDegree.isFail;
 
     await actor.update({
       "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost)
     });
+
+    const rollDesc = rollHistory.map(r => `d${r.die}=${r.result}`).join(" → ");
+    const rollDisplay = exploded ? `💥 ${rollDesc} = ${rollTotal}` : `${rollTotal}`;
 
     let content = `
       <h3>Атака: ${label}</h3>
@@ -2636,26 +2837,29 @@ if (!derivedConditions.canMeleeAttack) {
       ${buildChatSectionRow("Цель", targetActor.name)}
       ${buildChatSectionRow("Навык", skillKey)}
       ${buildChatSectionRow("Куб", `d${dieSize}`)}
-      ${buildChatSectionRow("Штраф от нагрузки", formatSignedNumber(-encumbrance.attackPenalty))}
-      ${buildChatSectionRow("Штраф от ранений", formatSignedNumber(-injuries.attackPenalty))}
-      ${buildChatSectionRow("Кровопотеря", Number(derivedConditions.bleeding ?? 0))}
-      ${buildChatSectionRow("Шок", Number(derivedConditions.shock ?? 0))}
-      ${buildChatSectionRow("Бросок", attackRoll.total)}
-      ${buildChatSectionRow("Защита цели", difficulty)}
+      ${buildChatSectionRow("Бросок", rollDisplay)}
+      ${attackPenalty > 0 ? buildChatSectionRow("Штраф", formatSignedNumber(-attackPenalty)) : ""}
+      ${buildChatSectionRow("Эффективный бросок", effectiveRoll)}
+      ${buildChatSectionRow("Порог попадания", threshold)}
       ${buildChatSectionRow("Энергия", `-${finalEnergyCost}`)}
     `;
 
     if (!success) {
-      content += `<p><b>Результат:</b> Промах</p><p><i>Атака не пробила защиту цели.</i></p>`;
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content
-      });
+      // Антикрит
+      if (failDegree.isAnticrit) {
+        content += `<p><b>💀 АНТИКРИТ!</b> Тяжёлые последствия (степень: ${failDegree.degree})</p>`;
+      } else if (failDegree.degree >= 8) {
+        content += `<p><b>Результат:</b> Жёсткий промах (степень: ${failDegree.degree})</p>`;
+      } else {
+        content += `<p><b>Результат:</b> Промах</p>`;
+      }
+      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
       await this._applySkillExp(skillKey, label);
       return;
     }
 
-    const margin = attackRoll.total - difficulty;
+    // ШАГ 4: Попал — считаем урон
+    const margin = effectiveRoll - threshold;
     const rawDamage = Number(baseDamage) + margin;
 
     const locationRoll = await new Roll("1d20").evaluate();
@@ -2664,20 +2868,25 @@ if (!derivedConditions.canMeleeAttack) {
 
     const armorItem = getEquippedArmorForLocation(targetActor, locationKey);
     const reduction = getDamageReduction(armorItem, damageType);
-    const finalDamage = Math.max(0, rawDamage - reduction);
 
-    const { newHP: remainingHP, overflow: dmgOverflow, overflowTarget: dmgOverflowTarget } = await this._applyDamage(targetActor, locationKey, finalDamage);
+    // Большой перевес = пробитие брони
+    const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
+    const effectiveReduction = Math.max(0, reduction - armorPenetration);
+    const finalDamage = Math.max(0, rawDamage - effectiveReduction);
+
+    const { newHP: remainingHP, overflow: dmgOverflow, overflowTarget: dmgOverflowTarget } =
+      await this._applyDamage(targetActor, locationKey, finalDamage);
     await this._applyInjuryEffects(targetActor, locationKey, finalDamage);
 
     content += `
-      <p><b>Результат:</b> Попадание</p>
+      <p><b>Результат:</b> Попадание${margin >= 8 ? " (пробитие!)" : ""}</p>
       ${buildChatSectionRow("Часть тела", `${locationLabel} (d20: ${locationRoll.total})`)}
+      ${buildChatSectionRow("Перевес", margin)}
       ${buildChatSectionRow("Базовый урон", baseDamage)}
-      ${buildChatSectionRow("Перевес над защитой", margin)}
       ${buildChatSectionRow("Сырой урон", rawDamage)}
       ${buildChatSectionRow("Тип урона", damageType === "magical" ? "Магический" : "Физический")}
       ${buildChatSectionRow("Броня", armorItem ? armorItem.name : "Нет")}
-      ${buildChatSectionRow("Поглощение", reduction)}
+      ${buildChatSectionRow("Поглощение", `${effectiveReduction}${armorPenetration > 0 ? ` (пробито: ${armorPenetration})` : ""}`)}
       ${buildChatSectionRow("Итоговый урон", `<span style="font-size:1.1em;"><b>${finalDamage}</b></span>`)}
       ${buildChatSectionRow("Осталось HP", remainingHP)}
       ${dmgOverflow > 0 ? buildChatSectionRow("Переходящий урон", `${dmgOverflow} → ${getTargetPartLabel(dmgOverflowTarget)}`) : ""}
@@ -2687,11 +2896,7 @@ if (!derivedConditions.canMeleeAttack) {
       content += `<p><b>Цель погибает!</b></p>`;
     }
 
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content
-    });
-
+    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
     await this._applySkillExp(skillKey, label);
     this.render(false);
   }
@@ -2860,6 +3065,16 @@ if (!derivedConditions.canMeleeAttack) {
     html.find("[data-update-effects]").on("click", async event => {
       event.preventDefault();
       await this._updateActiveEffectsTick();
+    });
+
+    html.find("[data-revive-actor]").on("click", async event => {
+      event.preventDefault();
+      if (!game.user?.isGM) {
+        ui.notifications.warn("Только GM может воскрешать персонажей.");
+        return;
+      }
+      const quality = Number(event.currentTarget.dataset.quality ?? 1);
+      await this._reviveActor(actor, quality);
     });
 
     html.find("[data-craft-recipe]").on("click", async event => {

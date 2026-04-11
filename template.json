@@ -7,7 +7,8 @@
       "merchant",
       "container",
       "settlement",
-      "poi"
+      "poi",
+      "monster"
     ],
     "templates": {
       "commonResources": {
@@ -61,6 +62,20 @@
           "weight": {
             "value": 0,
             "max": 20
+          },
+          "soul": {
+            "manaReserve": {
+              "value": 10,
+              "max": 10
+            },
+            "energyReserve": {
+              "value": 10,
+              "max": 10
+            }
+          },
+          "soulReserve": {
+            "daysSinceDeath": 0,
+            "isDead": false
           }
         },
         "conditions": {
@@ -75,7 +90,26 @@
             "rightLeg": false,
             "abdomen": false
           }
-        }
+        },
+        "initiative": 10
+      },
+      "npcResources": {
+        "resources": {
+          "hp": {
+            "value": 30,
+            "max": 30
+          },
+          "armor": {
+            "physical": 0,
+            "magical": 0
+          },
+          "energy": {
+            "value": 50,
+            "max": 50
+          }
+        },
+        "tier": 1,
+        "initiative": 10
       }
     },
     "character": {
@@ -289,8 +323,10 @@
         "commonResources"
       ],
       "combat": {
-        "defense": 6,
-        "unarmedDamage": 1
+        "baseThreshold": 4,
+        "unarmedDamage": 2,
+        "unarmedSkill": 1,
+        "shield": false
       },
       "equipment": {
         "rightHand": "",
@@ -316,22 +352,7 @@
           "exp": 0,
           "expNext": 25
         },
-        "sword": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "axe": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "spear": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "knife": {
+        "swords": {
           "value": 1,
           "exp": 0,
           "expNext": 25
@@ -341,72 +362,20 @@
           "exp": 0,
           "expNext": 25
         },
-        "throwing": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
         "perception": {
           "value": 1,
           "exp": 0,
           "expNext": 25
-        },
-        "crafting": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "blacksmithing": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "alchemy": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "cooking": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "survival": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "fire": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "water": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "earth": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "air": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "life": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "mind": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
         }
-      }
+      },
+      "conditions": {
+        "bleeding": 0,
+        "shock": 0,
+        "poison": 0,
+        "burning": 0,
+        "stunned": 0
+      },
+      "initiative": 10
     },
     "merchant": {
       "info": {
@@ -501,6 +470,37 @@
       "wealth": 1,
       "region": "",
       "goals": []
+    },
+    "monster": {
+      "templates": [],
+      "resources": {
+        "hp": {
+          "value": 50,
+          "max": 50
+        },
+        "armor": {
+          "physical": 0,
+          "magical": 0
+        }
+      },
+      "combat": {
+        "baseThreshold": 4,
+        "unarmedDamage": 5,
+        "unarmedSkill": 3,
+        "attackSkill": 3
+      },
+      "info": {
+        "role": "",
+        "tier": 1,
+        "faction": ""
+      },
+      "conditions": {
+        "stunned": 0,
+        "poison": 0,
+        "burning": 0
+      },
+      "initiative": 10,
+      "loot": []
     }
   },
   "Item": {
@@ -699,5 +699,6 @@
       "targetActorMode": "selected-or-self",
       "targetPart": ""
     }
-  }
+  },
+  "system": {}
 }

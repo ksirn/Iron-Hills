@@ -18,10 +18,10 @@
     "module/quest-tools.mjs",
     "module/reputation-tools.mjs"
   ],
-"styles": [
-  "styles/iron-hills.css",
-  "styles/combat-hud.css"
-],
+  "styles": [
+    "styles/iron-hills.css",
+    "styles/combat-hud.css"
+  ],
   "languages": [
     {
       "lang": "ru",
@@ -33,28 +33,71 @@
   "secondaryTokenAttribute": "resources.energy.value",
   "documentTypes": {
     "Actor": {
-      "character": { "htmlFields": [] },
-      "npc": { "htmlFields": [] },
-      "faction": { "htmlFields": [] },
-      "merchant": { "htmlFields": [] },
-      "container": { "htmlFields": [] },
-      "settlement": { "htmlFields": [] },
-      "poi": { "htmlFields": [] },
-      "quest": { "htmlFields": [] },
-      "relation": { "htmlFields": [] }
+      "character": {
+        "htmlFields": []
+      },
+      "npc": {
+        "htmlFields": []
+      },
+      "faction": {
+        "htmlFields": []
+      },
+      "merchant": {
+        "htmlFields": []
+      },
+      "container": {
+        "htmlFields": []
+      },
+      "settlement": {
+        "htmlFields": []
+      },
+      "poi": {
+        "htmlFields": []
+      },
+      "quest": {
+        "htmlFields": []
+      },
+      "relation": {
+        "htmlFields": []
+      },
+      "monster": {
+        "htmlFields": []
+      }
     },
     "Item": {
-      "weapon": { "htmlFields": [] },
-      "armor": { "htmlFields": [] },
-      "tool": { "htmlFields": [] },
-      "resource": { "htmlFields": [] },
-      "food": { "htmlFields": [] },
-      "material": { "htmlFields": [] },
-      "spell": { "htmlFields": [] },
-      "potion": { "htmlFields": [] },
-      "scroll": { "htmlFields": [] },
-      "throwable": { "htmlFields": [] },
-      "consumable": { "htmlFields": [] }
+      "weapon": {
+        "htmlFields": []
+      },
+      "armor": {
+        "htmlFields": []
+      },
+      "tool": {
+        "htmlFields": []
+      },
+      "resource": {
+        "htmlFields": []
+      },
+      "food": {
+        "htmlFields": []
+      },
+      "material": {
+        "htmlFields": []
+      },
+      "spell": {
+        "htmlFields": []
+      },
+      "potion": {
+        "htmlFields": []
+      },
+      "scroll": {
+        "htmlFields": []
+      },
+      "throwable": {
+        "htmlFields": []
+      },
+      "consumable": {
+        "htmlFields": []
+      }
     }
   },
   "grid": {

@@ -1,0 +1,120 @@
+<form class="iron-hills-sheet monster-sheet">
+
+  {{!-- Шапка --}}
+  <div class="npc-header">
+    <div class="npc-portrait-wrap">
+      <img class="npc-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+    </div>
+    <div class="npc-header-info">
+      <h1 class="npc-name">
+        <input type="text" name="name" value="{{actor.name}}" placeholder="Название монстра">
+      </h1>
+      <div class="npc-meta-row">
+        <div class="npc-meta-field">
+          <label>Тип</label>
+          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Зверь, нежить...">
+        </div>
+        <div class="npc-meta-field narrow">
+          <label>Ступень</label>
+          <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10">
+        </div>
+        <div class="npc-meta-field narrow">
+          <label>Инициатива</label>
+          <input type="number" name="system.initiative" value="{{system.initiative}}" min="1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{!-- HP и броня --}}
+  <div class="npc-vitals">
+    <div class="npc-hp-block">
+      <div class="npc-hp-label">
+        <span>HP</span>
+        <span class="npc-hp-numbers">
+          <input type="number" name="system.resources.hp.value"
+                 value="{{system.resources.hp.value}}"
+                 class="npc-hp-input"> /
+          <input type="number" name="system.resources.hp.max"
+                 value="{{system.resources.hp.max}}"
+                 class="npc-hp-input muted">
+        </span>
+      </div>
+      <div class="npc-hp-bar-track">
+        <div class="npc-hp-bar-fill {{hpClass}}" style="width:{{hpPct}}%"></div>
+      </div>
+    </div>
+
+    <div class="npc-armor-block">
+      <div class="npc-armor-item" title="Физическая броня">
+        <span class="npc-armor-icon">🛡</span>
+        <input type="number" name="system.resources.armor.physical"
+               value="{{system.resources.armor.physical}}" min="0" class="npc-armor-input">
+      </div>
+      <div class="npc-armor-item" title="Магическая броня">
+        <span class="npc-armor-icon">✦</span>
+        <input type="number" name="system.resources.armor.magical"
+               value="{{system.resources.armor.magical}}" min="0" class="npc-armor-input">
+      </div>
+    </div>
+  </div>
+
+  {{!-- Боевые параметры --}}
+  <div class="npc-combat-block">
+    <div class="npc-section-title">Бой</div>
+    <div class="npc-combat-grid">
+      <div class="npc-stat-field">
+        <label>Порог защиты</label>
+        <input type="number" name="system.combat.baseThreshold"
+               value="{{system.combat.baseThreshold}}" min="1" max="20">
+      </div>
+      <div class="npc-stat-field">
+        <label>Навык атаки</label>
+        <input type="number" name="system.combat.attackSkill"
+               value="{{system.combat.attackSkill}}" min="1" max="10">
+      </div>
+      <div class="npc-stat-field">
+        <label>Урон</label>
+        <input type="number" name="system.combat.unarmedDamage"
+               value="{{system.combat.unarmedDamage}}" min="1">
+      </div>
+    </div>
+  </div>
+
+  {{!-- Состояния --}}
+  <div class="npc-conditions-block">
+    <div class="npc-section-title">Состояния</div>
+    <div class="npc-conditions-grid">
+      <div class="npc-stat-field">
+        <label>Яд</label>
+        <input type="number" name="system.conditions.poison"
+               value="{{system.conditions.poison}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Горение</label>
+        <input type="number" name="system.conditions.burning"
+               value="{{system.conditions.burning}}" min="0">
+      </div>
+      <div class="npc-stat-field">
+        <label>Оглушение</label>
+        <input type="number" name="system.conditions.stunned"
+               value="{{system.conditions.stunned}}" min="0">
+      </div>
+    </div>
+  </div>
+
+  {{!-- Лут --}}
+  <div class="npc-inventory-block">
+    <div class="npc-section-title">Инвентарь / Лут</div>
+    <div class="npc-items-list">
+      {{#each allItems}}
+      <div class="npc-item-row">
+        <span class="npc-item-name">{{name}}</span>
+        <span class="npc-item-type muted-text">{{type}}</span>
+        <a class="ih-btn ih-btn-small ih-btn-danger" data-delete-item data-item-id="{{id}}">✕</a>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+</form>

@@ -14,8 +14,8 @@ import {
 } from "../utils/actor-utils.mjs";
 
 export function getHitLocation(rollTotal) {
-  if (rollTotal <= 2) return "head";
-  if (rollTotal <= 6) return "torso";
+  if (rollTotal <= 2)  return "head";
+  if (rollTotal <= 6)  return "torso";
   if (rollTotal <= 10) return "abdomen";
   if (rollTotal <= 13) return "leftArm";
   if (rollTotal <= 16) return "rightArm";
@@ -1150,4 +1150,116 @@ export function buildSkillGroups(actor) {
       };
     })
   }));
+}
+
+// ============================================================
+// БОЕВАЯ ФОРМУЛА — новая система (PATCH 5)
+// ============================================================
+
+/**
+ * Экспоненциальная таблица опыта для навыков.
+ * Ступень 1→2: ~25–50 использований
+ * Ступень 9→10: тысячи использований
+ */
+export function getExpNextForSkill(currentValue) {
+  const base = 25;
+  const exponent = 2.2;
+  return Math.floor(base * Math.pow(currentValue, exponent));
+}
+
+/**
+ * Порог попадания — пассивная защита цели.
+ * Бросок атаки должен быть >= порога чтобы попасть.
+ *
+ * @param {object} targetActor — актёр цели
+ * @param {object} modifiers — ситуативные модификаторы
+ * @returns {number} порог попадания
+ */
+export function getAttackThreshold(targetActor, modifiers = {}) {
+  const BASE_THRESHOLD = 4;
+
+  // Броня цели
+  const armorTier = Number(targetActor?.system?.info?.armorTier ?? 0);
+  const armorBonus = Math.ceil(armorTier / 2);
+
+  // Щит
+  const shieldBonus = modifiers.hasShield ? 1 : 0;
+
+  // Штрафы ситуации
+  const lyingPenalty    = modifiers.isLying    ? -2 : 0;
+  const surroundPenalty = modifiers.surroundCount > 0
+    ? -(modifiers.surroundCount) : 0;
+  const stunnedPenalty  = modifiers.isStunned  ? -3 : 0;
+  const darknessMalus   = modifiers.inDarkness ?  2 : 0;
+
+  const threshold = BASE_THRESHOLD
+    + armorBonus
+    + shieldBonus
+    + lyingPenalty
+    + surroundPenalty
+    + stunnedPenalty
+    + darknessMalus;
+
+  return Math.max(1, threshold);
+}
+
+/**
+ * Инициатива без броска — статичное значение.
+ * База 10, модифицируется снаряжением.
+ *
+ * @param {object} actor
+ * @returns {number}
+ */
+export function getInitiativeValue(actor) {
+  if (!actor) return 10;
+
+  const BASE = 10;
+  let modifier = 0;
+
+  // Броня снижает инициативу
+  const armorHead  = actor.system?.equipment?.armorHead  ? actor.items.get(actor.system.equipment.armorHead)  : null;
+  const armorTorso = actor.system?.equipment?.armorTorso ? actor.items.get(actor.system.equipment.armorTorso) : null;
+
+  const getArmorWeight = (armorItem) => {
+    if (!armorItem) return 0;
+    const slot = armorItem.system?.slot ?? "";
+    const tier = Number(armorItem.system?.tier ?? 1);
+    if (slot === "torso") return Math.ceil(tier / 2) * -1;
+    return 0;
+  };
+
+  modifier += getArmorWeight(armorTorso);
+
+  // Щит снижает инициативу
+  const leftWeapon  = actor.system?.equipment?.leftHand  ? actor.items.get(actor.system.equipment.leftHand)  : null;
+  if (leftWeapon?.type === "armor" || leftWeapon?.system?.isShield) {
+    modifier -= 1;
+  }
+
+  // Лёгкая одежда/без брони — небольшой бонус
+  if (!armorTorso) {
+    modifier += 1;
+  }
+
+  return Math.max(1, BASE + modifier);
+}
+
+/**
+ * Вычисляет степень последствий провала.
+ * 0 = просто промах, выше = хуже последствия.
+ *
+ * @param {number} roll — результат броска
+ * @param {number} threshold — порог попадания
+ * @param {number} dieMax — максимум куба (для антикрита)
+ * @returns {{ degree: number, isAnticrit: boolean, isFail: boolean }}
+ */
+export function getFailureDegree(roll, threshold, dieMax) {
+  if (roll >= threshold) {
+    return { degree: 0, isAnticrit: false, isFail: false };
+  }
+
+  const isAnticrit = roll === 1 && dieMax > 2; // d2 не антикрит
+  const degree = threshold - roll + (isAnticrit ? 5 : 0);
+
+  return { degree, isAnticrit, isFail: true };
 }

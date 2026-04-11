@@ -582,3 +582,933 @@
   background: var(--ih-bg-0);
   color: var(--ih-text-1);
 }
+
+/* ============================================================
+   TRADE WINDOW v2 — Двусторонний обмен
+   ============================================================ */
+
+.window-app.trade-app .window-content {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ih-trade-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: var(--ih-font-ui);
+  font-size: 12px;
+  color: var(--ih-text-1);
+  background: var(--ih-bg-0);
+}
+
+/* ── Шапка ── */
+.ih-trade-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-1);
+  flex-shrink: 0;
+}
+
+.ih-trade-party {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.ih-trade-party.right { flex-direction: row-reverse; }
+
+.ih-trade-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ih-radius-md);
+  overflow: hidden;
+  border: 2px solid var(--ih-border-2);
+  flex-shrink: 0;
+}
+
+.ih-trade-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.ih-trade-rep {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  padding: 1px 5px;
+  border-radius: var(--ih-radius-xl);
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.ih-trade-rep.is-good { background: var(--ih-hp-good-bg); border-color: var(--ih-ally-border); color: var(--ih-hp-good); }
+.ih-trade-rep.is-bad  { background: var(--ih-hp-crit-bg); border-color: var(--ih-enemy-border); color: var(--ih-hp-crit); }
+
+.ih-trade-party-info { display: flex; flex-direction: column; gap: 3px; }
+.ih-trade-party-info.right { align-items: flex-end; }
+
+.ih-trade-party-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-text-0);
+}
+
+.ih-trade-party-meta { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.ih-trade-tag {
+  padding: 2px 6px;
+  border-radius: var(--ih-radius-xl);
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  color: var(--ih-text-2);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.ih-trade-char-select {
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-1);
+  font-size: 11px;
+  padding: 2px 6px;
+  max-width: 140px;
+}
+
+.ih-trade-vs {
+  font-size: 22px;
+  color: var(--ih-text-3);
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+/* ── Тело: три колонки ── */
+.ih-trade-body {
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+  border-top: 1px solid var(--ih-border-1);
+}
+
+/* ── Колонки ── */
+.ih-trade-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--ih-border-1);
+}
+
+.ih-trade-col.right {
+  flex-direction: column-reverse;
+  border-right: none;
+  border-left: 1px solid var(--ih-border-1);
+}
+
+/* ── Инвентарь ── */
+.ih-trade-inv-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.ih-trade-col.right .ih-trade-inv-panel {
+  border-bottom: none;
+  border-top: 1px solid var(--ih-border-1);
+}
+
+.ih-trade-inv-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-1);
+  flex-shrink: 0;
+}
+
+.ih-trade-inv-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+}
+
+.ih-trade-search {
+  flex: 1;
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-1);
+  font-size: 11px;
+  padding: 2px 7px;
+}
+
+.ih-trade-filters {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-0);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.ih-trade-filters.right { justify-content: flex-end; }
+
+.ih-trade-filter {
+  padding: 2px 7px;
+  border-radius: var(--ih-radius-xl);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ih-text-2);
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: var(--ih-transition);
+}
+
+.ih-trade-filter:hover { color: var(--ih-text-1); }
+.ih-trade-filter.is-active {
+  background: var(--ih-accent-dim);
+  border-color: var(--ih-accent);
+  color: var(--ih-accent);
+}
+
+.ih-trade-inv-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Предмет в инвентаре */
+.ih-trade-inv-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-0);
+  cursor: grab;
+  transition: var(--ih-transition);
+  user-select: none;
+}
+
+.ih-trade-inv-item:hover {
+  background: var(--ih-bg-3);
+  border-color: var(--ih-border-accent);
+}
+
+.ih-trade-inv-item:active { cursor: grabbing; }
+
+.ih-trade-inv-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--ih-bg-3);
+}
+
+.ih-trade-inv-info { flex: 1; min-width: 0; }
+.ih-trade-inv-info.right { text-align: right; }
+
+.ih-trade-inv-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ih-text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ih-trade-inv-meta {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.ih-trade-inv-meta .right { justify-content: flex-end; }
+
+.ih-trade-inv-qty {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  font-weight: 600;
+}
+
+.ih-trade-inv-price {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ih-hp-warn);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ih-trade-inv-price span {
+  font-size: 9px;
+  color: var(--ih-text-2);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Категорийные бейджи */
+.ih-trade-cat-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: var(--ih-radius-xl);
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.cat-weapon     { background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.30); color: var(--ih-hp-crit); }
+.cat-armor      { background: rgba(96,165,250,0.10);  border-color: rgba(96,165,250,0.30);  color: var(--ih-energy); }
+.cat-consumable { background: rgba(74,222,128,0.10);  border-color: rgba(74,222,128,0.30);  color: var(--ih-hp-good); }
+.cat-material   { background: rgba(250,204,21,0.10);  border-color: rgba(250,204,21,0.30);  color: var(--ih-hp-warn); }
+.cat-misc       { background: var(--ih-bg-3);          border-color: var(--ih-border-1);     color: var(--ih-text-2); }
+
+/* ── Зона предложения ── */
+.ih-trade-offer-zone {
+  min-height: 120px;
+  padding: 8px;
+  background: var(--ih-bg-1);
+  border-top: 1px solid var(--ih-border-1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: var(--ih-transition);
+}
+
+.ih-trade-col.right .ih-trade-offer-zone {
+  border-top: none;
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.ih-trade-offer-zone.drag-over {
+  background: var(--ih-accent-dim);
+  border-color: var(--ih-accent);
+}
+
+.ih-trade-offer-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ih-trade-gm-badge {
+  padding: 1px 5px;
+  border-radius: var(--ih-radius-xl);
+  background: var(--ih-accent-dim);
+  border: 1px solid var(--ih-accent);
+  color: var(--ih-accent);
+  font-size: 9px;
+}
+
+.ih-trade-offer-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 32px;
+}
+
+.ih-trade-offer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+}
+
+.ih-trade-offer-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ih-trade-offer-name {
+  flex: 1;
+  font-size: 11px;
+  color: var(--ih-text-0);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ih-trade-offer-qty {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  flex-shrink: 0;
+}
+
+.ih-trade-offer-remove {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.30);
+  color: var(--ih-hp-crit);
+  cursor: pointer;
+  font-size: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: var(--ih-transition);
+}
+
+.ih-trade-offer-remove:hover { background: rgba(239,68,68,0.25); }
+
+/* Монеты в предложении */
+.ih-trade-coins-row {
+  display: flex;
+  gap: 5px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ih-border-0);
+}
+
+.ih-trade-coin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ih-trade-coin-field label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ih-text-2);
+}
+
+.ih-trade-coin-input {
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-hp-warn);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 4px;
+  width: 100%;
+  transition: var(--ih-transition);
+}
+
+.ih-trade-coin-input:focus {
+  border-color: var(--ih-accent);
+  outline: none;
+}
+
+.ih-trade-coin-input[readonly] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ih-trade-drop-hint {
+  font-size: 10px;
+  color: var(--ih-text-3);
+  text-align: center;
+  padding: 2px 0;
+  font-style: italic;
+}
+
+.ih-trade-empty-inv {
+  padding: 16px;
+  text-align: center;
+  color: var(--ih-text-2);
+  font-size: 11px;
+}
+
+/* ── Центральная панель ── */
+.ih-trade-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  background: var(--ih-bg-1);
+}
+
+.ih-trade-balance {
+  text-align: center;
+  padding: 10px;
+  border-radius: var(--ih-radius-md);
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  width: 100%;
+}
+
+.ih-trade-balance.is-good { border-color: var(--ih-ally-border); background: var(--ih-hp-good-bg); }
+.ih-trade-balance.is-bad  { border-color: var(--ih-enemy-border); background: var(--ih-hp-crit-bg); }
+.ih-trade-balance.is-neutral { border-color: var(--ih-border-2); }
+
+.ih-trade-balance-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+  margin-bottom: 3px;
+}
+
+.ih-trade-balance-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-text-0);
+}
+
+.ih-trade-balance-coins {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  margin-top: 1px;
+}
+
+.ih-trade-discount {
+  padding: 4px 10px;
+  border-radius: var(--ih-radius-xl);
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.30);
+  color: var(--ih-hp-good);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ih-trade-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.ih-trade-actions .ih-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.ih-trade-ready-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ih-trade-ready-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border-radius: var(--ih-radius-md);
+  border: 1px solid var(--ih-border-2);
+  background: var(--ih-bg-3);
+  color: var(--ih-text-1);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--ih-transition);
+  text-align: center;
+}
+
+.ih-trade-ready-btn:hover { border-color: var(--ih-border-accent); }
+
+.ih-trade-ready-btn.is-ready {
+  background: var(--ih-hp-good-bg);
+  border-color: var(--ih-ally-border);
+  color: var(--ih-hp-good);
+}
+
+.ih-trade-ready-btn.right.is-ready {
+  background: var(--ih-accent-dim);
+  border-color: var(--ih-accent);
+  color: var(--ih-accent);
+}
+
+.ih-trade-confirm-notice {
+  padding: 8px;
+  border-radius: var(--ih-radius-md);
+  background: rgba(250,204,21,0.10);
+  border: 1px solid rgba(250,204,21,0.30);
+  color: #facc15;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  animation: pulse-warning 1s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* ============================================================
+   NPC SHEET
+   ============================================================ */
+
+.npc-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--ih-bg-0);
+  color: var(--ih-text-1);
+  font-family: var(--ih-font-ui);
+  font-size: 13px;
+  padding: 0;
+}
+
+.npc-header {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.npc-portrait-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--ih-radius-md);
+  overflow: hidden;
+  border: 2px solid var(--ih-border-2);
+  flex-shrink: 0;
+}
+
+.npc-portrait {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.npc-header-info { flex: 1; min-width: 0; }
+
+.npc-name input {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ih-text-0);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ih-border-1);
+  width: 100%;
+  padding: 2px 0;
+  margin-bottom: 8px;
+}
+
+.npc-name input:focus {
+  outline: none;
+  border-bottom-color: var(--ih-accent);
+}
+
+.npc-meta-row {
+  display: flex;
+  gap: 10px;
+}
+
+.npc-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.npc-meta-field.narrow { flex: 0 0 60px; }
+
+.npc-meta-field label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+}
+
+/* HP блок */
+.npc-vitals {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--ih-bg-0);
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.npc-hp-block { flex: 1; }
+
+.npc-hp-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ih-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.npc-hp-numbers {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ih-text-0);
+}
+
+.npc-hp-input {
+  width: 44px;
+  text-align: center;
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 4px;
+}
+
+.npc-hp-input.muted { color: var(--ih-text-2); }
+
+.npc-hp-bar-track {
+  height: 8px;
+  background: var(--ih-bg-3);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--ih-border-1);
+}
+
+.npc-hp-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 300ms ease;
+  background: var(--ih-hp-good);
+}
+
+.npc-hp-bar-fill.is-warn     { background: var(--ih-hp-warn); }
+.npc-hp-bar-fill.is-bad      { background: var(--ih-hp-bad); }
+.npc-hp-bar-fill.is-critical { background: var(--ih-hp-crit); }
+.npc-hp-bar-fill.is-dead     { background: var(--ih-hp-dead); }
+
+.npc-armor-block {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.npc-armor-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  padding: 4px 8px;
+}
+
+.npc-armor-icon { font-size: 13px; }
+
+.npc-armor-input {
+  width: 38px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--ih-text-0);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Секции */
+.npc-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ih-text-2);
+  padding: 8px 14px 4px;
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.npc-combat-block,
+.npc-conditions-block,
+.npc-inventory-block {
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.npc-combat-grid,
+.npc-conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px 14px;
+}
+
+.npc-stat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.npc-stat-field label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ih-text-2);
+}
+
+.npc-stat-field input[type="number"] {
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0);
+  padding: 3px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Инвентарь */
+.npc-equip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-bottom: 1px solid var(--ih-border-0);
+}
+
+.npc-equip-label {
+  font-size: 11px;
+  color: var(--ih-text-2);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.npc-equip-item {
+  flex: 1;
+  font-size: 12px;
+  color: var(--ih-text-0);
+}
+
+.npc-equip-empty { color: var(--ih-text-3); font-size: 12px; flex: 1; }
+
+.npc-items-list {
+  padding: 6px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.npc-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+}
+
+.npc-item-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--ih-text-0);
+}
+
+.npc-item-type { font-size: 10px; }
+
+/* NPC body parts grid */
+.npc-body-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px 14px;
+}
+
+.npc-body-part {
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  padding: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: var(--ih-transition);
+}
+
+.npc-body-part.is-good     { border-color: rgba(74,222,128,0.30); }
+.npc-body-part.is-warn     { border-color: rgba(250,204,21,0.30); }
+.npc-body-part.is-bad      { border-color: rgba(251,146,60,0.35); }
+.npc-body-part.is-critical { border-color: rgba(248,113,113,0.45); }
+.npc-body-part.is-dead     { border-color: rgba(107,50,50,0.60); opacity: 0.7; }
+
+.npc-body-part-bar {
+  height: 4px;
+  background: var(--ih-bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.npc-body-part-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ih-hp-good);
+  transition: width 300ms ease;
+}
+
+.is-warn .npc-body-part-fill     { background: var(--ih-hp-warn); }
+.is-bad .npc-body-part-fill      { background: var(--ih-hp-bad); }
+.is-critical .npc-body-part-fill { background: var(--ih-hp-crit); }
+.is-dead .npc-body-part-fill     { background: var(--ih-hp-dead); }
+
+.npc-body-part-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.npc-body-part-name {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ih-text-2);
+}
+
+.npc-body-part-hp {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--ih-text-0);
+}
+
+.npc-body-part-hp .npc-hp-input {
+  width: 28px;
+  font-size: 11px;
+  padding: 1px 3px;
+}

@@ -1,161 +1,263 @@
-<form class="iron-hills-sheet iron-hills-trade-window">
-  <header class="sheet-header">
-    <div class="hero-header">
-      <div>
-        <h1>Торговля: {{merchantName}}</h1>
-        <div class="hero-subline">
-          <span>Специализация: {{tradeSummary.specialty}}</span>
-          <span>Поселение: {{tradeSummary.settlement}}</span>
-          <span>Фракция: {{tradeSummary.faction}}</span>
+{{!-- ============================================================
+  IRON HILLS — Trade Window v2
+  Двусторонний обмен: Игрок ↔ NPC (через GM)
+  ============================================================ --}}
+
+<div class="ih-trade-app">
+
+  {{!-- ── ШАПКА ── --}}
+  <div class="ih-trade-header">
+    <div class="ih-trade-party">
+      <div class="ih-trade-avatar">
+        <img src="{{merchantImg}}" alt="{{merchantName}}">
+        {{#if reputation}}
+        <span class="ih-trade-rep {{#if reputationPositive}}is-good{{else}}is-bad{{/if}}"
+              title="Репутация">{{reputation}}</span>
+        {{/if}}
+      </div>
+      <div class="ih-trade-party-info">
+        <div class="ih-trade-party-name">{{merchantName}}</div>
+        <div class="ih-trade-party-meta">
+          {{#if tradeSummary.specialty}}<span class="ih-trade-tag">{{tradeSummary.specialty}}</span>{{/if}}
+          <span class="ih-trade-tag">Ст. {{merchantTier}}</span>
         </div>
       </div>
-      <div class="hero-states">
-        <span class="state-pill">Богатство: {{tradeSummary.wealth}}</span>
-        <span class="state-pill">Наценка: x{{tradeSummary.markup}}</span>
-        <span class="state-pill">Репутация: {{tradeModifiers.relationScore}}</span>
+    </div>
+
+    <div class="ih-trade-vs">⇌</div>
+
+    <div class="ih-trade-party right">
+      <div class="ih-trade-party-info right">
+        <div class="ih-trade-party-name">{{characterName}}</div>
+        <select class="ih-trade-char-select" data-char-select>
+          {{#each tradeCharacterOptions}}
+          <option value="{{uuid}}" {{#if (eq uuid ../characterUuid)}}selected{{/if}}>{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="ih-trade-avatar">
+        <img src="{{characterImg}}" alt="{{characterName}}">
       </div>
     </div>
-  </header>
-
-  <div class="status-card">
-    <h2>Кто торгует</h2>
-    <label>Персонаж
-      <select data-trade-character-select>
-        <option value="">{{activeTradeCharacterName}}</option>
-        {{#each tradeCharacterOptions}}
-          <option value="{{this.uuid}}">{{this.name}}</option>
-        {{/each}}
-      </select>
-    </label>
-    <p class="muted-text">Текущий персонаж: {{activeTradeCharacterName}}</p>
   </div>
 
-  {{#unless hasActiveTradeCharacter}}
-    <div class="status-card">
-      <h2>Торговля недоступна</h2>
-      <p>Выбери персонажа для торговли.</p>
-    </div>
-  {{/unless}}
+  {{!-- ── ТОРГОВЫЙ СТОЛ (две колонки) ── --}}
+  <div class="ih-trade-body">
 
-  {{#if hasActiveTradeCharacter}}
-    <div class="hero-stats-grid">
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Монеты персонажа</div>
-        <div class="hero-stat-value">{{buyerCoins}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Богатство торговца</div>
-        <div class="hero-stat-value">{{merchantWealth}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Модификатор покупки</div>
-        <div class="hero-stat-value">x{{tradeModifiers.buyModifier}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Модификатор продажи</div>
-        <div class="hero-stat-value">x{{tradeModifiers.sellModifier}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Благополучие</div>
-        <div class="hero-stat-value">{{tradeSummary.settlementProsperity}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Снабжение</div>
-        <div class="hero-stat-value">{{tradeSummary.settlementSupply}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Опасность</div>
-        <div class="hero-stat-value">{{tradeSummary.settlementDanger}}</div>
-      </div>
-    </div>
+    {{!-- ═══ ЛЕВАЯ: ТОРГОВЕЦ ═══ --}}
+    <div class="ih-trade-col">
 
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Товары торговца</h2>
+      {{!-- Инвентарь торговца --}}
+      <div class="ih-trade-inv-panel">
+        <div class="ih-trade-inv-header">
+          <span class="ih-trade-inv-title">Инвентарь торговца</span>
+          <input class="ih-trade-search" type="text" placeholder="Поиск..."
+                 data-search data-side="right" value="{{searchRight}}">
+        </div>
 
-        {{#if merchantStockView.length}}
-          {{#each merchantStockView}}
-            <div class="inventory-row trade-row trade-price-{{this.priceStateKey}}">
-            <div>
-                <b>{{this.icon}} {{this.name}}</b>
-                <div>
-                <span>{{this.kind}}</span>
-                <span> | {{this.tradeCategory}}</span>
-                <span> | Кол-во: {{this.quantity}}</span>
-                </div>
-                <div>
-                <span>База: {{this.unitBasePrice}}</span>
-                <span> | Цена: {{this.tradeBuyPrice}}</span>
-                <span> | Оценка: {{this.priceStateLabel}}</span>
-                </div>
-                <div>
-                <span>Разница: {{this.priceDelta}}</span>
-                <span> | {{this.priceDeltaPercent}}%</span>
-                </div>
-                {{#unless this.canAfford}}
-                <div class="muted-text">Недостаточно монет для покупки.</div>
-                {{/unless}}
-            </div>
-                <div class="inline-actions">
-                <a
-                    data-buy-item
-                    data-item-id="{{this.id}}"
-                    class="{{#unless this.canAfford}}is-disabled{{/unless}}"
-                    title="{{#unless this.canAfford}}Недостаточно монет{{/unless}}"
-                >
-                    Купить 1
-                </a>
-                </div>
-            </div>
+        {{!-- Фильтры --}}
+        <div class="ih-trade-filters">
+          {{#each merchantCategories}}
+          <a class="ih-trade-filter {{#if (eq key ../filterRight)}}is-active{{/if}}"
+             data-filter data-side="right" data-category="{{key}}">{{label}}</a>
           {{/each}}
-        {{else}}
-          <p>У торговца нет товаров.</p>
-        {{/if}}
-      </div>
+        </div>
 
-      <div class="status-card">
-        <h2>Продать торговцу</h2>
-
-        {{#if playerSellToMerchantView.length}}
-          {{#each playerSellToMerchantView}}
-                    <div class="inventory-row trade-row trade-price-{{this.priceStateKey}}">
-                    <div>
-                        <b>{{this.icon}} {{this.name}}</b>
-                        <div>
-                        <span>{{this.kind}}</span>
-                        <span> | {{this.tradeCategory}}</span>
-                        <span> | Кол-во: {{this.quantity}}</span>
-                        </div>
-                        <div>
-                        <span>База: {{this.unitBasePrice}}</span>
-                        <span> | Выкуп: {{this.tradeSellPrice}}</span>
-                        <span> | Оценка: {{this.priceStateLabel}}</span>
-                        </div>
-                        <div>
-                        <span>Разница: {{this.priceDelta}}</span>
-                        <span> | {{this.priceDeltaPercent}}%</span>
-                        </div>
-                        {{#unless this.canMerchantBuy}}
-                        <div class="muted-text">У торговца не хватает богатства для выкупа.</div>
-                        {{/unless}}
-                    </div>
-                    <div class="inline-actions">
-                    <a
-                        data-sell-item
-                        data-item-id="{{this.id}}"
-                        data-seller-uuid="{{this.sellerUuid}}"
-                        class="{{#unless this.canMerchantBuy}}is-disabled{{/unless}}"
-                        title="{{#unless this.canMerchantBuy}}У торговца недостаточно богатства{{/unless}}"
-                    >
-                        Продать 1
-                    </a>
-                    </div>
+        {{!-- Предметы --}}
+        <div class="ih-trade-inv-list">
+          {{#each merchantItems}}
+          <div class="ih-trade-inv-item" draggable="true"
+               data-item-id="{{id}}" data-side="right"
+               title="{{name}} — {{price}} мед. | Двойной клик или перетащи в предложение">
+            <img class="ih-trade-inv-icon" src="{{img}}" alt="{{name}}">
+            <div class="ih-trade-inv-info">
+              <div class="ih-trade-inv-name">{{name}}</div>
+              <div class="ih-trade-inv-meta">
+                <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
+                <span class="ih-trade-inv-qty">×{{qty}}</span>
+              </div>
             </div>
+            <div class="ih-trade-inv-price">{{price}}<span>мед.</span></div>
+          </div>
+          {{else}}
+          <div class="ih-trade-empty-inv">Нет предметов</div>
           {{/each}}
-        {{else}}
-          <p>У персонажа нет предметов для продажи.</p>
-        {{/if}}
+        </div>
       </div>
-    </div>
-  {{/if}}
-</form>
+
+      {{!-- Зона предложения торговца --}}
+      <div class="ih-trade-offer-zone" data-offer-side="right">
+        <div class="ih-trade-offer-title">
+          Предложение торговца
+          {{#if isGM}}<span class="ih-trade-gm-badge">GM</span>{{/if}}
+        </div>
+
+        <div class="ih-trade-offer-items">
+          {{#each rightOffer}}
+          <div class="ih-trade-offer-item">
+            <img class="ih-trade-offer-icon" src="{{icon}}" alt="{{name}}">
+            <span class="ih-trade-offer-name">{{name}}</span>
+            <span class="ih-trade-offer-qty">×{{qty}}</span>
+            {{#if ../isGM}}
+            <a class="ih-trade-offer-remove" data-remove-offer
+               data-item-id="{{itemId}}" data-side="right" title="Убрать">✕</a>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+
+        {{!-- Монеты торговца --}}
+        <div class="ih-trade-coins-row">
+          {{#each currencies}}
+          <div class="ih-trade-coin-field">
+            <label>{{label}}</label>
+            <input type="number" min="0" class="ih-trade-coin-input"
+                   data-coin-input data-side="right" data-currency="{{key}}"
+                   value="{{lookup ../rightCoins key}}"
+                   {{#unless ../isGM}}readonly{{/unless}}>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-trade-drop-hint">
+          {{#if isGM}}Перетащи предмет сюда{{else}}Ожидание GM{{/if}}
+        </div>
+      </div>
+
+    </div>{{!-- .ih-trade-col left --}}
+
+    {{!-- ═══ ЦЕНТР: БАЛАНС + КНОПКИ ═══ --}}
+    <div class="ih-trade-center">
+
+      {{!-- Баланс --}}
+      <div class="ih-trade-balance {{balanceClass}}">
+        <div class="ih-trade-balance-label">Баланс</div>
+        <div class="ih-trade-balance-value">
+          {{balanceSign}} {{balanceAbs}} мед.
+        </div>
+        {{#if balanceCoins.platinum}}<div class="ih-trade-balance-coins">{{balanceCoins.platinum}} пл.</div>{{/if}}
+        {{#if balanceCoins.gold}}<div class="ih-trade-balance-coins">{{balanceCoins.gold}} зол.</div>{{/if}}
+        {{#if balanceCoins.silver}}<div class="ih-trade-balance-coins">{{balanceCoins.silver}} сер.</div>{{/if}}
+        {{#if balanceCoins.copper}}<div class="ih-trade-balance-coins">{{balanceCoins.copper}} мед.</div>{{/if}}
+      </div>
+
+      {{!-- Скидка от торговли --}}
+      {{#if bargainDiscount}}
+      <div class="ih-trade-discount">
+        ↓ {{bargainDiscount}}% скидка
+      </div>
+      {{/if}}
+
+      {{!-- Кнопки действий --}}
+      <div class="ih-trade-actions">
+        <a class="ih-btn ih-btn-small {{#if bargainUsed}}is-disabled{{/if}}"
+           data-bargain title="{{#if bargainUsed}}Уже использовано{{else}}Попытаться снизить цену{{/if}}">
+          🗣 Поторговаться
+        </a>
+
+        <a class="ih-btn ih-btn-small" data-equalize
+           title="Добавить монеты чтобы уравнять предложения">
+          ⚖ Уравнять
+        </a>
+
+        <a class="ih-btn ih-btn-small ih-btn-danger" data-cancel-trade>
+          ✕ Сброс
+        </a>
+      </div>
+
+      {{!-- Статусы готовности --}}
+      <div class="ih-trade-ready-section">
+        <a class="ih-trade-ready-btn {{#if leftReady}}is-ready{{/if}}"
+           data-ready-left>
+          {{#if leftReady}}✓ Готов{{else}}Принять{{/if}}
+        </a>
+        <a class="ih-trade-ready-btn right {{#if rightReady}}is-ready{{/if}} {{#unless isGM}}is-disabled{{/unless}}"
+           data-ready-right>
+          {{#if rightReady}}✓ Готов{{else}}Принять (GM){{/if}}
+        </a>
+      </div>
+
+      {{#if bothReady}}
+      <div class="ih-trade-confirm-notice">
+        ⏳ Обмен через 3 сек...
+      </div>
+      {{/if}}
+
+    </div>{{!-- .ih-trade-center --}}
+
+    {{!-- ═══ ПРАВАЯ: ИГРОК ═══ --}}
+    <div class="ih-trade-col right">
+
+      {{!-- Зона предложения игрока --}}
+      <div class="ih-trade-offer-zone" data-offer-side="left">
+        <div class="ih-trade-offer-title">Предложение игрока</div>
+
+        <div class="ih-trade-offer-items">
+          {{#each leftOffer}}
+          <div class="ih-trade-offer-item">
+            <a class="ih-trade-offer-remove" data-remove-offer
+               data-item-id="{{itemId}}" data-side="left" title="Убрать">✕</a>
+            <span class="ih-trade-offer-qty">×{{qty}}</span>
+            <span class="ih-trade-offer-name">{{name}}</span>
+            <img class="ih-trade-offer-icon" src="{{icon}}" alt="{{name}}">
+          </div>
+          {{/each}}
+        </div>
+
+        {{!-- Монеты игрока --}}
+        <div class="ih-trade-coins-row">
+          {{#each currencies}}
+          <div class="ih-trade-coin-field">
+            <label>{{label}}</label>
+            <input type="number" min="0" class="ih-trade-coin-input"
+                   data-coin-input data-side="left" data-currency="{{key}}"
+                   value="{{lookup ../leftCoins key}}">
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-trade-drop-hint">Перетащи предмет сюда</div>
+      </div>
+
+      {{!-- Инвентарь игрока --}}
+      <div class="ih-trade-inv-panel">
+        <div class="ih-trade-inv-header">
+          <input class="ih-trade-search" type="text" placeholder="Поиск..."
+                 data-search data-side="left" value="{{searchLeft}}">
+          <span class="ih-trade-inv-title">Инвентарь игрока</span>
+        </div>
+
+        {{!-- Фильтры --}}
+        <div class="ih-trade-filters right">
+          {{#each charCategories}}
+          <a class="ih-trade-filter {{#if (eq key ../filterLeft)}}is-active{{/if}}"
+             data-filter data-side="left" data-category="{{key}}">{{label}}</a>
+          {{/each}}
+        </div>
+
+        {{!-- Предметы --}}
+        <div class="ih-trade-inv-list right">
+          {{#each charItems}}
+          <div class="ih-trade-inv-item" draggable="true"
+               data-item-id="{{id}}" data-side="left"
+               title="{{name}} — {{price}} мед. | Двойной клик или перетащи в предложение">
+            <div class="ih-trade-inv-price">{{price}}<span>мед.</span></div>
+            <div class="ih-trade-inv-info right">
+              <div class="ih-trade-inv-name">{{name}}</div>
+              <div class="ih-trade-inv-meta">
+                <span class="ih-trade-inv-qty">×{{qty}}</span>
+                <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
+              </div>
+            </div>
+            <img class="ih-trade-inv-icon" src="{{img}}" alt="{{name}}">
+          </div>
+          {{else}}
+          <div class="ih-trade-empty-inv">Нет предметов</div>
+          {{/each}}
+        </div>
+      </div>
+
+    </div>{{!-- .ih-trade-col right --}}
+  </div>{{!-- .ih-trade-body --}}
+
+</div>{{!-- .ih-trade-app --}}

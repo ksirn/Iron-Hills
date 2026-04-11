@@ -223,6 +223,109 @@ Hooks.once("ready", async () => {
   }
   void migrateAbdomenForAllActors();
 
+  // Миграция: добавить soulReserve акторам у которых его нет
+  async function migrateSoulReserveForAllActors() {
+    for (const actor of game.actors ?? []) {
+      try {
+        if (actor.type !== "character") continue;
+        const sr = actor.system?.resources?.soulReserve;
+        if (sr !== undefined) continue;
+
+        await actor.update({
+          "system.resources.soulReserve": { mana: 0, energy: 0, daysSinceDeath: 0 }
+        });
+        console.log(`Iron Hills | Added soulReserve to: ${actor.name}`);
+      } catch (err) {
+        console.error("Iron Hills | soulReserve migration error", actor?.name, err);
+      }
+    }
+  }
+  void migrateSoulReserveForAllActors();
+
+  // Миграция: обновить NPC на новую структуру (части тела + новый combat)
+  async function migrateNpcStructure() {
+    for (const actor of game.actors ?? []) {
+      try {
+        if (actor.type !== "npc") continue;
+        const updates = {};
+
+        // Если hp — одна полоска (старая monster-система) → конвертируем в части тела
+        const hp = actor.system?.resources?.hp;
+        if (hp && hp.value !== undefined && hp.torso === undefined) {
+          const baseHp = Number(hp.value ?? 30);
+          updates["system.resources.hp"] = {
+            head:     { value: Math.ceil(baseHp * 0.25), max: Math.ceil(baseHp * 0.25) },
+            torso:    { value: Math.ceil(baseHp * 0.50), max: Math.ceil(baseHp * 0.50) },
+            abdomen:  { value: Math.ceil(baseHp * 0.40), max: Math.ceil(baseHp * 0.40) },
+            leftArm:  { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
+            rightArm: { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
+            leftLeg:  { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) },
+            rightLeg: { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) }
+          };
+        }
+
+        // Добавить базовый порог если нет
+        if (actor.system?.combat?.baseThreshold === undefined) {
+          updates["system.combat.baseThreshold"] = 4;
+        }
+
+        // Добавить abdomen если нет
+        if (actor.system?.resources?.hp?.torso !== undefined &&
+            actor.system?.resources?.hp?.abdomen === undefined) {
+          updates["system.resources.hp.abdomen"] = { value: 25, max: 25 };
+        }
+
+        if (Object.keys(updates).length) {
+          await actor.update(updates);
+          console.log(`Iron Hills | NPC migrated: ${actor.name}`);
+        }
+      } catch (err) {
+        console.error("Iron Hills | NPC migration error", actor?.name, err);
+      }
+    }
+  }
+  void migrateNpcStructure();
+
+  // GM-команда: прошёл день после смерти — тикаем резерв
+  game.ironHills.tickSoulDecay = async () => {
+    if (!game.user?.isGM) return;
+    let ticked = 0;
+    for (const actor of game.actors ?? []) {
+      try {
+        if (actor.type !== "character") continue;
+        const sr = actor.system?.resources?.soulReserve;
+        if (!sr) continue;
+        if (sr.daysSinceDeath <= 0) continue; // живой или воскрешён
+
+        const updates = {
+          "system.resources.soulReserve.daysSinceDeath": sr.daysSinceDeath + 1,
+          "system.resources.mana.max": Math.max(0, Number(actor.system?.resources?.mana?.max ?? 10) - 1),
+          "system.resources.energy.max": Math.max(0, Number(actor.system?.resources?.energy?.max ?? 10) - 1)
+        };
+
+        const newManaMax = updates["system.resources.mana.max"];
+        const newEnergyMax = updates["system.resources.energy.max"];
+
+        await actor.update(updates);
+        ticked++;
+
+        if (newManaMax <= 0 || newEnergyMax <= 0) {
+          await ChatMessage.create({
+            content: `<b style="color:#ef4444">☠ ${actor.name}</b> — резерв иссяк. Пробуждённый потерян навсегда. Требуется создать нового персонажа.`
+          });
+        } else {
+          await ChatMessage.create({
+            content: `⏳ <b>${actor.name}</b> — душа угасает. Мана: ${newManaMax}, Энергия: ${newEnergyMax}. Осталось дней: ~${Math.min(newManaMax, newEnergyMax)}`
+          });
+        }
+      } catch (err) {
+        console.error("Iron Hills | soul decay tick error", actor?.name, err);
+      }
+    }
+    if (ticked === 0) ui.notifications.info("Нет персонажей в состоянии смерти.");
+    else ui.notifications.info(`Тик угасания души: ${ticked} персонажей.`);
+  };
+
   for (const actor of game.actors ?? []) {
     try {
       await ensureCombatActorBodyStatus(actor);

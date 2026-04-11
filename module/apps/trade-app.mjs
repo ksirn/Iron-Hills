@@ -61,74 +61,126 @@ const CATEGORY_LABELS = {
 const CURRENCY_ORDER = ["copper", "silver", "gold", "platinum"];
 const CURRENCY_LABELS = { copper: "Медь", silver: "Серебро", gold: "Золото", platinum: "Платина" };
 
+// Форматирует цену в меди в читаемый вид (наибольшая валюта)
+function formatPrice(copper) {
+  if (!copper || copper <= 0) return { val: "—", currency: "", cssClass: "" };
+  if (copper >= 1000000) return { val: (copper / 1000000).toFixed(copper % 1000000 === 0 ? 0 : 1), currency: "пл.", cssClass: "ih-trade-price-platinum" };
+  if (copper >= 10000)   return { val: (copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1),   currency: "зол.", cssClass: "ih-trade-price-gold" };
+  if (copper >= 100)     return { val: (copper / 100).toFixed(copper % 100 === 0 ? 0 : 1),       currency: "сер.", cssClass: "ih-trade-price-silver" };
+  return { val: copper, currency: "мед.", cssClass: "ih-trade-price-copper" };
+}
+
+// Взрыв кубов для любого навыка — используется в торговле, атаке и т.д.
+async function explodingDiceRoll(skillValue) {
+  const rolls = [];
+  let total = 0;
+  let currentDie = Math.max(2, skillValue * 2);
+  let exploded = false;
+
+  while (true) {
+    const roll = await new Roll(`1d${currentDie}`).evaluate();
+    const result = roll.total;
+    rolls.push({ die: currentDie, result });
+    total = result; // берём результат последнего куба, не сумму
+
+    // d2 не взрывается — монетка есть монетка
+    if (currentDie === 2) break;
+
+    // Не максимум — стоп
+    if (result < currentDie) break;
+
+    // Максимум — предлагаем перейти на следующий куб
+    const nextDie = Math.min(currentDie + 2, 20);
+    if (nextDie === currentDie) break; // уже d20
+
+    const confirmed = await Dialog.confirm({
+      title: "💥 Взрыв куба!",
+      content: `
+        <div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;">
+          <p>Выпало <b style="color:#facc15;font-size:18px">${result}</b> на d${currentDie} — максимум!</p>
+          <p>Перейти на <b style="color:#5b9cf6">d${nextDie}</b>? Результат может быть и хуже.</p>
+          <p style="font-size:11px;color:#6a7d99;">Отмена — зафиксировать ${result}</p>
+        </div>
+      `
+    });
+
+    if (!confirmed) break;
+    exploded = true;
+    currentDie = nextDie;
+  }
+
+  return { total, rolls, exploded };
+}
+
+
+
 // ─── State ──────────────────────────────────────────────────
 // offer = { itemId, name, qty, icon, category }
 // coins = { copper, silver, gold, platinum }
 
-class TradeState {
-  constructor() {
-    this.leftOffer  = [];  // что предлагает левая сторона (игрок)
-    this.rightOffer = [];  // что предлагает правая сторона (торговец/NPC)
-    this.leftCoins  = { copper: 0, silver: 0, gold: 0, platinum: 0 };
-    this.rightCoins = { copper: 0, silver: 0, gold: 0, platinum: 0 };
-    this.leftReady  = false;
-    this.rightReady = false;
-    this.bargainUsed = false;
-    this.bargainDiscount = 0; // % скидки от торговли
-    this.filter     = { left: "all", right: "all", leftSearch: "", rightSearch: "" };
-  }
+function makeTradeState() {
+  return {
+    leftOffer:       [],
+    rightOffer:      [],
+    leftCoins:       { copper: 0, silver: 0, gold: 0, platinum: 0 },
+    rightCoins:      { copper: 0, silver: 0, gold: 0, platinum: 0 },
+    leftReady:       false,
+    rightReady:      false,
+    bargainUsed:     false,
+    bargainDiscount: 0,
+    filter: { left: "all", right: "all", leftSearch: "", rightSearch: "" }
+  };
+}
 
-  reset() {
-    this.leftOffer  = [];
-    this.rightOffer = [];
-    this.leftCoins  = { copper: 0, silver: 0, gold: 0, platinum: 0 };
-    this.rightCoins = { copper: 0, silver: 0, gold: 0, platinum: 0 };
-    this.leftReady  = false;
-    this.rightReady = false;
-    this.bargainUsed = false;
-    this.bargainDiscount = 0;
-  }
+function resetState(s) {
+  s.leftOffer       = [];
+  s.rightOffer      = [];
+  s.leftCoins       = { copper: 0, silver: 0, gold: 0, platinum: 0 };
+  s.rightCoins      = { copper: 0, silver: 0, gold: 0, platinum: 0 };
+  s.leftReady       = false;
+  s.rightReady      = false;
+  s.bargainUsed     = false;
+  s.bargainDiscount = 0;
+}
 
-  addToOffer(side, item, qty = 1) {
-    const offer = side === "left" ? this.leftOffer : this.rightOffer;
-    const existing = offer.find(o => o.itemId === item.id);
-    if (existing) {
-      existing.qty = Math.min(existing.qty + qty, Number(item.system?.quantity ?? 1));
-    } else {
-      offer.push({
-        itemId: item.id,
-        name:   item.name,
-        qty:    Math.min(qty, Number(item.system?.quantity ?? 1)),
-        icon:   item.img ?? "icons/svg/item-bag.svg",
-        category: itemCategory(item),
-        basePrice: Number(item.system?.price ?? item.system?.basePrice ?? 0)
-      });
-    }
-    // Сбрасываем готовность при изменении
-    this.leftReady = false;
-    this.rightReady = false;
+function addToOffer(s, side, item, qty = 1) {
+  const offer = side === "left" ? s.leftOffer : s.rightOffer;
+  const existing = offer.find(o => o.itemId === item.id);
+  const maxQty = Number(item.system?.quantity ?? 1);
+  if (existing) {
+    existing.qty = Math.min(existing.qty + qty, maxQty);
+  } else {
+    offer.push({
+      itemId:    item.id,
+      name:      item.name,
+      qty:       Math.min(qty, maxQty),
+      icon:      item.img ?? "icons/svg/item-bag.svg",
+      category:  itemCategory(item),
+      basePrice: Number(item.system?.price ?? item.system?.basePrice ?? 0)
+    });
   }
+  s.leftReady  = false;
+  s.rightReady = false;
+}
 
-  removeFromOffer(side, itemId) {
-    if (side === "left") {
-      this.leftOffer = this.leftOffer.filter(o => o.itemId !== itemId);
-    } else {
-      this.rightOffer = this.rightOffer.filter(o => o.itemId !== itemId);
-    }
-    this.leftReady = false;
-    this.rightReady = false;
-  }
+function removeFromOffer(s, side, itemId) {
+  if (side === "left")  s.leftOffer  = s.leftOffer.filter(o => o.itemId !== itemId);
+  else                  s.rightOffer = s.rightOffer.filter(o => o.itemId !== itemId);
+  s.leftReady  = false;
+  s.rightReady = false;
+}
 
-  totalOfferValue(side) {
-    const offer = side === "left" ? this.leftOffer : this.rightOffer;
-    const coins  = side === "left" ? this.leftCoins  : this.rightCoins;
-    const itemVal = offer.reduce((sum, o) => sum + o.basePrice * o.qty, 0);
-    return itemVal + coinsToCopper(coins);
-  }
+function totalOfferValue(s, side) {
+  const offer = Array.isArray(side === "left" ? s.leftOffer : s.rightOffer)
+    ? (side === "left" ? s.leftOffer : s.rightOffer)
+    : [];
+  const coins = side === "left" ? (s.leftCoins ?? {}) : (s.rightCoins ?? {});
+  const itemVal = offer.reduce((sum, o) => sum + (o?.basePrice ?? 0) * (o?.qty ?? 1), 0);
+  return itemVal + coinsToCopper(coins);
+}
 
-  balance() {
-    return this.totalOfferValue("right") - this.totalOfferValue("left");
-  }
+function tradeBalance(s) {
+  return totalOfferValue(s, "right") - totalOfferValue(s, "left");
 }
 
 // ─── App ────────────────────────────────────────────────────
@@ -140,7 +192,7 @@ class IronHillsTradeApp extends Application {
     this.merchant = merchantActor;
     this._characterUuid = "";
     this._busy = false;
-    this._state = new TradeState();
+    this._tradeState = makeTradeState();
     this._confirmTimeout = null;
   }
 
@@ -151,8 +203,14 @@ class IronHillsTradeApp extends Application {
       height: 700,
       resizable: true,
       title: "Торговля",
-      dragDrop: [{ dragSelector: ".ih-trade-inv-item", dropSelector: ".ih-trade-offer-zone" }]
+      dragDrop: []
     });
+  }
+
+  setPosition(options = {}) {
+    // Защита от падения когда element ещё не в DOM
+    if (!this.element || !this.element[0] || !document.body.contains(this.element[0])) return;
+    return super.setPosition(options);
   }
 
   get template() {
@@ -165,9 +223,17 @@ class IronHillsTradeApp extends Application {
   }
 
   async getData() {
+    // Гарантируем что state инициализирован
+    if (!this._tradeState || typeof this._tradeState !== "object") this._tradeState = makeTradeState();
+    const s = this._tradeState;
+    if (!Array.isArray(s.leftOffer))  s.leftOffer  = [];
+    if (!Array.isArray(s.rightOffer)) s.rightOffer = [];
+    if (!s.leftCoins  || typeof s.leftCoins  !== "object") s.leftCoins  = { copper:0, silver:0, gold:0, platinum:0 };
+    if (!s.rightCoins || typeof s.rightCoins !== "object") s.rightCoins = { copper:0, silver:0, gold:0, platinum:0 };
+    if (!s.filter     || typeof s.filter     !== "object") s.filter     = { left:"all", right:"all", leftSearch:"", rightSearch:"" };
+
     const character = this._getCharacter();
     const merchant  = getLiveActor(this.merchant);
-    const s = this._state;
 
     if (!this._characterUuid && character) {
       this._characterUuid = character.uuid;
@@ -176,21 +242,33 @@ class IronHillsTradeApp extends Application {
     const isGM = Boolean(game.user?.isGM);
 
     // Инвентари (за вычетом уже в предложении)
-    const charItems    = this._buildInventoryView(character, "left");
-    const merchantItems = this._buildInventoryView(merchant, "right");
+    const charItems     = character ? (this._buildInventoryView(character, "left")  ?? []) : [];
+    const merchantItems = merchant  ? (this._buildInventoryView(merchant,  "right") ?? []) : [];
 
     // Валюта
     const charCoins     = getCoins(character);
     const merchantCoins = getCoins(merchant);
 
     // Баланс
-    const balance = s.balance();
+    const balance = tradeBalance(s);
     const balanceCoins = copperToCoins(Math.abs(balance));
 
     // Репутация
     const mods = character && merchant
       ? getTradePriceModifiers(character, merchant)
       : { relationScore: 0, buyModifier: 1, sellModifier: 1, relationPositive: true };
+
+    // Раскладываем монеты предложений в плоские поля для шаблона
+    const leftCoinsFlat  = { ...s.leftCoins };
+    const rightCoinsFlat = { ...s.rightCoins };
+
+    // Форматируем валюту как массив с value для шаблона
+    const currenciesWithValues = CURRENCY_ORDER.map(k => ({
+      key:        k,
+      label:      CURRENCY_LABELS[k],
+      leftValue:  leftCoinsFlat[k]  ?? 0,
+      rightValue: rightCoinsFlat[k] ?? 0
+    }));
 
     return {
       isGM,
@@ -199,37 +277,29 @@ class IronHillsTradeApp extends Application {
       merchantTier: merchant?.system?.info?.tier ?? 1,
       characterName: character?.name ?? "—",
       characterImg:  character?.img  ?? "",
-      tradeCharacterOptions: getTradeCharacterOptions(),
+      tradeCharacterOptions: getTradeCharacterOptions() ?? [],
       characterUuid: this._characterUuid,
 
-      tradeSummary: buildTradeSummary(merchant),
+      tradeSummary: merchant ? buildTradeSummary(merchant) : {},
       reputation:   mods.relationScore ?? 0,
       reputationPositive: mods.relationPositive,
 
       // Инвентари
-      charItems,
-      merchantItems,
-      charCategories:     this._categories(charItems),
-      merchantCategories: this._categories(merchantItems),
+      charItems:     charItems     ?? [],
+      merchantItems: merchantItems ?? [],
+      charCategories:     this._categories(charItems     ?? []),
+      merchantCategories: this._categories(merchantItems ?? []),
       filterLeft:   s.filter.left,
       filterRight:  s.filter.right,
       searchLeft:   s.filter.leftSearch,
       searchRight:  s.filter.rightSearch,
 
       // Предложения
-      leftOffer:  s.leftOffer,
-      rightOffer: s.rightOffer,
+      leftOffer:  s.leftOffer  ?? [],
+      rightOffer: s.rightOffer ?? [],
 
-      // Монеты в предложении
-      leftCoins:  s.leftCoins,
-      rightCoins: s.rightCoins,
-      currencies: CURRENCY_ORDER.map(k => ({ key: k, label: CURRENCY_LABELS[k] })),
-
-      // Монеты в наличии (для подсказок)
-      charCoinCopper:     charCoins.copper,
-      charCoinSilver:     charCoins.silver,
-      charCoinGold:       charCoins.gold,
-      charCoinPlatinum:   charCoins.platinum,
+      // Монеты — плоские поля + массив для итерации
+      currencies: currenciesWithValues,
 
       // Статусы
       leftReady:   s.leftReady,
@@ -249,32 +319,40 @@ class IronHillsTradeApp extends Application {
 
   _buildInventoryView(actor, side) {
     if (!actor) return [];
-    const s = this._state;
-    const offerIds = (side === "left" ? s.leftOffer : s.rightOffer).map(o => o.itemId);
-    const filter   = side === "left" ? s.filter.left  : s.filter.right;
-    const search   = (side === "left" ? s.filter.leftSearch : s.filter.rightSearch).toLowerCase();
+    const items = actor.items;
+    if (!items) return [];
 
-    return actor.items
-      .filter(item => {
-        if (offerIds.includes(item.id)) return false;
-        if (filter !== "all" && itemCategory(item) !== filter) return false;
-        if (search && !item.name.toLowerCase().includes(search)) return false;
-        return true;
-      })
-      .map(item => ({
-        id:       item.id,
-        name:     item.name,
-        img:      item.img ?? "icons/svg/item-bag.svg",
-        qty:      Number(item.system?.quantity ?? 1),
-        category: itemCategory(item),
+    const s = this._tradeState;
+    const leftOff  = Array.isArray(s.leftOffer)  ? s.leftOffer  : [];
+    const rightOff = Array.isArray(s.rightOffer) ? s.rightOffer : [];
+    const offerIds = (side === "left" ? leftOff : rightOff).map(o => o.itemId);
+    const filter   = side === "left" ? (s.filter?.left  ?? "all") : (s.filter?.right ?? "all");
+    const search   = ((side === "left" ? s.filter?.leftSearch : s.filter?.rightSearch) ?? "").toLowerCase();
+
+    const result = [];
+    for (const item of items) {
+      if (!item?.id || !item?.name) continue;
+      if (offerIds.includes(item.id)) continue;
+      if (filter !== "all" && itemCategory(item) !== filter) continue;
+      if (search && !item.name.toLowerCase().includes(search)) continue;
+      result.push({
+        id:            item.id,
+        name:          item.name,
+        img:           item.img ?? "icons/svg/item-bag.svg",
+        qty:           Number(item.system?.quantity ?? 1),
+        category:      itemCategory(item),
         categoryLabel: CATEGORY_LABELS[itemCategory(item)] ?? "Прочее",
-        tier:     Number(item.system?.tier ?? 1),
-        price:    Number(item.system?.price ?? item.system?.basePrice ?? 0),
+        tier:          Number(item.system?.tier ?? 1),
+        price:         Number(item.system?.price ?? item.system?.basePrice ?? 0),
+        priceFormatted: formatPrice(Number(item.system?.price ?? item.system?.basePrice ?? 0)),
         side
-      }));
+      });
+    }
+    return result;
   }
 
   _categories(items) {
+    if (!Array.isArray(items)) return [{ key: "all", label: "Все" }];
     const cats = new Set(items.map(i => i.category));
     return [
       { key: "all", label: "Все" },
@@ -284,38 +362,50 @@ class IronHillsTradeApp extends Application {
     ];
   }
 
-  // ─── Drag & Drop ─────────────────────────────────────────
+  // ─── Drag & Drop (нативный HTML5) ───────────────────────
 
   _onDragStart(event) {
-    const el = event.currentTarget;
-    const itemId = el.dataset.itemId;
-    const side   = el.dataset.side;
-    event.dataTransfer.setData("text/plain", JSON.stringify({ itemId, side }));
+    const el = event?.currentTarget;
+    if (!el) return;
+    const itemId = el.dataset?.itemId;
+    const side   = el.dataset?.side;
+    if (!itemId || !side) return;
+    this._dragData = { itemId, side };
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      try { event.dataTransfer.setData("text/plain", JSON.stringify({ itemId, side })); } catch(e) {}
+    }
   }
 
   _onDrop(event) {
-    event.preventDefault();
-    let data;
-    try { data = JSON.parse(event.dataTransfer.getData("text/plain")); }
-    catch { return; }
+    if (event?.preventDefault) event.preventDefault();
+    if (event?.stopPropagation) event.stopPropagation();
+
+    let data = this._dragData ?? null;
+    if (!data && event?.dataTransfer) {
+      try { const raw = event.dataTransfer.getData("text/plain"); if (raw) data = JSON.parse(raw); } catch(e) {}
+    }
+    this._dragData = null;
+    if (!data?.itemId || !data?.side) return;
 
     const { itemId, side } = data;
-    const dropZone = event.currentTarget;
-    const targetSide = dropZone.dataset.offerSide;
-
-    // Перетаскивать можно только в свою сторону
-    // Левая (игрок) → leftOffer, правая (торговец/GM) → rightOffer
-    if (side !== targetSide) return;
+    const targetSide = event?.currentTarget?.dataset?.offerSide;
+    const isGM = Boolean(game.user?.isGM);
+    if (side === "left"  && targetSide !== "left")               return;
+    if (side === "right" && targetSide !== "right" && !isGM)     return;
 
     const character = this._getCharacter();
     const merchant  = getLiveActor(this.merchant);
     const actor = side === "left" ? character : merchant;
     if (!actor) return;
-
     const item = actor.items.get(itemId);
     if (!item) return;
 
-    this._state.addToOffer(side, item, 1);
+    if (!this._tradeState) this._tradeState = makeTradeState();
+    if (!Array.isArray(this._tradeState.leftOffer))  this._tradeState.leftOffer  = [];
+    if (!Array.isArray(this._tradeState.rightOffer)) this._tradeState.rightOffer = [];
+
+    addToOffer(this._tradeState, side, item, 1);
     this.render(false);
   }
 
@@ -324,12 +414,17 @@ class IronHillsTradeApp extends Application {
   activateListeners(html) {
     super.activateListeners(html);
 
-    // Drag items from inventory
-    html.find(".ih-trade-inv-item").on("dragstart", this._onDragStart.bind(this));
+    // Drag items from inventory (нативные HTML5 события)
+    html.find(".ih-trade-inv-item").on("dragstart", (e) => this._onDragStart(e.originalEvent ?? e));
 
     // Drop zones
-    html.find(".ih-trade-offer-zone").on("dragover", e => e.preventDefault());
-    html.find(".ih-trade-offer-zone").on("drop", this._onDrop.bind(this));
+    html.find(".ih-trade-offer-zone").on("dragover",  e => { e.preventDefault(); e.stopPropagation(); });
+    html.find(".ih-trade-offer-zone").on("dragleave", e => { e.currentTarget.classList.remove("drag-over"); });
+    html.find(".ih-trade-offer-zone").on("dragenter", e => { e.preventDefault(); e.currentTarget.classList.add("drag-over"); });
+    html.find(".ih-trade-offer-zone").on("drop", (e) => {
+      e.currentTarget.classList.remove("drag-over");
+      this._onDrop(e.originalEvent ?? e);
+    });
 
     // Double-click to add to offer
     html.find(".ih-trade-inv-item").on("dblclick", event => {
@@ -337,20 +432,20 @@ class IronHillsTradeApp extends Application {
       const actor = side === "left" ? this._getCharacter() : getLiveActor(this.merchant);
       if (!actor) return;
       const item = actor.items.get(itemId);
-      if (item) { this._state.addToOffer(side, item, 1); this.render(false); }
+      if (item) { addToOffer(this._tradeState, side, item, 1); this.render(false); }
     });
 
     // Remove from offer
     html.find("[data-remove-offer]").on("click", event => {
       const { itemId, side } = event.currentTarget.dataset;
-      this._state.removeFromOffer(side, itemId);
+      removeFromOffer(this._tradeState, side, itemId);
       this.render(false);
     });
 
     // Character select
     html.find("[data-char-select]").on("change", event => {
       this._characterUuid = event.currentTarget.value;
-      this._state.reset();
+      resetState(this._tradeState);
       this.render(false);
     });
 
@@ -358,26 +453,26 @@ class IronHillsTradeApp extends Application {
     html.find("[data-coin-input]").on("change", event => {
       const { side, currency } = event.currentTarget.dataset;
       const val = Math.max(0, parseInt(event.currentTarget.value) || 0);
-      if (side === "left")  this._state.leftCoins[currency]  = val;
-      if (side === "right") this._state.rightCoins[currency] = val;
+      if (side === "left")  this._tradeState.leftCoins[currency]  = val;
+      if (side === "right") this._tradeState.rightCoins[currency] = val;
       this.render(false);
     });
 
     // Filter
     html.find("[data-filter]").on("click", event => {
       const { side, category } = event.currentTarget.dataset;
-      if (side === "left")  this._state.filter.left  = category;
-      if (side === "right") this._state.filter.right = category;
-      this.render(false);
+      if (side === "left")  this._tradeState.filter.left  = category;
+      if (side === "right") this._tradeState.filter.right = category;
+      this.render(true);
     });
 
     // Search
     html.find("[data-search]").on("input", event => {
       const side = event.currentTarget.dataset.side;
       const val  = event.currentTarget.value;
-      if (side === "left")  this._state.filter.leftSearch  = val;
-      if (side === "right") this._state.filter.rightSearch = val;
-      this.render(false);
+      if (side === "left")  this._tradeState.filter.leftSearch  = val;
+      if (side === "right") this._tradeState.filter.rightSearch = val;
+      this.render(true);
     });
 
     // Кнопка "Поторговаться"
@@ -392,7 +487,7 @@ class IronHillsTradeApp extends Application {
 
     // Готов (игрок)
     html.find("[data-ready-left]").on("click", () => {
-      this._state.leftReady = !this._state.leftReady;
+      this._tradeState.leftReady = !this._tradeState.leftReady;
       this._checkBothReady();
       this.render(false);
     });
@@ -403,14 +498,14 @@ class IronHillsTradeApp extends Application {
         ui.notifications.warn("Только GM может подтвердить за торговца.");
         return;
       }
-      this._state.rightReady = !this._state.rightReady;
+      this._tradeState.rightReady = !this._tradeState.rightReady;
       this._checkBothReady();
       this.render(false);
     });
 
     // Отмена
     html.find("[data-cancel-trade]").on("click", () => {
-      this._state.reset();
+      resetState(this._tradeState);
       this.render(false);
     });
   }
@@ -418,7 +513,7 @@ class IronHillsTradeApp extends Application {
   // ─── Bargain ─────────────────────────────────────────────
 
   async _doBargain() {
-    if (this._state.bargainUsed) {
+    if (this._tradeState.bargainUsed) {
       ui.notifications.warn("Попытка торговаться уже использована.");
       return;
     }
@@ -430,41 +525,126 @@ class IronHillsTradeApp extends Application {
     const dieSize = tradeSkill * 2;
 
     // Диалог — выбор желаемой скидки (сложность растёт)
-    const discountChoice = await Dialog.wait({
-      title: "Поторговаться",
-      content: `
-        <p>Навык торговли: <b>d${dieSize}</b></p>
-        <p>Выберите желаемую скидку:</p>
-        <select id="bargain-discount" style="width:100%;padding:6px;background:#1b2333;color:#e8edf5;border:1px solid rgba(120,150,200,0.3);border-radius:6px;">
-          <option value="10">10% — Порог 3 (лёгко)</option>
-          <option value="20">20% — Порог 5 (нормально)</option>
-          <option value="30">30% — Порог 7 (сложно)</option>
-          <option value="40">40% — Порог 9 (очень сложно)</option>
-          <option value="50">50% — Порог ${dieSize} (почти невозможно)</option>
-        </select>
-      `,
-      buttons: {
-        roll: { label: "Бросить!", icon: "<i class='fas fa-dice'></i>" },
-        cancel: { label: "Отмена" }
-      },
-      default: "roll"
+    // Хардкод маппинг: каждый шаг 2.5% — уникальный порог 2..20
+    const BARGAIN_MAP = {
+              2.5:2, 5:3, 7.5:4, 10:5, 12.5:6, 15:7, 17.5:8, 20:9, 22.5:10,
+              25:11, 27.5:12, 30:13, 32.5:14, 35:15, 37.5:16, 40:17, 42.5:18, 45:19, 47.5:20
+            };
+    function getThreshold(pct) {
+      // Округляем до ближайшего шага 2.5
+      const step = Math.round(pct / 2.5) * 2.5;
+      return BARGAIN_MAP[step] ?? 20;
+    }
+
+    const discountChoice = await new Promise(resolve => {
+      const initialPct = 2.5;
+      const initialThresh = getThreshold(initialPct);
+      const initialChance = Math.round(Math.max(0, (dieSize - initialThresh + 1) / dieSize * 100));
+      // Для d2 показываем предупреждение
+      const lowSkillWarn = dieSize <= 2 ? "(навык торговли слишком низкий — только d2)" : "";
+
+      const dlg = new Dialog({
+        title: "Поторговаться",
+        content: `<div id="ih-bargain-root" style="
+            background:#141922;
+            border-radius:10px;
+            padding:14px;
+            font-family:'Segoe UI',sans-serif;
+            color:#a8b8d0;
+            display:flex;
+            flex-direction:column;
+            gap:14px;
+          ">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#6a7d99;">Навык торговли</span>
+            <span style="font-size:20px;font-weight:700;color:#5b9cf6;">d${dieSize}</span>
+          </div>
+          ${lowSkillWarn ? `<div style="font-size:11px;color:#f87171;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:6px;padding:6px 10px;">${lowSkillWarn}</div>` : ''}
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:12px;color:#6a7d99;">Желаемая скидка</span>
+              <span id="bpct" style="font-size:22px;font-weight:700;color:#e8edf5;">${initialPct}%</span>
+            </div>
+            <input type="range" id="bslider"
+              min="2.5" max="47.5" step="2.5" value="${initialPct}"
+              style="width:100%;height:6px;accent-color:#5b9cf6;cursor:pointer;background:#232e42;border-radius:3px;outline:none;border:none;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#3d4f68;">
+              <span>2.5%</span><span>25%</span><span>47.5%</span>
+            </div>
+          </div>
+
+          <div style="background:#1b2333;border:1px solid rgba(120,150,200,.16);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#6a7d99;">Порог проверки</span>
+              <span id="bthresh" style="font-size:18px;font-weight:700;color:#e8edf5;">${initialThresh}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:#6a7d99;">Шанс успеха</span>
+              <span id="bchance" style="font-size:13px;font-weight:600;color:#4ade80;">${initialChance}%</span>
+            </div>
+            <div style="font-size:11px;color:#6a7d99;">
+              Бросок <b style="color:#5b9cf6;">1d${dieSize}</b> ≥ <b id="bthresh2" style="color:#e8edf5;">${initialThresh}</b>
+            </div>
+          </div>
+        </div>
+        <script>
+          (function() {
+            var die = ${dieSize};
+            var BMAP = {
+              2.5:2, 5:3, 7.5:4, 10:5, 12.5:6, 15:7, 17.5:8, 20:9, 22.5:10,
+              25:11, 27.5:12, 30:13, 32.5:14, 35:15, 37.5:16, 40:17, 42.5:18, 45:19, 47.5:20
+            };
+            function thresh(pct) {
+              var step = Math.round(pct / 2.5) * 2.5;
+              return BMAP[step] || 20;
+            }
+            var slider = document.getElementById('bslider');
+            if (!slider) return;
+            slider.addEventListener('input', function() {
+              var pct = parseInt(this.value);
+              var t   = thresh(pct);
+              var ch  = Math.round(Math.max(0, (die - t + 1) / die * 100));
+              document.getElementById('bpct').textContent    = pct + '%';
+              document.getElementById('bthresh').textContent = t;
+              document.getElementById('bthresh2').textContent = t;
+              var chEl = document.getElementById('bchance');
+              chEl.textContent = ch + '%';
+              chEl.style.color = ch >= 70 ? '#4ade80' : ch >= 40 ? '#facc15' : '#f87171';
+            });
+          })();
+        </script>`,
+        buttons: {
+          roll: {
+            label: "<i class='fas fa-dice'></i> Бросить!",
+            callback: () => {
+              const s = document.getElementById('bslider');
+              resolve(s ? parseInt(s.value) : 10);
+            }
+          },
+          cancel: { label: "Отмена", callback: () => resolve(null) }
+        },
+        default: "roll",
+        close: () => resolve(null)
+      });
+      dlg.render(true);
     });
 
     if (!discountChoice) return;
+    const desiredDiscount = discountChoice;
+    const threshold = getThreshold(desiredDiscount);
 
-    const desiredDiscount = parseInt(document.getElementById("bargain-discount")?.value ?? "10");
-    const thresholds = { 10: 3, 20: 5, 30: 7, 40: 9, 50: dieSize };
-    const threshold = thresholds[desiredDiscount] ?? 5;
-
+    // Простой бросок навыка (взрыв кубов — отдельная система, добавим позже)
     const roll = await new Roll(`1d${dieSize}`).evaluate();
     const result = roll.total;
     const isAnticrit = result === 1 && dieSize > 2;
-    const isCrit = result === dieSize && dieSize > 2;
-    const success = result >= threshold;
+    const isCrit     = result === dieSize && dieSize > 2;
+    const success    = result >= threshold;
 
-    this._state.bargainUsed = true;
+    this._tradeState.bargainUsed = true;
 
-    let msg = `<b>${character.name}</b> пытается поторговаться (d${dieSize} = <b>${result}</b>, порог: ${threshold}).<br>`;
+    let msg = `<b>${character.name}</b> пытается поторговаться `
+            + `(d${dieSize} = <b>${result}</b>, порог: <b>${threshold}</b>).<br>`;
 
     if (isAnticrit) {
       msg += `<b style="color:#f87171">💀 Антикрит! Торговец обиделся — сессия торговли закрыта.</b>`;
@@ -478,13 +658,13 @@ class IronHillsTradeApp extends Application {
 
     if (success) {
       const bonus = isCrit ? desiredDiscount + 10 : desiredDiscount;
-      this._state.bargainDiscount = Math.min(50, bonus);
+      this._tradeState.bargainDiscount = Math.min(50, bonus);
       // Применяем скидку к базовым ценам предметов в инвентаре торговца
       msg += isCrit
         ? `<b style="color:#4ade80">✦ Крит! Скидка ${bonus}% получена + небольшой бонус к репутации!</b>`
         : `<b style="color:#4ade80">✓ Успех! Скидка ${desiredDiscount}%.</b>`;
     } else {
-      this._state.bargainDiscount = 0;
+      this._tradeState.bargainDiscount = 0;
       msg += `<span style="color:#a8b8d0">✗ Провал. Торговец не уступает.</span>`;
     }
 
@@ -495,7 +675,7 @@ class IronHillsTradeApp extends Application {
   // ─── Equalize ────────────────────────────────────────────
 
   _equalize() {
-    const balance = this._state.balance();
+    const balance = tradeBalance(this._tradeState);
     if (balance === 0) return;
 
     // balance > 0: торговец предлагает больше → игрок должен добавить монет
@@ -505,9 +685,9 @@ class IronHillsTradeApp extends Application {
     const coins  = copperToCoins(amount);
 
     if (side === "left") {
-      this._state.leftCoins  = coins;
+      this._tradeState.leftCoins  = coins;
     } else {
-      this._state.rightCoins = coins;
+      this._tradeState.rightCoins = coins;
     }
 
     this.render(false);
@@ -516,14 +696,14 @@ class IronHillsTradeApp extends Application {
   // ─── Both ready → execute ────────────────────────────────
 
   _checkBothReady() {
-    if (!this._state.leftReady || !this._state.rightReady) return;
+    if (!this._tradeState.leftReady || !this._tradeState.rightReady) return;
 
     // Запускаем таймер 3 сек
     if (this._confirmTimeout) clearTimeout(this._confirmTimeout);
     ui.notifications.info("Оба готовы! Обмен через 3 секунды...");
 
     this._confirmTimeout = setTimeout(async () => {
-      if (this._state.leftReady && this._state.rightReady) {
+      if (this._tradeState.leftReady && this._tradeState.rightReady) {
         await this._executeTrade();
       }
     }, 3000);
@@ -545,7 +725,7 @@ class IronHillsTradeApp extends Application {
     }
 
     try {
-      const s = this._state;
+      const s = this._tradeState;
       const updates = [];
 
       // Передать предметы из предложения игрока → торговцу
@@ -599,7 +779,7 @@ class IronHillsTradeApp extends Application {
         `
       });
 
-      this._state.reset();
+      resetState(this._tradeState);
       this.render(false);
       if (character.sheet?.rendered) character.sheet.render(false);
 

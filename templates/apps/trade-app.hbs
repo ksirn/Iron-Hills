@@ -77,7 +77,10 @@
                 <span class="ih-trade-inv-qty">×{{qty}}</span>
               </div>
             </div>
-            <div class="ih-trade-inv-price">{{price}}<span>мед.</span></div>
+            <div class="ih-trade-inv-price">
+              <span class="ih-trade-price-main-val {{priceFormatted.cssClass}}">{{priceFormatted.val}}</span>
+              <span class="ih-trade-price-currency">{{priceFormatted.currency}}</span>
+            </div>
           </div>
           {{else}}
           <div class="ih-trade-empty-inv">Нет предметов</div>
@@ -113,7 +116,7 @@
             <label>{{label}}</label>
             <input type="number" min="0" class="ih-trade-coin-input"
                    data-coin-input data-side="right" data-currency="{{key}}"
-                   value="{{lookup ../rightCoins key}}"
+                   value="{{rightValue}}"
                    {{#unless ../isGM}}readonly{{/unless}}>
           </div>
           {{/each}}
@@ -211,7 +214,7 @@
             <label>{{label}}</label>
             <input type="number" min="0" class="ih-trade-coin-input"
                    data-coin-input data-side="left" data-currency="{{key}}"
-                   value="{{lookup ../leftCoins key}}">
+                   value="{{leftValue}}">
           </div>
           {{/each}}
         </div>
@@ -241,7 +244,10 @@
           <div class="ih-trade-inv-item" draggable="true"
                data-item-id="{{id}}" data-side="left"
                title="{{name}} — {{price}} мед. | Двойной клик или перетащи в предложение">
-            <div class="ih-trade-inv-price">{{price}}<span>мед.</span></div>
+            <div class="ih-trade-inv-price">
+              <span class="ih-trade-price-main-val {{priceFormatted.cssClass}}">{{priceFormatted.val}}</span>
+              <span class="ih-trade-price-currency">{{priceFormatted.currency}}</span>
+            </div>
             <div class="ih-trade-inv-info right">
               <div class="ih-trade-inv-name">{{name}}</div>
               <div class="ih-trade-inv-meta">

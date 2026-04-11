@@ -1512,3 +1512,69 @@
   font-size: 11px;
   padding: 1px 3px;
 }
+
+/* ── Trade: улучшенные ценники ── */
+.ih-trade-inv-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.ih-trade-price-copper   { color: #cd7f32; }
+.ih-trade-price-silver   { color: #a8b8d0; }
+.ih-trade-price-gold     { color: var(--ih-hp-warn); }
+.ih-trade-price-platinum { color: #a78bfa; }
+
+.ih-trade-price-main-val {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ih-trade-price-currency {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--ih-text-2);
+  margin-left: 2px;
+}
+
+/* ── Trade: фильтры категорий улучшены ── */
+.ih-trade-filters {
+  display: flex;
+  gap: 3px;
+  padding: 5px 8px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-0);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  overflow-x: auto;
+}
+
+.ih-trade-filter {
+  padding: 3px 8px;
+  border-radius: var(--ih-radius-xl);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ih-text-2);
+  cursor: pointer;
+  text-decoration: none !important;
+  border: 1px solid transparent;
+  background: var(--ih-bg-2);
+  transition: var(--ih-transition);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ih-trade-filter:hover {
+  color: var(--ih-text-1);
+  border-color: var(--ih-border-1);
+  background: var(--ih-bg-3);
+}
+
+.ih-trade-filter.is-active {
+  background: var(--ih-accent-dim) !important;
+  border-color: var(--ih-accent) !important;
+  color: var(--ih-accent) !important;
+}

@@ -390,18 +390,24 @@ canContinuePendingAction:
 
       // Глобальные эффекты — показываются на портрете как иконки
       globalEffects: [
-        { key: "stunned",  label: "Оглушение",   icon: "fa-dizzy",         color: "var(--ih-hp-warn)",   active: num(actor.system?.conditions?.stunned, 0) > 0,  value: num(actor.system?.conditions?.stunned, 0) },
-        { key: "poison",   label: "Яд",           icon: "fa-skull",         color: "var(--ih-food)",      active: num(actor.system?.conditions?.poison, 0) > 0,   value: num(actor.system?.conditions?.poison, 0) },
-        { key: "burning",  label: "Горение",      icon: "fa-fire",          color: "var(--ih-hp-bad)",    active: num(actor.system?.conditions?.burning, 0) > 0,  value: num(actor.system?.conditions?.burning, 0) },
-        { key: "shock",    label: "Шок",          icon: "fa-bolt",          color: "var(--ih-mana)",      active: num(actor.system?.conditions?.shock, 0) > 0,    value: num(actor.system?.conditions?.shock, 0) },
-        { key: "bleeding", label: "Кровотечение", icon: "fa-droplet",       color: "var(--ih-hp-crit)",   active: num(actor.system?.conditions?.bleeding, 0) > 0, value: num(actor.system?.conditions?.bleeding, 0) }
+        { key: "stunned",  label: "Оглушение",   icon: "fa-dizzy",     color: "var(--ih-hp-warn)", active: num(actor.system?.conditions?.stunned, 0) > 0,                                                                            value: num(actor.system?.conditions?.stunned, 0) },
+        { key: "poison",   label: "Яд",           icon: "fa-skull",     color: "var(--ih-food)",    active: num(actor.system?.conditions?.poison, 0) > 0,                                                                             value: num(actor.system?.conditions?.poison, 0) },
+        { key: "burning",  label: "Горение",      icon: "fa-fire",      color: "var(--ih-hp-bad)",  active: num(actor.system?.conditions?.burning, 0) > 0,                                                                            value: num(actor.system?.conditions?.burning, 0) },
+        { key: "shock",    label: "Шок",          icon: "fa-bolt",      color: "var(--ih-mana)",    active: num(actor.system?.conditions?.shock, 0) > 0,                                                                              value: num(actor.system?.conditions?.shock, 0) },
+        { key: "bleeding", label: "Кровотечение", icon: "fa-droplet",   color: "var(--ih-hp-crit)", active: num(actor.system?.conditions?.bleeding, 0) > 0,                                                                           value: num(actor.system?.conditions?.bleeding, 0) },
+        { key: "silence",  label: "Безмолвие",   icon: "fa-volume-xmark", color: "#a78bfa",         active: num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),                                            value: "🔇" },
+        { key: "slow",     label: "Замедление",  icon: "fa-person-walking", color: "#94a3b8",        active: num(actor.system?.conditions?.slowPenalty, 0) > 0,                                                                        value: num(actor.system?.conditions?.slowPenalty, 0) },
+        { key: "feared",   label: "Страх",       icon: "fa-ghost",     color: "#c084fc",           active: num(actor.system?.conditions?.feared, 0) > 0,                                                                              value: num(actor.system?.conditions?.feared, 0) }
       ],
       hasGlobalEffects: [
         num(actor.system?.conditions?.stunned, 0) > 0,
         num(actor.system?.conditions?.poison, 0) > 0,
         num(actor.system?.conditions?.burning, 0) > 0,
         num(actor.system?.conditions?.shock, 0) > 0,
-        num(actor.system?.conditions?.bleeding, 0) > 0
+        num(actor.system?.conditions?.bleeding, 0) > 0,
+        num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),
+        num(actor.system?.conditions?.slowPenalty, 0) > 0,
+        num(actor.system?.conditions?.feared, 0) > 0
       ].some(Boolean),
 
       // Флаги для управления доступностью действий

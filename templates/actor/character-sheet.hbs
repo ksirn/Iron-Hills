@@ -1,775 +1,276 @@
-<form class="iron-hills-sheet">
-  <header class="sheet-header">
-    <div class="hero-header">
-      <div>
-        <h1>{{actor.name}}</h1>
-      <div class="hero-subline">
-        <span>Раса: {{overviewSummary.race}}</span>
-        <span>Возраст: {{overviewSummary.age}}</span>
-        <span>Защита: {{overviewSummary.defense}}</span>
-        <span>Монеты: {{overviewSummary.coins}}</span>
-      </div>
-      </div>
-      <div class="hero-states">
-        <span class="state-pill">Кровотечение: {{overviewSummary.bleeding}}</span>
-        <span class="state-pill">Шок: {{overviewSummary.shock}}</span>
-        <span class="state-pill">Яд: {{overviewSummary.poison}}</span>
-        <span class="state-pill">Горение: {{overviewSummary.burning}}</span>
-      </div>
-    </div>
-  </header>
+<form class="iron-hills-sheet ih-char-sheet">
 
-  <nav class="sheet-tabs tabs">
-    <a class="item active" data-tab="overview">Обзор</a>
-    <a class="item" data-tab="skills">Навыки</a>
-    <a class="item" data-tab="combat">Бой</a>
-    <a class="item" data-tab="magic">Магия</a>
-    <a class="item" data-tab="inventory">Инвентарь</a>
-    <a class="item" data-tab="trade">Торговля</a>
-    <a class="item" data-tab="reputation">Репутация</a>
-  </nav>
-
- <section class="sheet-body">
-  <div class="tab active" data-tab="overview">
-    <div class="hero-stats-grid">
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Энергия</div>
-        <div class="hero-stat-value">{{overviewSummary.energyValue}} / {{overviewSummary.energyMax}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Мана</div>
-        <div class="hero-stat-value">{{overviewSummary.manaValue}} / {{overviewSummary.manaMax}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Сытость</div>
-        <div class="hero-stat-value">{{overviewSummary.satietyValue}} / {{overviewSummary.satietyMax}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Жажда</div>
-        <div class="hero-stat-value">{{overviewSummary.hydrationValue}} / {{overviewSummary.hydrationMax}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Нагрузка</div>
-        <div class="hero-stat-value">{{overviewSummary.weightValue}} / {{overviewSummary.weightMax}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Тип нагрузки</div>
-        <div class="hero-stat-value">{{overviewSummary.encumbranceLabel}}</div>
-      </div>
-      <div class="hero-stat-card">
-        <div class="hero-stat-title">Монеты</div>
-        <div class="hero-stat-value">{{overviewSummary.coins}}</div>
+  {{!-- ШАПКА --}}
+  <div class="ih-cs-header">
+    <div class="ih-cs-portrait-wrap">
+      <img class="ih-cs-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+      <div class="ih-cs-effects">
+        {{#if system.conditions.bleeding}}<span class="ih-cs-fx" style="color:var(--ih-hp-crit)" title="Кровотечение: {{system.conditions.bleeding}}"><i class="fas fa-droplet"></i></span>{{/if}}
+        {{#if system.conditions.poison}}<span class="ih-cs-fx" style="color:var(--ih-food)" title="Яд: {{system.conditions.poison}}"><i class="fas fa-skull"></i></span>{{/if}}
+        {{#if system.conditions.burning}}<span class="ih-cs-fx" style="color:var(--ih-hp-bad)" title="Горение: {{system.conditions.burning}}"><i class="fas fa-fire"></i></span>{{/if}}
+        {{#if system.conditions.shock}}<span class="ih-cs-fx" style="color:var(--ih-mana)" title="Шок: {{system.conditions.shock}}"><i class="fas fa-bolt"></i></span>{{/if}}
+        {{#if system.conditions.stunned}}<span class="ih-cs-fx" style="color:var(--ih-hp-warn)" title="Оглушение: {{system.conditions.stunned}}"><i class="fas fa-dizzy"></i></span>{{/if}}
       </div>
     </div>
 
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Основное</h2>
-        <div class="grid two-col">
-          <label>Раса
-            <input type="text" name="system.info.race" value="{{system.info.race}}">
-          </label>
-          <label>Возраст
-            <input type="number" name="system.info.age" value="{{system.info.age}}">
-          </label>
+    <div class="ih-cs-identity">
+      <input class="ih-cs-name" type="text" name="name" value="{{actor.name}}">
+      <div class="ih-cs-meta-row">
+        <div class="ih-cs-meta-field">
+          <label>Раса</label>
+          <input type="text" name="system.info.race" value="{{system.info.race}}" placeholder="—">
         </div>
-      </div>
-
-      <div class="status-card">
-        <h2>Состояния</h2>
-        <div class="grid two-col">
-          <label>Кровотечение
-            <input type="number" name="system.conditions.bleeding" value="{{system.conditions.bleeding}}">
-          </label>
-          <label>Шок
-            <input type="number" name="system.conditions.shock" value="{{system.conditions.shock}}">
-          </label>
-          <label>Яд
-            <input type="number" name="system.conditions.poison" value="{{system.conditions.poison}}">
-          </label>
-          <label>Горение
-            <input type="number" name="system.conditions.burning" value="{{system.conditions.burning}}">
-          </label>
-          <label>Перелом левой руки
-            <input type="checkbox" name="system.conditions.fractures.leftArm" {{#if system.conditions.fractures.leftArm}}checked{{/if}}>
-          </label>
-          <label>Перелом правой руки
-            <input type="checkbox" name="system.conditions.fractures.rightArm" {{#if system.conditions.fractures.rightArm}}checked{{/if}}>
-          </label>
-          <label>Перелом левой ноги
-            <input type="checkbox" name="system.conditions.fractures.leftLeg" {{#if system.conditions.fractures.leftLeg}}checked{{/if}}>
-          </label>
-          <label>Перелом правой ноги
-            <input type="checkbox" name="system.conditions.fractures.rightLeg" {{#if system.conditions.fractures.rightLeg}}checked{{/if}}>
-          </label>
+        <div class="ih-cs-meta-field narrow-age">
+          <label>Возраст</label>
+          <input type="number" name="system.info.age" value="{{system.info.age}}">
+        </div>
+        <div class="ih-cs-meta-field">
+          <label>Фракция</label>
+          <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="—">
+        </div>
+        <div class="ih-cs-meta-field narrow">
+          <label>Ступень</label>
+          <span class="ih-cs-meta-value" title="Рассчитывается от максимального навыка">{{calculatedTier}}</span>
         </div>
       </div>
     </div>
 
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Ресурсы</h2>
-        <div class="grid two-col">
-          <label>Энергия
-            <input type="number" name="system.resources.energy.value" value="{{system.resources.energy.value}}">
-          </label>
-          <label>Макс. энергия
-            <input type="number" name="system.resources.energy.max" value="{{system.resources.energy.max}}">
-          </label>
-          <label>Мана
-            <input type="number" name="system.resources.mana.value" value="{{system.resources.mana.value}}">
-          </label>
-          <label>Макс. мана
-            <input type="number" name="system.resources.mana.max" value="{{system.resources.mana.max}}">
-          </label>
-          <label>Сытость
-            <input type="number" name="system.resources.satiety.value" value="{{system.resources.satiety.value}}">
-          </label>
-          <label>Макс. сытость
-            <input type="number" name="system.resources.satiety.max" value="{{system.resources.satiety.max}}">
-          </label>
-          <label>Жажда
-            <input type="number" name="system.resources.hydration.value" value="{{system.resources.hydration.value}}">
-          </label>
-          <label>Макс. жажда
-            <input type="number" name="system.resources.hydration.max" value="{{system.resources.hydration.max}}">
-          </label>
-          <label>Нагрузка
-            <input type="number" name="system.resources.weight.value" value="{{system.resources.weight.value}}">
-          </label>
-          <label>Макс. нагрузка
-            <input type="number" name="system.resources.weight.max" value="{{system.resources.weight.max}}">
-          </label>
-        </div>
-      </div>
-
-      <div class="status-card">
-        <h2>Здоровье по частям тела</h2>
-        <div class="grid two-col">
-          <label>Голова
-            <input type="number" name="system.resources.hp.head.value" value="{{system.resources.hp.head.value}}">
-          </label>
-          <label>Макс. голова
-            <input type="number" name="system.resources.hp.head.max" value="{{system.resources.hp.head.max}}">
-          </label>
-          <label>Торс
-            <input type="number" name="system.resources.hp.torso.value" value="{{system.resources.hp.torso.value}}">
-          </label>
-          <label>Макс. торс
-            <input type="number" name="system.resources.hp.torso.max" value="{{system.resources.hp.torso.max}}">
-          </label>
-          <label>Левая рука
-            <input type="number" name="system.resources.hp.leftArm.value" value="{{system.resources.hp.leftArm.value}}">
-          </label>
-          <label>Макс. левая рука
-            <input type="number" name="system.resources.hp.leftArm.max" value="{{system.resources.hp.leftArm.max}}">
-          </label>
-          <label>Правая рука
-            <input type="number" name="system.resources.hp.rightArm.value" value="{{system.resources.hp.rightArm.value}}">
-          </label>
-          <label>Макс. правая рука
-            <input type="number" name="system.resources.hp.rightArm.max" value="{{system.resources.hp.rightArm.max}}">
-          </label>
-          <label>Левая нога
-            <input type="number" name="system.resources.hp.leftLeg.value" value="{{system.resources.hp.leftLeg.value}}">
-          </label>
-          <label>Макс. левая нога
-            <input type="number" name="system.resources.hp.leftLeg.max" value="{{system.resources.hp.leftLeg.max}}">
-          </label>
-          <label>Правая нога
-            <input type="number" name="system.resources.hp.rightLeg.value" value="{{system.resources.hp.rightLeg.value}}">
-          </label>
-          <label>Макс. правая нога
-            <input type="number" name="system.resources.hp.rightLeg.max" value="{{system.resources.hp.rightLeg.max}}">
-          </label>
-        </div>
-      </div>
+    <div class="ih-cs-coins-block">
+      <div class="ih-cs-coins-title">Монеты</div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#cd7f32">Медь</span><input type="number" name="system.currency.copper" value="{{system.currency.copper}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#a8b8d0">Серебро</span><input type="number" name="system.currency.silver" value="{{system.currency.silver}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:var(--ih-hp-warn)">Золото</span><input type="number" name="system.currency.gold" value="{{system.currency.gold}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:var(--ih-mana)">Платина</span><input type="number" name="system.currency.platinum" value="{{system.currency.platinum}}" min="0" class="ih-cs-coin-input"></div>
     </div>
   </div>
 
-  <div class="tab" data-tab="skills">
-    <h2>Навыки</h2>
-    <div class="status-grid">
-      {{#each skillGroups}}
-        <div class="status-card">
-          <h3>{{this.label}}</h3>
-          {{#each this.skills}}
-            <div class="skill-row">
-              <span>{{this.label}}</span>
-              <input type="number" name="system.skills.{{this.key}}.value" value="{{this.value}}">
-              <span>EXP: {{this.exp}} / {{this.expNext}}</span>
-              <a data-skill-roll="{{this.key}}" data-label="{{this.label}}">Бросок</a>
+  {{!-- ТЕЛО --}}
+  <div class="ih-cs-body">
+
+    {{!-- ЛЕВАЯ: тело + ресурсы + душа --}}
+    <div class="ih-cs-left">
+
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">Тело</div>
+        <div class="ih-cs-body-layout">
+
+          {{!-- Силуэт человечка --}}
+          <div class="ih-cs-figure">
+            {{#each zones}}{{#if (eq key "head")}}
+            <div class="ih-cs-fig-part ih-cs-fig-head {{cssClass}}" title="{{tooltip}}">
+              <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+              <span class="ih-cs-fig-label">Г</span>
+              {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
+              {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
+              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             </div>
+            {{/if}}{{/each}}
+            <div class="ih-cs-fig-row">
+              {{#each zones}}{{#if (eq key "leftArm")}}
+              <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
+                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <span class="ih-cs-fig-label">Л</span>
+                {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+              </div>
+              {{/if}}{{/each}}
+              {{#each zones}}{{#if (eq key "torso")}}
+              <div class="ih-cs-fig-part ih-cs-fig-torso {{cssClass}}" title="{{tooltip}}">
+                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <span class="ih-cs-fig-label">Т</span>
+                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
+                {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+              </div>
+              {{/if}}{{/each}}
+              {{#each zones}}{{#if (eq key "rightArm")}}
+              <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
+                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <span class="ih-cs-fig-label">П</span>
+                {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+              </div>
+              {{/if}}{{/each}}
+            </div>
+            {{#each zones}}{{#if (eq key "abdomen")}}
+            <div class="ih-cs-fig-part ih-cs-fig-abdomen {{cssClass}}" title="{{tooltip}}">
+              <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+              <span class="ih-cs-fig-label">Ж</span>
+              {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
+              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+            </div>
+            {{/if}}{{/each}}
+            <div class="ih-cs-fig-row">
+              {{#each zones}}{{#if (eq key "leftLeg")}}
+              <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
+                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <span class="ih-cs-fig-label">Л</span>
+                {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+              </div>
+              {{/if}}{{/each}}
+              <div class="ih-cs-fig-gap"></div>
+              {{#each zones}}{{#if (eq key "rightLeg")}}
+              <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
+                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <span class="ih-cs-fig-label">П</span>
+                {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
+              </div>
+              {{/if}}{{/each}}
+            </div>
+          </div>{{!-- .ih-cs-figure --}}
+
+          {{!-- HP поля рядом с силуэтом --}}
+          <div class="ih-cs-hp-list">
+            {{#each zones}}
+            <div class="ih-cs-hp-row {{cssClass}}" title="{{tooltip}}">
+              <span class="ih-cs-hp-label">{{label}}</span>
+              <input type="number" name="system.resources.hp.{{key}}.value"
+                     value="{{value}}" class="ih-cs-hp-input">
+              <span class="ih-cs-hp-max">/{{max}}</span>
+              <div class="ih-cs-hp-bar-track">
+                <div class="ih-cs-hp-bar-fill" style="width:{{pct}}%"></div>
+              </div>
+              <div class="ih-cs-zone-dots">
+                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="Сильн. кровь {{trauma.majorBleeding}}"></span>{{/if}}
+                {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor" title="Кровь {{trauma.minorBleeding}}"></span>{{/if}}
+                {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture" title="Перелом"></span>{{/if}}
+                {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet" title="Жгут"></span>{{/if}}
+                {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed" title="Уничтожено"></span>{{/if}}
+              </div>
+            </div>
+            {{/each}}
+          </div>
+
+        </div>
+      </div>
+
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">Ресурсы</div>
+        <div class="ih-cs-resources">
+          <div class="ih-cs-res-row">
+            <span class="ih-cs-res-icon energy">⚡</span>
+            <span class="ih-cs-res-name">Энергия</span>
+            <div class="ih-cs-res-vals">
+              <input type="number" name="system.resources.energy.value" value="{{system.resources.energy.value}}" class="ih-cs-res-input">
+              <span class="ih-cs-res-max">/{{system.resources.energy.max}}</span>
+            </div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill energy" style="width:{{overviewSummary.energyPct}}%"></div></div>
+          </div>
+          <div class="ih-cs-res-row">
+            <span class="ih-cs-res-icon mana">✦</span>
+            <span class="ih-cs-res-name">Мана</span>
+            <div class="ih-cs-res-vals">
+              <input type="number" name="system.resources.mana.value" value="{{system.resources.mana.value}}" class="ih-cs-res-input">
+              <span class="ih-cs-res-max">/{{system.resources.mana.max}}</span>
+            </div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill mana" style="width:{{overviewSummary.manaPct}}%"></div></div>
+          </div>
+          <div class="ih-cs-res-row">
+            <span class="ih-cs-res-icon food">🍖</span>
+            <span class="ih-cs-res-name">Сытость</span>
+            <div class="ih-cs-res-vals">
+              <input type="number" name="system.resources.satiety.value" value="{{system.resources.satiety.value}}" class="ih-cs-res-input">
+              <span class="ih-cs-res-max">/{{system.resources.satiety.max}}</span>
+            </div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill food" style="width:{{overviewSummary.satietyPct}}%"></div></div>
+          </div>
+          <div class="ih-cs-res-row">
+            <span class="ih-cs-res-icon water">💧</span>
+            <span class="ih-cs-res-name">Жажда</span>
+            <div class="ih-cs-res-vals">
+              <input type="number" name="system.resources.hydration.value" value="{{system.resources.hydration.value}}" class="ih-cs-res-input">
+              <span class="ih-cs-res-max">/{{system.resources.hydration.max}}</span>
+            </div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill water" style="width:{{overviewSummary.hydrationPct}}%"></div></div>
+          </div>
+          <div class="ih-cs-res-row">
+            <span class="ih-cs-res-icon" style="color:var(--ih-text-2)">⚖</span>
+            <span class="ih-cs-res-name">Нагрузка</span>
+            <span class="ih-cs-res-static">{{overviewSummary.weightValue}}/{{overviewSummary.weightMax}}</span>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill" style="width:{{overviewSummary.weightPct}}%;background:var(--ih-text-2)"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">Резерв души</div>
+        <div class="ih-cs-soul-grid">
+          <div class="ih-cs-soul-item">
+            <span class="ih-cs-soul-label" style="color:var(--ih-energy)">Энергия</span>
+            <div class="ih-cs-soul-val">{{system.resources.soul.energyReserve.value}} / {{system.resources.soul.energyReserve.max}}</div>
+          </div>
+          <div class="ih-cs-soul-item">
+            <span class="ih-cs-soul-label" style="color:var(--ih-mana)">Мана</span>
+            <div class="ih-cs-soul-val">{{system.resources.soul.manaReserve.value}} / {{system.resources.soul.manaReserve.max}}</div>
+          </div>
+          {{#if system.resources.soulReserve.isDead}}
+          <div class="ih-cs-soul-warning">☠ Мёртв — день {{system.resources.soulReserve.daysSinceDeath}}</div>
+          {{/if}}
+        </div>
+      </div>
+
+    </div>
+
+    {{!-- ПРАВАЯ: навыки + инвентарь --}}
+    <div class="ih-cs-right">
+
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">Навыки</div>
+        <div class="ih-cs-skills">
+          {{#each skillGroups}}
+          <div class="ih-cs-skill-group">
+            <div class="ih-cs-skill-group-title">{{label}}</div>
+            {{#each skills}}
+            <div class="ih-cs-skill-row"
+                 data-skill-roll="{{key}}" data-label="{{label}}"
+                 style="cursor:pointer;" title="Кликни для броска">
+              <span class="ih-cs-skill-name">{{label}}</span>
+              <span class="ih-cs-skill-die">d{{dieSize}}</span>
+              <div class="ih-cs-skill-exp-track" title="{{exp}} / {{expNext}}">
+                <div class="ih-cs-skill-exp-fill" style="width:{{expPct}}%"></div>
+              </div>
+              <span class="ih-cs-skill-tier">{{value}}</span>
+            </div>
+            {{/each}}
+          </div>
           {{/each}}
         </div>
-      {{/each}}
-    </div>
-  </div>
+      </div>
 
-  <div class="tab" data-tab="combat">
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Бой</h2>
-        <div class="combat-summary-grid">
-          <div><b>Защита:</b> {{combatSummary.defense}}</div>
-          <div><b>Без оружия:</b> {{combatSummary.unarmedDamage}}</div>
-          <div><b>Энергия:</b> {{overviewSummary.energyValue}} / {{overviewSummary.energyMax}}</div>
-          <div><b>Нагрузка:</b> {{combatSummary.encumbranceLabel}}</div>
-          <div><b>Штраф нагрузки:</b> -{{combatSummary.encumbranceAttackPenalty}}</div>
-          <div><b>Множитель энергии:</b> x{{combatSummary.encumbranceEnergyMultiplier}}</div>
-          <div><b>Штраф ранений:</b> -{{combatSummary.injuriesAttackPenalty}}</div>
-          <div><b>Кровотечение:</b> {{combatSummary.bleeding}}</div>
-          <div><b>Шок:</b> {{combatSummary.shock}}</div>
-          <div><b>Яд:</b> {{combatSummary.poison}}</div>
-          <div><b>Горение:</b> {{combatSummary.burning}}</div>
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          Инвентарь
+          <span class="ih-cs-section-meta">{{overviewSummary.weightValue}}/{{overviewSummary.weightMax}} кг</span>
         </div>
-
-        <div class="weapon-panel-grid">
-          <div class="weapon-panel">
-            <h3>Правая рука</h3>
-            <p><b>{{combatDetailed.rightWeapon.name}}</b></p>
-            <p>Урон: {{combatDetailed.rightWeapon.damage}}</p>
-            <p>Энергия: {{combatDetailed.rightWeapon.energyCost}}</p>
-            <p>Навык: {{combatDetailed.rightWeapon.skill}}</p>
-            <p>Тип: {{combatDetailed.rightWeapon.damageType}}</p>
-            <p>{{#if combatDetailed.rightWeapon.twoHanded}}Двуручное{{else}}Одноручное{{/if}}</p>
-            <a
-              data-attack="rightHand"
-              class="{{#unless actionState.canAttackRight}}is-disabled{{/unless}}"
-              title="{{actionState.attackRightReason}}"
-            >
-              Атака правой рукой
-            </a>
-            {{#unless actionState.canAttackRight}}
-              <div class="muted-text">{{actionState.attackRightReason}}</div>
-            {{/unless}}
-          </div>
-
-          <div class="weapon-panel">
-            <h3>Левая рука</h3>
-            <p><b>{{combatDetailed.leftWeapon.name}}</b></p>
-            <p>Урон: {{combatDetailed.leftWeapon.damage}}</p>
-            <p>Энергия: {{combatDetailed.leftWeapon.energyCost}}</p>
-            <p>Навык: {{combatDetailed.leftWeapon.skill}}</p>
-            <p>Тип: {{combatDetailed.leftWeapon.damageType}}</p>
-            <p>{{#if combatDetailed.leftWeapon.twoHanded}}Двуручное{{else}}Одноручное{{/if}}</p>
-            <a
-              data-attack="leftHand"
-              class="{{#unless actionState.canAttackLeft}}is-disabled{{/unless}}"
-              title="{{actionState.attackLeftReason}}"
-            >
-              Атака левой рукой
-            </a>
-            {{#unless actionState.canAttackLeft}}
-              <div class="muted-text">{{actionState.attackLeftReason}}</div>
-            {{/unless}}
-          </div>
-        </div>
-
-        {{#if combatFlow.active}}
-          <div class="ih-sheet-combat-state">
-            <div><b>Боевой ход:</b> {{#if isCombatTurn}}ваш{{else}}не ваш{{/if}}</div>
-            <div><b>Секунд осталось:</b> {{combatRemainingSeconds}}</div>
-
-            {{#if pendingCombatAction}}
-              <div class="ih-sheet-pending-action">
-                <div><b>Длительное действие:</b> {{pendingCombatAction.label}}</div>
-                <div><b>Осталось:</b> {{pendingCombatAction.remainingSeconds}} сек.</div>
-
-                <div class="ih-sheet-pending-actions">
-                  {{#if canContinuePendingCombatAction}}
-                    <a class="button" data-action="continue-pending-combat">Продолжить</a>
-                  {{/if}}
-
-                  {{#if canCancelPendingCombatAction}}
-                    <a class="button" data-action="cancel-pending-combat">Отменить</a>
-                  {{/if}}
-                </div>
+        <div class="ih-cs-inventory">
+          {{#each groupedItems}}
+          {{#if items.length}}
+          <div class="ih-cs-inv-group">
+            <div class="ih-cs-inv-group-title">{{label}}</div>
+            {{#each items}}
+            <div class="ih-cs-inv-row">
+              <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
+              <span class="ih-cs-inv-name">{{name}}</span>
+              {{#if system.quantity}}<span class="ih-cs-inv-qty">×{{system.quantity}}</span>{{/if}}
+              <span class="ih-cs-inv-weight muted-text">{{system.weight}}кг</span>
+              <div class="ih-cs-inv-actions">
+                <a class="ih-icon-btn" data-item-edit data-item-id="{{id}}" title="Редактировать">✎</a>
+                <a class="ih-icon-btn" data-item-delete data-item-id="{{id}}" title="Удалить">✕</a>
               </div>
-            {{/if}}
-
-            {{#if canEndCombatTurn}}
-              <div class="ih-sheet-turn-actions">
-                <a class="button" data-action="end-combat-turn">Завершить ход</a>
-              </div>
-            {{/if}}
-
-            {{#if combatFlow.advanceTurnReason}}
-              <div class="ih-sheet-turn-note">
-                <i>{{combatFlow.advanceTurnReason}}</i>
-              </div>
-            {{/if}}
-          </div>
-        {{/if}}
-
-        <div class="inventory-actions">
-          <a data-short-rest>Короткий отдых</a>
-          <a data-full-rest>Полный отдых</a>
-          <a data-update-effects>Тик эффектов</a>
-        </div>
-      </div>
-
-      <div class="status-card">
-        <h2>Ограничения и броня</h2>
-        <div class="combat-summary-grid">
-          <div><b>Правая рука:</b> {{#if combatSummary.rightHandDisabled}}выведена из строя{{else}}в порядке{{/if}}</div>
-          <div><b>Левая рука:</b> {{#if combatSummary.leftHandDisabled}}выведена из строя{{else}}в порядке{{/if}}</div>
-          <div><b>Правая нога:</b> {{#if combatSummary.rightLegDisabled}}выведена из строя{{else}}в порядке{{/if}}</div>
-          <div><b>Левая нога:</b> {{#if combatSummary.leftLegDisabled}}выведена из строя{{else}}в порядке{{/if}}</div>
-          <div><b>Кровотечение:</b> {{combatSummary.bleeding}}</div>
-          <div><b>Шок:</b> {{combatSummary.shock}}</div>
-          <div><b>Яд:</b> {{combatSummary.poison}}</div>
-          <div><b>Горение:</b> {{combatSummary.burning}}</div>
-        </div>
-
-        <div class="armor-panel-grid">
-          <div class="armor-panel">
-            <h3>Голова</h3>
-            <p><b>{{combatDetailed.armorHead.name}}</b></p>
-            <p>Физ. защита: {{combatDetailed.armorHead.physical}}</p>
-            <p>Маг. защита: {{combatDetailed.armorHead.magical}}</p>
-          </div>
-
-          <div class="armor-panel">
-            <h3>Торс</h3>
-            <p><b>{{combatDetailed.armorTorso.name}}</b></p>
-            <p>Физ. защита: {{combatDetailed.armorTorso.physical}}</p>
-            <p>Маг. защита: {{combatDetailed.armorTorso.magical}}</p>
-          </div>
-
-          <div class="armor-panel">
-            <h3>Руки</h3>
-            <p><b>{{combatDetailed.armorArms.name}}</b></p>
-            <p>Физ. защита: {{combatDetailed.armorArms.physical}}</p>
-            <p>Маг. защита: {{combatDetailed.armorArms.magical}}</p>
-          </div>
-
-          <div class="armor-panel">
-            <h3>Ноги</h3>
-            <p><b>{{combatDetailed.armorLegs.name}}</b></p>
-            <p>Физ. защита: {{combatDetailed.armorLegs.physical}}</p>
-            <p>Маг. защита: {{combatDetailed.armorLegs.magical}}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h2>Экипировка</h2>
-      {{#each equipmentSummary}}
-        <div class="inventory-row">
-          <div>
-            <b>{{this.slot}}</b>
-            <span>{{this.itemName}}</span>
-          </div>
-        </div>
-      {{/each}}
-
-      <div class="inventory-actions">
-        <a data-unequip-right>Снять из правой руки</a>
-        <a data-unequip-left>Снять из левой руки</a>
-        <a data-unequip-armor data-slot-key="armorHead">Снять шлем</a>
-        <a data-unequip-armor data-slot-key="armorTorso">Снять торс</a>
-        <a data-unequip-armor data-slot-key="armorArms">Снять защиту рук</a>
-        <a data-unequip-armor data-slot-key="armorLegs">Снять защиту ног</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="tab" data-tab="magic">
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Магия</h2>
-        <div class="combat-summary-grid">
-          <div><b>Мана:</b> {{magicSummary.manaValue}} / {{magicSummary.manaMax}}</div>
-          <div><b>Заклинаний:</b> {{magicSummary.spellsCount}}</div>
-          <div><b>Свитков:</b> {{magicSummary.scrollsCount}}</div>
-        </div>
-      </div>
-
-      <div class="status-card">
-        <h2>Школы магии</h2>
-        {{#each magicSummary.schools}}
-          <div class="inventory-row">
-            <div>
-              <b>{{this.label}}</b>
-              <span>Уровень: {{this.value}}</span>
             </div>
-            <div>
-              <a data-skill-roll="{{this.key}}" data-label="{{this.label}}">Бросок</a>
-            </div>
+            {{/each}}
           </div>
-        {{/each}}
-      </div>
-    </div>
-
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Заклинания</h2>
-        {{#if magicSpellsDetailed.length}}
-          {{#each magicSpellsDetailed}}
-            <div class="inventory-row">
-              <div>
-                <b>{{this.name}}</b>
-                <span>
-                  (школа: {{this.school}},
-                  эффект: {{this.effectType}},
-                  сила: {{this.power}},
-                  мана: {{this.manaCost}},
-                  энергия: {{this.energyCost}},
-                  цель: {{this.targetPart}})
-                </span>
-              </div>
-              <div class="inline-actions">
-                <a
-                  data-cast-spell
-                  data-item-id="{{this.id}}"
-                  class="{{#unless this.canCastSpell}}is-disabled{{/unless}}"
-                  title="{{this.spellBlockedReason}}"
-                >
-                  Каст
-                </a>
-                <a data-assign-quickslot data-item-id="{{this.id}}" data-slot-key="slot1">В слот 1</a>
-                <a data-assign-quickslot data-item-id="{{this.id}}" data-slot-key="slot2">В слот 2</a>
-              </div>
-              {{#unless this.canCastSpell}}
-                <div class="muted-text">{{this.spellBlockedReason}}</div>
-              {{/unless}}
-            </div>
+          {{/if}}
           {{/each}}
-        {{else}}
-          <p>Заклинаний нет.</p>
-        {{/if}}
-      </div>
-
-      <div class="status-card">
-        <h2>Свитки</h2>
-        {{#if magicScrollsDetailed.length}}
-          {{#each magicScrollsDetailed}}
-            <div class="inventory-row">
-              <div>
-                <b>{{this.name}}</b>
-                <span>
-                  (школа: {{this.school}},
-                  эффект: {{this.effectType}},
-                  сила: {{this.power}},
-                  энергия: {{this.energyCost}},
-                  цель: {{this.targetPart}},
-                  кол-во: {{this.quantity}})
-                </span>
-              </div>
-              <div class="inline-actions">
-                <a
-                  data-use-scroll
-                  data-item-id="{{this.id}}"
-                  class="{{#unless this.canUseScroll}}is-disabled{{/unless}}"
-                  title="{{this.scrollBlockedReason}}"
-                >
-                  Использовать
-                </a>
-                <a data-assign-quickslot data-item-id="{{this.id}}" data-slot-key="slot1">В слот 1</a>
-                <a data-assign-quickslot data-item-id="{{this.id}}" data-slot-key="slot2">В слот 2</a>
-              </div>
-              {{#unless this.canUseScroll}}
-                <div class="muted-text">{{this.scrollBlockedReason}}</div>
-              {{/unless}}
-            </div>
-          {{/each}}
-        {{else}}
-          <p>Свитков нет.</p>
-        {{/if}}
-      </div>
-    </div>
-  </div>
-
-  <div class="tab" data-tab="inventory">
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Экипировка</h2>
-        {{#each equipmentSummary}}
-          <div class="inventory-row">
-            <div>
-              <b>{{this.slot}}</b>
-              <span>{{this.itemName}}</span>
-            </div>
-          </div>
-        {{/each}}
-      </div>
-
-      <div class="status-card">
-        <h2>Быстрые слоты</h2>
-        <p><b>Открыто слотов:</b> {{quickSlotsUnlocked}} / 6</p>
-        <p><b>Бонус от экипировки/предметов:</b> +{{quickSlotBonus}}</p>
-        <p class="muted-text">Базово доступно 2 слота. Остальные открываются снаряжением.</p>
-
-        {{#each quickSlotsSummary}}
-          <div class="inventory-row {{#unless this.unlocked}}slot-locked{{/unless}}">
-            <div>
-              <b>{{this.slot}}</b>
-              <span>
-                {{#if this.unlocked}}
-                  {{#if this.hasItem}}{{this.itemIcon}} {{this.itemName}} — {{this.itemKind}}{{else}}Пусто{{/if}}
-                {{else}}
-                  Слот закрыт
-                {{/if}}
-              </span>
-            </div>
-
-            <div class="inline-actions">
-              {{#if this.unlocked}}
-                <a
-                  data-use-quickslot
-                  data-slot-key="{{this.slotKey}}"
-                  class="{{#unless (lookup (lookup ../quickSlotActionStates this.slotKey) 'canUse')}}is-disabled{{/unless}}"
-                  title="{{lookup (lookup ../quickSlotActionStates this.slotKey) 'reason'}}"
-                >
-                  Использовать
-                </a>
-                <a data-clear-quickslot data-slot-key="{{this.slotKey}}">Очистить</a>
-              {{else}}
-                <span class="muted-text">Требуется расширение</span>
-              {{/if}}
-            </div>
-
-            {{#if this.unlocked}}
-              {{#unless (lookup (lookup ../quickSlotActionStates this.slotKey) 'canUse')}}
-                <div class="muted-text">{{lookup (lookup ../quickSlotActionStates this.slotKey) 'reason'}}</div>
-              {{/unless}}
-            {{/if}}
-          </div>
-        {{/each}}
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h2>Инвентарь</h2>
-      <p><b>Суммарный расчётный вес:</b> {{totalInventoryWeight}}</p>
-      <p><b>Суммарная стоимость:</b> {{totalInventoryPrice}}</p>
-    </div>
-
-    <div class="status-card">
-      <h2>Носимое снаряжение</h2>
-      {{#if quickSlotCarrierItems.length}}
-        {{#each quickSlotCarrierItems}}
-          <div class="inventory-row">
-            <div>
-              <b>{{this.icon}} {{this.name}}</b>
-              <span>
-                {{this.kind}} |
-                кол-во: {{this.quantity}},
-                вес: {{this.weight}},
-                всего: {{this.totalWeight}},
-                бонус слотов: +{{this.quickSlotBonus}},
-                цена за 1: {{this.unitPrice}},
-                всего: {{this.totalPrice}}
-              </span>
-            </div>
-          </div>
-        {{/each}}
-      {{else}}
-        <p>Пока нет предметов, расширяющих быстрые слоты.</p>
-      {{/if}}
-    </div>
-
-    {{#each groupedItems}}
-      <div class="status-card inventory-group-card">
-        <h3>{{this.label}}</h3>
-
-        {{#each this.items}}
-          <div class="inventory-row">
-            <div>
-              <b>{{this.icon}} {{this.name}}</b>
-              <span>
-                {{this.kind}} |
-                тир: {{this.tier}},
-                кол-во: {{this.quantity}},
-                вес: {{this.weight}},
-                вес всего: {{this.totalWeight}},
-                цена за 1: {{this.unitPrice}},
-                всего: {{this.totalPrice}}
-                {{#if this.quickSlotBonus}} | бонус слотов: +{{this.quickSlotBonus}}{{/if}}
-              </span>
-            </div>
-
-            <div class="inline-actions">
-              {{#if this.canEquipRight}}
-                <a data-equip-right data-item-id="{{this.id}}">В правую</a>
-              {{/if}}
-
-              {{#if this.canEquipLeft}}
-                <a data-equip-left data-item-id="{{this.id}}">В левую</a>
-              {{/if}}
-
-              {{#if this.canEquipArmor}}
-                <a data-equip-armor data-item-id="{{this.id}}">Надеть</a>
-              {{/if}}
-
-              {{#if this.canUseFood}}
-                <a data-consume-food data-item-id="{{this.id}}">Съесть/выпить</a>
-              {{/if}}
-
-              {{#if this.canUsePotion}}
-                <a data-use-potion data-item-id="{{this.id}}">Выпить</a>
-              {{/if}}
-
-              {{#if this.canUseConsumable}}
-                <a data-use-consumable data-item-id="{{this.id}}">Использовать</a>
-              {{/if}}
-
-              {{#if (eq this.type "throwable")}}
-                <a
-                  data-use-throwable
-                  data-item-id="{{this.id}}"
-                  class="{{#unless this.canUseThrowable}}is-disabled{{/unless}}"
-                  title="{{this.throwableBlockedReason}}"
-                >
-                  Бросить
-                </a>
-              {{/if}}
-
-              {{#if (eq this.type "spell")}}
-                <a
-                  data-cast-spell
-                  data-item-id="{{this.id}}"
-                  class="{{#unless this.canCastSpell}}is-disabled{{/unless}}"
-                  title="{{this.spellBlockedReason}}"
-                >
-                  Каст
-                </a>
-              {{/if}}
-
-              {{#if (eq this.type "scroll")}}
-                <a
-                  data-use-scroll
-                  data-item-id="{{this.id}}"
-                  class="{{#unless this.canUseScroll}}is-disabled{{/unless}}"
-                  title="{{this.scrollBlockedReason}}"
-                >
-                  Свиток
-                </a>
-              {{/if}}
-
-              {{#if this.canAssignQuick}}
-                <span class="slot-assign-row">
-                  {{#each this.quickAssignSlots}}
-                    <a
-                      class="slot-mini-btn {{#unless this.unlocked}}slot-mini-btn-locked is-disabled{{/unless}}"
-                      data-assign-quickslot
-                      data-item-id="{{../id}}"
-                      data-slot-key="{{this.slotKey}}"
-                      title="{{#unless this.unlocked}}Слот закрыт{{/unless}}"
-                    >
-                      {{this.shortLabel}}
-                    </a>
-                  {{/each}}
-                </span>
-              {{/if}}
-
-              {{#if this.canDelete}}
-                <a data-delete-item data-item-id="{{this.id}}">Удалить</a>
-              {{/if}}
-            </div>
-
-            {{#if (eq this.type "throwable")}}
-              {{#unless this.canUseThrowable}}
-                <div class="muted-text">{{this.throwableBlockedReason}}</div>
-              {{/unless}}
-            {{/if}}
-
-            {{#if (eq this.type "spell")}}
-              {{#unless this.canCastSpell}}
-                <div class="muted-text">{{this.spellBlockedReason}}</div>
-              {{/unless}}
-            {{/if}}
-
-            {{#if (eq this.type "scroll")}}
-              {{#unless this.canUseScroll}}
-                <div class="muted-text">{{this.scrollBlockedReason}}</div>
-              {{/unless}}
-            {{/if}}
-          </div>
-        {{/each}}
-      </div>
-    {{/each}}
-  </div>
-
-  <div class="tab" data-tab="trade">
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Экономика персонажа</h2>
-        <div class="combat-summary-grid">
-          <div><b>Монеты:</b> {{tradeSummary.coins}}</div>
-          <div><b>Всего предметов на продажу:</b> {{personalSellPreview.length}}</div>
         </div>
-        <p class="muted-text">
-          Здесь показан ориентир цены выкупа без конкретного торговца.
-          Реальная цена зависит от отношений, специализации торговца и состояния поселения.
-        </p>
       </div>
 
-      <div class="status-card">
-        <h2>Предпросмотр продажи</h2>
-        {{#if personalSellPreview.length}}
-          {{#each personalSellPreview}}
-            <div class="inventory-row">
-              <div>
-                <b>{{this.icon}} {{this.name}}</b>
-                <span>
-                  {{this.kind}} |
-                  кол-во: {{this.quantity}},
-                  базовая цена: {{this.unitPrice}},
-                  цена выкупа: {{this.tradeSellPrice}},
-                  стоимость стака: {{this.tradeSellTotal}}
-                </span>
-              </div>
-            </div>
-          {{/each}}
-        {{else}}
-          <p>У персонажа нет предметов для продажи.</p>
-        {{/if}}
-      </div>
-    </div>
-  </div>
-
-  <div class="tab" data-tab="reputation">
-    <div class="status-grid">
-      <div class="status-card">
-        <h2>Поселения</h2>
-        {{#if settlementRelations.length}}
-          {{#each settlementRelations}}
-            <div class="inventory-row">
-              <div>
-                <b>{{this.targetName}}</b>
-                <span>(репутация: {{this.score}}, статус: {{this.tier}})</span>
-              </div>
-            </div>
-          {{/each}}
-        {{else}}
-          <p>Репутации с поселениями пока нет.</p>
-        {{/if}}
-      </div>
-
-      <div class="status-card">
-        <h2>Фракции</h2>
-        {{#if factionRelations.length}}
-          {{#each factionRelations}}
-            <div class="inventory-row">
-              <div>
-                <b>{{this.targetName}}</b>
-                <span>(репутация: {{this.score}}, статус: {{this.tier}})</span>
-              </div>
-            </div>
-          {{/each}}
-        {{else}}
-          <p>Репутации с фракциями пока нет.</p>
-        {{/if}}
-      </div>
     </div>
 
-    {{#unless relationsSummary.length}}
-      <div class="status-card">
-        <p>Пока нет зафиксированной репутации.</p>
-      </div>
-    {{/unless}}
   </div>
-</section>
+
+</form>

@@ -155,9 +155,9 @@ class IronHillsActorSheet extends ActorSheet {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ["iron-hills", "sheet", "actor"],
-      width: 1320,
-      height: 980,
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "overview" }]
+      width: 820,
+      height: 700,
+      resizable: true
     });
   }
 
@@ -523,7 +523,19 @@ async getData() {
       };
     });
 
-    context.overviewSummary = buildOverviewSummary(actor);
+    try {
+      context.overviewSummary = buildOverviewSummary(actor);
+      context.calculatedTier = context.overviewSummary.calculatedTier ?? 1;
+    } catch(e) {
+      context.overviewSummary = {
+        calculatedTier: 1, energyPct: 0, manaPct: 0,
+        satietyPct: 0, hydrationPct: 0, weightPct: 0,
+        weightValue: 0, weightMax: 0, encumbranceLabel: "—",
+        energyValue: 0, energyMax: 0, manaValue: 0, manaMax: 0,
+        satietyValue: 0, satietyMax: 0, hydrationValue: 0, hydrationMax: 0
+      };
+      context.calculatedTier = 1;
+    }
     context.tradeSummary = buildTradeSummary(actor);
     context.quickSlotsUnlocked = getQuickSlotsUnlocked(actor);
     context.quickSlotBonus = getQuickSlotBonusFromItems(actor);
@@ -591,8 +603,8 @@ if (actor.type === "character") {
   context.personalSellPreview = buildCharacterSellView(actor, demoMerchant);
 }
 
-// NPC — части тела как у character + hpPct/hpClass для каждой зоны
-if (actor.type === "npc") {
+// Character и NPC — части тела с cssClass, pct, trauma
+if (actor.type === "character" || actor.type === "npc") {
   const hp = actor.system?.resources?.hp ?? {};
 
   function zoneClass(val, max) {
@@ -2035,16 +2047,130 @@ if (!derivedConditions.canCast) {
       const currentTargetEnergy = Number(targetActor.system.resources.energy.value ?? 0);
       const maxTargetEnergy = Number(targetActor.system.resources.energy.max ?? 100);
       const newEnergy = Math.min(maxTargetEnergy, currentTargetEnergy + restored);
-
-      await targetActor.update({
-        "system.resources.energy.value": newEnergy
-      });
-
+      await targetActor.update({ "system.resources.energy.value": newEnergy });
       content += `
         ${buildChatSectionRow("Эффект", "Восстановление энергии")}
-        ${buildChatSectionRow("Восстановлено энергии", restored)}
-        ${buildChatSectionRow("Текущая энергия цели", newEnergy)}
+        ${buildChatSectionRow("Восстановлено", restored)}
+        ${buildChatSectionRow("Энергия цели", newEnergy)}
       `;
+    }
+
+    // ── PATCH 9: Новые эффекты магии ─────────────────────────────
+
+    // Оглушение — цель пропускает ход(а)
+    if (effectType === "stun") {
+      const duration = power + Math.max(0, roll.total - 4);
+      const current  = Number(targetActor.system?.conditions?.stunned ?? 0);
+      await targetActor.update({
+        "system.conditions.stunned": current + Math.max(1, duration)
+      });
+      content += `
+        ${buildChatSectionRow("Эффект", "⚡ Оглушение")}
+        ${buildChatSectionRow("Длительность", `${Math.max(1, duration)} ход(а)`)}
+      `;
+    }
+
+    // Обезоруживание — оружие выбивается из рук
+    if (effectType === "disarm") {
+      const threshold = 6 + Number(targetActor.system?.info?.tier ?? 1);
+      if (roll.total >= threshold) {
+        const disarmHand = item.system.disarmHand ?? "rightHand";
+        const weaponId = targetActor.system?.equipment?.[disarmHand];
+        if (weaponId) {
+          await targetActor.update({ [`system.equipment.${disarmHand}`]: "" });
+          content += `
+            ${buildChatSectionRow("Эффект", "✋ Обезоруживание")}
+            ${buildChatSectionRow("Результат", "Оружие выбито!")}
+            ${buildChatSectionRow("Бросок / Порог", `${roll.total} / ${threshold}`)}
+          `;
+        } else {
+          content += `${buildChatSectionRow("Обезоруживание", "Цель безоружна")}`;
+        }
+      } else {
+        content += `
+          ${buildChatSectionRow("Эффект", "✋ Обезоруживание")}
+          ${buildChatSectionRow("Результат", `Провал (${roll.total} < ${threshold})`)}
+        `;
+      }
+    }
+
+    // Безмолвие — цель не может колдовать N секунд
+    if (effectType === "silence") {
+      const duration = power + Math.max(1, roll.total - 3);
+      const until = (game.time?.worldTime ?? 0) + duration;
+      await targetActor.update({ "system.conditions.silencedUntil": until });
+      content += `
+        ${buildChatSectionRow("Эффект", "🔇 Безмолвие")}
+        ${buildChatSectionRow("Длительность", `${duration} сек.`)}
+      `;
+    }
+
+    // Замедление — снижает инициативу
+    if (effectType === "slow") {
+      const penalty = power + Math.max(0, roll.total - 4);
+      const current = Number(targetActor.system?.conditions?.slowPenalty ?? 0);
+      await targetActor.update({
+        "system.conditions.slowPenalty": current + Math.max(1, penalty)
+      });
+      content += `
+        ${buildChatSectionRow("Эффект", "🐢 Замедление")}
+        ${buildChatSectionRow("Штраф инициативы", `-${Math.max(1, penalty)}`)}
+      `;
+    }
+
+    // Страх — штраф к атаке и защите
+    if (effectType === "fear") {
+      const duration = power + Math.max(1, roll.total - 4);
+      const current  = Number(targetActor.system?.conditions?.feared ?? 0);
+      await targetActor.update({
+        "system.conditions.feared": current + Math.max(1, duration)
+      });
+      content += `
+        ${buildChatSectionRow("Эффект", "😱 Страх")}
+        ${buildChatSectionRow("Длительность", `${Math.max(1, duration)} ход(а)`)}
+        ${buildChatSectionRow("Штрафы", "−3 атака, −3 защита")}
+      `;
+    }
+
+    // Урон по резерву — временный (средние ступени) или постоянный (высокие)
+    if (effectType === "reserveDrain") {
+      const isPermanent = (schoolSkill?.value ?? 1) >= 6;
+      const amount = power + Math.max(0, roll.total - 4);
+      const drainType = item.system.drainType ?? "mana"; // "mana" | "energy"
+
+      if (isPermanent) {
+        // Снижаем максимум
+        const maxPath  = `system.resources.${drainType}.max`;
+        const current  = Number(targetActor.system?.resources?.[drainType]?.max ?? 10);
+        const newMax   = Math.max(0, current - Math.max(1, amount));
+        const valPath  = `system.resources.${drainType}.value`;
+        const curVal   = Number(targetActor.system?.resources?.[drainType]?.value ?? 0);
+        await targetActor.update({
+          [maxPath]: newMax,
+          [valPath]: Math.min(curVal, newMax)
+        });
+        if (newMax <= 0) {
+          await this._markActorDead(targetActor);
+        }
+        content += `
+          ${buildChatSectionRow("Эффект", `☠ Истощение резерва (${drainType === "mana" ? "Мана" : "Энергия"})`)}
+          ${buildChatSectionRow("Тип", "Постоянное")}
+          ${buildChatSectionRow("Урон по максимуму", `-${Math.max(1, amount)}`)}
+          ${newMax <= 0 ? `<p><b style="color:#ef4444">☠ Резерв иссяк — необратимая смерть!</b></p>` : ""}
+        `;
+      } else {
+        // Снижаем текущее значение (временно)
+        const valPath = `system.resources.${drainType}.value`;
+        const current = Number(targetActor.system?.resources?.[drainType]?.value ?? 0);
+        const newVal  = Math.max(0, current - Math.max(1, amount));
+        await targetActor.update({ [valPath]: newVal });
+        content += `
+          ${buildChatSectionRow("Эффект", `⚡ Истощение (${drainType === "mana" ? "Мана" : "Энергия"})`)}
+          ${buildChatSectionRow("Тип", "Временное")}
+          ${buildChatSectionRow("Снято", `-${Math.max(1, amount)}`)}
+          ${buildChatSectionRow("Осталось", newVal)}
+        `;
+      }
     }
 
     await ChatMessage.create({
@@ -2686,10 +2812,7 @@ async _sellToMerchant(itemId, sellerUuid = "") {
       rolls.push({ die: currentDie, result });
       total = result; // берём последний результат (не сумму)
 
-      // d2 не взрывается
-      if (currentDie === 2) break;
-
-      // Не максимум — стоп
+      // Не максимум — стоп (d2 тоже взрывается при выпавшей 2)
       if (result < currentDie) break;
 
       // Максимум — предлагаем продолжить
@@ -2697,12 +2820,16 @@ async _sellToMerchant(itemId, sellerUuid = "") {
       if (nextDie === currentDie) break; // уже d20, некуда расти
 
       const confirmed = await Dialog.confirm({
-        title: "Взрыв куба!",
-        content: `
-          <p>Выпало <b>${result}</b> на d${currentDie} — максимум!</p>
-          <p>Перейти на <b>d${nextDie}</b>? Результат может быть и хуже.</p>
-          <p style="opacity:0.6;font-size:11px">Отмена — зафиксировать ${result}</p>
-        `
+        title: "💥 Взрыв куба!",
+        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;text-align:center;">
+          <div style="margin-bottom:8px;">
+            <span style="font-size:32px;font-weight:700;color:#facc15;">${result}</span>
+            <span style="color:#6a7d99;font-size:13px;"> на d${currentDie}</span>
+          </div>
+          <p style="color:#4ade80;font-weight:600;margin:4px 0;">Максимум! Можно рискнуть.</p>
+          <p style="font-size:12px;margin:4px 0;">Перейти на <b style="color:#5b9cf6">d${nextDie}</b>?</p>
+          <p style="font-size:11px;color:#6a7d99;margin:4px 0;">Отмена — зафиксировать <b>${result}</b></p>
+        </div>`
       });
 
       if (!confirmed) break;
@@ -2712,6 +2839,192 @@ async _sellToMerchant(itemId, sellerUuid = "") {
     }
 
     return { total, rolls, exploded };
+  }
+
+  /**
+   * Универсальный бросок с тремя стратегиями.
+   * Стратегии:
+   *   "simple"   — один бросок d(навык×2), с взрывом куба
+   *   "reroll"   — перебрасываем пока не устроит (тратит энергию)
+   *   "target"   — до порога: система кидает и сообщает результат
+   *
+   * @param {string} skillKey  — ключ навыка
+   * @param {string} label     — название для чата
+   * @param {object} options   — { threshold, energyCostPerReroll }
+   */
+  async _universalDiceRoll(skillKey, label, options = {}) {
+    const actor = this._getActorForState();
+    const skill = actor.system.skills?.[skillKey];
+    if (!skill) { ui.notifications.warn(`Навык ${skillKey} не найден`); return; }
+
+    const skillValue = Number(skill.value ?? 1);
+    const dieSize    = Math.max(2, skillValue * 2);
+    const threshold  = options.threshold ?? null;
+
+    // Диалог выбора стратегии
+    const strategy = await new Promise(resolve => {
+      const hasThreshold = threshold !== null;
+      const dlg = new Dialog({
+        title: `🎲 ${label}`,
+        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+            <span style="color:#6a7d99;font-size:12px;">Навык:</span>
+            <b style="color:#5b9cf6;font-size:18px;">d${dieSize}</b>
+          </div>
+          ${hasThreshold ? `<div style="margin-bottom:10px;padding:6px 10px;background:rgba(91,156,246,0.08);border:1px solid rgba(91,156,246,0.2);border-radius:6px;font-size:12px;">
+            Порог: <b style="color:#e8edf5">${threshold}</b>
+          </div>` : ''}
+          <p style="font-size:11px;color:#6a7d99;margin:0;">Выбери стратегию броска:</p>
+        </div>`,
+        buttons: {
+          simple: {
+            label: "🎲 Один бросок",
+            callback: () => resolve("simple")
+          },
+          reroll: {
+            label: "🔄 До победного",
+            callback: () => resolve("reroll")
+          },
+          ...(hasThreshold ? { target: {
+            label: "🎯 До порога",
+            callback: () => resolve("target")
+          }} : {})
+        },
+        default: "simple",
+        close: () => resolve(null)
+      });
+      dlg.render(true);
+    });
+
+    if (!strategy) return null;
+
+    // ── Стратегия 1: Простой бросок с взрывом куба ──
+    if (strategy === "simple") {
+      const { total, rolls, exploded } = await this._explodingDiceRoll(skillValue);
+      const rollDesc = rolls.map(r => `d${r.die}=${r.result}`).join(" → ");
+      const display  = exploded ? `💥 ${rollDesc}` : `d${dieSize} = ${total}`;
+      const isAnticrit = total === 1 && dieSize > 2;
+
+      let flavor = `<b>${label}</b> — ${display}`;
+      if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 АНТИКРИТ!</span>`;
+      if (threshold !== null) {
+        const hit = total >= threshold;
+        flavor += `<br>${hit
+          ? `<span style="color:#4ade80">✓ Успех (перевес: +${total - threshold})</span>`
+          : `<span style="color:#f87171">✗ Провал</span>`}`;
+      }
+
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: flavor
+      });
+      await this._applySkillExp(skillKey, label);
+      return { total, strategy, success: threshold !== null ? total >= threshold : null };
+    }
+
+    // ── Стратегия 2: До победного (тратит энергию) ──
+    if (strategy === "reroll") {
+      const energyCostPerRoll = options.energyCostPerReroll ?? 10;
+      let attempts = 0;
+      let finalTotal = 0;
+      let satisfied = false;
+      const maxAttempts = 10;
+
+      while (!satisfied && attempts < maxAttempts) {
+        attempts++;
+        const { total, rolls, exploded } = await this._explodingDiceRoll(skillValue);
+        finalTotal = total;
+
+        const rollDesc = rolls.map(r => `d${r.die}=${r.result}`).join(" → ");
+        const display  = exploded ? `💥 ${rollDesc}` : `d${dieSize} = ${total}`;
+        const energy   = Number(actor.system.resources?.energy?.value ?? 0);
+        const canAfford = energy >= energyCostPerRoll;
+
+        const choice = await new Promise(resolve => {
+          const dlg = new Dialog({
+            title: `🔄 ${label} — попытка ${attempts}`,
+            content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
+              <div style="font-size:20px;font-weight:700;color:#e8edf5;text-align:center;margin-bottom:8px;">${display}</div>
+              ${threshold !== null ? `<div style="text-align:center;margin-bottom:8px;color:${total >= threshold ? '#4ade80' : '#f87171'};">
+                ${total >= threshold ? '✓ Успех!' : '✗ Провал'}
+              </div>` : ''}
+              <div style="font-size:11px;color:#6a7d99;text-align:center;">
+                Перебросить: −${energyCostPerRoll} энергии (осталось: ${energy})
+              </div>
+            </div>`,
+            buttons: {
+              keep: { label: "✓ Оставить", callback: () => resolve("keep") },
+              reroll: {
+                label: canAfford ? `🔄 Перебросить (−${energyCostPerRoll}⚡)` : "⚡ Нет энергии",
+                callback: () => resolve(canAfford ? "reroll" : "keep")
+              }
+            },
+            default: "keep",
+            close: () => resolve("keep")
+          });
+          dlg.render(true);
+        });
+
+        if (choice === "keep" || choice === "broke") { satisfied = true; break; }
+
+        // Тратим ресурс
+        if (choice === "reroll_energy") {
+          const newEnergy = Math.max(0, Number(actor.system.resources?.energy?.value ?? 0) - energyCostPerRoll);
+          await actor.update({ "system.resources.energy.value": newEnergy });
+        } else if (choice === "reroll_mana") {
+          const newMana = Math.max(0, Number(actor.system.resources?.mana?.value ?? 0) - energyCostPerRoll);
+          await actor.update({ "system.resources.mana.value": newMana });
+        }
+      }
+
+      let flavor = `<b>${label}</b> — попыток: ${attempts}, итог: <b>${finalTotal}</b>`;
+      if (threshold !== null) {
+        flavor += `<br>${finalTotal >= threshold
+          ? `<span style="color:#4ade80">✓ Успех (перевес: +${finalTotal - threshold})</span>`
+          : `<span style="color:#f87171">✗ Провал</span>`}`;
+      }
+
+      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
+      await this._applySkillExp(skillKey, label);
+      return { total: finalTotal, strategy, success: threshold !== null ? finalTotal >= threshold : null };
+    }
+
+    // ── Стратегия 3: До порога (авто-бросок) ──
+    if (strategy === "target" && threshold !== null) {
+      let total = 0;
+      let attempts = 0;
+      let exploded = false;
+      const maxAttempts = 20;
+
+      // Бросаем автоматически до достижения порога или исчерпания попыток
+      while (total < threshold && attempts < maxAttempts) {
+        attempts++;
+        const result = await this._explodingDiceRoll(skillValue);
+        total = result.total;
+        if (result.exploded) exploded = true;
+        if (total >= threshold) break;
+
+        // Пауза между бросками для визуала
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      const success = total >= threshold;
+      const margin  = total - threshold;
+      const isAnticrit = total === 1 && dieSize > 2 && attempts === 1;
+
+      let flavor = `<b>${label}</b> — до порога ${threshold}`;
+      flavor += `<br>Попыток: ${attempts}${exploded ? " 💥" : ""}, итог: <b>${total}</b>`;
+      flavor += `<br>${success
+        ? `<span style="color:#4ade80">✓ Успех! Перевес: +${margin}</span>`
+        : `<span style="color:#f87171">✗ Провал после ${attempts} попыток</span>`}`;
+      if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 Антикрит на первом броске!</span>`;
+
+      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
+      await this._applySkillExp(skillKey, label);
+      return { total, strategy, success, margin };
+    }
+
+    return null;
   }
 
 async _performAttack({
@@ -2806,12 +3119,33 @@ if (!derivedConditions.canMeleeAttack) {
     const dieSize = Math.max(2, skill.value * 2);
 
     // ШАГ 2: Порог попадания цели
+    // Определяем щит цели
+    const targetLeftHand = targetActor.system?.equipment?.leftHand
+      ? targetActor.items.get(targetActor.system.equipment.leftHand)
+      : null;
+    const targetHasShield = Boolean(
+      targetLeftHand?.system?.isShield ||
+      targetLeftHand?.type === "armor"
+    );
+
+    // Определяем окружение (сколько союзников атакуют эту же цель)
+    const surroundCount = [...(game.user?.targets ?? [])].length > 1
+      ? [...(game.user?.targets ?? [])].length - 1
+      : 0;
+
+    // Броня цели — для монстров берём из resources.armor
+    const targetArmorTier = targetActor.type === "monster"
+      ? Number(targetActor.system?.resources?.armor?.physical ?? 0)
+      : Number(targetActor.system?.info?.armorTier ?? 0);
+
     const threshold = getAttackThreshold(targetActor, {
-      hasShield: false, // TODO: определять щит цели
-      isLying: Boolean(targetActor.system?.conditions?.prone),
-      isStunned: Number(targetActor.system?.conditions?.stunned ?? 0) > 0,
-      surroundCount: 0, // TODO: считать окружение
-      inDarkness: false
+      hasShield:    targetHasShield,
+      isLying:      Boolean(targetActor.system?.conditions?.prone),
+      isStunned:    Number(targetActor.system?.conditions?.stunned ?? 0) > 0,
+      targetFeared: Number(targetActor.system?.conditions?.feared ?? 0) > 0,
+      surroundCount,
+      inDarkness:   false,
+      armorTierOverride: targetActor.type === "monster" ? targetArmorTier : undefined
     });
 
     // Штраф атакующего снижает результат броска
@@ -2874,13 +3208,30 @@ if (!derivedConditions.canMeleeAttack) {
     const effectiveReduction = Math.max(0, reduction - armorPenetration);
     const finalDamage = Math.max(0, rawDamage - effectiveReduction);
 
-    const { newHP: remainingHP, overflow: dmgOverflow, overflowTarget: dmgOverflowTarget } =
-      await this._applyDamage(targetActor, locationKey, finalDamage);
-    await this._applyInjuryEffects(targetActor, locationKey, finalDamage);
+    let remainingHP, dmgOverflow = 0, dmgOverflowTarget = null;
+
+    if (targetActor.type === "monster") {
+      // Монстр — одна полоска HP, учитываем броню
+      const monsterArmorPhys = Number(targetActor.system?.resources?.armor?.physical ?? 0);
+      const monsterArmorMag  = Number(targetActor.system?.resources?.armor?.magical  ?? 0);
+      const monsterReduction = damageType === "magical" ? monsterArmorMag : monsterArmorPhys;
+      const monsterPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
+      const monsterEffReduction = Math.max(0, monsterReduction - monsterPenetration);
+      const monsterFinalDamage = Math.max(0, rawDamage - monsterEffReduction);
+      const currentHp = Number(targetActor.system?.resources?.hp?.value ?? 0);
+      remainingHP = Math.max(0, currentHp - monsterFinalDamage);
+      await targetActor.update({ "system.resources.hp.value": remainingHP });
+    } else {
+      const result = await this._applyDamage(targetActor, locationKey, finalDamage);
+      remainingHP = result.newHP;
+      dmgOverflow = result.overflow;
+      dmgOverflowTarget = result.overflowTarget;
+      await this._applyInjuryEffects(targetActor, locationKey, finalDamage);
+    }
 
     content += `
       <p><b>Результат:</b> Попадание${margin >= 8 ? " (пробитие!)" : ""}</p>
-      ${buildChatSectionRow("Часть тела", `${locationLabel} (d20: ${locationRoll.total})`)}
+      ${targetActor.type !== "monster" ? buildChatSectionRow("Часть тела", `${locationLabel} (d20: ${locationRoll.total})`) : ""}
       ${buildChatSectionRow("Перевес", margin)}
       ${buildChatSectionRow("Базовый урон", baseDamage)}
       ${buildChatSectionRow("Сырой урон", rawDamage)}
@@ -2966,20 +3317,12 @@ if (!derivedConditions.canMeleeAttack) {
 
     html.find("[data-skill-roll]").on("click", async event => {
       event.preventDefault();
-      const skillKey = event.currentTarget.dataset.skillRoll;
-      const label = event.currentTarget.dataset.label ?? skillKey;
-      const skill = actor.system.skills?.[skillKey];
-      if (!skill) return;
-
-      const dieSize = Math.max(2, skill.value * 2);
-      const roll = await new Roll(`1d${dieSize}`).evaluate();
-
-      await roll.toMessage({
-        speaker: ChatMessage.getSpeaker({ actor: actor }),
-        flavor: `Проверка навыка: ${label}`
-      });
-
-      await this._applySkillExp(skillKey, label);
+      const skillKey  = event.currentTarget.dataset.skillRoll;
+      const label     = event.currentTarget.dataset.label ?? skillKey;
+      const threshold = event.currentTarget.dataset.threshold
+        ? Number(event.currentTarget.dataset.threshold)
+        : null;
+      await this._universalDiceRoll(skillKey, label, { threshold });
     });
 
     html.find("[data-equip-right]").on("click", async event => {

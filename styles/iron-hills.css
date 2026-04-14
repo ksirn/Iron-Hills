@@ -433,6 +433,8 @@
 .iron-hills-sheet input[type="number"],
 .iron-hills-sheet select,
 .iron-hills-sheet textarea,
+.ih-char-sheet input[type="text"],
+.ih-char-sheet input[type="number"],
 .iron-hills-tools-app input[type="text"],
 .iron-hills-tools-app input[type="number"],
 .iron-hills-tools-app select {
@@ -442,7 +444,7 @@
   color: var(--ih-text-0);
   padding: 3px 7px;
   font-size: 12px;
-  min-width: 80px;
+  min-width: 0;
   transition: var(--ih-transition);
 }
 
@@ -1577,4 +1579,838 @@
   background: var(--ih-accent-dim) !important;
   border-color: var(--ih-accent) !important;
   color: var(--ih-accent) !important;
+}
+
+/* ============================================================
+   CHARACTER SHEET v2 — двухколоночный
+   ============================================================ */
+
+.ih-char-sheet {
+  display: flex;
+  flex-direction: column;
+  background: var(--ih-bg-0);
+  color: var(--ih-text-1);
+  font-family: var(--ih-font-ui);
+  font-size: 12px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Шапка ── */
+.ih-cs-header {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-1);
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ih-cs-portrait-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: var(--ih-radius-md);
+  overflow: hidden;
+  border: 2px solid var(--ih-border-2);
+}
+
+.ih-cs-portrait {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--ih-radius-md) - 2px);
+  display: block;
+}
+
+.ih-cs-effects {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-xl);
+  padding: 2px 5px;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.ih-cs-fx { font-size: 11px; cursor: default; }
+
+/* ── Идентификация ── */
+.ih-cs-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ih-cs-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ih-text-0);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ih-border-1);
+  width: 100%;
+  padding: 2px 0;
+  font-family: var(--ih-font-ui);
+  min-width: 0;
+}
+
+.ih-cs-name:focus { outline: none; border-bottom-color: var(--ih-accent); }
+
+.ih-cs-meta-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ih-cs-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ih-cs-meta-field.narrow      { flex: 0 0 50px; }
+.ih-cs-meta-field.narrow-age  { flex: 0 0 52px; }
+
+.ih-cs-meta-field label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+}
+
+.ih-cs-meta-field input {
+  width: 100% !important;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box !important;
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0);
+  font-size: 11px;
+  padding: 2px 5px;
+}
+
+.ih-cs-meta-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ih-accent);
+  line-height: 1.4;
+  display: block;
+}
+
+/* ── Монеты ── */
+.ih-cs-coins-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  width: 130px;
+}
+
+.ih-cs-coins-title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-2);
+  margin-bottom: 1px;
+}
+
+.ih-cs-coin-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.ih-cs-coin-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ih-cs-coin-input {
+  width: 65px !important;
+  max-width: 65px;
+  background: var(--ih-bg-3) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0) !important;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  padding: 1px 5px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* ── Тело ── */
+.ih-cs-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ih-cs-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid var(--ih-border-1);
+  min-width: 0;
+}
+
+.ih-cs-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* ── Секции ── */
+.ih-cs-section {
+  border-bottom: 1px solid var(--ih-border-1);
+}
+
+.ih-cs-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ih-text-2);
+  background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-0);
+}
+
+.ih-cs-section-meta {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--ih-text-3);
+}
+
+/* ── Части тела ── */
+.ih-cs-body-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 8px;
+}
+
+.ih-cs-zone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--ih-radius-sm);
+  border-bottom: 1px solid var(--ih-border-0);
+  transition: var(--ih-transition);
+}
+
+.ih-cs-zone:hover { background: var(--ih-bg-2); }
+.ih-cs-zone:last-child { border-bottom: none; }
+
+.ih-cs-zone-label {
+  font-size: 11px;
+  color: var(--ih-text-2);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.ih-cs-zone-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--ih-bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ih-cs-zone-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ih-hp-good);
+  transition: width 300ms ease;
+}
+
+.ih-cs-zone.is-warn  .ih-cs-zone-bar { background: var(--ih-hp-warn); }
+.ih-cs-zone.is-bad   .ih-cs-zone-bar { background: var(--ih-hp-bad); }
+.ih-cs-zone.is-critical .ih-cs-zone-bar { background: var(--ih-hp-crit); }
+.ih-cs-zone.is-dead  .ih-cs-zone-bar { background: var(--ih-hp-dead); }
+
+.ih-cs-zone-hp {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ih-cs-hp-input {
+  width: 44px !important;
+  max-width: 44px !important;
+  flex-shrink: 0;
+  text-align: center;
+  background: var(--ih-bg-3) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0) !important;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 3px;
+  box-sizing: border-box;
+}
+
+.ih-cs-hp-input.muted { color: var(--ih-text-2); }
+
+.ih-cs-zone-dots {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Ресурсы ── */
+.ih-cs-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 10px;
+}
+
+.ih-cs-res-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ih-cs-res-icon {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.ih-cs-res-icon.energy { color: var(--ih-energy); }
+.ih-cs-res-icon.mana   { color: var(--ih-mana); }
+.ih-cs-res-icon.food   { color: var(--ih-food); }
+.ih-cs-res-icon.water  { color: var(--ih-water); }
+
+.ih-cs-res-name {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.ih-cs-res-vals {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ih-cs-res-input {
+  width: 40px !important;
+  max-width: 40px !important;
+  flex-shrink: 0 !important;
+  text-align: center;
+  background: var(--ih-bg-3) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0) !important;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 2px;
+  box-sizing: border-box;
+}
+
+.ih-cs-res-max {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+  min-width: 28px;
+}
+
+.ih-cs-res-static {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.ih-cs-res-track {
+  flex: 1;
+  height: 4px;
+  background: var(--ih-bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 20px;
+}
+
+.ih-cs-res-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 300ms ease;
+}
+
+.ih-cs-res-fill.energy { background: var(--ih-energy); }
+.ih-cs-res-fill.mana   { background: var(--ih-mana); }
+.ih-cs-res-fill.food   { background: var(--ih-food); }
+.ih-cs-res-fill.water  { background: var(--ih-water); }
+
+
+.ih-cs-soul-grid {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.ih-cs-soul-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  padding: 5px 10px;
+}
+
+.ih-cs-soul-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; }
+.ih-cs-soul-val   { font-size: 14px; font-weight: 700; color: var(--ih-text-0); }
+
+.ih-cs-soul-warning {
+  font-size: 11px;
+  color: var(--ih-hp-crit);
+  padding: 4px 8px;
+  background: var(--ih-hp-crit-bg);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: var(--ih-radius-sm);
+  width: 100%;
+}
+
+/* ── Навыки ── */
+.ih-cs-skills {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ih-cs-skill-group { display: flex; flex-direction: column; gap: 1px; }
+
+.ih-cs-skill-group-title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ih-text-3);
+  padding: 2px 4px;
+  margin-bottom: 2px;
+}
+
+.ih-cs-skill-row {
+  display: grid;
+  grid-template-columns: 1fr 28px 50px 16px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--ih-radius-sm);
+  transition: var(--ih-transition);
+  min-width: 0;
+}
+
+.ih-cs-skill-row:hover { background: var(--ih-bg-2); }
+
+.ih-cs-skill-name {
+  font-size: 12px;
+  color: var(--ih-text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ih-cs-skill-die {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ih-accent);
+  text-align: center;
+}
+
+.ih-cs-skill-exp-track {
+  height: 5px;
+  background: var(--ih-bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--ih-border-0);
+}
+
+.ih-cs-skill-exp-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ih-accent);
+  transition: width 300ms ease;
+}
+
+.ih-cs-skill-tier {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ih-text-0);
+  text-align: center;
+}
+
+/* ── Инвентарь ── */
+.ih-cs-inventory {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ih-cs-inv-group { display: flex; flex-direction: column; gap: 1px; }
+
+.ih-cs-inv-group-title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ih-text-3);
+  padding: 2px 4px;
+  margin-bottom: 2px;
+}
+
+.ih-cs-inv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px;
+  border-radius: var(--ih-radius-sm);
+  border-bottom: 1px solid var(--ih-border-0);
+  transition: var(--ih-transition);
+}
+
+.ih-cs-inv-row:hover { background: var(--ih-bg-2); border-bottom-color: transparent; }
+
+.ih-cs-inv-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--ih-bg-3);
+}
+
+.ih-cs-inv-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--ih-text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ih-cs-inv-qty {
+  font-size: 10px;
+  color: var(--ih-text-2);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ih-cs-inv-weight {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.ih-cs-inv-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: var(--ih-transition);
+}
+
+.ih-cs-inv-row:hover .ih-cs-inv-actions { opacity: 1; }
+
+.ih-cs-inv-actions .ih-icon-btn {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+
+.ih-cs-hp-max {
+  font-size: 11px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ih-cs-hp-sep {
+  color: var(--ih-text-3);
+  font-size: 11px;
+}
+
+/* ── Character Sheet — Body layout с силуэтом ── */
+.ih-cs-body-layout {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  align-items: flex-start;
+}
+
+/* Силуэт */
+.ih-cs-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ih-cs-fig-row {
+  display: flex;
+  gap: 3px;
+  align-items: stretch;
+}
+
+.ih-cs-fig-gap { width: 8px; flex-shrink: 0; }
+
+.ih-cs-fig-part {
+  position: relative;
+  border-radius: 5px;
+  border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  cursor: default;
+}
+
+.ih-cs-fig-head    { width: 50px; height: 38px; border-radius: 8px 8px 5px 5px; }
+.ih-cs-fig-torso   { width: 64px; height: 70px; }
+.ih-cs-fig-arm     { width: 24px; height: 70px; border-radius: 4px; }
+.ih-cs-fig-abdomen { width: 58px; height: 24px; border-radius: 3px; }
+.ih-cs-fig-leg     { width: 28px; height: 54px; border-radius: 4px 4px 8px 8px; }
+
+.ih-cs-fig-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  transition: height 400ms ease;
+}
+
+.ih-cs-fig-label {
+  position: relative;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  margin-bottom: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* HP состояния силуэта */
+.ih-cs-fig-part.is-good     { border-color: rgba(74,222,128,0.35); }
+.ih-cs-fig-part.is-good     .ih-cs-fig-fill { background: rgba(74,222,128,0.30); }
+.ih-cs-fig-part.is-warn     { border-color: rgba(250,204,21,0.35); }
+.ih-cs-fig-part.is-warn     .ih-cs-fig-fill { background: rgba(250,204,21,0.28); }
+.ih-cs-fig-part.is-bad      { border-color: rgba(251,146,60,0.40); }
+.ih-cs-fig-part.is-bad      .ih-cs-fig-fill { background: rgba(251,146,60,0.32); }
+.ih-cs-fig-part.is-critical { border-color: rgba(248,113,113,0.55); animation: pulse-crit 1.6s ease-in-out infinite; }
+.ih-cs-fig-part.is-critical .ih-cs-fig-fill { background: rgba(248,113,113,0.38); }
+.ih-cs-fig-part.is-dead     { border-color: rgba(107,50,50,0.65); background: rgba(107,50,50,0.35); opacity:0.65; }
+.ih-cs-fig-part.is-dead     .ih-cs-fig-fill { background: rgba(107,50,50,0.55); }
+
+/* Dots на силуэте */
+.ih-cs-fig-part .ih-fig-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+}
+
+/* HP список справа от силуэта */
+.ih-cs-hp-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ih-cs-hp-row {
+  display: grid;
+  grid-template-columns: 48px 46px 26px 1fr 20px;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: var(--ih-radius-sm);
+  transition: var(--ih-transition);
+}
+
+.ih-cs-hp-row:hover { background: var(--ih-bg-2); }
+
+.ih-cs-hp-label {
+  font-size: 11px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+}
+
+.ih-cs-hp-bar-track {
+  height: 4px;
+  background: var(--ih-bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ih-cs-hp-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ih-hp-good);
+  transition: width 300ms ease;
+}
+
+.ih-cs-hp-row.is-warn .ih-cs-hp-bar-fill     { background: var(--ih-hp-warn); }
+.ih-cs-hp-row.is-bad .ih-cs-hp-bar-fill      { background: var(--ih-hp-bad); }
+.ih-cs-hp-row.is-critical .ih-cs-hp-bar-fill { background: var(--ih-hp-crit); }
+.ih-cs-hp-row.is-dead .ih-cs-hp-bar-fill     { background: var(--ih-hp-dead); }
+
+/* Character sheet — мета поля */
+.ih-cs-meta-field.narrow-age { flex: 0 0 60px; }
+
+.ih-cs-meta-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ih-accent);
+  line-height: 1.2;
+  display: block;
+  padding: 2px 0;
+}
+
+/* Ресурсы — grid строка */
+.ih-cs-res-row {
+  display: grid;
+  grid-template-columns: 18px 52px 1fr 54px;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 0;
+}
+
+/* Resource override */
+.ih-cs-resources { /* v2 */
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+}
+
+/* Layout: иконка | название | [input /max] | бар */
+.ih-cs-res-row {
+  display: grid;
+  grid-template-columns: 16px 50px 90px 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.ih-cs-res-icon { font-size: 12px; text-align: center; }
+.ih-cs-res-icon.energy { color: var(--ih-energy); }
+.ih-cs-res-icon.mana   { color: var(--ih-mana); }
+.ih-cs-res-icon.food   { color: var(--ih-food); }
+.ih-cs-res-icon.water  { color: var(--ih-water); }
+
+.ih-cs-res-name {
+  font-size: 11px;
+  color: var(--ih-text-2);
+  white-space: nowrap;
+}
+
+.ih-cs-res-vals {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ih-cs-res-input {
+  width: 44px;
+  text-align: center;
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 3px;
+}
+
+.ih-cs-res-max { font-size: 10px; color: var(--ih-text-2); white-space: nowrap; }
+.ih-cs-res-static { font-size: 11px; color: var(--ih-text-1); }
+
+.ih-cs-res-track {
+  height: 4px;
+  background: var(--ih-bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ih-cs-res-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 300ms ease;
+}
+
+.ih-cs-res-fill.energy { background: var(--ih-energy); }
+.ih-cs-res-fill.mana   { background: var(--ih-mana); }
+.ih-cs-res-fill.food   { background: var(--ih-food); }
+.ih-cs-res-fill.water  { background: var(--ih-water); }
+/* ── Foundry input override для character sheet ── */
+.ih-char-sheet input[type="text"],
+.ih-char-sheet input[type="number"] {
+  height: auto !important;
+  line-height: normal !important;
+}
+
+.ih-char-sheet .ih-cs-res-input {
+  width: 40px !important;
+  flex: none !important;
+}
+
+.ih-char-sheet .ih-cs-hp-input {
+  width: 44px !important;
+  flex: none !important;
+}
+
+.ih-char-sheet .ih-cs-coin-input {
+  width: 65px !important;
+  flex: none !important;
 }

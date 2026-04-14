@@ -709,3 +709,80 @@ Hooks.on("deleteItem", async (item, options = {}) => {
 
 // NOTE: updateActor hook выше (внутри Hooks.once("ready")) — единственный.
 // Второй дублированный хук удалён (содержал subset той же логики без syncDerivedConditions).
+
+// ============================================================
+// HOTKEYS — автоматическое создание макросов на макробаре
+// Вызывается один раз после загрузки мира (только для GM)
+// ============================================================
+
+async function ensureIronHillsMacros() {
+  if (!game.user?.isGM) return;
+
+  const MACROS = [
+    {
+      slot: 1,
+      name: "⚔ Combat HUD",
+      command: "game.ironHills?.toggleCombatHud?.()",
+      img: "icons/svg/sword.svg",
+      tooltip: "Открыть/закрыть Combat HUD"
+    },
+    {
+      slot: 2,
+      name: "⚔ Combat Manager",
+      command: "game.ironHills?.openCombatManager?.()",
+      img: "icons/svg/combat.svg",
+      tooltip: "Открыть менеджер боя"
+    },
+    {
+      slot: 3,
+      name: "🛒 Торговля",
+      command: `
+const token = canvas.tokens?.controlled?.[0];
+const actor = token?.actor ?? game.user?.character;
+if (!actor) { ui.notifications.warn("Выбери токен торговца"); return; }
+if (actor.type !== "merchant") { ui.notifications.warn("Выбери токен торговца"); return; }
+const { IronHillsTradeApp } = await import("/systems/iron-hills-system/module/apps/trade-app.mjs");
+new IronHillsTradeApp(actor).render(true);
+      `.trim(),
+      img: "icons/svg/coins.svg",
+      tooltip: "Открыть окно торговли с выбранным торговцем"
+    },
+    {
+      slot: 4,
+      name: "🗓 Soul Decay",
+      command: "game.ironHills?.tickSoulDecay?.()",
+      img: "icons/svg/skull.svg",
+      tooltip: "Тик угасания души (GM: используй раз в игровой день)"
+    },
+  ];
+
+  const hotbar = game.macros;
+
+  for (const def of MACROS) {
+    // Проверяем есть ли уже макрос с таким именем
+    const existing = hotbar.find(m => m.name === def.name);
+    let macro = existing;
+
+    if (!macro) {
+      macro = await Macro.create({
+        name:    def.name,
+        type:    "script",
+        command: def.command,
+        img:     def.img,
+        flags:   { "iron-hills-system": { autoCreated: true } }
+      });
+    }
+
+    if (macro) {
+      // Назначаем в слот макробара
+      await game.user.assignHotbarMacro(macro, def.slot);
+    }
+  }
+
+  console.log("Iron Hills | Макросы созданы на слотах 1-4");
+}
+
+// Запускаем после полной загрузки мира
+Hooks.once("ready", () => {
+  setTimeout(() => ensureIronHillsMacros(), 2000);
+});

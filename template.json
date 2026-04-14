@@ -89,7 +89,11 @@
             "leftLeg": false,
             "rightLeg": false,
             "abdomen": false
-          }
+          },
+          "stunned": 0,
+          "silencedUntil": 0,
+          "slowPenalty": 0,
+          "feared": 0
         },
         "initiative": 10
       },

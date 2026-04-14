@@ -522,6 +522,14 @@ export function getSpellCastBlockReason(actor, item, { isScroll = false } = {}) 
     return "Обе руки выведены из строя";
   }
 
+  // Безмолвие
+  if (!isScroll) {
+    const silencedUntil = Number(actor.system?.conditions?.silencedUntil ?? 0);
+    if (silencedUntil > 0 && (game.time?.worldTime ?? 0) < silencedUntil) {
+      return "Персонаж под эффектом безмолвия — нельзя колдовать";
+    }
+  }
+
   const energyCost = Number(item.system?.energyCost ?? 0);
   const manaCost = isScroll ? 0 : Number(item.system?.manaCost ?? 0);
 
@@ -1108,27 +1116,40 @@ export function buildOverviewSummary(actor) {
   const resources = actor.system.resources ?? {};
   const encumbrance = getEncumbranceInfo(actor);
 
+  const pct = (v, m) => Math.round(Math.max(0, Math.min(1, num(v,0) / Math.max(1, num(m,1)))) * 100);
+
+  // Ступень = максимальный навык персонажа
+  const skills = actor.system?.skills ?? {};
+  const maxSkillValue = Object.values(skills).reduce((max, s) => Math.max(max, num(s?.value, 1)), 1);
+  const calculatedTier = maxSkillValue;
+
   return {
     race: actor.system.info?.race || "",
     age: actor.system.info?.age ?? "",
     defense: num(actor.system.combat?.defense, 0),
     unarmedDamage: num(actor.system.combat?.unarmedDamage, 1),
     energyValue: num(resources.energy?.value, 0),
-    energyMax: num(resources.energy?.max, 0),
-    manaValue: num(resources.mana?.value, 0),
-    manaMax: num(resources.mana?.max, 0),
+    energyMax:   num(resources.energy?.max, 0),
+    energyPct:   pct(resources.energy?.value, resources.energy?.max),
+    manaValue:   num(resources.mana?.value, 0),
+    manaMax:     num(resources.mana?.max, 0),
+    manaPct:     pct(resources.mana?.value, resources.mana?.max),
     satietyValue: num(resources.satiety?.value, 0),
-    satietyMax: num(resources.satiety?.max, 0),
+    satietyMax:   num(resources.satiety?.max, 0),
+    satietyPct:   pct(resources.satiety?.value, resources.satiety?.max),
     hydrationValue: num(resources.hydration?.value, 0),
-    hydrationMax: num(resources.hydration?.max, 0),
+    hydrationMax:   num(resources.hydration?.max, 0),
+    hydrationPct:   pct(resources.hydration?.value, resources.hydration?.max),
     weightValue: num(resources.weight?.value, 0),
-    weightMax: num(resources.weight?.max, 0),
+    weightMax:   num(resources.weight?.max, 0),
+    weightPct:   pct(resources.weight?.value, resources.weight?.max),
     coins: getActorCurrency(actor),
     encumbranceLabel: encumbrance.label,
+    calculatedTier: calculatedTier,
     bleeding: num(conditions.bleeding, 0),
-    shock: num(conditions.shock, 0),
-    poison: num(conditions.poison, 0),
-    burning: num(conditions.burning, 0)
+    shock:    num(conditions.shock, 0),
+    poison:   num(conditions.poison, 0),
+    burning:  num(conditions.burning, 0)
   };
 }
 
@@ -1141,12 +1162,17 @@ export function buildSkillGroups(actor) {
     skills: group.skills.map(skillDef => {
       const skillData = actorSkills[skillDef.key] ?? {};
 
+      const val     = num(skillData.value, 1);
+      const exp     = num(skillData.exp, 0);
+      const expNext = num(skillData.expNext, getExpNext(val) ?? 30);
       return {
-        key: skillDef.key,
-        label: skillDef.label,
-        value: num(skillData.value, 1),
-        exp: num(skillData.exp, 0),
-        expNext: num(skillData.expNext, getExpNext(num(skillData.value, 1)) ?? 0)
+        key:     skillDef.key,
+        label:   skillDef.label,
+        value:   val,
+        dieSize: val * 2,
+        exp,
+        expNext,
+        expPct:  Math.round(Math.min(100, exp / Math.max(1, expNext) * 100))
       };
     })
   }));
@@ -1178,8 +1204,10 @@ export function getExpNextForSkill(currentValue) {
 export function getAttackThreshold(targetActor, modifiers = {}) {
   const BASE_THRESHOLD = 4;
 
-  // Броня цели
-  const armorTier = Number(targetActor?.system?.info?.armorTier ?? 0);
+  // Броня цели — можно переопределить для монстров
+  const armorTier = modifiers.armorTierOverride !== undefined
+    ? Number(modifiers.armorTierOverride)
+    : Number(targetActor?.system?.info?.armorTier ?? 0);
   const armorBonus = Math.ceil(armorTier / 2);
 
   // Щит
@@ -1192,13 +1220,17 @@ export function getAttackThreshold(targetActor, modifiers = {}) {
   const stunnedPenalty  = modifiers.isStunned  ? -3 : 0;
   const darknessMalus   = modifiers.inDarkness ?  2 : 0;
 
+  // Страх на цели снижает её защиту
+  const targetFearPenalty = modifiers.targetFeared ? -3 : 0;
+
   const threshold = BASE_THRESHOLD
     + armorBonus
     + shieldBonus
     + lyingPenalty
     + surroundPenalty
     + stunnedPenalty
-    + darknessMalus;
+    + darknessMalus
+    + targetFearPenalty;
 
   return Math.max(1, threshold);
 }
@@ -1240,6 +1272,10 @@ export function getInitiativeValue(actor) {
   if (!armorTorso) {
     modifier += 1;
   }
+
+  // Замедление — штраф к инициативе
+  const slowPenalty = Number(actor.system?.conditions?.slowPenalty ?? 0);
+  modifier -= slowPenalty;
 
   return Math.max(1, BASE + modifier);
 }

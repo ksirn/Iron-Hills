@@ -54,15 +54,22 @@ export function splitRelationsSummary(relations) {
 export function buildRelationsSummary(actor) {
   const relations = getRelationsForCharacter(actor.name);
 
-  return relations.map(r => ({
-    id: r.id,
-    targetTypeRaw: r.system.info?.targetType || "",
-    targetType: relationTypeLabel(r.system.info?.targetType || ""),
-    targetName: r.system.info?.targetName || "—",
-    score: Number(r.system.info?.score ?? 0),
-    tier: r.system.info?.tier || "neutral",
-    notes: r.system.info?.notes || ""
-  }));
+  return relations.map(r => {
+    const score = Number(r.system.info?.score ?? 0);
+    const pct   = Math.round(Math.min(100, Math.max(0, (score + 100) / 2)));
+    return {
+      id: r.id,
+      targetTypeRaw: r.system.info?.targetType || "",
+      targetType: relationTypeLabel(r.system.info?.targetType || ""),
+      targetName: r.system.info?.targetName || "—",
+      score,
+      tier:     r.system.info?.tier  || "neutral",
+      notes:    r.system.info?.notes || "",
+      relPct:   pct,
+      relLeft:  pct < 50 ? pct : 50,
+      relationPositive: score > 0,
+    };
+  });
 }
 
 export function buildWeapon(name, tier, opts = {}) {
@@ -514,4 +521,171 @@ export async function consumeRecipeIngredients(actor, ingredients) {
 
   await recalculateActorWeight(actor);
   return usedTiers;
+}
+// ─── Контекстные квесты из кризисов ─────────────────────
+
+const CRISIS_QUESTS = {
+  "Всплеск бандитизма": [
+    {
+      title: "Зачистить дорогу",
+      description: "На тракте орудует банда. Торговля остановилась — найдите и устраните угрозу.",
+      reward: "Плата стражи + доля добычи",
+      difficulty: 6, type: "combat"
+    },
+    {
+      title: "Найти логово",
+      description: "Бандиты где-то прячутся. Выследите их лагерь и сообщите стражнику.",
+      reward: "Награда за информацию",
+      difficulty: 5, type: "exploration"
+    },
+  ],
+  "Порча урожая": [
+    {
+      title: "Найти альтернативные запасы",
+      description: "Деревне нужна еда. Найдите торговца или охотничьи угодья в округе.",
+      reward: "Бартер + благодарность общины",
+      difficulty: 4, type: "social"
+    },
+    {
+      title: "Выяснить причину",
+      description: "Урожай гибнет — это болезнь растений, вредители, или чья-то злая воля?",
+      reward: "Плата старосты",
+      difficulty: 5, type: "investigation"
+    },
+  ],
+  "Военный порядок": [
+    {
+      title: "Сопроводить отряд",
+      description: "Местная стража выходит на патруль. Нужны опытные бойцы для поддержки.",
+      reward: "Плата от гарнизона",
+      difficulty: 5, type: "combat"
+    },
+  ],
+  "Торговый бум": [
+    {
+      title: "Охрана каравана",
+      description: "Торговцы нанимают охрану для ценного груза. Путь неблизкий.",
+      reward: "Хорошая плата монетами",
+      difficulty: 4, type: "escort"
+    },
+  ],
+  "Разрушенные дороги": [
+    {
+      title: "Расчистить завал",
+      description: "Дорога непроходима из-за оползня. Нужны руки и инструменты.",
+      reward: "Плата от купеческой гильдии",
+      difficulty: 3, type: "work"
+    },
+  ],
+  "Поток переселенцев": [
+    {
+      title: "Найти пропавшую семью",
+      description: "Среди беженцев потерялась семья с детьми. Последний раз их видели у развилки.",
+      reward: "Благодарность + скромная плата",
+      difficulty: 4, type: "investigation"
+    },
+  ],
+};
+
+// Базовые квесты когда нет кризиса
+const BASE_QUESTS = [
+  {
+    title: "Доставить посылку",
+    description: "Местный торговец просит передать груз в соседнее поселение.",
+    reward: "Плата монетами",
+    difficulty: 3, type: "delivery"
+  },
+  {
+    title: "Зачистить подвал",
+    description: "В складе завелась нечисть. Хозяин не может добраться до запасов.",
+    reward: "Бесплатное жильё + еда",
+    difficulty: 4, type: "combat"
+  },
+  {
+    title: "Собрать травы",
+    description: "Местный знахарь нуждается в редких растениях из леса.",
+    reward: "Зелья и лекарства",
+    difficulty: 3, type: "exploration"
+  },
+  {
+    title: "Разобраться в споре",
+    description: "Два торговца поспорили о сделке. Нужен честный арбитр.",
+    reward: "Уважение обоих + плата",
+    difficulty: 3, type: "social"
+  },
+  {
+    title: "Найти пропавшего",
+    description: "Шахтёр не вернулся с работы. Семья в отчаянии.",
+    reward: "Всё что было при пропавшем",
+    difficulty: 5, type: "investigation"
+  },
+];
+
+export function generateQuestForSettlement(settlement) {
+  const crisis = settlement.system?.regionSim?.activeCrisis ?? "";
+  const danger = Number(settlement.system?.info?.danger ?? 5);
+  const name   = settlement.name;
+
+  const pool = CRISIS_QUESTS[crisis] ?? BASE_QUESTS;
+  const base = pool[Math.floor(Math.random() * pool.length)];
+
+  return {
+    ...base,
+    location:    name,
+    settlementId: settlement.id,
+    generated:   new Date().toISOString(),
+    // Сложность растёт с опасностью
+    difficulty: Math.min(10, (base.difficulty ?? 4) + Math.floor(Math.max(0, danger - 5) / 2)),
+  };
+}
+
+// Контекстные имена по культуре региона
+const REGIONAL_NAMES = {
+  nordic: {
+    first: ["Бьорн", "Хельга", "Торвен", "Эйрик", "Сигрун", "Ульф", "Рагна", "Кнут", "Фрея", "Лейф"],
+    last:  ["Железный", "Северный", "Каменный", "Снежный", "Грозный", "Скальный", "Волчий"],
+  },
+  slavic: {
+    first: ["Богдан", "Светлана", "Ждан", "Мирослав", "Добрыня", "Людмила", "Радомир", "Велена"],
+    last:  ["Кузнецов", "Речной", "Холмский", "Медный", "Воронов", "Болотный", "Старков"],
+  },
+  common: {
+    first: ["Арен", "Кир", "Леон", "Нор", "Тален", "Эрвин", "Юран", "Велан", "Дарен", "Зор"],
+    last:  ["Серый", "Долинный", "Лесной", "Горный", "Дымов", "Охотников", "Пепельный"],
+  },
+};
+
+export function makeContextualName(culture = "common", gender = null) {
+  const names = REGIONAL_NAMES[culture] ?? REGIONAL_NAMES.common;
+  const first = names.first[Math.floor(Math.random() * names.first.length)];
+  const last  = names.last[Math.floor(Math.random() * names.last.length)];
+  return `${first} ${last}`;
+}
+
+// Товары торговца из реального supply поселения
+export function getContextualMerchantStock(settlement, specialty, tier = 1) {
+  const supply     = Number(settlement?.system?.info?.supply ?? 5);
+  const danger     = Number(settlement?.system?.info?.danger ?? 5);
+  const prosperity = Number(settlement?.system?.info?.prosperity ?? 5);
+
+  // Базовый список + контекстные бонусы
+  const items = randomMerchantStock(specialty, tier);
+
+  // При хорошем снабжении — больше еды и материалов
+  if (supply >= 7 && (specialty === "general" || specialty === "innkeeper")) {
+    items.push(buildFood("Свежий хлеб", tier, 8, 5, 0.3));
+    items.push(buildFood("Копчёное мясо", tier, 15, 3, 0.8));
+  }
+
+  // При высокой опасности — больше оружия
+  if (danger >= 7 && (specialty === "blacksmith" || specialty === "general")) {
+    items.push(buildWeapon("Простой нож", 1, { skill: "knife", damage: 2, weight: 0.5 }));
+  }
+
+  // При процветании — редкие товары
+  if (prosperity >= 8) {
+    items.push(buildPotion("Зелье бодрости", tier, tier * 3, null, 0, "restoreEnergy", "single", "self", "torso"));
+  }
+
+  return items;
 }

@@ -1,0 +1,69 @@
+<div class="ih-party-app">
+
+  <div class="ih-party-header">
+    <span>Управление группами</span>
+    <a class="ih-btn ih-btn-small ih-btn-primary" data-create-group>+ Новая группа</a>
+  </div>
+
+  {{!-- Группы --}}
+  {{#each groups}}
+  <div class="ih-party-group {{#if isActive}}is-active{{/if}}">
+    <div class="ih-party-group-header">
+      <div class="ih-party-group-color" style="background:{{color}}"></div>
+      <span class="ih-party-group-name">{{label}}</span>
+      <span class="muted-text">{{memberCount}} чел.</span>
+      <span class="muted-text">{{localHoursDisplay}}ч</span>
+      {{#unless isActive}}
+      <a class="ih-btn ih-btn-small" data-activate-group data-group-id="{{id}}">Активна</a>
+      {{else}}
+      <span class="ih-party-active-badge">● Активна</span>
+      {{/unless}}
+      <a class="ih-btn ih-btn-small ih-btn-danger" data-delete-group data-group-id="{{id}}">✕</a>
+    </div>
+
+    <div class="ih-party-group-meta">
+      <input type="text" placeholder="Локация (город, регион...)"
+             data-group-location data-group-id="{{id}}"
+             value="{{location}}" class="ih-party-location-input">
+    </div>
+
+    <div class="ih-party-members">
+      {{#each members}}
+      <div class="ih-party-member">
+        <img src="{{img}}" alt="{{name}}" width="24">
+        <span>{{name}}</span>
+        <a class="ih-icon-btn" data-remove-member
+           data-group-id="{{../id}}" data-char-id="{{id}}" title="Убрать">✕</a>
+      </div>
+      {{else}}
+      <div class="muted-text" style="font-size:11px;padding:4px">Нет участников</div>
+      {{/each}}
+    </div>
+  </div>
+  {{else}}
+  <div class="ih-party-empty">
+    <div>Нет групп</div>
+    <div class="muted-text">Нажми "+ Новая группа" чтобы создать</div>
+  </div>
+  {{/each}}
+
+  {{!-- Назначение персонажей --}}
+  {{#if allChars.length}}
+  <div class="ih-party-assign-section">
+    <div class="ih-party-section-title">Назначить персонажей</div>
+    {{#each allChars}}
+    <div class="ih-party-assign-row">
+      <img src="{{img}}" alt="{{name}}" width="24">
+      <span>{{name}}</span>
+      <select data-assign-char data-char-id="{{id}}">
+        <option value="">— Без группы —</option>
+        {{#each ../groups}}
+        <option value="{{id}}" {{#if (eq id ../../groupId)}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+</div>

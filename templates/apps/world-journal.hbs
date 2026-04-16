@@ -1,0 +1,106 @@
+{{!-- Iron Hills — World Journal --}}
+<div class="ih-wj-app">
+
+  {{!-- Табы --}}
+  <div class="ih-wj-tabs">
+    <a class="ih-wj-tab {{#if (eq tab 'summary')}}is-active{{/if}}" data-journal-tab="summary">
+      🏘 Обстановка
+    </a>
+    {{#if isGM}}
+    <a class="ih-wj-tab {{#if (eq tab 'gm')}}is-active{{/if}}" data-journal-tab="gm">
+      📋 Полный лог (GM)
+    </a>
+    {{/if}}
+    <a class="ih-wj-tab {{#if (eq tab 'rumors')}}is-active{{/if}}" data-journal-tab="rumors">
+      💬 Слухи
+    </a>
+  </div>
+
+  <div class="ih-wj-body">
+
+    {{!-- ── Обстановка ── --}}
+    {{#if (eq tab 'summary')}}
+    <div class="ih-wj-section-title">Состояние локаций</div>
+
+    {{#if isGM}}
+    <div class="ih-wj-gm-actions">
+      <a class="ih-btn ih-btn-primary" data-run-week>⏳ Симулировать неделю</a>
+      <a class="ih-btn" data-restock-all>🛒 Пополнить торговцев</a>
+    </div>
+    {{/if}}
+
+    {{#if hasLocations}}
+    <div class="ih-wj-locations">
+      {{#each locationSummary}}
+      <div class="ih-wj-location">
+        <div class="ih-wj-loc-header">
+          <span class="ih-wj-loc-name">{{name}}</span>
+          <span class="ih-wj-loc-tier muted-text">ст.{{tier}}</span>
+          {{#if crisis}}
+          <span class="ih-wj-crisis">⚠ {{crisis}}</span>
+          {{/if}}
+          <span class="ih-wj-price" title="Коэффициент цен: {{priceFactor}}">{{priceLabel}} ×{{priceFactor}}</span>
+        </div>
+        <div class="ih-wj-loc-stats">
+          <span title="Процветание">🌟 {{prosperity}}/10</span>
+          <span title="Опасность">⚔ {{danger}}/10</span>
+          <span title="Снабжение">📦 {{supply}}/10</span>
+          <span title="Стабильность">🛡 {{stability}}/10</span>
+        </div>
+        {{#if isGM}}
+        <div class="ih-wj-loc-actions">
+          <a class="ih-btn ih-btn-small" data-tick-settlement data-name="{{name}}">⏱ Тик</a>
+          <a class="ih-btn ih-btn-small" data-gen-quest data-name="{{name}}">📋 Квест</a>
+        </div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-wj-empty">Нет поселений. Создай их через World Tools.</div>
+    {{/if}}
+    {{/if}}
+
+    {{!-- ── Полный лог GM ── --}}
+    {{#if (eq tab 'gm')}}
+    {{#if isGM}}
+    <div class="ih-wj-section-title">Хронология событий</div>
+    {{#if hasEvents}}
+    <div class="ih-wj-log">
+      {{#each allEvents}}
+      <div class="ih-wj-entry severity-{{severity}}">
+        <span class="ih-wj-entry-time">{{timeLabel}}</span>
+        <span class="ih-wj-entry-loc">{{location}}</span>
+        <span class="ih-wj-entry-text">{{text}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-wj-empty">
+      Нет событий. Запусти симуляцию через вкладку "Обстановка".
+    </div>
+    {{/if}}
+    {{/if}}
+    {{/if}}
+
+    {{!-- ── Слухи (игроки) ── --}}
+    {{#if (eq tab 'rumors')}}
+    <div class="ih-wj-section-title">
+      Слухи {{#unless isGM}}<span class="muted-text">— что слышали ваши персонажи</span>{{/unless}}
+    </div>
+    {{#if hasRumors}}
+    <div class="ih-wj-rumors">
+      {{#each playerRumors}}
+      <div class="ih-wj-rumor">
+        <span class="ih-wj-rumor-time muted-text">{{timeLabel}}</span>
+        <span class="ih-wj-rumor-text">{{text}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-wj-empty">Персонажи пока ничего не слышали.</div>
+    {{/if}}
+    {{/if}}
+
+  </div>
+</div>

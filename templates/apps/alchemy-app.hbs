@@ -1,0 +1,120 @@
+{{!-- Iron Hills — Alchemy App --}}
+<div class="ih-alch-app">
+
+  {{!-- Левая: реагенты в инвентаре --}}
+  <div class="ih-alch-reagents">
+    <div class="ih-alch-panel-title">Реагенты</div>
+
+    {{#if inventoryReagents.length}}
+    <div class="ih-alch-reagent-list">
+      {{#each inventoryReagents}}
+      <div class="ih-alch-reagent {{#if isSelected}}is-selected{{/if}}"
+           title="{{name}}">
+        <span class="ih-alch-reagent-icon">{{icon}}</span>
+        <div class="ih-alch-reagent-info">
+          <span class="ih-alch-reagent-name">{{name}}</span>
+          <div class="ih-alch-reagent-effects">
+            {{#each effects}}
+            <span class="ih-alch-effect-tag" style="color:{{color}}">{{icon}} {{label}} {{potency}}</span>
+            {{/each}}
+          </div>
+        </div>
+        <div class="ih-alch-reagent-right">
+          <span class="ih-alch-reagent-qty">×{{qty}}</span>
+          {{#if volatility}}<span class="ih-alch-volatile" title="Летучесть {{volatility}}">💥{{volatility}}</span>{{/if}}
+          {{#if canAdd}}
+          <a class="ih-btn ih-btn-small" data-add-reagent data-reagent-key="{{key}}">+</a>
+          {{else if isSelected}}
+          <span class="ih-alch-selected-mark">✓</span>
+          {{/if}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-alch-empty">Нет реагентов в инвентаре</div>
+    {{/if}}
+  </div>
+
+  {{!-- Правая: смешивание и результат --}}
+  <div class="ih-alch-mixer">
+
+    {{!-- Выбранные реагенты --}}
+    <div class="ih-alch-mix-header">
+      <span class="ih-alch-panel-title">Смесь ({{selectedCount}}/{{maxReagents}})</span>
+      {{#if selectedCount}}<a class="ih-btn ih-btn-small" data-clear-reagents>Очистить</a>{{/if}}
+    </div>
+
+    <div class="ih-alch-cauldron">
+      {{#each selectedReagents}}
+      <div class="ih-alch-mix-item">
+        <span class="ih-alch-mix-icon">{{icon}}</span>
+        <span class="ih-alch-mix-name">{{name}}</span>
+        {{#if volatility}}<span class="ih-alch-volatile">💥{{volatility}}</span>{{/if}}
+        <a class="ih-icon-btn" data-remove-reagent data-reagent-key="{{key}}">✕</a>
+      </div>
+      {{else}}
+      <div class="ih-alch-cauldron-empty">
+        Добавь реагенты слева<br>
+        <span class="muted-text">минимум 2</span>
+      </div>
+      {{/each}}
+    </div>
+
+    {{!-- Результат --}}
+    {{#if resultPreview}}
+    <div class="ih-alch-result">
+      <div class="ih-alch-result-title">Результат</div>
+      <div class="ih-alch-result-name">{{resultPreview.name}}</div>
+      <div class="ih-alch-result-stats">
+        <div class="ih-alch-stat">
+          <span>Сила</span><b>{{resultPreview.power}}</b>
+        </div>
+        <div class="ih-alch-stat">
+          <span>Порог</span><b>{{resultPreview.successThreshold}}</b>
+        </div>
+        <div class="ih-alch-stat">
+          <span>Шанс</span>
+          <b class="{{#if (gt resultPreview.successChance 50)}}text-good{{else}}text-warn{{/if}}">
+            ~{{resultPreview.successChance}}%
+          </b>
+        </div>
+        {{#if resultPreview.explosionRisk}}
+        <div class="ih-alch-stat danger">
+          <span>💥 Взрыв</span>
+          <b class="text-bad">{{resultPreview.explosionRisk}}%</b>
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{else if hasFailed}}
+    <div class="ih-alch-unknown">
+      ❓ Неизвестная комбинация
+      <div class="muted-text">Попробуй другие реагенты</div>
+    </div>
+    {{/if}}
+
+    {{!-- Навык --}}
+    <div class="ih-alch-skill-row">
+      <span class="muted-text">Алхимия ст.{{skillValue}} (д{{dieSize}})</span>
+    </div>
+
+    {{!-- Кнопка --}}
+    <div class="ih-alch-action">
+      {{#if canBrew}}
+      <a class="ih-btn ih-btn-primary ih-btn-lg" data-do-brew>
+        ⚗ Сварить
+      </a>
+      {{else if (eq selectedCount 0)}}
+      <div class="ih-alch-hint">Добавь реагенты для начала</div>
+      {{else if (eq selectedCount 1)}}
+      <div class="ih-alch-hint">Нужно минимум 2 реагента</div>
+      {{else if hasFailed}}
+      <div class="ih-alch-hint text-bad">Неизвестная комбинация</div>
+      {{else}}
+      <div class="ih-alch-hint text-bad">Нет навыка алхимии</div>
+      {{/if}}
+    </div>
+
+  </div>
+</div>

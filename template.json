@@ -8,7 +8,9 @@
       "container",
       "settlement",
       "poi",
-      "monster"
+      "monster",
+      "party",
+      "group"
     ],
     "templates": {
       "commonResources": {
@@ -95,7 +97,8 @@
           "slowPenalty": 0,
           "feared": 0
         },
-        "initiative": 10
+        "initiative": 10,
+        "diseases": {}
       },
       "npcResources": {
         "resources": {
@@ -121,12 +124,18 @@
         "commonResources"
       ],
       "equipment": {
-        "rightHand": "",
+        "head": "",
+        "neck": "",
+        "torso": "",
+        "leftArm": "",
+        "rightArm": "",
+        "legs": "",
+        "ringLeft": "",
+        "ringRight": "",
         "leftHand": "",
-        "armorHead": "",
-        "armorTorso": "",
-        "armorArms": "",
-        "armorLegs": ""
+        "rightHand": "",
+        "belt": "",
+        "backpack": ""
       },
       "quickSlots": {
         "slot1": "",
@@ -320,7 +329,25 @@
           "exp": 0,
           "expNext": 25
         }
-      }
+      },
+      "inventory": {
+        "pockets": {
+          "items": []
+        },
+        "belt": {
+          "items": []
+        },
+        "vest": {
+          "items": []
+        },
+        "backpack": {
+          "items": []
+        }
+      },
+      "partyKey": "",
+      "partyRole": "",
+      "group": "",
+      "diseases": {}
     },
     "npc": {
       "templates": [
@@ -505,6 +532,23 @@
       },
       "initiative": 10,
       "loot": []
+    },
+    "party": {
+      "label": "",
+      "description": "",
+      "isActive": false,
+      "worldTimeSynced": 0,
+      "locationName": "",
+      "status": "active",
+      "dailyCostCopper": 0
+    },
+    "partyGroup": {
+      "label": "",
+      "color": "#5b9cf6",
+      "isActive": false,
+      "localTime": 0,
+      "location": "",
+      "status": "idle"
     }
   },
   "Item": {
@@ -521,7 +565,11 @@
       "throwable",
       "consumable",
       "quest",
-      "relation"
+      "relation",
+      "jewelry",
+      "belt",
+      "backpack",
+      "attachment"
     ],
     "relation": {
       "info": {
@@ -609,7 +657,14 @@
       "damageType": "physical",
       "skill": "sword",
       "twoHanded": false,
-      "energyCost": 10
+      "energyCost": 10,
+      "durability": {
+        "value": 100,
+        "max": 100
+      },
+      "actionSeconds": 3,
+      "gridW": 1,
+      "gridH": 3
     },
     "armor": {
       "tier": 1,
@@ -620,7 +675,24 @@
       "protection": {
         "physical": 1,
         "magical": 0
-      }
+      },
+      "durability": {
+        "value": 100,
+        "max": 100
+      },
+      "gridW": 2,
+      "gridH": 2,
+      "resist": 2,
+      "containerSlots": {
+        "cols": 0,
+        "rows": 0
+      },
+      "attachmentSlots": [],
+      "accessSeconds": 1,
+      "covers": [
+        "torso"
+      ],
+      "layer": "outer"
     },
     "food": {
       "tier": 1,
@@ -628,13 +700,21 @@
       "weight": 1,
       "quantity": 1,
       "satiety": 20,
-      "hydration": 0
+      "hydration": 0,
+      "gridW": 1,
+      "gridH": 1
     },
     "tool": {
       "tier": 1,
       "weight": 1,
       "quantity": 1,
-      "craftType": "blacksmithing"
+      "craftType": "blacksmithing",
+      "durability": {
+        "value": 100,
+        "max": 100
+      },
+      "gridW": 1,
+      "gridH": 2
     },
     "resource": {
       "tier": 1,
@@ -646,7 +726,9 @@
       "tier": 1,
       "weight": 1,
       "quantity": 1,
-      "category": "metal"
+      "category": "metal",
+      "gridW": 1,
+      "gridH": 1
     },
     "spell": {
       "school": "life",
@@ -656,7 +738,9 @@
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
-      "targetPart": ""
+      "targetPart": "",
+      "gridW": 1,
+      "gridH": 1
     },
     "potion": {
       "tier": 1,
@@ -667,7 +751,9 @@
       "actionType": "",
       "applicationScope": "global",
       "targetActorMode": "self",
-      "targetPart": ""
+      "targetPart": "",
+      "gridW": 1,
+      "gridH": 1
     },
     "scroll": {
       "school": "life",
@@ -677,7 +763,9 @@
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
-      "targetPart": ""
+      "targetPart": "",
+      "gridW": 1,
+      "gridH": 2
     },
     "throwable": {
       "tier": 1,
@@ -690,7 +778,9 @@
       "energyCost": 8,
       "targetPart": "torso",
       "appliesPoison": 0,
-      "appliesBurning": 0
+      "appliesBurning": 0,
+      "gridW": 1,
+      "gridH": 1
     },
     "consumable": {
       "tier": 1,
@@ -701,7 +791,102 @@
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
-      "targetPart": ""
+      "targetPart": "",
+      "gridW": 1,
+      "gridH": 1
+    },
+    "jewelry": {
+      "tier": 1,
+      "weight": 0.1,
+      "quantity": 1,
+      "slot": "neck",
+      "effect": "",
+      "bonuses": {
+        "energy": 0,
+        "mana": 0,
+        "initiative": 0,
+        "spellPower": 0
+      },
+      "gridW": 1,
+      "gridH": 1,
+      "durability": {
+        "value": 50,
+        "max": 50
+      }
+    },
+    "belt": {
+      "tier": 1,
+      "weight": 0.5,
+      "quantity": 1,
+      "quality": "common",
+      "gridW": 2,
+      "gridH": 1,
+      "durability": {
+        "value": 25,
+        "max": 25
+      },
+      "containerSlots": {
+        "cols": 3,
+        "rows": 1
+      },
+      "attachmentSlots": [
+        {
+          "key": "attach_0",
+          "w": 1,
+          "h": 2,
+          "label": "Крепление 1"
+        },
+        {
+          "key": "attach_1",
+          "w": 1,
+          "h": 2,
+          "label": "Крепление 2"
+        }
+      ],
+      "accessSeconds": 1
+    },
+    "backpack": {
+      "tier": 1,
+      "weight": 1.0,
+      "quantity": 1,
+      "quality": "common",
+      "gridW": 2,
+      "gridH": 3,
+      "durability": {
+        "value": 25,
+        "max": 25
+      },
+      "containerSlots": {
+        "cols": 5,
+        "rows": 6
+      },
+      "attachmentSlots": [],
+      "accessSeconds": 3
+    },
+    "attachment": {
+      "tier": 1,
+      "weight": 0.3,
+      "quantity": 1,
+      "gridW": 1,
+      "gridH": 2,
+      "durability": {
+        "value": 20,
+        "max": 20
+      },
+      "attachesTo": "belt",
+      "parentSlotKey": "",
+      "addsSlots": {
+        "cols": 3,
+        "rows": 1
+      },
+      "addsLabel": "Бандольера",
+      "allowedTypes": [
+        "consumable",
+        "potion",
+        "throwable",
+        "food"
+      ],
+      "accessSeconds": 1
     }
   },
   "system": {}

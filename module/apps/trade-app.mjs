@@ -217,8 +217,58 @@ class IronHillsTradeApp extends Application {
     return "systems/iron-hills-system/templates/apps/trade-app.hbs";
   }
 
+  async _requestPlayerConfirmation(userId, message) {
+    return new Promise(resolve => {
+      // GM — автоматически подтверждает
+      if (game.user?.isGM) { resolve(true); return; }
+
+      // Если это наш запрос — показываем диалог
+      if (userId === game.user?.id) {
+        Dialog.confirm({
+          title: "Запрос торговли",
+          content: `<p style="color:#a8b8d0">${message}</p>`
+        }).then(resolve);
+        return;
+      }
+
+      // Отправляем через socket и ждём ответа
+      const reqId = foundry.utils.randomID();
+
+      // Listener на ответ
+      const handler = (data) => {
+        if (data.reqId !== reqId) return;
+        game.socket?.off("system.iron-hills-system", handler);
+        resolve(data.confirmed);
+      };
+      game.socket?.on("system.iron-hills-system", handler);
+
+      // Отправляем запрос
+      game.socket?.emit("system.iron-hills-system", {
+        type: "tradeConfirmRequest",
+        reqId,
+        targetUserId: userId,
+        message,
+        fromName: game.user?.name
+      });
+
+      // Таймаут 30 секунд
+      setTimeout(() => {
+        game.socket?.off("system.iron-hills-system", handler);
+        resolve(false);
+      }, 30000);
+    });
+  }
+
   _getCharacter() {
+    // Явно выбран UUID (торговля за другого) — используем его
     if (this._characterUuid) return getPersistentActor(getCharacterActorByUuid(this._characterUuid));
+    // Привязка к открывшему окно игроку
+    const controlled = canvas.tokens?.controlled ?? [];
+    for (const t of controlled) {
+      if (t.actor?.type === "character" && t.actor.hasPlayerOwner) return getPersistentActor(t.actor);
+    }
+    const userChar = game.user?.character;
+    if (userChar) return getPersistentActor(userChar);
     return getPersistentActor(getTradeCharacterByUuidOrActive(""));
   }
 
@@ -258,6 +308,17 @@ class IronHillsTradeApp extends Application {
       ? getTradePriceModifiers(character, merchant)
       : { relationScore: 0, buyModifier: 1, sellModifier: 1, relationPositive: true };
 
+    // Экономический модификатор от симуляции поселения
+    const marketFactor = Number(merchant?.system?.market?.currentPriceFactor ?? 1);
+    // Применяем к обоим модификаторам
+    if (marketFactor !== 1) {
+      mods.buyModifier  = +(mods.buyModifier  * marketFactor).toFixed(3);
+      mods.sellModifier = +(mods.sellModifier / marketFactor).toFixed(3);
+    }
+    const marketLabel = marketFactor > 1.1 ? "📈 Дефицит"
+      : marketFactor < 0.9 ? "📉 Избыток"
+      : "⚖ Норма";
+
     // Раскладываем монеты предложений в плоские поля для шаблона
     const leftCoinsFlat  = { ...s.leftCoins };
     const rightCoinsFlat = { ...s.rightCoins };
@@ -270,6 +331,16 @@ class IronHillsTradeApp extends Application {
       rightValue: rightCoinsFlat[k] ?? 0
     }));
 
+    // Считаем кошельки с учётом монет в предложении
+    const charTotalCopper     = coinsToCopper(charCoins);
+    const merchantTotalCopper = coinsToCopper(merchantCoins);
+    const offerLeftCopper     = coinsToCopper(s.leftCoins);
+    const offerRightCopper    = coinsToCopper(s.rightCoins);
+
+    // Монеты после сделки (предварительно)
+    const charAfter     = copperToCoins(Math.max(0, charTotalCopper     - offerLeftCopper  + offerRightCopper));
+    const merchantAfter = copperToCoins(Math.max(0, merchantTotalCopper - offerRightCopper + offerLeftCopper));
+
     return {
       isGM,
       merchantName: merchant?.name ?? "Торговец",
@@ -277,12 +348,19 @@ class IronHillsTradeApp extends Application {
       merchantTier: merchant?.system?.info?.tier ?? 1,
       characterName: character?.name ?? "—",
       characterImg:  character?.img  ?? "",
-      tradeCharacterOptions: getTradeCharacterOptions() ?? [],
+      // Кошельки
+      charCoins, merchantCoins,
+      charAfter, merchantAfter,
+      charTotalCopper, merchantTotalCopper,
+      marketFactor, marketLabel,
+      tradeCharacterOptions: [], // дропдаун убран — торговля только от своего персонажа
       characterUuid: this._characterUuid,
 
       tradeSummary: merchant ? buildTradeSummary(merchant) : {},
       reputation:   mods.relationScore ?? 0,
       reputationPositive: mods.relationPositive,
+      marketFactor: marketFactor,
+      marketLabel:  marketLabel,
 
       // Инвентари
       charItems:     charItems     ?? [],
@@ -443,6 +521,45 @@ class IronHillsTradeApp extends Application {
     });
 
     // Character select
+    // Торговать за другого игрока — запрос подтверждения
+    html.find("[data-trade-for-other]").on("click", async () => {
+      if (!game.user?.isGM && !game.user?.character) return;
+
+      // Список персонажей других игроков онлайн
+      const others = game.users
+        .filter(u => u.active && u.id !== game.user.id && u.character)
+        .map(u => ({ id: u.id, name: u.character.name, charUuid: u.character.uuid, userId: u.id }));
+
+      if (!others.length) { ui.notifications.warn("Нет других активных игроков с персонажами."); return; }
+
+      const buttons = {};
+      for (const o of others) {
+        buttons[o.id] = { label: o.name, callback: () => o };
+      }
+
+      const chosen = await Dialog.wait({
+        title: "Торговать за другого",
+        content: `<p style="color:#a8b8d0">Выбери персонажа от чьего имени торговать.<br>
+          <small>Этому игроку придёт запрос подтверждения.</small></p>`,
+        buttons,
+        default: Object.keys(buttons)[0]
+      });
+      if (!chosen) return;
+
+      // Отправляем запрос через socket
+      const confirmed = await this._requestPlayerConfirmation(chosen.userId,
+        `${game.user.character?.name ?? game.user.name} хочет торговать от твоего имени. Разрешить?`
+      );
+
+      if (confirmed) {
+        this._characterUuid = chosen.charUuid;
+        this.render(false);
+        ui.notifications.info(`Торговля от имени ${chosen.name}`);
+      } else {
+        ui.notifications.warn("Игрок отказал.");
+      }
+    });
+
     html.find("[data-char-select]").on("change", event => {
       this._characterUuid = event.currentTarget.value;
       resetState(this._tradeState);
@@ -782,6 +899,19 @@ class IronHillsTradeApp extends Application {
       resetState(this._tradeState);
       this.render(false);
       if (character.sheet?.rendered) character.sheet.render(false);
+
+      // Бонус к репутации за успешную сделку (+3)
+      try {
+        const { getRelationsForCharacter } = await import("../services/world-content-service.mjs");
+        const merchant = getLiveActor(this.merchant);
+        const rels     = getRelationsForCharacter(character.name);
+        const relName  = merchant?.system?.info?.settlement || merchant?.name;
+        const rel      = rels.find(r => r.system.info?.targetName === relName);
+        if (rel) {
+          const cur = Number(rel.system.info?.score ?? 0);
+          await rel.update({ "system.info.score": Math.min(100, cur + 3) });
+        }
+      } catch {}
 
     } catch (err) {
       debugError("TradeApp._executeTrade", err);

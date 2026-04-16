@@ -70,8 +70,44 @@ export function getEquippedArmorForLocation(actor, locationKey) {
 
 export function getDamageReduction(armorItem, damageType) {
   if (!armorItem || armorItem.type !== "armor") return 0;
-  if (damageType === "magical") return Number(armorItem.system.protection?.magical ?? 0);
-  return Number(armorItem.system.protection?.physical ?? 0);
+
+  const durVal   = Number(armorItem.system?.durability?.value ?? 100);
+  const durMax   = Number(armorItem.system?.durability?.max   ?? 100);
+  const durRatio = durMax > 0 ? Math.max(0, durVal / durMax) : 1;
+  const scale    = durRatio >= 0.5 ? 1 : durRatio * 2;
+
+  const base = Number(armorItem.system?.resist ?? armorItem.system?.protection?.physical ?? 0);
+  const baseMag = Number(armorItem.system?.resistMag ?? armorItem.system?.protection?.magical ?? 0);
+  const val  = damageType === "magical" ? baseMag : base;
+  return Math.floor(val * scale);
+}
+
+/**
+ * Возвращает лучший резист для зоны из всех слоёв брони.
+ * Используется вместо getEquippedArmorForLocation когда нужен стек.
+ */
+export function getBestResistForZone(actor, zone, damageType = "physical") {
+  const equip = actor.system?.equipment ?? {};
+  const SLOT_COVERS = {
+    head:       ["head"],
+    torso:      ["torso"],
+    torsoUnder: ["torso", "abdomen"],
+    leftArm:    ["leftArm"],
+    rightArm:   ["rightArm"],
+    legs:       ["leftLeg", "rightLeg"],
+  };
+
+  let best = 0;
+  for (const [slot, itemId] of Object.entries(equip)) {
+    if (!itemId) continue;
+    const item = actor.items.get(itemId);
+    if (!item || item.type !== "armor") continue;
+    const covers = item.system?.covers ?? SLOT_COVERS[slot] ?? [];
+    if (!covers.includes(zone)) continue;
+    const r = getDamageReduction(item, damageType);
+    if (r > best) best = r;
+  }
+  return best;
 }
 
 export function getEncumbranceInfo(actor) {
@@ -236,14 +272,40 @@ export function getActorInjuryInfo(actor) {
     legFracturePenalty,
     disabledArmCount,
     disabledLegCount,
+  };
 
-    attackPenalty: meleePenalty,
-    meleePenalty,
+  // Штрафы от болезней (синхронно через глобальный кэш)
+  let diseaseAttackPenalty = 0;
+  let diseaseCastPenalty   = 0;
+  const diseaseData = actor.system?.diseases ?? {};
+  const DCATALOG = globalThis._IH_DISEASES ?? {};
+  for (const [key, data] of Object.entries(diseaseData)) {
+    if (!data || data.stage < 0) continue;
+    const def   = DCATALOG[key];
+    if (!def) continue;
+    const stage = def.stages?.[data.stage];
+    for (const sym of (stage?.symptoms ?? [])) {
+      if (sym.type === "attackPenalty") diseaseAttackPenalty += sym.value;
+      if (sym.type === "castPenalty")   diseaseCastPenalty   += sym.value;
+    }
+  }
+
+  return {
+    attackPenalty: meleePenalty + diseaseAttackPenalty,
+    meleePenalty:  meleePenalty + diseaseAttackPenalty,
     throwPenalty,
-    castPenalty,
+    castPenalty:   castPenalty  + diseaseCastPenalty,
     movementPenalty,
     manipulationPenalty
   };
+}
+
+// Импортируем болезни лениво чтобы избежать циклических зависимостей
+async function _getDiseasePenalties(actor) {
+  try {
+    const { getDiseasesPenalties } = await import("../constants/diseases.mjs");
+    return getDiseasesPenalties(actor);
+  } catch { return {}; }
 }
 
 export function getDerivedConditionState(actor) {
@@ -866,7 +928,14 @@ export function buildGroupedItems(actor) {
           scrollBlockedReason: scrollReason,
 
           canAssignQuick,
-          quickAssignSlots
+          quickAssignSlots,
+          hasDurability: item.system?.durability !== undefined,
+          durabilityValue: Number(item.system?.durability?.value ?? 100),
+          durabilityMax:   Number(item.system?.durability?.max   ?? 100),
+          durabilityPct: item.system?.durability
+            ? Math.round(Math.max(0, Number(item.system.durability.value)) / Math.max(1, Number(item.system.durability.max)) * 100)
+            : 100,
+          isBroken: item.system?.durability ? Number(item.system.durability.value) <= 0 : false
         };
       })
     });

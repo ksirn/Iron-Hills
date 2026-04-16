@@ -1,0 +1,116 @@
+{{!-- Iron Hills — Craft App --}}
+<div class="ih-craft-app">
+
+  {{!-- Левая: список рецептов --}}
+  <div class="ih-craft-list">
+
+    {{!-- Поиск + фильтры --}}
+    <div class="ih-craft-search-wrap">
+      <input class="ih-craft-search" type="text" data-search
+             placeholder="🔍 Поиск рецепта..." value="{{search}}">
+    </div>
+    <div class="ih-craft-filters">
+      {{#each filters}}
+      <a class="ih-craft-filter {{#if (eq key ../activeFilter)}}is-active{{/if}}"
+         data-filter="{{key}}">{{label}}</a>
+      {{/each}}
+    </div>
+
+    {{!-- Рецепты --}}
+    <div class="ih-craft-recipes">
+      {{#each recipes}}
+      <div class="ih-craft-recipe {{#if canCraft}}can-craft{{/if}} {{#if isSelected}}is-selected{{/if}}"
+           data-recipe-id="{{id}}">
+        <div class="ih-craft-recipe-name">{{label}}</div>
+        <div class="ih-craft-recipe-meta">
+          <span class="ih-craft-skill">{{skillLabel}}</span>
+          <span class="ih-craft-diff">порог {{difficulty}}</span>
+          <span class="ih-craft-chance {{#if canCraft}}good{{/if}}">{{successChance}}%</span>
+        </div>
+        <div class="ih-craft-ingr-dots">
+          {{#each ingredients}}
+          <span class="ih-craft-dot {{#if enough}}ok{{else}}miss{{/if}}"
+                title="{{label}}: {{have}}/{{need}}"></span>
+          {{/each}}
+        </div>
+      </div>
+      {{else}}
+      <div class="ih-craft-empty">Нет рецептов</div>
+      {{/each}}
+    </div>
+
+  </div>
+
+  {{!-- Правая: детали выбранного --}}
+  <div class="ih-craft-detail">
+    {{#if selected}}
+
+    <div class="ih-craft-detail-title">{{selected.label}}</div>
+
+    <div class="ih-craft-detail-stats">
+      <div class="ih-craft-stat">
+        <span class="ih-craft-stat-label">Навык</span>
+        <span class="ih-craft-stat-val">{{selected.skillLabel}} ст.{{selected.skillValue}} (d{{selected.dieSize}})</span>
+      </div>
+      <div class="ih-craft-stat">
+        <span class="ih-craft-stat-label">Сложность</span>
+        <span class="ih-craft-stat-val">{{selected.difficulty}}</span>
+      </div>
+      <div class="ih-craft-stat">
+        <span class="ih-craft-stat-label">Шанс успеха</span>
+        <span class="ih-craft-stat-val {{#if selected.canCraft}}text-good{{else}}text-bad{{/if}}">
+          ~{{selected.successChance}}%
+        </span>
+      </div>
+      <div class="ih-craft-stat">
+        <span class="ih-craft-stat-label">Инструмент</span>
+        <span class="ih-craft-stat-val {{#unless selected.hasTool}}text-bad{{/unless}}">
+          {{#if selected.hasTool}}✓ {{selected.toolName}}{{else}}✗ Нет инструмента{{/if}}
+        </span>
+      </div>
+    </div>
+
+    <div class="ih-craft-ingr-title">Ингредиенты</div>
+    <div class="ih-craft-ingr-list">
+      {{#each selected.ingredients}}
+      <div class="ih-craft-ingr {{#if enough}}ok{{else}}miss{{/if}}">
+        <span class="ih-craft-ingr-name">{{label}}</span>
+        <span class="ih-craft-ingr-count">{{have}} / {{need}}</span>
+        <span class="ih-craft-ingr-status">{{#if enough}}✓{{else}}✗{{/if}}</span>
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="ih-craft-quality-hint">
+      <div class="ih-craft-quality-title">Качество по перевесу</div>
+      <div class="ih-craft-quality-table">
+        <span>+0..+1</span><span>Обычное</span>
+        <span>+2..+4</span><span>Хорошее (+1)</span>
+        <span>+5..+7</span><span>Мастерское (+2)</span>
+        <span>+8+</span><span class="text-gold">Легендарное (+3)</span>
+      </div>
+    </div>
+
+    <div class="ih-craft-actions">
+      {{#if selected.canCraft}}
+      <a class="ih-btn ih-btn-primary ih-btn-lg" data-do-craft="{{selected.id}}"
+         data-recipe-id="{{selected.id}}">
+        🔨 Создать
+      </a>
+      {{else}}
+      <div class="ih-craft-blocked">
+        {{#unless selected.hasTool}}Нет инструмента · {{/unless}}
+        {{#unless selected.allIngr}}Не хватает материалов{{/unless}}
+      </div>
+      {{/if}}
+    </div>
+
+    {{else}}
+    <div class="ih-craft-no-selection">
+      <div style="font-size:40px;opacity:0.2">🔨</div>
+      <div>Выбери рецепт слева</div>
+    </div>
+    {{/if}}
+  </div>
+
+</div>

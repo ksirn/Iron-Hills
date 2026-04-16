@@ -20,6 +20,13 @@
         <div class="ih-trade-party-meta">
           {{#if tradeSummary.specialty}}<span class="ih-trade-tag">{{tradeSummary.specialty}}</span>{{/if}}
           <span class="ih-trade-tag">Ст. {{merchantTier}}</span>
+          {{#if marketLabel}}<span class="ih-trade-tag">{{marketLabel}}</span>{{/if}}
+        </div>
+        <div class="ih-trade-wallet">
+          <span title="Медь">🟤 {{merchantCoins.copper}}</span>
+          <span title="Серебро">⚪ {{merchantCoins.silver}}</span>
+          <span title="Золото">🟡 {{merchantCoins.gold}}</span>
+          {{#if merchantAfter}}<span class="ih-trade-wallet-after" title="После сделки">→ 🟡{{merchantAfter.gold}} ⚪{{merchantAfter.silver}} 🟤{{merchantAfter.copper}}</span>{{/if}}
         </div>
       </div>
     </div>
@@ -29,11 +36,16 @@
     <div class="ih-trade-party right">
       <div class="ih-trade-party-info right">
         <div class="ih-trade-party-name">{{characterName}}</div>
-        <select class="ih-trade-char-select" data-char-select>
-          {{#each tradeCharacterOptions}}
-          <option value="{{uuid}}" {{#if (eq uuid ../characterUuid)}}selected{{/if}}>{{name}}</option>
-          {{/each}}
-        </select>
+        <div class="ih-trade-wallet right">
+          {{#if charAfter}}<span class="ih-trade-wallet-after" title="После сделки">🟡{{charAfter.gold}} ⚪{{charAfter.silver}} 🟤{{charAfter.copper}} →</span>{{/if}}
+          <span title="Золото">🟡 {{charCoins.gold}}</span>
+          <span title="Серебро">⚪ {{charCoins.silver}}</span>
+          <span title="Медь">🟤 {{charCoins.copper}}</span>
+        </div>
+        <a class="ih-trade-for-other" data-trade-for-other
+           title="Торговать от имени другого игрока">
+          {{#if characterUuid}}✎ Сменить{{else}}👥 Другой игрок{{/if}}
+        </a>
       </div>
       <div class="ih-trade-avatar">
         <img src="{{characterImg}}" alt="{{characterName}}">

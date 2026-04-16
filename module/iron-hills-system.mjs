@@ -6,6 +6,14 @@
 import { IronHillsActorSheet }   from "./apps/actor-sheet.mjs";
 import { IronHillsItemSheet }    from "./apps/item-sheet.mjs";
 import { IronHillsTradeApp }     from "./apps/trade-app.mjs";
+import { IronHillsGridInventoryApp } from "./apps/grid-inventory-app.mjs";
+import { IronHillsTravelApp } from "./apps/travel-app.mjs";
+import { IronHillsPartyManagerApp, registerPartySettings } from "./services/party-manager.mjs";
+import { IronHillsCraftApp } from "./apps/craft-app.mjs";
+import { IronHillsAlchemyApp } from "./apps/alchemy-app.mjs";
+import { IronHillsWorldMapApp } from "./apps/world-map-app.mjs";
+import { IronHillsWorldJournalApp } from "./apps/world-journal-app.mjs";
+import { DISEASES } from "./constants/diseases.mjs";
 import { IronHillsCombatHudApp } from "./apps/combat-hud-app.mjs";
 import { IronHillsCombatManagerApp } from "./apps/combat-manager-app.mjs";
 
@@ -35,6 +43,27 @@ import {
   endCombat,
   isCombatActive
 } from "./services/combat-flow-service.mjs";
+
+
+// Handlebars хелперы для шаблонов
+Hooks.once("init", () => {
+  registerPartySettings();
+
+  // Карта мира — пользовательские регионы
+  game.settings.register("iron-hills-system", "worldRegions", {
+    name:    "Регионы карты мира",
+    scope:   "world",
+    config:  false,
+    type:    Object,
+    default: {}
+  });
+  globalThis._IH_DISEASES = DISEASES; // кэш для синхронного доступа
+  Handlebars.registerHelper("neg", v => -Number(v));
+  Handlebars.registerHelper("lt",  (a, b) => Number(a) < Number(b));
+  Handlebars.registerHelper("gt",  (a, b) => Number(a) > Number(b));
+  Handlebars.registerHelper("eq",  (a, b) => String(a) === String(b));
+  Handlebars.registerHelper("add", (a, b) => Number(a) + Number(b));
+});
 
 Hooks.once("init", () => {
   console.log("Iron Hills System | init");
@@ -458,6 +487,60 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
   ensureDefaultPlayerHud();
   
 void migrateUnifiedTargetingForAllItems();
+game.ironHills.openWorldJournal = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsWorldJournalApp);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsWorldJournalApp().render(true);
+};
+
+game.ironHills.openWorldMap = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsWorldMapApp);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsWorldMapApp().render(true);
+};
+
+game.ironHills.openAlchemyWindow = (actor) => {
+  const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
+  if (!target) { ui.notifications.warn("Выбери персонажа"); return; }
+  const existing = Object.values(ui.windows).find(w =>
+    w instanceof IronHillsAlchemyApp && w.actor?.id === target.id
+  );
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsAlchemyApp(target).render(true);
+};
+
+game.ironHills.openCraftWindow = (actor) => {
+  const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
+  if (!target) { ui.notifications.warn("Выбери персонажа"); return; }
+  const existing = Object.values(ui.windows).find(w =>
+    w instanceof IronHillsCraftApp && w.actor?.id === target.id
+  );
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsCraftApp(target).render(true);
+};
+
+game.ironHills.openPartyManager = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsPartyManagerApp);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsPartyManagerApp().render(true);
+};
+
+game.ironHills.openTravelManager = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsTravelApp);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsTravelApp().render(true);
+};
+
+game.ironHills.openGridInventory = (actor) => {
+  const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
+  if (!target) { ui.notifications.warn("Выбери персонажа или токен"); return; }
+  const existing = Object.values(ui.windows).find(w =>
+    w instanceof IronHillsGridInventoryApp && w.actor?.id === target.id
+  );
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsGridInventoryApp(target).render(true);
+};
+
 game.ironHills.openCombatManager = () => {
   const existing = game.ironHills.apps.combatManager;
   if (existing?.rendered) {
@@ -754,7 +837,64 @@ new IronHillsTradeApp(actor).render(true);
       img: "icons/svg/skull.svg",
       tooltip: "Тик угасания души (GM: используй раз в игровой день)"
     },
+    {
+      slot: 5,
+      name: "🎒 Инвентарь",
+      command: "game.ironHills?.openGridInventory?.()",
+      img: "icons/svg/item-bag.svg",
+      tooltip: "Открыть сетку инвентаря персонажа"
+    },
+    {
+      slot: 6,
+      name: "⏳ Время",
+      command: "game.ironHills?.openTravelManager?.()",
+      img: "icons/svg/clockwork.svg",
+      tooltip: "Менеджер времени и путешествий (GM)"
+    },
+    {
+      slot: 7,
+      name: "👥 Группы",
+      command: "game.ironHills?.openPartyManager?.()",
+      img: "icons/svg/village.svg",
+      tooltip: "Управление группами персонажей (GM)"
+    },
+    {
+      slot: 8,
+      name: "🔨 Крафт",
+      command: "game.ironHills?.openCraftWindow?.()",
+      img: "icons/svg/anvil.svg",
+      tooltip: "Открыть окно крафта"
+    },
+    {
+      slot: 9,
+      name: "⚗ Алхимия",
+      command: "game.ironHills?.openAlchemyWindow?.()",
+      img: "icons/svg/daze.svg",
+      tooltip: "Открыть окно алхимии"
+    },
+    {
+      slot: 10,
+      name: "🗺 Карта",
+      command: "game.ironHills?.openWorldMap?.()",
+      img: "icons/svg/map.svg",
+      tooltip: "Открыть карту мира"
+    },
   ];
+
+  // World Tools подключается через собственный ready hook в world-sim-tools.mjs
+  // Но добавляем его и в макробар через отложенный вызов
+  setTimeout(() => {
+    if (game.user?.isGM && game.ironHills?.openWorldTools) {
+      game.macros?.find(m => m.name === "🌍 World Tools") === undefined &&
+        Macro.create({
+          name: "🌍 World Tools",
+          type: "script",
+          command: "game.ironHills?.openWorldTools?.()",
+          img: "icons/svg/globe.svg",
+          flags: { "iron-hills-system": { autoCreated: true } }
+        }).then(macro => macro && game.user.assignHotbarMacro(macro, 0));
+    }
+  }, 3000);
 
   const hotbar = game.macros;
 
@@ -785,4 +925,28 @@ new IronHillsTradeApp(actor).render(true);
 // Запускаем после полной загрузки мира
 Hooks.once("ready", () => {
   setTimeout(() => ensureIronHillsMacros(), 2000);
+});
+
+// Таблица прочности по ступени предмета
+function getDurabilityByTier(tier) {
+  const table = {1:15, 2:25, 3:40, 4:65, 5:100, 6:140, 7:185, 8:230, 9:265, 10:300};
+  return table[Math.max(1, Math.min(10, tier))] ?? 100;
+}
+
+// Миграция: добавить прочность существующим предметам
+Hooks.once("ready", async () => {
+  if (!game.user?.isGM) return;
+  const DURABLE = ["weapon", "armor", "tool"];
+  for (const actor of game.actors ?? []) {
+    for (const item of actor.items ?? []) {
+      if (!DURABLE.includes(item.type)) continue;
+      if (item.system?.durability !== undefined) continue;
+      const tier = Number(item.system?.tier ?? 1);
+      const maxDur = getDurabilityByTier(tier);
+      await item.update({
+        "system.durability": { value: maxDur, max: maxDur }
+      });
+      console.log(`Iron Hills | Added durability to ${actor.name}/${item.name}: ${maxDur}`);
+    }
+  }
 });

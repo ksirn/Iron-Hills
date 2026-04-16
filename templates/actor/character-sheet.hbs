@@ -196,6 +196,41 @@
         </div>
       </div>
 
+      {{!-- Болезни --}}
+      {{#if diseases.length}}
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          Болезни
+          {{#if isGM}}<a class="ih-cs-section-action" data-add-disease title="Заразить">+ Добавить</a>{{/if}}
+        </div>
+        <div class="ih-cs-diseases">
+          {{#each diseases}}
+          <div class="ih-cs-disease stage-{{currentStage}}">
+            <span class="ih-cs-disease-icon">{{icon}}</span>
+            <div class="ih-cs-disease-info">
+              <span class="ih-cs-disease-name">{{label}}</span>
+              <span class="ih-cs-disease-stage">{{stageName}}</span>
+              <div class="ih-cs-disease-bar">
+                <div class="ih-cs-disease-bar-fill" style="width:{{progressPct}}%"></div>
+              </div>
+            </div>
+            {{#if ../isGM}}
+            <a class="ih-icon-btn" data-cure-disease="{{key}}" title="Вылечить">✕</a>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{else if isGM}}
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          Болезни
+          <a class="ih-cs-section-action" data-add-disease title="Заразить">+ Добавить</a>
+        </div>
+        <div class="ih-cs-no-diseases muted-text">Здоров</div>
+      </div>
+      {{/if}}
+
       <div class="ih-cs-section">
         <div class="ih-cs-section-title">Резерв души</div>
         <div class="ih-cs-soul-grid">
@@ -212,6 +247,27 @@
           {{/if}}
         </div>
       </div>
+
+    {{!-- Болезни --}}
+    {{#if activeDiseases.length}}
+    <div class="ih-cs-section">
+      <div class="ih-cs-section-title">Болезни</div>
+      <div class="ih-cs-diseases">
+        {{#each activeDiseases}}
+        <div class="ih-cs-disease">
+          <span class="ih-cs-disease-icon">{{icon}}</span>
+          <div class="ih-cs-disease-info">
+            <span class="ih-cs-disease-name">{{label}}</span>
+            <span class="ih-cs-disease-stage">{{stageLabel}} · {{duration}}ч</span>
+          </div>
+          {{#if ../isGM}}
+          <a class="ih-icon-btn" data-cure-disease="{{key}}" title="Вылечить">✕</a>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
 
     </div>
 
@@ -241,6 +297,57 @@
         </div>
       </div>
 
+      {{!-- Репутация --}}
+      {{#if (or settlementRelations.length factionRelations.length)}}
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          Репутация
+          {{#if isGM}}<a class="ih-cs-section-action" data-add-relation>+ Добавить</a>{{/if}}
+        </div>
+        <div class="ih-cs-relations">
+          {{#each factionRelations}}
+          <div class="ih-cs-relation" title="{{targetName}}">
+            <div class="ih-cs-rel-bar-wrap">
+              <span class="ih-cs-rel-name">{{targetName}}</span>
+              <div class="ih-cs-rel-bar">
+                <div class="ih-cs-rel-fill {{#if (gt score 0)}}positive{{else if (lt score 0)}}negative{{/if}}"
+                     style="width:{{relPct}}%; {{#if (gt score 0)}}margin-left:50%{{else}}margin-left:{{relLeft}}%;{{/if}}"></div>
+                <div class="ih-cs-rel-center"></div>
+              </div>
+              <span class="ih-cs-rel-score {{#if (gt score 0)}}text-good{{else if (lt score 0)}}text-bad{{/if}}">{{score}}</span>
+            </div>
+            <div class="ih-cs-rel-tier muted-text">{{tier}}</div>
+            {{#if ../isGM}}
+            <div class="ih-cs-rel-actions">
+              <a class="ih-icon-btn" data-rel-change="10"  data-rel-id="{{id}}" title="+10">▲</a>
+              <a class="ih-icon-btn" data-rel-change="-10" data-rel-id="{{id}}" title="-10">▼</a>
+            </div>
+            {{/if}}
+          </div>
+          {{/each}}
+          {{#each settlementRelations}}
+          <div class="ih-cs-relation settlement">
+            <div class="ih-cs-rel-bar-wrap">
+              <span class="ih-cs-rel-name">{{targetName}}</span>
+              <div class="ih-cs-rel-bar">
+                <div class="ih-cs-rel-fill {{#if (gt score 0)}}positive{{else if (lt score 0)}}negative{{/if}}"
+                     style="width:{{relPct}}%;"></div>
+                <div class="ih-cs-rel-center"></div>
+              </div>
+              <span class="ih-cs-rel-score">{{score}}</span>
+            </div>
+            {{#if ../isGM}}
+            <div class="ih-cs-rel-actions">
+              <a class="ih-icon-btn" data-rel-change="10"  data-rel-id="{{id}}" title="+10">▲</a>
+              <a class="ih-icon-btn" data-rel-change="-10" data-rel-id="{{id}}" title="-10">▼</a>
+            </div>
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
       <div class="ih-cs-section">
         <div class="ih-cs-section-title">
           Инвентарь
@@ -256,8 +363,15 @@
               <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
               <span class="ih-cs-inv-name">{{name}}</span>
               {{#if system.quantity}}<span class="ih-cs-inv-qty">×{{system.quantity}}</span>{{/if}}
+              {{#if system.durability}}
+              <div class="ih-cs-inv-dur-track" title="Прочность: {{system.durability.value}}/{{system.durability.max}}">
+                <div class="ih-cs-inv-dur-fill {{#if (lt system.durability.value 25)}}is-crit{{else if (lt system.durability.value 50)}}is-warn{{/if}}"
+                     style="width:{{durabilityPct}}%"></div>
+              </div>
+              {{/if}}
               <span class="ih-cs-inv-weight muted-text">{{system.weight}}кг</span>
               <div class="ih-cs-inv-actions">
+                {{#if system.durability}}<a class="ih-icon-btn" data-item-repair data-item-id="{{id}}" title="Починить">🔨</a>{{/if}}
                 <a class="ih-icon-btn" data-item-edit data-item-id="{{id}}" title="Редактировать">✎</a>
                 <a class="ih-icon-btn" data-item-delete data-item-id="{{id}}" title="Удалить">✕</a>
               </div>

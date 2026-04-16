@@ -17,7 +17,7 @@ import {
   getTargetPartLabel,
   getArmorSlotKey,
   getEquippedArmorForLocation,
-  getDamageReduction,
+  getDamageReduction, getBestResistForZone,
   getEncumbranceInfo,
   getActorInjuryInfo,
   getSpellSchoolLabel,
@@ -526,6 +526,54 @@ async getData() {
     try {
       context.overviewSummary = buildOverviewSummary(actor);
       context.calculatedTier = context.overviewSummary.calculatedTier ?? 1;
+
+    // Болезни
+    if (actor.type === "character") {
+      try {
+        const { DISEASES } = await import("../constants/diseases.mjs");
+        globalThis._IH_DISEASES = DISEASES;
+        const diseaseData = actor.system?.diseases ?? {};
+        context.diseases = Object.entries(diseaseData)
+          .filter(([, d]) => d && d.stage >= 0)
+          .map(([key, d]) => {
+            const def   = DISEASES[key] ?? { key, label: key, icon: "🦠", stages: [] };
+            const stage = def.stages?.[d.stage] ?? { label: "?", hoursToNext: null };
+            const pct   = stage.hoursToNext
+              ? Math.round(Math.min(100, (d.progress ?? 0) / stage.hoursToNext * 100))
+              : 100;
+            return {
+              key, icon: def.icon, label: def.label,
+              currentStage: d.stage,
+              stageName:    stage.label,
+              progressPct:  pct,
+              isCritical:   stage.hoursToNext === null,
+            };
+          });
+      } catch { context.diseases = []; }
+      context.isGM = game.user?.isGM ?? false;
+    } else {
+      context.diseases = [];
+      context.isGM = false;
+    }
+
+      // Активные болезни для character sheet
+      const diseaseData = actor.system?.diseases ?? {};
+      const DCATALOG    = globalThis._IH_DISEASES ?? {};
+      context.activeDiseases = Object.entries(diseaseData)
+        .filter(([, d]) => d?.stage >= 0)
+        .map(([key, data]) => {
+          const def   = DCATALOG[key] ?? { key, label: key, icon: "🦠", stages: [] };
+          const stage = def.stages?.[data.stage] ?? { label: "Неизвестно" };
+          return {
+            key,
+            label:      def.label,
+            icon:       def.icon,
+            stageLabel: stage.label,
+            stage:      data.stage,
+            progress:   data.progress ?? 0,
+            duration:   data.duration ?? 0,
+          };
+        });
     } catch(e) {
       context.overviewSummary = {
         calculatedTier: 1, energyPct: 0, manaPct: 0,
@@ -2055,6 +2103,49 @@ if (!derivedConditions.canCast) {
       `;
     }
 
+    if (effectType === "restoreMana") {
+      const restored = power + Math.max(0, roll.total - 1);
+      const curMana  = Number(targetActor.system.resources.mana.value ?? 0);
+      const maxMana  = Number(targetActor.system.resources.mana.max  ?? 50);
+      const newMana  = Math.min(maxMana, curMana + restored);
+      await targetActor.update({ "system.resources.mana.value": newMana });
+      content += `
+        ${buildChatSectionRow("Эффект", "Восстановление маны")}
+        ${buildChatSectionRow("Восстановлено", restored)}
+        ${buildChatSectionRow("Мана цели", newMana)}
+      `;
+    }
+
+    if (effectType === "curePoison") {
+      await targetActor.update({ "system.conditions.poison": 0 });
+      content += `${buildChatSectionRow("Эффект", "🛡 Нейтрализация яда")}`;
+    }
+
+    if (effectType === "cureDisease") {
+      // Снимает одну случайную болезнь
+      const diseases = foundry.utils.deepClone(targetActor.system?.diseases ?? {});
+      const active   = Object.entries(diseases).filter(([, d]) => d?.stage >= 0);
+      if (active.length) {
+        const [key] = active[Math.floor(Math.random() * active.length)];
+        diseases[key] = { ...diseases[key], stage: -1 };
+        await targetActor.update({ "system.diseases": diseases });
+        content += `${buildChatSectionRow("Эффект", "🌡 Болезнь снята")}`;
+      }
+    }
+
+    if (effectType === "stimulant") {
+      const boost = power + Math.max(0, roll.total - 4);
+      const curEn = Number(targetActor.system.resources.energy.value ?? 0);
+      const maxEn = Number(targetActor.system.resources.energy.max  ?? 100);
+      await targetActor.update({
+        "system.resources.energy.value": Math.min(maxEn, curEn + boost)
+      });
+      content += `
+        ${buildChatSectionRow("Эффект", "⚡ Стимулятор")}
+        ${buildChatSectionRow("Энергия", `+${boost}`)}
+      `;
+    }
+
     // ── PATCH 9: Новые эффекты магии ─────────────────────────────
 
     // Оглушение — цель пропускает ход(а)
@@ -2793,6 +2884,177 @@ async _sellToMerchant(itemId, sellerUuid = "") {
   }
 
   /**
+   * Заразить актора болезнью (GM)
+   */
+  async _infectActor(actor, diseaseKey) {
+    const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
+    if (diseases[diseaseKey]?.stage >= 0) {
+      ui.notifications.info(`${actor.name} уже болен: ${diseaseKey}`);
+      return;
+    }
+    diseases[diseaseKey] = { stage: 0, progress: 0, duration: 0 };
+    await actor.update({ "system.diseases": diseases });
+
+    const { DISEASES } = await import("../constants/diseases.mjs");
+    const def = DISEASES[diseaseKey];
+    await ChatMessage.create({
+      content: `${def?.icon ?? "🦠"} <b>${actor.name}</b> заразился: <b>${def?.label ?? diseaseKey}</b>`,
+      speaker: ChatMessage.getSpeaker({ actor })
+    });
+  }
+
+  /**
+   * Вылечить болезнь
+   */
+  async _cureDisease(actor, diseaseKey) {
+    const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
+    if (!diseases[diseaseKey]) return;
+    diseases[diseaseKey] = { stage: -1, progress: 0, duration: 0 };
+    await actor.update({ "system.diseases": diseases });
+
+    const { DISEASES } = await import("../constants/diseases.mjs");
+    const def = DISEASES[diseaseKey];
+    await ChatMessage.create({
+      content: `✅ <b>${actor.name}</b> вылечен от: <b>${def?.label ?? diseaseKey}</b>`,
+      speaker: ChatMessage.getSpeaker({ actor })
+    });
+  }
+
+  /**
+   * Износ предмета на N единиц прочности.
+   * Если прочность <= 0 — предмет сломан (не работает).
+   * @param {Actor} actor
+   * @param {Item}  item
+   * @param {number} amount — сколько прочности снять
+   */
+  async _wearItem(actor, item, amount = 1) {
+    if (!item || !actor) return;
+    const durVal = Number(item.system?.durability?.value ?? 100);
+    const durMax = Number(item.system?.durability?.max   ?? 100);
+    if (durMax <= 0) return; // предмет без прочности
+
+    const newDur = Math.max(0, durVal - amount);
+    await item.update({ "system.durability.value": newDur });
+
+    // Сообщение о поломке
+    if (newDur === 0 && durVal > 0) {
+      await ChatMessage.create({
+        content: `<b>⚠ ${item.name}</b> сломан! Требует ремонта.`,
+        speaker: ChatMessage.getSpeaker({ actor })
+      });
+    }
+
+    return newDur;
+  }
+
+  /**
+   * Определяет навык ремонта для предмета.
+   * Оружие/металлическая броня → кузнечное дело (smithing)
+   * Кожаная броня/инструменты → ремесло (crafting)
+   * Алхимическое снаряжение → алхимия (alchemy)
+   */
+  _getRepairSkill(actor, item) {
+    const skills = actor.system?.skills ?? {};
+    const type   = item.type;
+    const material = (item.system?.material ?? "").toLowerCase();
+    const subtype  = (item.system?.subtype  ?? "").toLowerCase();
+
+    // Оружие — всегда кузнечное дело
+    if (type === "weapon") {
+      return {
+        key:   "smithing",
+        label: "Кузнечное дело",
+        value: Number(skills.smithing?.value ?? 1)
+      };
+    }
+
+    // Броня — зависит от материала
+    if (type === "armor") {
+      const isLeather = material.includes("кожа") || material.includes("leather")
+        || subtype.includes("кожа") || subtype.includes("cloth");
+      if (isLeather) {
+        return {
+          key:   "crafting",
+          label: "Ремесло",
+          value: Number(skills.crafting?.value ?? skills.alchemy?.value ?? 1)
+        };
+      }
+      return {
+        key:   "smithing",
+        label: "Кузнечное дело",
+        value: Number(skills.smithing?.value ?? 1)
+      };
+    }
+
+    // Инструменты — ремесло
+    if (type === "tool") {
+      const isAlchemic = subtype.includes("алхим") || subtype.includes("alch");
+      if (isAlchemic) {
+        return {
+          key:   "alchemy",
+          label: "Алхимия",
+          value: Number(skills.alchemy?.value ?? 1)
+        };
+      }
+      return {
+        key:   "crafting",
+        label: "Ремесло",
+        value: Number(skills.crafting?.value ?? 1)
+      };
+    }
+
+    // По умолчанию — ремесло
+    return {
+      key:   "crafting",
+      label: "Ремесло",
+      value: Number(skills.crafting?.value ?? 1)
+    };
+  }
+
+  /**
+   * Ремонт предмета.
+   * Навык зависит от типа предмета.
+   * Качество ремонта ограничено соотношением навык/ступень.
+   */
+  async _repairItem(actor, item) {
+    if (!item) return;
+
+    const repair   = this._getRepairSkill(actor, item);
+    const itemTier = Number(item.system?.tier ?? 1);
+    const durMax   = Number(item.system?.durability?.max ?? 100);
+    const current  = Number(item.system?.durability?.value ?? 0);
+
+    // Нельзя починить предмет выше своей ступени
+    if (itemTier > repair.value) {
+      ui.notifications.warn(
+        `Нужен навык "${repair.label}" ступени ${itemTier} для ремонта (у вас: ${repair.value})`
+      );
+      return;
+    }
+
+    // Качество: идеальный мастер = 90%, слабый мастер = 50%
+    // skillRatio = repair.value / itemTier (≥1 значит мастер выше ступени предмета)
+    const ratio    = Math.min(2, repair.value / Math.max(1, itemTier));
+    const repairCap = Math.floor(durMax * (0.5 + ratio * 0.2));
+    const restored  = repairCap - current;
+
+    if (restored <= 0) {
+      ui.notifications.info(`${item.name} уже в максимальном состоянии для вашего уровня.`);
+      return;
+    }
+
+    await item.update({ "system.durability.value": repairCap });
+
+    await ChatMessage.create({
+      content: `🔨 <b>${actor.name}</b> починил <b>${item.name}</b> (+${restored} прочности → ${repairCap}/${durMax})<br>
+        <small>Навык: ${repair.label} ст.${repair.value}</small>`,
+      speaker: ChatMessage.getSpeaker({ actor })
+    });
+
+    await this._applySkillExp(repair.key, `Ремонт: ${item.name}`);
+  }
+
+  /**
    * Взрыв кубов (Exploding Dice).
    * Если выпал максимум — предлагаем перейти на следующий куб.
    * d2 не взрывается (это монетка).
@@ -3162,6 +3424,11 @@ if (!derivedConditions.canMeleeAttack) {
       "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost)
     });
 
+    // Износ оружия при атаке (1 единица прочности)
+    if (weapon) {
+      await this._wearItem(actor, weapon, 1);
+    }
+
     const rollDesc = rollHistory.map(r => `d${r.die}=${r.result}`).join(" → ");
     const rollDisplay = exploded ? `💥 ${rollDesc} = ${rollTotal}` : `${rollTotal}`;
 
@@ -3200,8 +3467,9 @@ if (!derivedConditions.canMeleeAttack) {
     const locationKey = getHitLocation(locationRoll.total);
     const locationLabel = getHitLabel(locationKey);
 
+    // Берём лучший резист из всех слоёв брони (стек)
     const armorItem = getEquippedArmorForLocation(targetActor, locationKey);
-    const reduction = getDamageReduction(armorItem, damageType);
+    const reduction = getBestResistForZone(targetActor, locationKey, damageType);
 
     // Большой перевес = пробитие брони
     const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
@@ -3245,6 +3513,15 @@ if (!derivedConditions.canMeleeAttack) {
 
     if ((locationKey === "head" || locationKey === "torso") && remainingHP <= 0) {
       content += `<p><b>Цель погибает!</b></p>`;
+    }
+
+    // Износ брони цели при попадании
+    if (targetActor.type !== "monster" && armorItem && finalDamage > 0) {
+      await this._wearItem(targetActor, armorItem, 1);
+      const newDur = Number(armorItem.system?.durability?.value ?? 100) - 1;
+      if (newDur > 0) {
+        content += buildChatSectionRow("Прочность брони", `${newDur}/${armorItem.system?.durability?.max ?? 100}`);
+      }
     }
 
     await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
@@ -3408,6 +3685,154 @@ if (!derivedConditions.canMeleeAttack) {
     html.find("[data-update-effects]").on("click", async event => {
       event.preventDefault();
       await this._updateActiveEffectsTick();
+    });
+
+    html.find("[data-cure-disease]").on("click", async event => {
+      if (!game.user?.isGM) return;
+      const key = event.currentTarget.dataset.cureDisease;
+      await this._cureDisease(actor, key);
+      this.render(false);
+    });
+
+    // ── Болезни ──────────────────────────────────────────────
+    // ── Репутация ─────────────────────────────────────────────
+    html.find("[data-rel-change]").on("click", async event => {
+      if (!game.user?.isGM) return;
+      const relId  = event.currentTarget.dataset.relId;
+      const change = Number(event.currentTarget.dataset.relChange ?? 0);
+      const relActor = game.actors.get(relId);
+      if (!relActor) return;
+      const current  = Number(relActor.system.info?.score ?? 0);
+      const newScore = Math.max(-100, Math.min(100, current + change));
+
+      // Tier по score
+      const tier = newScore >= 80 ? "ally"
+        : newScore >= 40 ? "friendly"
+        : newScore >= 10 ? "cordial"
+        : newScore >= -9 ? "neutral"
+        : newScore >= -39 ? "unfriendly"
+        : newScore >= -79 ? "hostile"
+        : "enemy";
+
+      await relActor.update({
+        "system.info.score": newScore,
+        "system.info.tier":  tier,
+      });
+
+      await ChatMessage.create({
+        content: `📊 Репутация <b>${actor.name}</b> у <b>${relActor.system.info?.targetName}</b>: ${current > 0 ? "+" : ""}${current} → ${newScore > 0 ? "+" : ""}${newScore}`
+      });
+
+      this.render(false);
+    });
+
+    html.find("[data-add-relation]").on("click", async () => {
+      if (!game.user?.isGM) return;
+
+      const targetName = await new Promise(resolve => {
+        const dlg = new Dialog({
+          title: "Добавить репутацию",
+          content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;">
+            <label style="display:block;margin-bottom:4px;">Цель (поселение/фракция)</label>
+            <input id="rel-target" type="text" style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;">
+            <label style="display:block;margin:8px 0 4px;">Тип</label>
+            <select id="rel-type" style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;">
+              <option value="faction">Фракция</option>
+              <option value="settlement">Поселение</option>
+            </select>
+          </div>`,
+          buttons: {
+            ok: { label: "Добавить", callback: () => ({
+              name: document.getElementById("rel-target")?.value,
+              type: document.getElementById("rel-type")?.value
+            })}
+          },
+          default: "ok",
+          close: () => resolve(null)
+        });
+        dlg.render(true);
+        dlg.element?.find(".dialog-button.ok").one("click", () => resolve({
+          name: document.getElementById("rel-target")?.value,
+          type: document.getElementById("rel-type")?.value
+        }));
+      });
+
+      if (!targetName?.name) return;
+
+      await Actor.create({
+        name:   `${actor.name} → ${targetName.name}`,
+        type:   "relation",
+        system: {
+          info: {
+            characterName: actor.name,
+            targetName:    targetName.name,
+            targetType:    targetName.type,
+            score:         0,
+            tier:          "neutral",
+            notes:         ""
+          }
+        }
+      });
+
+      this.render(false);
+    });
+
+    html.find("[data-add-disease]").on("click", async () => {
+      if (!game.user?.isGM) return;
+      const { DISEASES } = await import("../constants/diseases.mjs");
+
+      const buttons = {};
+      for (const [key, def] of Object.entries(DISEASES)) {
+        const existing = actor.system?.diseases?.[key];
+        if (existing && existing.stage >= 0) continue; // уже болеет
+        buttons[key] = { label: `${def.icon} ${def.label}`, callback: () => key };
+      }
+
+      if (!Object.keys(buttons).length) {
+        ui.notifications.info("Персонаж уже болеет всеми болезнями из каталога.");
+        return;
+      }
+
+      const chosen = await Dialog.wait({
+        title: "Заразить болезнью",
+        content: `<p style="color:#a8b8d0">Выбери болезнь для <b>${actor.name}</b>:</p>`,
+        buttons,
+        default: Object.keys(buttons)[0]
+      });
+
+      if (!chosen) return;
+
+      const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
+      diseases[chosen] = { stage: 0, progress: 0, duration: 0 };
+      await actor.update({ "system.diseases": diseases });
+
+      const def = DISEASES[chosen];
+      await ChatMessage.create({
+        content: `${def.icon} <b>${actor.name}</b> заражён: <b>${def.label}</b> (инкубация)`
+      });
+
+      this.render(false);
+    });
+
+    html.find("[data-cure-disease]").on("click", async event => {
+      if (!game.user?.isGM) return;
+      const dKey = event.currentTarget.dataset.cureDisease;
+      const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
+      if (diseases[dKey]) {
+        diseases[dKey] = { stage: -1, progress: 0, duration: diseases[dKey].duration ?? 0 };
+        await actor.update({ "system.diseases": diseases });
+        ui.notifications.info(`${actor.name}: болезнь вылечена.`);
+        this.render(false);
+      }
+    });
+
+    html.find("[data-item-repair]").on("click", async event => {
+      event.preventDefault();
+      const itemId = event.currentTarget.dataset.itemId;
+      const item = actor.items.get(itemId);
+      if (!item) return;
+      await this._repairItem(actor, item);
+      this.render(false);
     });
 
     html.find("[data-revive-actor]").on("click", async event => {

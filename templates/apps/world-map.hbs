@@ -1,0 +1,137 @@
+{{!-- Iron Hills — World Map --}}
+<div class="ih-wm-app">
+
+  {{!-- ── Боковая панель ── --}}
+  <div class="ih-wm-sidebar">
+
+    {{!-- Группа --}}
+    <div class="ih-wm-section">
+      <div class="ih-wm-section-title">Группа</div>
+      <select class="ih-wm-select" data-select-group>
+        <option value="">Активная</option>
+        {{#each groups}}
+        <option value="{{id}}" {{#if isActive}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+      {{#if activeGroup}}
+      <div class="ih-wm-group-info">
+        <span>📍 {{activeGroup.location}}</span>
+        <span class="muted-text">{{activeGroup.localHours}}ч</span>
+      </div>
+      {{/if}}
+    </div>
+
+    {{!-- Транспорт --}}
+    <div class="ih-wm-section">
+      <div class="ih-wm-section-title">Транспорт</div>
+      <div class="ih-wm-transport-list">
+        {{#each transports}}
+        <a class="ih-wm-transport {{#if isActive}}is-active{{/if}}"
+           data-transport="{{key}}" title="{{label}}">
+          <span>{{icon}}</span>
+          <span>{{label}}</span>
+        </a>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- Режим маршрута --}}
+    <div class="ih-wm-section">
+      <div class="ih-wm-section-title">Маршрут</div>
+      <a class="ih-wm-mode-btn {{#if manualMode}}is-manual{{/if}}"
+         data-toggle-manual title="{{#if manualMode}}Авто-маршрут (A*){{else}}Ручная прокладка{{/if}}">
+        {{#if manualMode}}✏ Ручной режим{{else}}🤖 Авто (A*){{/if}}
+      </a>
+      {{#if manualMode}}
+      <div class="ih-wm-manual-hint muted-text">
+        Кликай тайлы по порядку — путь строится вручную
+      </div>
+      {{/if}}
+    </div>
+
+    {{!-- Маршрут --}}
+    {{#if hasTarget}}
+    <div class="ih-wm-section">
+      <div class="ih-wm-section-title">{{#if isManualRoute}}Ручной маршрут{{else}}Маршрут (A*){{/if}}</div>
+      {{#if routeInfo.found}}
+      <div class="ih-wm-route-info">
+        <div class="ih-wm-route-target">📍 {{routeInfo.targetLabel}}</div>
+        <div class="ih-wm-route-stats">
+          <span>⏱ {{routeInfo.totalHours}}ч</span>
+          <span>· {{routeInfo.stepsCount}} тайлов</span>
+        </div>
+        <div class="ih-wm-route-transport muted-text">{{routeInfo.transportLabel}}</div>
+      </div>
+      {{#if canTravel}}
+      <a class="ih-btn ih-btn-primary" data-confirm-travel style="width:100%;justify-content:center;margin-top:8px;">
+        ✓ Подтвердить
+      </a>
+      {{else if isGM}}
+      <div class="muted-text" style="font-size:11px;margin-top:4px;">Нажми на тайл чтобы проложить маршрут</div>
+      {{else}}
+      <div class="muted-text" style="font-size:11px;margin-top:4px;">Ожидание подтверждения GM</div>
+      {{/if}}
+      {{else}}
+      <div class="ih-wm-blocked">⛔ Путь заблокирован для выбранного транспорта</div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- Войти в локацию --}}
+    {{#if activeGroup}}
+    <div class="ih-wm-section">
+      <a class="ih-btn" data-enter-location style="width:100%;justify-content:center;">
+        🚪 Войти в локацию
+      </a>
+    </div>
+    {{/if}}
+
+    {{!-- Легенда --}}
+    <div class="ih-wm-section ih-wm-legend">
+      <div class="ih-wm-section-title">Рельеф</div>
+      {{!-- Легенда генерируется из tiles на клиенте --}}
+      <div class="ih-wm-legend-hint muted-text" style="font-size:10px;">
+        Клик — выбрать цель<br>
+        Ещё клик — сбросить
+      </div>
+    </div>
+
+  </div>
+
+  {{!-- ── Карта ── --}}
+  <div class="ih-wm-map-wrap">
+    <div class="ih-wm-tooltip" style="display:none;"></div>
+    <div class="ih-wm-map"
+         style="width:{{mapW}}px; height:{{mapH}}px;">
+
+      {{#each region.tiles}}
+      <div class="ih-wm-tile
+                  {{#if hasGroup}}has-group{{/if}}
+                  {{#if isTarget}}is-target{{/if}}
+                  {{#if inRoute}}in-route{{/if}}
+                  {{#if isPoi}}is-poi{{/if}}"
+           data-col="{{col}}" data-row="{{row}}"
+           title="{{#if label}}{{label}} — {{/if}}{{terrainLabel}}"
+           style="left:{{x}}px; top:{{y}}px;
+                  width:{{size}}px; height:{{size}}px;
+                  background:{{terrainColor}};">
+
+        {{!-- Иконка рельефа --}}
+        <span class="ih-wm-tile-icon">{{terrainIcon}}</span>
+
+        {{!-- Название POI --}}
+        {{#if label}}<span class="ih-wm-tile-label">{{label}}</span>{{/if}}
+
+        {{!-- Маркер группы --}}
+        {{#if hasGroup}}<span class="ih-wm-group-marker">👥</span>{{/if}}
+
+        {{!-- Цель --}}
+        {{#if isTarget}}<span class="ih-wm-target-marker">🎯</span>{{/if}}
+
+      </div>
+      {{/each}}
+
+    </div>
+  </div>
+
+</div>

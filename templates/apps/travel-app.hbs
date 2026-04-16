@@ -1,0 +1,125 @@
+<div class="ih-travel-app">
+
+  {{!-- Выбор группы --}}
+  <div class="ih-travel-section">
+    <div class="ih-travel-section-title">Группа</div>
+    <div class="ih-travel-group-row">
+      <div class="ih-travel-group-dot" style="background:{{groupColor}}"></div>
+      <select class="ih-travel-group-select" data-group-select>
+        <option value="">Все персонажи игроков</option>
+        {{#each groups}}
+        <option value="{{id}}" {{#if (eq id ../groupId)}}selected{{/if}}>
+          {{label}} ({{#if isActive}}активна{{else}}неактивна{{/if}})
+        </option>
+        {{/each}}
+      </select>
+    </div>
+
+    {{!-- Другие группы --}}
+    {{#if hasOtherGroups}}
+    <div class="ih-travel-other-groups">
+      {{#each otherGroups}}
+      <div class="ih-travel-other-group">
+        <div class="ih-travel-group-dot" style="background:{{color}}"></div>
+        <span>{{label}}</span>
+        {{#if location}}<span class="muted-text">@ {{location}}</span>{{/if}}
+        <span class="muted-text">{{localHours}}ч · {{memberCount}} чел.</span>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+
+  {{!-- Активность --}}
+  <div class="ih-travel-section">
+    <div class="ih-travel-section-title">Активность</div>
+    <div class="ih-travel-activities">
+      {{#each activities}}
+      <a class="ih-travel-act {{#if (eq key ../activity)}}is-active{{/if}}"
+         data-activity="{{key}}">{{label}}</a>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- Время --}}
+  <div class="ih-travel-section">
+    <div class="ih-travel-section-title">
+      Время
+      <span class="ih-travel-hours-display"><b data-hours-label>{{hours}}</b>ч</span>
+    </div>
+    <div class="ih-travel-slider-wrap">
+      <span class="muted-text">1</span>
+      <input type="range" class="ih-travel-slider" data-hours-input
+             min="1" max="72" step="1" value="{{hours}}">
+      <span class="muted-text">72</span>
+    </div>
+    <div class="ih-travel-presets">
+      <a class="ih-btn ih-btn-small" data-preset-hours="1">1ч</a>
+      <a class="ih-btn ih-btn-small" data-preset-hours="4">4ч</a>
+      <a class="ih-btn ih-btn-small" data-preset-hours="8">8ч</a>
+      <a class="ih-btn ih-btn-small" data-preset-hours="24">Сутки</a>
+    </div>
+  </div>
+
+  {{!-- Превью --}}
+  {{#if hasMembers}}
+  <div class="ih-travel-section">
+    <div class="ih-travel-section-title">Персонажи ({{preview.length}})</div>
+    <div class="ih-travel-chars">
+      {{#each preview}}
+      <div class="ih-travel-char {{#if hasWarning}}has-warning{{/if}}">
+        <img class="ih-travel-char-img" src="{{img}}" alt="{{name}}">
+        <div class="ih-travel-char-info">
+          <div class="ih-travel-char-name">{{name}}</div>
+          <div class="ih-travel-char-bars">
+            <div class="ih-travel-bar-row" title="Сытость −{{satCost}}">
+              <span>🍖</span>
+              <div class="ih-travel-bar-track">
+                <div class="ih-travel-bar-fill" style="width:{{satPct}}%"></div>
+              </div>
+              <span class="ih-travel-bar-delta neg">−{{satCost}}</span>
+            </div>
+            <div class="ih-travel-bar-row" title="Жажда −{{hydCost}}">
+              <span>💧</span>
+              <div class="ih-travel-bar-track">
+                <div class="ih-travel-bar-fill water" style="width:{{hydPct}}%"></div>
+              </div>
+              <span class="ih-travel-bar-delta neg">−{{hydCost}}</span>
+            </div>
+            {{#if enRegen}}
+            <div class="ih-travel-bar-row" title="Энергия +{{enRegen}}">
+              <span>⚡</span>
+              <div class="ih-travel-bar-track">
+                <div class="ih-travel-bar-fill energy" style="width:{{enPct}}%"></div>
+              </div>
+              <span class="ih-travel-bar-delta pos">+{{enRegen}}</span>
+            </div>
+            {{/if}}
+            {{#if mnRegen}}
+            <div class="ih-travel-bar-row" title="Мана +{{mnRegen}}">
+              <span>✦</span>
+              <div class="ih-travel-bar-track">
+                <div class="ih-travel-bar-fill mana" style="width:{{enPct}}%"></div>
+              </div>
+              <span class="ih-travel-bar-delta pos">+{{mnRegen}}</span>
+            </div>
+            {{/if}}
+          </div>
+          {{#if hungerLabel}}<div class="ih-travel-warn">{{hungerLabel}}</div>{{/if}}
+          {{#if thirstLabel}}<div class="ih-travel-warn blue">{{thirstLabel}}</div>{{/if}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{else}}
+  <div class="ih-travel-empty">Нет персонажей в группе</div>
+  {{/if}}
+
+  {{!-- Кнопки --}}
+  <div class="ih-travel-actions">
+    <a class="ih-btn ih-btn-primary" data-apply-time>⏳ Применить {{hours}}ч</a>
+    <a class="ih-btn" data-apply-rest>🛏 Привал {{hours}}ч</a>
+  </div>
+
+</div>

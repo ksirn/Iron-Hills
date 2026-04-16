@@ -17,7 +17,8 @@ import {
   buildNpcSystem,
   makeSettlementEvent,
   makeSettlementRumor,
-  appendSettlementHistory
+  appendSettlementHistory,
+  getContextualMerchantStock,
 } from "./services/world-content-service.mjs";
 
 const REGION_CRISES = [
@@ -357,7 +358,9 @@ async function restockMerchant(merchant, settlement = null) {
   let added = 0;
 
   if (currentItems < desiredMin) {
-    const batch = randomMerchantStock(specialty, tier);
+    const batch = linkedSettlement
+      ? getContextualMerchantStock(linkedSettlement, specialty, tier)
+      : randomMerchantStock(specialty, tier);
     await merchant.createEmbeddedDocuments("Item", batch);
     added = batch.length;
   }

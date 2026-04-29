@@ -1,0 +1,54 @@
+{{!-- Iron Hills — Entity Picker --}}
+<div class="ih-ep-app">
+
+  {{!-- Поиск --}}
+  <div class="ih-ep-search-wrap">
+    <input class="ih-ep-search" type="text" data-ep-search
+           placeholder="{{placeholder}}" value="{{search}}" autocomplete="off">
+    {{#if typeLabels}}
+    <span class="ih-ep-type-hint muted-text">{{typeLabels}}</span>
+    {{/if}}
+  </div>
+
+  {{!-- Список --}}
+  <div class="ih-ep-list">
+    {{#if isEmpty}}
+    <div class="ih-ep-empty">Ничего не найдено</div>
+    {{else if hasGroups}}
+      {{#each groups}}
+      <div class="ih-ep-group-label">{{label}}</div>
+      {{#each actors}}
+      <div class="ih-ep-item {{#if isSelected}}is-selected{{/if}}"
+           data-ep-item="{{id}}" title="{{name}}">
+        <img class="ih-ep-item-img" src="{{img}}" alt="{{name}}">
+        <div class="ih-ep-item-info">
+          <span class="ih-ep-item-name">{{name}}</span>
+          {{#if subtitle}}<span class="ih-ep-item-sub muted-text">{{subtitle}}</span>{{/if}}
+        </div>
+      </div>
+      {{/each}}
+      {{/each}}
+    {{else}}
+      {{#each items}}
+      <div class="ih-ep-item {{#if isSelected}}is-selected{{/if}}"
+           data-ep-item="{{id}}" title="{{name}}">
+        <img class="ih-ep-item-img" src="{{img}}" alt="{{name}}">
+        <div class="ih-ep-item-info">
+          <span class="ih-ep-item-name">{{name}}</span>
+          {{#if subtitle}}<span class="ih-ep-item-sub muted-text">{{subtitle}}</span>{{/if}}
+        </div>
+      </div>
+      {{/each}}
+    {{/if}}
+  </div>
+
+  {{!-- Кнопки --}}
+  <div class="ih-ep-footer">
+    <a class="ih-btn" data-ep-cancel>Отмена</a>
+    <a class="ih-btn ih-btn-primary" data-ep-confirm
+       style="{{#unless items.length}}opacity:0.4;pointer-events:none{{/unless}}">
+      Выбрать
+    </a>
+  </div>
+
+</div>

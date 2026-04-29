@@ -1,6 +1,4 @@
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp } from "./utils/math-utils.mjs";
 
 function getRelations() {
   return game.actors.filter(a => a.type === "relation");

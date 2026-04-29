@@ -4,6 +4,60 @@
  */
 import { CRAFT_RECIPES } from "../constants/recipes.mjs";
 
+/**
+ * Расчёт шанса успеха с учётом взрыва куба (exploding dice).
+ * Шаг взрыва: d2→d4→d6→...→d20 (шаг +2).
+ * При взрыве результат обнуляется, бросается следующий куб.
+ * Игрок взрывает оптимально: только если max текущего куба < threshold.
+ * Пример: d2, порог 4 → max(d2)=2 < 4 → взрыв на d4 → max(d4)=4 >= 4 → берём.
+ *   P = 1/2 * 1/4 = 12.5%
+ */
+function calcExplodingChance(threshold, skillValue) {
+  if (skillValue <= 0) return 0;
+  const startDie = Math.max(2, skillValue * 2);
+
+  function p(need, d) {
+    if (need <= 0) return 1;
+
+    if (d >= 20) {
+      // d20 финальный — взрыва нет
+      return need > 20 ? 0 : Math.max(0, 20 - need + 1) / 20;
+    }
+
+    // Шанс выбросить need..d-1 (не max — не взрываем, нужное уже достигнуто)
+    const normalSuccess = Math.max(0, d - Math.max(need, 1)) / d;
+
+    if (need > d) {
+      // Max куба недостаточен → если выпал max, всегда взрываем
+      const explodeChance = (1 / d) * p(need, Math.min(d + 2, 20));
+      return normalSuccess + explodeChance;
+    } else {
+      // Max куба достаточен (d >= need) → берём max, не взрываем
+      const maxTake = 1 / d;
+      return normalSuccess + maxTake;
+    }
+  }
+
+  return Math.round(p(threshold, startDie) * 100);
+}
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS } from "../constants/items-catalog.mjs";
+
+// Все предметы из каталога в плоский список
+const ALL_CATALOG_ITEMS = [
+  ...Object.values(MATERIALS),
+  ...Object.values(WEAPONS),
+  ...Object.values(ARMORS),
+  ...Object.values(POTIONS),
+  ...Object.values(FOOD),
+  ...Object.values(TOOLS),
+];
+
+// Найти конкретный предмет по категории и тиру
+function findCatalogItem(category, tier) {
+  return ALL_CATALOG_ITEMS.find(i => i.category === category && i.tier === tier)
+    ?? ALL_CATALOG_ITEMS.find(i => i.category === category && i.tier <= tier);
+}
+
 const SKILL_LABELS = {
   smithing:  "Кузнечное дело",
   crafting:  "Ремесло",
@@ -71,12 +125,18 @@ class IronHillsCraftApp extends Application {
       const hasTool     = !!tool;
 
       const ingredients = recipe.ingredients.map(ing => {
-        const have    = getAvailableQty(actor, ing.type, ing.category);
-        const enough  = have >= ing.quantity;
+        const have = getAvailableQty(actor, ing.type, ing.category);
+        const enough = have >= ing.quantity;
+        // Ищем конкретный предмет из каталога по тиру рецепта
+        const tier = ing.tier ?? recipe.result?.system?.tier ?? 1;
+        const catalogItem = findCatalogItem(ing.category, tier);
+        const label = catalogItem?.label
+          ?? (CATEGORY_LABELS[ing.category] ?? ing.category) + ` (ст.${tier})`;
         return {
           type:     ing.type,
           category: ing.category,
-          label:    CATEGORY_LABELS[ing.category] ?? ing.category,
+          tier,
+          label,
           need:     ing.quantity,
           have,
           enough,
@@ -86,10 +146,8 @@ class IronHillsCraftApp extends Application {
       const allIngr  = ingredients.every(i => i.enough);
       const canCraft = hasTool && allIngr && skillValue > 0;
 
-      // Шанс успеха (приблизительный)
-      const successChance = dieSize > 0
-        ? Math.round(Math.max(0, Math.min(100, (dieSize - recipe.difficulty + 1) / dieSize * 100)))
-        : 0;
+      // Шанс успеха с учётом взрыва куба
+      const successChance = calcExplodingChance(recipe.difficulty, skillValue);
 
       return {
         id:            recipe.id,
@@ -107,6 +165,54 @@ class IronHillsCraftApp extends Application {
         canCraft,
         resultType:    recipe.result?.type ?? "",
         isSelected:    recipe.id === this._selected,
+        // Характеристики результата для предпросмотра
+        resultPreview: (() => {
+          const rs  = recipe.result?.system ?? {};
+          const rt  = recipe.result?.type   ?? "";
+          const tier = rs.tier ?? 1;
+          // Бонусы качества зависят от тира: каждый уровень качества = +tier*0.25
+          const fineBonus  = Math.round(tier * 0.25 * 10) / 10;
+          const mwBonus    = Math.round(tier * 0.5  * 10) / 10;
+          const legBonus   = Math.round(tier * 1.0  * 10) / 10;
+          const out = [];
+          if (rt === "weapon") {
+            const dmg = rs.damage ?? 0;
+            out.push({ label:"Урон",     val:`${dmg}`, quality:`Хор: +${fineBonus} / Мас: +${mwBonus} / Лег: +${legBonus}` });
+            out.push({ label:"Навык",    val:rs.skill ?? "—" });
+            out.push({ label:"Энергия",  val:rs.energyCost ?? "—" });
+            out.push({ label:"Тип",      val:rs.damageType === "magical" ? "✦ Магический" : "⚔ Физический" });
+            if (rs.twoHanded) out.push({ label:"", val:"✋ Двуручное" });
+          } else if (rt === "armor") {
+            const phys = rs.protection?.physical ?? rs.resist?.physical ?? 0;
+            out.push({ label:"Физ. защита", val:`${phys}`, quality:`Хор: +${fineBonus} / Мас: +${mwBonus} / Лег: +${legBonus}` });
+            if (rs.protection?.magical || rs.resist?.magical) {
+              const mag = rs.protection?.magical ?? rs.resist?.magical ?? 0;
+              out.push({ label:"Маг. защита", val:`${mag}` });
+            }
+            out.push({ label:"Слот", val:rs.slot ?? "—" });
+          } else if (rt === "potion" || rt === "consumable") {
+            const EFFECTS = {
+              healHP:"🩹 Лечение HP", healAll:"💚 Лечение тела",
+              restoreEnergy:"⚡ Восстановление энергии", restoreMana:"✦ Восстановление маны",
+              restoreHydration:"💧 Жажда", restoreSatiety:"🍖 Голод",
+              curePoison:"🟢 Противоядие", cureDisease:"🏥 Болезнь",
+              speedBoost:"⚡ Скорость", strengthBoost:"💪 Сила",
+              stun:"⚡ Оглушение", silence:"🔇 Безмолвие",
+              slow:"🐢 Замедление", fear:"😱 Страх", reserveDrain:"💀 Резерв",
+            };
+            out.push({ label:"Эффект", val:EFFECTS[rs.effect] ?? rs.effect ?? "—" });
+            out.push({ label:"Сила",   val:rs.power ?? "—" });
+            if (rs.scope)    out.push({ label:"Цель",    val:rs.scope });
+            if (rs.duration) out.push({ label:"Длит.",   val:`${rs.duration}с` });
+          } else if (rt === "food") {
+            out.push({ label:"🍖 Сытость", val:`+${rs.satiety  ?? 0}` });
+            out.push({ label:"💧 Жажда",   val:`+${rs.hydration ?? 0}` });
+          }
+          // Прочность по ступени
+          const dur = {1:15,2:25,3:40,4:65,5:100}[recipe.result?.system?.tier ?? 1] ?? 15;
+          if (["weapon","armor","tool"].includes(rt)) out.push({ label:"Прочность", val:dur });
+          return out;
+        })(),
         // Фильтрация
         matchesFilter: this._filter === "all" || recipe.skillKey === this._filter,
         matchesSearch: !this._search || recipe.label.toLowerCase().includes(this._search.toLowerCase()),
@@ -117,9 +223,11 @@ class IronHillsCraftApp extends Application {
     const selectedRecipe = visible.find(r => r.isSelected) ?? null;
 
     // Уникальные навыки для фильтров
+    // Только навыки которые есть в рецептах
+    const usedSkills = [...new Set(allRecipes.map(r => r.skillKey))];
     const filters = [
       { key: "all", label: "Все" },
-      ...Object.entries(SKILL_LABELS).map(([k, l]) => ({ key: k, label: l }))
+      ...usedSkills.map(k => ({ key: k, label: SKILL_LABELS[k] ?? k }))
     ].filter((f, i, arr) => arr.findIndex(x => x.key === f.key) === i);
 
     return {

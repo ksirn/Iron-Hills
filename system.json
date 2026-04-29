@@ -107,5 +107,91 @@
   "url": "",
   "manifest": "",
   "download": "",
-  "license": "LICENSE.txt"
+  "license": "LICENSE.txt",
+  "packs": [
+    {
+      "name": "ih-weapons",
+      "label": "Iron Hills — Оружие",
+      "path": "packs/weapons.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-armor",
+      "label": "Iron Hills — Броня",
+      "path": "packs/armor.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-materials",
+      "label": "Iron Hills — Материалы",
+      "path": "packs/materials.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-potions",
+      "label": "Iron Hills — Зелья",
+      "path": "packs/potions.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-food",
+      "label": "Iron Hills — Еда",
+      "path": "packs/food.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-tools",
+      "label": "Iron Hills — Инструменты",
+      "path": "packs/tools.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-npc",
+      "label": "Iron Hills — NPC",
+      "path": "packs/npc.db",
+      "type": "Actor",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-gods",
+      "label": "Iron Hills — Пантеон",
+      "path": "packs/gods.db",
+      "type": "Actor",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-belts",
+      "label": "Iron Hills — Пояса",
+      "path": "packs/belts.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-backpacks",
+      "label": "Iron Hills — Рюкзаки",
+      "path": "packs/backpacks.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-attachments",
+      "label": "Iron Hills — Крепления",
+      "path": "packs/attachments.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-spells",
+      "label": "Заклинания",
+      "path": "packs/ih-spells.db",
+      "type": "Item",
+      "system": "iron-hills-system"
+    }
+  ]
 }

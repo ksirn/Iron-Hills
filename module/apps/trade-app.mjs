@@ -29,6 +29,19 @@ function getCoins(actor) {
   };
 }
 
+/** Получить баланс актора в меди (из system.currency или system.economy.coins) */
+function getActorCurrencyCopper(actor) {
+  const cur = actor.system?.currency;
+  if (cur) {
+    return (Number(cur.copper   ?? 0))
+         + (Number(cur.silver   ?? 0)) * 100
+         + (Number(cur.gold     ?? 0)) * 10000
+         + (Number(cur.platinum ?? 0)) * 1000000;
+  }
+  // Fallback: system.economy.coins (старый формат)
+  return Number(actor.system?.economy?.coins ?? 0);
+}
+
 function coinsToCopper(coins) {
   return coins.copper + coins.silver * 100 + coins.gold * 10000 + coins.platinum * 1000000;
 }
@@ -410,20 +423,72 @@ class IronHillsTradeApp extends Application {
     const result = [];
     for (const item of items) {
       if (!item?.id || !item?.name) continue;
-      if (offerIds.includes(item.id)) continue;
       if (filter !== "all" && itemCategory(item) !== filter) continue;
       if (search && !item.name.toLowerCase().includes(search)) continue;
+
+      // Показываем оставшееся количество (total - в предложении)
+      const totalQty  = Number(item.system?.quantity ?? 1);
+      const inOffer   = (side === "left" ? leftOff : rightOff)
+                          .find(o => o.itemId === item.id);
+      const offeredQty = inOffer?.qty ?? 0;
+      const remainQty  = totalQty - offeredQty;
+      if (remainQty <= 0) continue; // всё уже в предложении
+
+      // Данные для тултипа
+      const sys = item.system ?? {};
+      const tooltipParts = [];
+      // Оружие
+      if (sys.damage)     tooltipParts.push(`⚔ Урон: ${sys.damage}`);
+      if (sys.skill)      tooltipParts.push(`🎯 Навык: ${sys.skill}`);
+      if (sys.energyCost) tooltipParts.push(`⚡ Энергия: ${sys.energyCost}`);
+      if (sys.timeCost)   tooltipParts.push(`⏱ Время: ${sys.timeCost}с`);
+      if (sys.twoHanded)  tooltipParts.push(`🤲 Двуручное`);
+      // Броня
+      if (sys.protection?.physical) tooltipParts.push(`🛡 Физ: ${sys.protection.physical}`);
+      if (sys.protection?.magical)  tooltipParts.push(`✨ Маг: ${sys.protection.magical}`);
+      // Еда
+      if (sys.satiety)    tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
+      if (sys.hydration)  tooltipParts.push(`💧 Жажда: +${sys.hydration}`);
+      // Зелья
+      if (sys.power && sys.actionType) {
+        const ACTION_LABELS = {
+          healHp:      `❤ Лечение: +${sys.power} HP`,
+          restoreEnergy: `⚡ Энергия: +${sys.power}`,
+          restoreMana:   `💧 Мана: +${sys.power}`,
+          buffStrength:  `💪 Сила: +${sys.power}`,
+          curePoison:    `☠ Лечит яд`,
+          healBleeding:  `🩸 Останавливает кровотечение`,
+        };
+        tooltipParts.push(ACTION_LABELS[sys.actionType] ?? `✦ Сила: ${sys.power}`);
+      }
+      // Заклинания
+      if (sys.school)     tooltipParts.push(`✨ ${sys.school} ранг ${sys.rank ?? 1}`);
+      if (sys.manaCost)   tooltipParts.push(`💧 Мана: ${sys.manaCost}`);
+      if (sys.damage && sys.school) tooltipParts.push(`⚔ Урон: ${sys.damage}`);
+      // Материалы
+      if (sys.category)   tooltipParts.push(`📦 ${sys.category}`);
+      // Общее
+      if (sys.weight)     tooltipParts.push(`⚖ ${sys.weight} кг`);
+      const desc = sys.description ?? sys.desc ?? sys.flavor ?? sys.effect ?? "";
+
       result.push({
         id:            item.id,
         name:          item.name,
         img:           item.img ?? "icons/svg/item-bag.svg",
-        qty:           Number(item.system?.quantity ?? 1),
+        qty:           remainQty,
+        multiQty:      remainQty > 1,
         category:      itemCategory(item),
         categoryLabel: CATEGORY_LABELS[itemCategory(item)] ?? "Прочее",
         tier:          Number(item.system?.tier ?? 1),
         price:         Number(item.system?.price ?? item.system?.basePrice ?? 0),
-        priceFormatted: formatPrice(Number(item.system?.price ?? item.system?.basePrice ?? 0)),
-        side
+        priceFormatted: formatPrice(Number(
+          item.system?.price > 0     ? item.system.price     :
+          item.system?.basePrice > 0 ? item.system.basePrice :
+          item.system?.value  > 0    ? item.system.value     : 0
+        )),
+        side,
+        tooltipStats: tooltipParts.join(" · "),
+        tooltipDesc:  desc ? String(desc).replace(/<[^>]+>/g, "").slice(0, 120) : "",
       });
     }
     return result;
@@ -506,11 +571,10 @@ class IronHillsTradeApp extends Application {
 
     // Double-click to add to offer
     html.find(".ih-trade-inv-item").on("dblclick", event => {
+      // Игнорируем если клик внутри счётчика или кнопки добавления
+      if ($(event.target).closest(".ih-trade-qty-ctrl, .ih-trade-add-btn").length) return;
       const { itemId, side } = event.currentTarget.dataset;
-      const actor = side === "left" ? this._getCharacter() : getLiveActor(this.merchant);
-      if (!actor) return;
-      const item = actor.items.get(itemId);
-      if (item) { addToOffer(this._tradeState, side, item, 1); this.render(false); }
+      this._addFromCounter(itemId, side, html);
     });
 
     // Remove from offer
@@ -593,7 +657,47 @@ class IronHillsTradeApp extends Application {
     });
 
     // Кнопка "Поторговаться"
-    html.find("[data-bargain]").on("click", async () => {
+    // ── Счётчик количества ──────────────────────────────────
+    // Кнопка "−"
+    html.on("click", "[data-qty-dec]", e => {
+      e.stopPropagation();
+      const ctrl  = $(e.currentTarget).closest(".ih-trade-qty-ctrl");
+      const input = ctrl.find("[data-qty-input]");
+      const max   = Number(ctrl.data("max")) || 1;
+      input.val(Math.max(1, Number(input.val()) - 1));
+    });
+
+    // Кнопка "+"
+    html.on("click", "[data-qty-inc]", e => {
+      e.stopPropagation();
+      const ctrl  = $(e.currentTarget).closest(".ih-trade-qty-ctrl");
+      const input = ctrl.find("[data-qty-input]");
+      const max   = Number(ctrl.data("max")) || 1;
+      input.val(Math.min(max, Number(input.val()) + 1));
+    });
+
+    // Ввод вручную — клamp в пределах доступного
+    html.on("change", "[data-qty-input]", e => {
+      e.stopPropagation();
+      const ctrl = $(e.currentTarget).closest(".ih-trade-qty-ctrl");
+      const max  = Number(ctrl.data("max")) || 1;
+      $(e.currentTarget).val(Math.max(1, Math.min(max, Number($(e.currentTarget).val()) || 1)));
+    });
+
+    // Клик внутри поля — не провоцировать dblclick
+    html.on("click mousedown", "[data-qty-input]", e => e.stopPropagation());
+
+    // Кнопка → "Добавить в предложение"
+    html.on("click", "[data-add-to-offer]", e => {
+      e.stopPropagation();
+      const btn    = $(e.currentTarget);
+      const itemId = btn.data("itemId") ?? btn.attr("data-item-id");
+      const side   = btn.data("side")   ?? btn.attr("data-side");
+      this._addFromCounter(itemId, side, html);
+    });
+    // ──────────────────────────────────────────────────────
+
+        html.find("[data-bargain]").on("click", async () => {
       await this._doBargain();
     });
 
@@ -812,6 +916,28 @@ class IronHillsTradeApp extends Application {
 
   // ─── Both ready → execute ────────────────────────────────
 
+  _addFromCounter(itemId, side, html) {
+    const actor = side === "left"
+      ? (this._getCharacter?.() ?? getLiveActor(this.character))
+      : getLiveActor(this.merchant);
+    const item  = actor?.items?.get(itemId);
+    if (!item) return;
+
+    // Читаем значение из input напрямую из DOM
+    const input    = html?.[0]?.querySelector(`[data-qty-input][data-item-id="${itemId}"]`);
+    const inputQty = input ? (Number(input.value) || 1) : 1;
+
+    const totalQty = Number(item.system?.quantity ?? 1);
+    const inOffer  = (side === "left" ? this._tradeState.leftOffer : this._tradeState.rightOffer)
+                       .find(o => o.itemId === itemId);
+    const maxAdd   = totalQty - (inOffer?.qty ?? 0);
+    if (maxAdd <= 0) { ui.notifications.warn("Весь товар уже в предложении"); return; }
+
+    const qty = Math.max(1, Math.min(maxAdd, inputQty));
+    addToOffer(this._tradeState, side, item, qty);
+    this.render(false);
+  }
+
   _checkBothReady() {
     if (!this._tradeState.leftReady || !this._tradeState.rightReady) return;
 
@@ -843,6 +969,25 @@ class IronHillsTradeApp extends Application {
 
     try {
       const s = this._tradeState;
+
+      // ── Валидация: проверяем хватает ли у игрока монет ──────
+      const leftCopper  = coinsToCopper(s.leftCoins);
+      const rightCopper = coinsToCopper(s.rightCoins);
+
+      if (leftCopper > 0) {
+        const charCoins = getActorCurrencyCopper(character);
+        if (charCoins < leftCopper) {
+          ui.notifications.error(
+            `У ${character.name} не хватает монет: нужно ${leftCopper} меди, есть ${charCoins}`
+          );
+          resetState(this._tradeState);
+          this._busy = false;
+          this.render(false);
+          return;
+        }
+      }
+      // ────────────────────────────────────────────────────────
+
       const updates = [];
 
       // Передать предметы из предложения игрока → торговцу
@@ -862,14 +1007,12 @@ class IronHillsTradeApp extends Application {
       }
 
       // Передать монеты игрока → торговцу
-      const leftCopper = coinsToCopper(s.leftCoins);
       if (leftCopper > 0) {
         await changeActorCoins(character, -leftCopper);
         await changeMerchantWealth(merchant, leftCopper);
       }
 
       // Передать монеты торговца → игроку
-      const rightCopper = coinsToCopper(s.rightCoins);
       if (rightCopper > 0) {
         await changeMerchantWealth(merchant, -rightCopper);
         await changeActorCoins(character, rightCopper);
@@ -899,6 +1042,17 @@ class IronHillsTradeApp extends Application {
       resetState(this._tradeState);
       this.render(false);
       if (character.sheet?.rendered) character.sheet.render(false);
+
+      // Принудительное авторазмещение + модалка если не влезло
+      setTimeout(async () => {
+        try {
+          const { PendingItemsApp } = await import("./pending-items-app.mjs");
+          await PendingItemsApp.openIfNeeded(character);
+        } catch(e) {
+          console.warn("Iron Hills | PendingItemsApp error:", e);
+          character.sheet?.render(true);
+        }
+      }, 400);
 
       // Бонус к репутации за успешную сделку (+3)
       try {

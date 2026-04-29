@@ -1,0 +1,178 @@
+{{!-- Iron Hills — Loot Transfer v3 --}}
+<div class="ih-lt2-app">
+
+  {{!-- Шапка --}}
+  <div class="ih-lt2-header">
+    <div class="ih-lt2-actor">
+      <img class="ih-lt2-portrait" src="{{leftImg}}" alt="{{leftName}}">
+      <span class="ih-lt2-actor-name">{{leftName}}</span>
+    </div>
+    <div class="ih-lt2-hint">
+      Перетащи предмет между панелями или на слот снаряжения
+    </div>
+    <div class="ih-lt2-actor">
+      <img class="ih-lt2-portrait" src="{{rightImg}}" alt="{{rightName}}">
+      <span class="ih-lt2-actor-name">{{rightName}}</span>
+    </div>
+  </div>
+
+  <div class="ih-lt2-panels">
+
+    {{!-- ══ ЛЕВАЯ ПАНЕЛЬ — инвентарь персонажа ══════════════ --}}
+    <div class="ih-lt2-panel" data-side="left">
+
+      {{!-- Силуэт персонажа --}}
+      <div class="ih-lt2-paper-doll">
+        {{#each leftEquip}}
+        <div class="ih-lt2-pd-slot ih-lt2-pd-{{key}} {{#if hasItem}}has-item{{/if}}"
+             data-slot-key="{{key}}" data-actor-id="{{actorId}}"
+             title="{{label}}{{#if hasItem}}: {{itemName}}{{/if}}">
+          {{#if hasItem}}
+            <img src="{{itemImg}}" alt="{{itemName}}"
+                 data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-from-equip="{{key}}"
+                 draggable="true">
+          {{else}}
+            <span class="ih-lt2-pd-icon">{{icon}}</span>
+          {{/if}}
+          <span class="ih-lt2-pd-label">{{label}}</span>
+        </div>
+        {{/each}}
+      </div>
+
+      {{!-- Секции инвентаря --}}
+      {{#each leftSections}}
+      <div class="ih-lt2-section">
+        <div class="ih-lt2-sec-label">{{label}}</div>
+        <div class="ih-lt2-grid"
+             data-drop-target="section"
+             data-actor-id="{{actorId}}"
+             data-sec-key="{{key}}"
+             data-cell="{{cellSize}}"
+             data-pocket="{{pocketMode}}"
+             style="width:{{gridW}}px; height:{{gridH}}px;">
+          {{#each cells}}
+          <div class="ih-lt2-cell {{#if isPocket}}is-pocket{{/if}}"
+               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          {{/each}}
+          {{#each items}}
+          <div class="ih-lt2-item"
+               draggable="true"
+               data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="{{secKey}}"
+               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               title="{{name}} · ст.{{tier}}">
+            <img src="{{img}}" alt="{{name}}" draggable="false">
+            {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+        {{#if overflow.length}}
+        <div class="ih-lt2-overflow-row">
+          {{#each overflow}}
+          <div class="ih-lt2-item ih-lt2-overflow-item"
+               draggable="true"
+               data-item-id="{{item.id}}" data-actor-id="{{../actorId}}" data-sec-key="{{../key}}"
+               title="{{item.name}} — не влезло">
+            <img src="{{item.img}}" alt="{{item.name}}" draggable="false">
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="ih-lt2-divider">⇄</div>
+
+    {{!-- ══ ПРАВАЯ ПАНЕЛЬ ══════════════════════════════════ --}}
+    <div class="ih-lt2-panel" data-side="right">
+
+      {{!-- Контейнер — безразмерная сетка --}}
+      {{#if rightIsContainer}}
+      <div class="ih-lt2-section">
+        <div class="ih-lt2-sec-label">Содержимое контейнера</div>
+        <div class="ih-lt2-grid ih-lt2-stash"
+             data-drop-target="stash"
+             data-actor-id="{{stashGrid.actorId}}"
+             data-sec-key="__stash__"
+             data-cell="{{cellSize}}"
+             style="width:{{stashGrid.gridW}}px; min-height:{{stashGrid.gridH}}px;">
+          {{#each stashGrid.cells}}
+          <div class="ih-lt2-cell"
+               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          {{/each}}
+          {{#each stashGrid.items}}
+          <div class="ih-lt2-item"
+               draggable="true"
+               data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="__stash__"
+               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               title="{{name}} · ст.{{tier}}">
+            <img src="{{img}}" alt="{{name}}" draggable="false">
+            {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+
+      {{!-- Другой актор — grid inventory --}}
+      {{else if rightIsActor}}
+
+      {{!-- Слоты экипировки правого --}}
+      <div class="ih-lt2-paper-doll">
+        {{#each rightEquip}}
+        <div class="ih-lt2-pd-slot ih-lt2-pd-{{key}} {{#if hasItem}}has-item{{/if}}"
+             data-slot-key="{{key}}" data-actor-id="{{actorId}}"
+             title="{{label}}{{#if hasItem}}: {{itemName}}{{/if}}">
+          {{#if hasItem}}
+            <img src="{{itemImg}}" alt="{{itemName}}"
+                 data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-from-equip="{{key}}"
+                 draggable="true">
+          {{else}}
+            <span class="ih-lt2-pd-icon">{{icon}}</span>
+          {{/if}}
+          <span class="ih-lt2-pd-label">{{label}}</span>
+        </div>
+        {{/each}}
+      </div>
+
+      {{#each rightSections}}
+      <div class="ih-lt2-section">
+        <div class="ih-lt2-sec-label">{{label}}</div>
+        <div class="ih-lt2-grid"
+             data-drop-target="section"
+             data-actor-id="{{actorId}}"
+             data-sec-key="{{key}}"
+             data-cell="{{cellSize}}"
+             data-pocket="{{pocketMode}}"
+             style="width:{{gridW}}px; height:{{gridH}}px;">
+          {{#each cells}}
+          <div class="ih-lt2-cell {{#if isPocket}}is-pocket{{/if}}"
+               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          {{/each}}
+          {{#each items}}
+          <div class="ih-lt2-item"
+               draggable="true"
+               data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="{{secKey}}"
+               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               title="{{name}} · ст.{{tier}}">
+            <img src="{{img}}" alt="{{name}}" draggable="false">
+            {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+
+      {{!-- Земля --}}
+      {{else}}
+      <div class="ih-lt2-ground" data-drop-target="ground" id="ih-lt2-ground-drop">
+        🪨 Перетащи сюда чтобы выбросить на землю
+      </div>
+      {{/if}}
+
+    </div>
+  </div>
+
+  <div class="ih-lt2-footer">
+    <a class="ih-btn ih-btn-primary" data-close-done>✓ Готово</a>
+  </div>
+</div>

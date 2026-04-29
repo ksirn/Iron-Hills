@@ -22,12 +22,16 @@ function astar(tiles, cols, rows, startCol, startRow, endCol, endRow, transport)
 
   const getCost = (col, row) => {
     const t = tileMap[tKey(col, row)];
-    if (!t) return Infinity;
+    // Если тайл не определён — считаем проходимым (plains)
+    if (!t) {
+      if (onlyOn) return Infinity; // лодка требует воду
+      return 1 * speedMult;
+    }
     const terrain = TERRAIN_TYPES[t.terrain];
-    if (!terrain) return 1;
+    if (!terrain) return 1 * speedMult;
     if (blocked.includes(t.terrain)) return Infinity;
     if (onlyOn && !onlyOn.includes(t.terrain)) return Infinity;
-    return terrain.costHours * speedMult;
+    return (terrain.costHours ?? 1) * speedMult;
   };
 
   const h = (c, r) => Math.abs(c - endCol) + Math.abs(r - endRow);
@@ -121,10 +125,30 @@ class IronHillsWorldMapApp extends Application {
   }
 
   _getRegion() {
-    // Сначала проверяем пользовательские регионы в настройках
-    let regions = {};
-    try { regions = game.settings.get("iron-hills-system", "worldRegions") ?? {}; } catch {}
-    return regions[this._regionId] ?? DEFAULT_REGIONS[this._regionId];
+    let userRegions = {};
+    try { userRegions = game.settings.get("iron-hills-system", "worldRegions") ?? {}; } catch {}
+
+    const base = foundry.utils.deepClone(DEFAULT_REGIONS[this._regionId] ?? DEFAULT_REGIONS["iron_hills"]);
+    const user = userRegions[this._regionId];
+
+    if (!user) return base;
+
+    // Мёрджим: дефолтный грид + изменения от пользователя
+    // Пользовательские тайлы override дефолтные
+    if (user.tiles?.length) {
+      const tileMap = {};
+      for (const t of base.tiles ?? []) tileMap[`${t.col},${t.row}`] = t;
+      for (const t of user.tiles) tileMap[`${t.col},${t.row}`] = { ...tileMap[`${t.col},${t.row}`], ...t };
+      base.tiles = Object.values(tileMap);
+    }
+
+    return {
+      ...base,
+      ...user,
+      tiles: base.tiles, // уже смержены выше
+      cols: user.cols ?? base.cols ?? 10,
+      rows: user.rows ?? base.rows ?? 10,
+    };
   }
 
   _getGroupPosition() {
@@ -194,8 +218,26 @@ class IronHillsWorldMapApp extends Application {
       routeInfo = { found: false, blocked: true };
     }
 
+    // POI из акторов - накладываем на карту
+    const poiActors = (game.actors ?? []).filter(a => a.type === "poi");
+    const poiMarkers = poiActors.map(a => ({
+      id:    a.id,
+      name:  a.name,
+      type:  a.system.info?.poiType ?? "camp",
+      tier:  a.system.info?.tier    ?? 1,
+      col:   Number(a.system.info?.mapCol ?? -1),
+      row:   Number(a.system.info?.mapRow ?? -1),
+      icon:  { camp:"⛺", lair:"🐉", ruins:"🏚", shrine:"⛩",
+               road:"🛣", dungeon:"⚔", tower:"🗼", cave:"🕳" }[a.system.info?.poiType] ?? "📍",
+      danger: Number(a.system.state?.threatLevel ?? a.system.info?.danger ?? 3),
+      status: a.system.info?.status ?? "",
+      x:     Number(a.system.info?.mapCol ?? -1) * TILE_PX,
+      y:     Number(a.system.info?.mapRow ?? -1) * TILE_PX,
+    })).filter(p => p.col >= 0 && p.row >= 0);
+
     return {
       region: { ...region, tiles },
+      poiMarkers,
       transport:  this._transport,
       transports: Object.entries(TRANSPORT_TYPES).map(([k, v]) => ({
         key: k, ...v, isActive: k === this._transport
@@ -215,6 +257,71 @@ class IronHillsWorldMapApp extends Application {
 
   activateListeners(html) {
     super.activateListeners(html);
+
+    // Клик по POI маркеру — открывает лист актора
+    html.on("click", ".ih-wm-poi-marker", e => {
+      e.stopPropagation();
+      const poiId = e.currentTarget.dataset.poiId;
+      if (!poiId) return;
+      const actor = game.actors.get(poiId);
+      if (actor) actor.sheet.render(true);
+    });
+
+    // ПКМ по POI маркеру — контекстное меню
+    html.on("contextmenu", ".ih-wm-poi-marker", async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const poiId = e.currentTarget.dataset.poiId;
+      const actor = game.actors.get(poiId);
+      if (!actor) return;
+      const choice = await Dialog.wait({
+        title: actor.name,
+        content: `<p style="color:#a8b8d0">${actor.name}</p>`,
+        buttons: {
+          open:  { label: "📋 Открыть лист",    callback: () => "open"  },
+          close: { label: "✅ Закрыть (зачищен)", callback: () => "clear" },
+        },
+        default: "open",
+      });
+      if (choice === "open") {
+        actor.sheet.render(true);
+      } else if (choice === "clear") {
+        await actor.update({ "system.info.status": "cleared" });
+        ui.notifications.info(`${actor.name} помечен как зачищенный`);
+        this.render(false);
+      }
+    });
+
+    // Клик по POI маркеру — открывает лист актора
+    html.on("click", ".ih-wm-poi-marker", e => {
+      e.stopPropagation();
+      const poiId = e.currentTarget.dataset.poiId;
+      const actor = game.actors?.get(poiId);
+      if (actor) actor.sheet?.render(true);
+    });
+
+    // ПКМ по POI — быстрые действия
+    html.on("contextmenu", ".ih-wm-poi-marker", async e => {
+      e.preventDefault(); e.stopPropagation();
+      const actor = game.actors?.get(e.currentTarget.dataset.poiId);
+      if (!actor) return;
+      const choice = await Dialog.wait({
+        title: actor.name,
+        content: `<p style="color:#a8b8d0;margin:0">${actor.name}</p>`,
+        buttons: {
+          open:  { label: "📋 Открыть лист",     callback: () => "open"  },
+          clear: { label: "✅ Зачищен",            callback: () => "clear" },
+        },
+        default: "open",
+      });
+      if (choice === "open")  actor.sheet?.render(true);
+      if (choice === "clear") {
+        await actor.update({ "system.info.status": "cleared" });
+        ui.notifications.info(`${actor.name} помечен как зачищенный`);
+        this.render(false);
+      }
+    });
+
 
     // Клик по тайлу
     html.find(".ih-wm-tile").on("click", e => {
@@ -344,6 +451,168 @@ class IronHillsWorldMapApp extends Application {
     });
   }
 
+  /**
+   * Пошаговое путешествие. Вызывается при старте и после каждого «Продолжить».
+   * Если следующий шаг маршрута содержит событие — останавливаемся и показываем его.
+   * Если событий больше нет — завершаем путешествие.
+   */
+  async _stepTravel() {
+    if (!this._travel) return;
+    const tr = this._travel;
+    const { presentTravelEvent } = await import("../services/travel-events-service.mjs");
+
+    // Есть ли следующее событие?
+    const nextEvent = tr.events[tr.eventIdx];
+
+    if (nextEvent) {
+      tr.eventIdx++;
+
+      // Часть пути до события
+      const stepFraction = nextEvent.tileIdx / (tr.path.length - 1);
+      const hoursToEvent = tr.baseHours * stepFraction - tr.hoursAccum;
+      tr.hoursAccum += hoursToEvent;
+
+      // Показываем событие в чат
+      const { delay, timeBonus } = await presentTravelEvent(
+        nextEvent, tr.eventIdx, tr.events.length
+      );
+      tr.totalDelay += delay - timeBonus;
+
+      // Кнопка «Продолжить путь» через ChatMessage с кастомным action
+      const btn = `<button class="ih-travel-continue-btn"
+        data-travel-app-id="${this.appId}"
+        style="margin-top:8px;padding:5px 16px;background:#1e3a5f;border:1px solid #5b9cf6;
+               border-radius:4px;color:#90c4f8;cursor:pointer;font-family:var(--font-primary)">
+        ▶ Продолжить путь
+      </button>`;
+
+      await ChatMessage.create({
+        content: `<div style="padding:4px 0">${btn}</div>`
+      });
+
+      // Слушаем клик по кнопке через Hooks
+      const hookId = Hooks.on("renderChatMessage", (_msg, html) => {
+        html.find(".ih-travel-continue-btn").on("click", () => {
+          if (!game.user?.isGM) return;
+          Hooks.off("renderChatMessage", hookId);
+          this._stepTravel();
+        });
+      });
+
+    } else {
+      // Событий больше нет — завершаем путешествие
+      const adjustedHours = Math.max(0.5, tr.baseHours + tr.totalDelay);
+
+      // Обновляем позицию группы
+      const groups = getPartyGroups().map(g => {
+        if (g.id !== this._groupId && !(this._groupId === null && g.isActive)) return g;
+        return {
+          ...g,
+          mapCol:     tr.target.col,
+          mapRow:     tr.target.row,
+          localHours: (g.localHours ?? 0) + adjustedHours,
+          location:   tr.targetLabel || g.location,
+        };
+      });
+      await savePartyGroups(groups);
+
+      // Travel Manager
+      const { IronHillsTravelApp } = await import("./travel-app.mjs");
+      const travelApp = Object.values(ui.windows).find(w => w instanceof IronHillsTravelApp)
+        ?? new IronHillsTravelApp();
+      travelApp._hours    = Math.max(1, Math.round(adjustedHours));
+      travelApp._activity = tr.activity;
+      await travelApp._applyTime(true);
+
+      const note = tr.totalDelay !== 0
+        ? ` (задержка: ${tr.totalDelay > 0 ? "+" : ""}${tr.totalDelay.toFixed(1)}ч)`
+        : "";
+
+      await ChatMessage.create({
+        content: `✅ <b>Группа прибыла:</b> ${tr.targetLabel} (${adjustedHours.toFixed(1)}ч${note})`
+      });
+
+      this._travel = null;
+      this.render(false);
+    }
+  }
+
+  async _stepTravel() {
+    if (!this._travel) return;
+    const tr = this._travel;
+    const { presentTravelEvent } = await import("../services/travel-events-service.mjs");
+
+    const nextEvent = tr.events[tr.eventIdx];
+
+    if (nextEvent) {
+      tr.eventIdx++;
+
+      const stepFraction = nextEvent.tileIdx / Math.max(1, tr.path.length - 1);
+      const hoursToEvent = tr.baseHours * stepFraction - tr.hoursAccum;
+      tr.hoursAccum += hoursToEvent;
+
+      const { delay, timeBonus } = await presentTravelEvent(
+        nextEvent, tr.eventIdx, tr.events.length
+      );
+      tr.totalDelay += (delay ?? 0) - (timeBonus ?? 0);
+
+      // Кнопка «Продолжить» в чате — только GM видит
+      const btn = `<button class="ih-travel-continue-btn"
+        style="margin-top:6px;padding:5px 16px;background:#1e3a5f;
+               border:1px solid #5b9cf6;border-radius:4px;color:#90c4f8;
+               cursor:pointer;font-size:12px">
+        ▶ Продолжить путь
+      </button>`;
+
+      const msg = await ChatMessage.create({
+        content: `<div style="padding:4px 0">${btn}</div>`,
+        whisper: ChatMessage.getWhisperRecipients("GM"),
+      });
+
+      // Ждём клика через hook на рендер сообщения
+      const hookId = Hooks.on("renderChatMessage", (_m, html) => {
+        html.find(".ih-travel-continue-btn").on("click", () => {
+          if (!game.user?.isGM) return;
+          Hooks.off("renderChatMessage", hookId);
+          this._stepTravel();
+        });
+      });
+
+    } else {
+      // Путешествие завершено
+      const adjustedHours = Math.max(0.5, tr.baseHours + tr.totalDelay);
+
+      const groups = getPartyGroups().map(g => {
+        if (g.id !== this._groupId && !(this._groupId === null && g.isActive)) return g;
+        return {
+          ...g,
+          mapCol:     tr.target.col,
+          mapRow:     tr.target.row,
+          localHours: (g.localHours ?? 0) + adjustedHours,
+          location:   tr.targetLabel || g.location,
+        };
+      });
+      await savePartyGroups(groups);
+
+      const { IronHillsTravelApp } = await import("./travel-app.mjs");
+      const travelApp = Object.values(ui.windows).find(w => w instanceof IronHillsTravelApp)
+        ?? new IronHillsTravelApp();
+      travelApp._hours    = Math.max(1, Math.round(adjustedHours));
+      travelApp._activity = tr.activity;
+      await travelApp._applyTime(true);
+
+      const note = tr.totalDelay !== 0
+        ? ` (задержка: ${tr.totalDelay > 0 ? "+" : ""}${tr.totalDelay.toFixed(1)}ч)` : "";
+      await ChatMessage.create({
+        content: `✅ <b>Группа прибыла:</b> ${tr.targetLabel} (${adjustedHours.toFixed(1)}ч${note})`
+      });
+
+      this._travel = null;
+      this.render(false);
+    }
+  }
+
+
   async _confirmTravel() {
     if (!this._route?.found || !this._target) return;
     if (!game.user?.isGM) { ui.notifications.warn("Только GM может подтвердить путешествие."); return; }
@@ -361,38 +630,36 @@ class IronHillsWorldMapApp extends Application {
     });
     if (!ok) return;
 
-    // Обновляем позицию группы
-    const groups = getPartyGroups().map(g => {
-      if (g.id !== this._groupId && !(this._groupId === null && g.isActive)) return g;
-      return {
-        ...g,
-        mapCol:     this._target.col,
-        mapRow:     this._target.row,
-        localHours: (g.localHours ?? 0) + hours,
-        location:   target?.label || g.location,
-      };
-    });
-    await savePartyGroups(groups);
+    // Сохраняем состояние путешествия и запускаем пошаговый режим
+    const { generateTravelEvents, adjustTravelTime }
+      = await import("../services/travel-events-service.mjs");
 
-    // Открываем Travel Manager и применяем время
-    const { IronHillsTravelApp } = await import("./travel-app.mjs");
-    const travelApp = Object.values(ui.windows).find(w => w instanceof IronHillsTravelApp)
-      ?? new IronHillsTravelApp();
+    const region_      = this._getRegion();
+    const dangerLevel  = Number(region_?.danger ?? 3);
+    const travelEvents = generateTravelEvents(this._route.path, region_, dangerLevel);
+    const activity     = this._transport === "horse" || this._transport === "cart"
+      ? "ride" : "walk";
 
-    travelApp._hours    = Math.max(1, Math.round(hours));
-    travelApp._activity = this._transport === "horse" ? "ride"
-      : this._transport === "cart"  ? "ride"
-      : "walk";
+    // Сохраняем состояние путешествия
+    this._travel = {
+      path:        this._route.path,
+      target:      this._target,
+      targetLabel: target?.label ?? "",
+      baseHours:   hours,
+      activity,
+      events:      travelEvents,        // все события с индексами тайлов
+      eventIdx:    0,                   // текущее событие
+      hoursAccum:  0,                   // накопленные часы (до текущего события)
+      totalDelay:  0,
+    };
 
-    await travelApp._applyTime(true);
-
-    // Сообщение
     await ChatMessage.create({
-      content: `🗺 <b>Группа прибыла:</b> ${target?.label ?? "цель"} (${hours.toFixed(1)}ч)`
+      content: `🗺 <b>Группа выдвигается</b> → ${target?.label ?? "цель"} (${hours.toFixed(1)}ч)`
     });
 
     this._target = null;
     this._route  = null;
+    await this._stepTravel();          // запускаем первый шаг
     this.render(false);
 
     // Если локация имеет сцену — предлагаем войти

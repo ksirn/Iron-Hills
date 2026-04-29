@@ -1,33 +1,75 @@
-<form class="iron-hills-sheet">
-  <header class="sheet-header">
-    <h1>{{actor.name}}</h1>
-  </header>
+{{!-- Iron Hills — Container Sheet v2 --}}
+<form class="ih-container-sheet" autocomplete="off">
 
-  <section class="sheet-body">
-    <h2>Информация</h2>
-    <div class="grid two-col">
-      <label>Тема
-        <input type="text" name="system.info.theme" value="{{system.info.theme}}">
-      </label>
-      <label>Тир
-        <input type="number" name="system.info.tier" value="{{system.info.tier}}">
-      </label>
-      <label>Сложность замка
-        <input type="number" name="system.info.lockDifficulty" value="{{system.info.lockDifficulty}}">
-      </label>
-      <label>Опасность
-        <input type="number" name="system.info.danger" value="{{system.info.danger}}">
-      </label>
+  <div class="ih-con-header">
+    <div class="ih-con-portrait-wrap">
+      <img class="ih-con-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+      {{#if system.info.lockDifficulty}}
+      <div class="ih-con-lock {{#if isLocked}}locked{{/if}}">
+        {{#if isLocked}}🔒{{else}}🔓{{/if}}
+      </div>
+      {{/if}}
+    </div>
+    <div class="ih-con-identity">
+      <input class="ih-con-name" type="text" name="name" value="{{actor.name}}">
+      <div class="ih-con-meta">
+        <label>Тип
+          <select name="system.info.theme">
+            <option value="chest"  {{#if (eq system.info.theme 'chest')}}selected{{/if}}>📦 Сундук</option>
+            <option value="bag"    {{#if (eq system.info.theme 'bag')}}selected{{/if}}>🎒 Мешок</option>
+            <option value="corpse" {{#if (eq system.info.theme 'corpse')}}selected{{/if}}>💀 Труп</option>
+            <option value="cache"  {{#if (eq system.info.theme 'cache')}}selected{{/if}}>🗺 Тайник</option>
+            <option value="pile"   {{#if (eq system.info.theme 'pile')}}selected{{/if}}>🪨 Куча</option>
+          </select>
+        </label>
+        <label>Ступень
+          <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10">
+        </label>
+        <label>Замок (сложность)
+          <input type="number" name="system.info.lockDifficulty" value="{{system.info.lockDifficulty}}" min="0">
+        </label>
+      </div>
+      {{#if isLocked}}
+      <div class="ih-con-locked-msg">
+        🔒 Заперто — нужен навык «Взлом» ≥ {{system.info.lockDifficulty}} или ключ
+        {{#if isGM}}<a class="ih-btn ih-btn-small" data-unlock-container>Открыть (GM)</a>{{/if}}
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="ih-con-body">
+    <div class="ih-con-section-title">
+      Содержимое ({{items.length}} пред., {{totalWeight}}кг)
+      {{#if isGM}}<a class="ih-cs-section-action" data-add-item-from-compendium>+ Из справочника</a>{{/if}}
     </div>
 
-    <h2>Содержимое</h2>
-    {{#each allItems}}
-      <div class="inventory-row">
-        <div>
-          <b>{{this.name}}</b>
-          <span>({{this.type}}, тир: {{this.system.tier}}, кол-во: {{this.system.quantity}})</span>
+    {{#if isLocked}}
+    <div class="ih-con-empty">🔒 Контейнер заперт</div>
+    {{else if items.length}}
+    <div class="ih-con-items">
+      {{#each items}}
+      <div class="ih-con-item">
+        <img class="ih-con-item-img" src="{{img}}" alt="{{name}}">
+        <div class="ih-con-item-info">
+          <span class="ih-con-item-name">{{name}}</span>
+          <span class="muted-text" style="font-size:10px">
+            {{type}}{{#if system.tier}} · ст.{{system.tier}}{{/if}}
+            {{#if system.quantity}} · ×{{system.quantity}}{{/if}}
+            {{#if system.weight}} · {{system.weight}}кг{{/if}}
+          </span>
         </div>
+        {{#if ../isGM}}
+        <a class="ih-icon-btn tiny" data-delete-item="{{id}}" title="Удалить">✕</a>
+        {{/if}}
       </div>
-    {{/each}}
-  </section>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-con-empty">Пусто</div>
+    {{/if}}
+  </div>
+
+
+
 </form>

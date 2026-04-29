@@ -1,0 +1,60 @@
+{{!-- Iron Hills — Spell Cast Dialog --}}
+<div class="ih-spell-app">
+
+  {{!-- Шапка --}}
+  <div class="ih-spell-header">
+    <div class="ih-spell-actor">{{actorName}}</div>
+    <div class="ih-spell-mana">
+      ✨ <b>{{manaCur}}</b>/{{manaMax}} маны
+      · Навык магии: <b>{{magicSkill}}</b>
+    </div>
+  </div>
+
+  {{!-- Фильтр по школе --}}
+  <div class="ih-spell-schools">
+    {{#each allSchools}}
+    <a class="ih-spell-school-btn {{#if (eq id ../activeSchool)}}is-active{{/if}}"
+       data-school-filter="{{id}}" style="--school-color:{{color}}">
+      {{icon}} {{label}}
+    </a>
+    {{/each}}
+  </div>
+
+  {{!-- Список заклинаний --}}
+  <div class="ih-spell-list">
+    {{#each schools}}
+    <div class="ih-spell-school-group">
+      <div class="ih-spell-school-title" style="color:{{color}}">{{icon}} {{label}}</div>
+      {{#each spells}}
+      {{#unless (eq locked 'unknown')}}
+      <a class="ih-spell-item {{#unless available}}is-locked{{/unless}}"
+         data-cast-spell="{{id}}"
+         {{#unless available}}title="{{locked}}"{{/unless}}>
+        <div class="ih-spell-item-head">
+          <span class="ih-spell-name">{{label}}</span>
+          <span class="ih-spell-rank">Ранг {{rank}}</span>
+          <span class="ih-spell-cost">✨ {{manaCost}} · ⏱ {{castTime}}с</span>
+          {{#if damage}}<span class="ih-spell-dmg">⚔ {{damage}}</span>{{/if}}
+        </div>
+        <div class="ih-spell-desc muted-text">{{desc}}</div>
+        {{#if aoe}}
+        <div class="ih-spell-aoe-tag">
+          {{lookup ../AOE_LABELS aoe.type}}
+          {{#if aoe.maxTargets}} · макс {{aoe.maxTargets}} цели{{/if}}
+          · {{aoe.distance}} кл.
+        </div>
+        {{/if}}
+        {{#if locked}}
+        <div class="ih-spell-lock-reason">🔒 {{locked}}</div>
+        {{/if}}
+      </a>
+      {{/unless}}
+      {{/each}}
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="ih-spell-footer">
+    <a class="ih-btn" data-cancel>Отмена</a>
+  </div>
+</div>

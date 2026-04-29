@@ -1,0 +1,77 @@
+{{!-- Iron Hills — single-target attack chat card.
+     Контекст: { label, skillKey, attacker:{name}, target:{name}, result, rollDesc, overflowLabel, armorDur } --}}
+
+<h3>{{localize "IRONHILLS.Chat.Attack.Title"}}: {{label}}</h3>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Attacker"}}:</b> {{attacker.name}}</p>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Target"}}:</b> {{target.name}}</p>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Skill"}}:</b> {{skillKey}}</p>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Die"}}:</b> d{{result.dieSize}}</p>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Roll"}}:</b> {{#if result.exploded}}💥 {{rollDesc}} = {{/if}}{{result.rollTotal}}</p>
+{{#if (gt result.attackPenalty 0)}}
+  <p><b>{{localize "IRONHILLS.Chat.Attack.Penalty"}}:</b> -{{result.attackPenalty}}</p>
+{{/if}}
+<p><b>{{localize "IRONHILLS.Chat.Attack.EffectiveRoll"}}:</b> {{result.effectiveRoll}}</p>
+<p><b>{{localize "IRONHILLS.Chat.Attack.Threshold"}}:</b> {{result.threshold}}</p>
+{{#if (gt result.finalEnergyCost 0)}}
+  <p><b>{{localize "IRONHILLS.Chat.Attack.EnergyCost"}}:</b> -{{result.finalEnergyCost}}</p>
+{{/if}}
+
+{{#unless result.hit}}
+  {{#if result.isAnticrit}}
+    <p>{{localize "IRONHILLS.Chat.Attack.ResultAnticrit" degree=result.failDegree}}</p>
+  {{else if (gte result.failDegree 8)}}
+    <p><b>{{localize "IRONHILLS.Chat.Attack.Result"}}:</b> {{localize "IRONHILLS.Chat.Attack.ResultHardMiss" degree=result.failDegree}}</p>
+  {{else}}
+    <p><b>{{localize "IRONHILLS.Chat.Attack.Result"}}:</b> {{localize "IRONHILLS.Chat.Attack.ResultMiss"}}</p>
+  {{/if}}
+{{else}}
+  <p><b>{{localize "IRONHILLS.Chat.Attack.Result"}}:</b> {{localize "IRONHILLS.Chat.Attack.ResultHit"}}{{#if (gte result.margin 8)}} ({{localize "IRONHILLS.Chat.Attack.Penetration"}}){{/if}}</p>
+  {{#unless result.targetIsMonster}}
+    {{#if result.locationRoll}}
+      <p><b>{{localize "IRONHILLS.Chat.Attack.HitLocation"}}:</b> {{result.locationLabel}} (d20: {{result.locationRoll}})</p>
+    {{else}}
+      <p><b>{{localize "IRONHILLS.Chat.Attack.HitLocation"}}:</b> {{result.locationLabel}} ({{localize "IRONHILLS.Chat.Attack.Aimed"}})</p>
+    {{/if}}
+  {{/unless}}
+  <p><b>{{localize "IRONHILLS.Chat.Attack.Margin"}}:</b> {{result.margin}}</p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.BaseDamage"}}:</b> {{result.baseDamage}}</p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.RawDamage"}}:</b> {{result.rawDamage}}</p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.DamageType"}}:</b>
+    {{#if (eq result.damageType "magical")}}{{localize "IRONHILLS.Chat.Attack.DamageMagical"}}{{else}}{{localize "IRONHILLS.Chat.Attack.DamagePhysical"}}{{/if}}
+  </p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.Armor"}}:</b>
+    {{#if result.armorItem}}{{result.armorItem.name}}{{else}}{{localize "IRONHILLS.Chat.Attack.ArmorNone"}}{{/if}}
+  </p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.Reduction"}}:</b> {{result.reduction}}{{#if (gt result.armorPenetration 0)}} ({{localize "IRONHILLS.Chat.Attack.ReductionPenetrated" amount=result.armorPenetration}}){{/if}}</p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.FinalDamage"}}:</b> <span style="font-size:1.1em;"><b>{{result.finalDamage}}</b></span></p>
+  <p><b>{{localize "IRONHILLS.Chat.Attack.RemainingHP"}}:</b> {{result.remainingHP}}</p>
+  {{#if (gt result.overflowDamage 0)}}
+    <p><b>{{localize "IRONHILLS.Chat.Attack.OverflowDamage"}}:</b> {{result.overflowDamage}} → {{overflowLabel}}</p>
+  {{/if}}
+  {{#if result.targetKilled}}
+    <p><b>{{localize "IRONHILLS.Chat.Attack.TargetDies"}}</b></p>
+  {{/if}}
+  {{#if armorDur}}
+    <p><b>{{localize "IRONHILLS.Chat.Attack.ArmorDurability"}}:</b> {{armorDur.value}}/{{armorDur.max}}</p>
+  {{/if}}
+  {{#if result.affixesApplied}}
+    {{#if (gt result.affixesApplied.criticalMult 1)}}
+      <p>✦ <b>{{localize "IRONHILLS.Chat.Attack.AffixCritical"}}:</b> ×{{result.affixesApplied.criticalMult}}</p>
+    {{/if}}
+    {{#if (gt result.affixesApplied.lifestolenHp 0)}}
+      <p>🩸 <b>{{localize "IRONHILLS.Chat.Attack.AffixLifesteal"}}:</b> +{{result.affixesApplied.lifestolenHp}} HP</p>
+    {{/if}}
+    {{#if (gt result.affixesApplied.bleedingBonus 0)}}
+      <p>🩸 <b>{{localize "IRONHILLS.Chat.Attack.AffixBleeding"}}:</b> +{{result.affixesApplied.bleedingBonus}}</p>
+    {{/if}}
+    {{#if result.affixesApplied.disarmed}}
+      <p>✋ <b>{{localize "IRONHILLS.Chat.Attack.AffixDisarmed"}}</b></p>
+    {{/if}}
+    {{#if result.affixesApplied.stunnedExtra}}
+      <p>⚡ <b>{{localize "IRONHILLS.Chat.Attack.AffixStunned"}}</b></p>
+    {{/if}}
+    {{#if result.affixesApplied.executed}}
+      <p>☠ <b>{{localize "IRONHILLS.Chat.Attack.AffixExecuted"}}</b></p>
+    {{/if}}
+  {{/if}}
+{{/unless}}

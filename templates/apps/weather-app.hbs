@@ -1,0 +1,100 @@
+{{!-- Iron Hills — Weather & Time App --}}
+<div class="ih-weather-app">
+
+  {{!-- Текущее время и период --}}
+  <div class="ih-wa-time-block">
+    <div class="ih-wa-period-icon">{{period.icon}}</div>
+    <div class="ih-wa-time-info">
+      <div class="ih-wa-time">{{timeStr}}</div>
+      <div class="ih-wa-period-name">{{period.name}} · День {{totalDay}}</div>
+      <div class="ih-wa-vision muted-text">👁 Видимость: {{vision}} кл.</div>
+    </div>
+    <div class="ih-wa-weather-current">
+      <span class="ih-wa-weather-icon">{{weather.icon}}</span>
+      <span class="ih-wa-weather-label">{{weather.label}}</span>
+    </div>
+  </div>
+
+  {{!-- Эффекты текущей погоды --}}
+  {{#if effects.length}}
+  <div class="ih-wa-effects">
+    {{#each effects}}
+    <div class="ih-wa-effect">
+      <span class="ih-wa-effect-key">{{key}}</span>
+      <span class="ih-wa-effect-val {{#if (gt value '0')}}text-good{{else}}text-bad{{/if}}">{{value}}</span>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{#if isGM}}
+
+  {{!-- Установить конкретное время --}}
+  <div class="ih-wa-section-title">Установить время</div>
+  <div class="ih-wa-set-time">
+    <div class="ih-wa-set-row">
+      <label class="ih-wa-set-label">День</label>
+      <div class="ih-wa-stepper">
+        <a class="ih-wa-step-btn" data-step-time="-86400">−</a>
+        <input class="ih-wa-set-input" id="ih-set-day" type="number"
+               value="{{totalDay}}" min="1" max="9999">
+        <a class="ih-wa-step-btn" data-step-time="86400">+</a>
+      </div>
+    </div>
+    <div class="ih-wa-set-row">
+      <label class="ih-wa-set-label">Час</label>
+      <div class="ih-wa-stepper">
+        <a class="ih-wa-step-btn" data-step-time="-3600">−</a>
+        <input class="ih-wa-set-input" id="ih-set-hour" type="number"
+               value="{{currentHour}}" min="0" max="23">
+        <a class="ih-wa-step-btn" data-step-time="3600">+</a>
+      </div>
+    </div>
+    <div class="ih-wa-set-row">
+      <label class="ih-wa-set-label">Мин</label>
+      <div class="ih-wa-stepper">
+        <a class="ih-wa-step-btn" data-step-time="-60">−</a>
+        <input class="ih-wa-set-input" id="ih-set-min" type="number"
+               value="{{currentMin}}" min="0" max="59">
+        <a class="ih-wa-step-btn" data-step-time="60">+</a>
+      </div>
+    </div>
+    <a class="ih-btn ih-btn-primary" data-set-time style="width:100%;justify-content:center;margin-top:4px">
+      ✓ Установить
+    </a>
+  </div>
+
+  {{!-- Быстрые сдвиги --}}
+  <div class="ih-wa-section-title">Быстрая перемотка</div>
+  <div class="ih-wa-fast-btns">
+    <a class="ih-btn ih-btn-small" data-advance-time="-3600">−1ч</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="-60">−1м</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="60">+1м</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="3600">+1ч</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="21600">+6ч</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="28800">Ночь</a>
+    <a class="ih-btn ih-btn-small" data-advance-time="86400">+1д</a>
+  </div>
+
+  {{!-- Применить освещение --}}
+  <a class="ih-btn ih-btn-primary" data-apply-lighting style="width:100%;justify-content:center;margin:6px 0">
+    💡 Применить освещение к сцене
+  </a>
+
+  {{!-- Выбор погоды --}}
+  <div class="ih-wa-section-title">
+    Погода
+    <a class="ih-cs-section-action" data-roll-weather>🎲 Случайно</a>
+  </div>
+  <div class="ih-wa-weather-grid">
+    {{#each weatherPresets}}
+    <a class="ih-wa-weather-btn {{#if (eq id ../weather.id)}}is-active{{/if}}"
+       data-weather="{{id}}" title="{{desc}}">
+      <span class="ih-wa-wb-icon">{{icon}}</span>
+      <span class="ih-wa-wb-label">{{label}}</span>
+    </a>
+    {{/each}}
+  </div>
+  {{/if}}
+
+</div>

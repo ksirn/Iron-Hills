@@ -1,0 +1,56 @@
+{{!-- Iron Hills — Pending Items Stash (Tarkov-style) --}}
+<div class="ih-pi-app">
+
+  {{#if done}}
+  <div class="ih-pi-done">✅ Все предметы распределены</div>
+  {{else}}
+
+  <div class="ih-pi-header">
+    <span>📥 Получено предметов: <b>{{count}}</b></span>
+    <span class="muted-text" style="font-size:10px">
+      Перетащи в инвентарь · ПКМ = выбросить
+    </span>
+  </div>
+
+  {{!-- Grid схрона --}}
+  <div class="ih-pi-grid-wrap">
+    <div class="ih-pi-grid ih-gi-canvas"
+         data-sec-key="pending"
+         style="width:{{gridW}}px; height:{{gridH}}px; position:relative;">
+
+      {{!-- Ячейки --}}
+      {{#each cells}}
+      <div class="ih-gi-cell"
+           data-col="{{col}}" data-row="{{row}}"
+           style="left:{{x}}px; top:{{y}}px; width:{{size}}px; height:{{size}}px;">
+      </div>
+      {{/each}}
+
+      {{!-- Предметы --}}
+      {{#each placed}}
+      <div class="ih-gi-item ih-pi-item"
+           draggable="true"
+           data-item-id="{{itemId}}"
+           data-sec-key="pending"
+           title="{{name}} ({{w}}×{{h}}) · ПКМ выбросить"
+           style="left:{{cssLeft}}px; top:{{cssTop}}px;
+                  width:{{cssW}}px; height:{{cssH}}px;">
+        <img class="ih-gi-item-img" src="{{img}}" alt="{{name}}">
+        <span class="ih-gi-item-name">{{name}}</span>
+        {{#if qty}}<span class="ih-gi-item-qty">×{{qty}}</span>{{/if}}
+      </div>
+      {{/each}}
+
+    </div>
+  </div>
+
+  <div class="ih-pi-footer">
+    <a class="ih-btn ih-btn-primary" data-auto-place-all>✨ Разместить автоматически</a>
+    <a class="ih-btn" data-open-inventory>🎒 Открыть инвентарь</a>
+    <span class="muted-text" style="font-size:10px">
+      ⚠ Нельзя закрыть пока не распределено
+    </span>
+  </div>
+
+  {{/if}}
+</div>

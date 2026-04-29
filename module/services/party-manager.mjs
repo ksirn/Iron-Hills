@@ -4,6 +4,8 @@
  * Группы хранятся в game.settings.
  */
 
+import { EntityPickerDialog } from "../apps/entity-picker.mjs";
+
 const SETTING_KEY = "partyGroups";
 const SETTING_SCOPE = "world";
 
@@ -183,6 +185,23 @@ export class IronHillsPartyManagerApp extends Application {
         g.id === groupId ? { ...g, location: loc } : g
       );
       await savePartyGroups(groups);
+    });
+
+    // Пикер локации — выбрать поселение
+    html.find("[data-pick-location]").on("click", async e => {
+      const groupId = e.currentTarget.dataset.groupId;
+      const picked  = await EntityPickerDialog.pick({
+        title:       "Выбрать локацию группы",
+        types:       ["settlement"],
+        placeholder: "Поиск поселения...",
+      });
+      if (!picked) return;
+
+      const groups = getPartyGroups().map(g =>
+        g.id === groupId ? { ...g, location: picked.name } : g
+      );
+      await savePartyGroups(groups);
+      this.render(false);
     });
   }
 }

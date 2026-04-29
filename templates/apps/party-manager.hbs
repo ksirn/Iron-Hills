@@ -22,9 +22,14 @@
     </div>
 
     <div class="ih-party-group-meta">
-      <input type="text" placeholder="Локация (город, регион...)"
-             data-group-location data-group-id="{{id}}"
-             value="{{location}}" class="ih-party-location-input">
+      <div class="ih-party-location-row">
+        <span class="ih-party-location-val">
+          {{#if location}}📍 {{location}}{{else}}<span class="muted-text">Локация не задана</span>{{/if}}
+        </span>
+        <a class="ih-btn ih-btn-small" data-pick-location data-group-id="{{id}}">
+          📍 Выбрать
+        </a>
+      </div>
     </div>
 
     <div class="ih-party-members">

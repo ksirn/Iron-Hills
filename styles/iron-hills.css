@@ -1989,34 +1989,34 @@
 
 
 .ih-cs-soul-grid {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
   padding: 8px 12px;
-  flex-wrap: wrap;
 }
 
 .ih-cs-soul-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   background: var(--ih-bg-2);
   border: 1px solid var(--ih-border-1);
   border-radius: var(--ih-radius-sm);
-  padding: 5px 10px;
+  padding: 6px 10px;
+  min-width: 0;
 }
 
-.ih-cs-soul-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; }
-.ih-cs-soul-val   { font-size: 14px; font-weight: 700; color: var(--ih-text-0); }
+.ih-cs-soul-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ih-text-2); }
+.ih-cs-soul-val   { font-size: 16px; font-weight: 700; color: var(--ih-text-0); white-space: nowrap; }
 
 .ih-cs-soul-warning {
+  grid-column: 1 / -1;
   font-size: 11px;
   color: var(--ih-hp-crit);
   padding: 4px 8px;
   background: var(--ih-hp-crit-bg);
   border: 1px solid rgba(248,113,113,0.3);
   border-radius: var(--ih-radius-sm);
-  width: 100%;
 }
 
 /* ── Навыки ── */
@@ -4042,3 +4042,2506 @@
 .ih-cs-rel-actions .ih-icon-btn {
   width: 20px; height: 20px; font-size: 10px;
 }
+
+/* ============================================================
+   GLOBAL INPUT RESET — все поля ввода в наших окнах
+   ============================================================ */
+
+.iron-hills input[type="text"],
+.iron-hills input[type="number"],
+.iron-hills input[type="password"],
+.iron-hills input[type="search"],
+.iron-hills input:not([type]),
+.iron-hills textarea,
+.iron-hills select {
+  background: var(--ih-bg-3) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm) !important;
+  color: var(--ih-text-0) !important;
+  font-family: var(--ih-font-ui) !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: border-color 150ms ease !important;
+}
+.iron-hills input:focus,
+.iron-hills textarea:focus,
+.iron-hills select:focus {
+  border-color: var(--ih-accent) !important;
+  box-shadow: 0 0 0 2px var(--ih-accent-dim) !important;
+}
+.iron-hills input::placeholder,
+.iron-hills textarea::placeholder { color: var(--ih-text-3) !important; }
+.iron-hills input[type="range"] {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  accent-color: var(--ih-accent);
+}
+.iron-hills select option {
+  background: var(--ih-bg-2) !important;
+  color: var(--ih-text-0) !important;
+}
+
+/* ── Фикс #notifications — не перекрывать canvas ── */
+#notifications { pointer-events: none !important; }
+#notifications .notification { pointer-events: auto !important; }
+
+/* ============================================================
+   SIDEBAR — плавающая панель по центру снизу
+   ============================================================ */
+
+#hotbar, #hotbar-directory-controls { display: none !important; }
+
+#ih-sb {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 55vw;
+  height: auto;
+  z-index: 60;
+  background: #141922;
+  border: 1px solid rgba(120,150,200,0.28);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 10px;
+  gap: 2px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.65);
+  pointer-events: auto;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#ih-sb[data-collapsed] { padding: 4px 6px; }
+
+.ih-sb-lbl {
+  width: 1px; height: 32px;
+  background: rgba(120,150,200,0.16);
+  margin: 0 4px; flex-shrink: 0;
+}
+
+.ih-sb-btn {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; width: 50px; height: 46px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer; color: #6a7d99;
+  transition: 150ms ease;
+  padding: 4px 2px; flex-shrink: 0;
+}
+.ih-sb-btn:hover { background: #232e42; border-color: rgba(120,150,200,0.28); color: #e8edf5; }
+.ih-sb-btn:active { background: rgba(91,156,246,0.16); border-color: #5b9cf6; }
+.ih-sb-icon { font-size: 17px; line-height: 1; }
+.ih-sb-txt  { font-size: 8px; font-weight: 600; color: #a8b8d0; white-space: nowrap; }
+
+#ih-sb-time {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 0 10px 0 12px;
+  border-left: 1px solid rgba(120,150,200,0.16);
+  font-size: 10px; font-weight: 700;
+  color: #e8edf5; font-family: monospace;
+  gap: 3px; flex-shrink: 0; min-width: 70px; line-height: 1.3;
+}
+.ih-sb-time-icon { font-size: 12px; }
+
+#ih-sb-tog {
+  width: 22px; height: 22px; flex-shrink: 0;
+  border: 1px solid rgba(120,150,200,0.16);
+  border-radius: 6px; background: #1b2333;
+  color: #3d4f68; cursor: pointer; font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  transition: 150ms ease; margin-left: 4px;
+}
+#ih-sb-tog:hover { color: #5b9cf6; border-color: #5b9cf6; background: #232e42; }
+
+/* Combat HUD — над панелью слева */
+.window-app.combat-hud-app {
+  left: 4px !important;
+  top: auto !important;
+  bottom: 70px !important;
+}
+
+/* ============================================================
+   ENTITY PICKER
+   ============================================================ */
+
+.window-app.entity-picker .window-content { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+.ih-ep-app {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--ih-bg-0); font-family: var(--ih-font-ui);
+  color: var(--ih-text-1); overflow: hidden;
+}
+
+.ih-ep-search-wrap {
+  padding: 10px 12px; border-bottom: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1); flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.ih-ep-search { flex: 1; }
+.ih-ep-type-hint { font-size: 10px; flex-shrink: 0; color: var(--ih-text-2); }
+
+.ih-ep-list {
+  flex: 1; overflow-y: auto; padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.ih-ep-group-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--ih-text-3); padding: 6px 8px 2px;
+}
+
+.ih-ep-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; border-radius: var(--ih-radius-sm);
+  border: 1px solid transparent; background: var(--ih-bg-2);
+  cursor: pointer; transition: var(--ih-transition);
+}
+.ih-ep-item:hover { border-color: var(--ih-border-2); background: var(--ih-bg-3); }
+.ih-ep-item.is-selected { border-color: var(--ih-accent); background: var(--ih-accent-dim); }
+
+.ih-ep-item-img { width: 32px; height: 32px; border-radius: var(--ih-radius-sm); object-fit: cover; flex-shrink: 0; }
+
+.ih-ep-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ih-ep-item-name { font-size: 13px; font-weight: 600; color: var(--ih-text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ih-ep-item-sub  { font-size: 10px; color: var(--ih-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ih-ep-empty { padding: 24px; text-align: center; color: var(--ih-text-2); font-size: 12px; }
+
+.ih-ep-footer {
+  display: flex; gap: 8px; padding: 10px 12px;
+  border-top: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1); flex-shrink: 0;
+}
+.ih-ep-footer .ih-btn { flex: 1; justify-content: center; }
+
+/* ============================================================
+   QUEST BOARD
+   ============================================================ */
+
+.window-app.quest-board .window-content { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+.ih-qb-app {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--ih-bg-0); font-family: var(--ih-font-ui);
+  color: var(--ih-text-1); overflow: hidden;
+}
+
+.ih-qb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-bottom: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1); flex-shrink: 0;
+}
+
+.ih-qb-filters { display: flex; gap: 4px; }
+
+.ih-qb-filter {
+  padding: 4px 12px; border-radius: var(--ih-radius-xl);
+  font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none;
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-1);
+  color: var(--ih-text-2); transition: var(--ih-transition);
+}
+.ih-qb-filter:hover { color: var(--ih-text-1); border-color: var(--ih-border-2); }
+.ih-qb-filter.is-active { background: var(--ih-accent-dim); border-color: var(--ih-accent); color: var(--ih-accent); }
+
+.ih-qb-toolbar {
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  background: var(--ih-bg-1); border-bottom: 1px solid var(--ih-border-1);
+  flex-shrink: 0; flex-wrap: wrap;
+}
+
+.ih-qb-search { flex: 1; min-width: 120px; }
+.ih-qb-filter-sel { flex-shrink: 0; font-size: 11px !important; }
+
+.ih-qb-stats {
+  font-size: 10px; color: var(--ih-text-3); padding: 3px 12px;
+  background: var(--ih-bg-1); border-bottom: 1px solid var(--ih-border-0); flex-shrink: 0;
+}
+
+.ih-qb-list { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+.ih-qb-quest {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+  border-radius: var(--ih-radius-md); background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1); border-left: 3px solid var(--ih-border-2);
+}
+.ih-qb-quest.status-active    { border-left-color: var(--ih-accent); }
+.ih-qb-quest.status-completed { border-left-color: var(--ih-hp-good); opacity: 0.75; }
+.ih-qb-quest.status-failed    { border-left-color: var(--ih-hp-crit); opacity: 0.65; }
+.ih-qb-quest.status-hidden    { border-left-color: var(--ih-text-3); opacity: 0.6; }
+
+.ih-qb-quest-icon { font-size: 20px; padding-top: 2px; flex-shrink: 0; }
+.ih-qb-quest-body { flex: 1; min-width: 0; }
+
+.ih-qb-quest-header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+.ih-qb-quest-name  { font-size: 13px; font-weight: 700; color: var(--ih-text-0); }
+.ih-qb-quest-loc   { font-size: 10px; color: var(--ih-text-2); }
+.ih-qb-quest-type  { font-size: 10px; font-weight: 600; color: var(--ih-text-2); background: var(--ih-bg-3); padding: 1px 6px; border-radius: var(--ih-radius-xl); }
+.ih-qb-quest-stars { font-size: 10px; color: var(--ih-hp-warn); letter-spacing: -1px; }
+.ih-qb-quest-desc  { font-size: 11px; color: var(--ih-text-1); line-height: 1.5; margin-bottom: 4px; }
+.ih-qb-quest-reward { font-size: 11px; color: var(--ih-hp-good); font-weight: 600; margin-top: 3px; }
+
+.ih-qb-groups { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.ih-qb-group-tag {
+  display: flex; align-items: center; gap: 4px; font-size: 10px;
+  padding: 2px 7px; background: var(--ih-bg-3);
+  border-radius: var(--ih-radius-xl); border: 1px solid var(--ih-border-1);
+}
+
+.ih-qb-quest-actions { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; align-items: flex-end; }
+.ih-qb-status-select { font-size: 10px !important; padding: 2px 4px !important; width: 100px; }
+
+.ih-qb-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; color: var(--ih-text-2); font-size: 12px; padding: 40px;
+}
+
+/* ============================================================
+   LAUNCHER POPUP
+   ============================================================ */
+
+#ih-launcher-popup {
+  position: fixed; z-index: 9999;
+  background: var(--ih-bg-1); border: 1px solid var(--ih-border-2);
+  border-radius: var(--ih-radius-md); box-shadow: var(--ih-shadow-lg);
+  padding: 6px; min-width: 180px; font-family: var(--ih-font-ui); pointer-events: auto;
+}
+
+.ih-lp-section { margin-bottom: 4px; }
+.ih-lp-section:last-child { margin-bottom: 0; }
+.ih-lp-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ih-text-3); padding: 4px 8px 2px; }
+.ih-lp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.ih-lp-btn {
+  display: flex; align-items: center; gap: 7px; padding: 6px 10px;
+  border-radius: var(--ih-radius-sm); border: 1px solid transparent;
+  background: transparent; cursor: pointer; color: var(--ih-text-1);
+  font-size: 12px; text-align: left; transition: var(--ih-transition);
+  white-space: nowrap; width: 100%;
+}
+.ih-lp-btn:hover { background: var(--ih-bg-3); border-color: var(--ih-border-1); color: var(--ih-text-0); }
+.ih-lp-icon { font-size: 14px; flex-shrink: 0; }
+.ih-lp-text { font-size: 11px; }
+.ih-lp-section + .ih-lp-section { border-top: 1px solid var(--ih-border-1); padding-top: 4px; margin-top: 2px; }
+
+
+/* Soul reserve training progress */
+.ih-cs-soul-accum {
+  width: 100%; height: 3px;
+  background: var(--ih-bg-3);
+  border-radius: 2px; overflow: hidden;
+  margin-top: 3px;
+}
+.ih-cs-soul-accum-fill {
+  height: 100%; border-radius: 2px;
+  transition: width 400ms ease;
+}
+.ih-cs-soul-accum-label {
+  font-size: 8px; color: var(--ih-text-3);
+  margin-top: 1px; display: block;
+}
+
+/* ============================================================
+   GOD SHEET + AWAKENED
+   ============================================================ */
+
+/* God Sheet */
+.window-app.god-sheet .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-god-sheet {
+  display:flex; flex-direction:column; height:100%;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1);
+  overflow:hidden;
+}
+
+.ih-god-header {
+  display:flex; gap:14px; padding:14px 16px;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1);
+  flex-shrink:0; align-items:flex-start;
+}
+
+.ih-god-portrait-wrap {
+  position:relative; width:90px; height:90px; flex-shrink:0;
+}
+
+.ih-god-portrait {
+  width:100%; height:100%; object-fit:cover;
+  border-radius:var(--ih-radius-md);
+  border:2px solid var(--ih-border-2);
+}
+
+.ih-god-status {
+  position:absolute; bottom:-6px; right:-6px;
+  width:20px; height:20px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; border:2px solid var(--ih-bg-0);
+  background:var(--ih-bg-2);
+}
+.ih-god-status.status-active  { color:var(--ih-hp-good); }
+.ih-god-status.status-dormant { color:var(--ih-hp-warn); }
+.ih-god-status.status-dead    { color:var(--ih-hp-crit); }
+
+.ih-god-identity { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+
+.ih-god-name {
+  font-size:22px; font-weight:700; color:var(--ih-text-0);
+  background:transparent; border:none; border-bottom:1px solid var(--ih-border-1);
+  width:100%; padding:2px 0;
+}
+.ih-god-name:focus { outline:none; border-bottom-color:var(--ih-accent); }
+
+.ih-god-title { font-size:13px; color:var(--ih-text-2); font-style:italic; }
+.ih-god-title:focus { outline:none; }
+
+.ih-god-meta-row { display:flex; gap:8px; flex-wrap:wrap; }
+.ih-god-meta-row label { display:flex; flex-direction:column; gap:2px; font-size:9px; text-transform:uppercase; letter-spacing:0.07em; color:var(--ih-text-2); flex:1; min-width:80px; }
+
+.ih-god-awakened-row { display:flex; align-items:center; gap:6px; font-size:11px; }
+.ih-god-awakened-row input { flex:1; }
+
+/* God body */
+.ih-god-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+
+.ih-god-tabs { display:flex; padding:6px 10px 0; background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1); flex-shrink:0; gap:2px; }
+
+.ih-god-tab {
+  padding:5px 14px; border-radius:var(--ih-radius-md) var(--ih-radius-md) 0 0;
+  font-size:12px; font-weight:600; cursor:pointer; text-decoration:none;
+  color:var(--ih-text-2); background:var(--ih-bg-2);
+  border:1px solid transparent; border-bottom:none;
+  transition:var(--ih-transition);
+}
+.ih-god-tab:hover { color:var(--ih-text-1); }
+.ih-god-tab.is-active { color:var(--ih-text-0); background:var(--ih-bg-0); border-color:var(--ih-border-1); }
+
+.ih-god-section { padding:10px 14px; border-bottom:1px solid var(--ih-border-0); }
+
+.ih-god-section-title {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--ih-text-2); margin-bottom:6px;
+}
+
+.ih-god-section textarea {
+  width:100%; min-height:70px; box-sizing:border-box;
+  resize:vertical; line-height:1.5;
+}
+
+/* Awakened section in character sheet */
+.ih-cs-awakened {
+  padding:8px 12px; display:flex; flex-direction:column; gap:8px;
+}
+
+.ih-cs-awakened-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:3px 10px;
+  background:linear-gradient(135deg, rgba(91,156,246,0.15), rgba(167,139,250,0.15));
+  border:1px solid rgba(91,156,246,0.35);
+  border-radius:var(--ih-radius-xl);
+  font-size:11px; font-weight:700; color:var(--ih-accent);
+  width:fit-content;
+}
+
+.ih-cs-awakened-fields {
+  display:flex; flex-direction:column; gap:6px;
+}
+
+.ih-cs-awakened-fields label {
+  display:flex; flex-direction:column; gap:2px;
+  font-size:9px; text-transform:uppercase; letter-spacing:0.07em; color:var(--ih-text-2);
+}
+
+.ih-cs-awakened-notes {
+  font-size:11px; color:var(--ih-text-1);
+  padding:6px 8px; background:var(--ih-bg-2);
+  border-radius:var(--ih-radius-sm);
+  border-left:3px solid var(--ih-accent);
+  line-height:1.5;
+}
+
+.ih-cs-awakened-none { padding:6px 12px; font-size:11px; }
+
+/* ============================================================
+   COMPENDIUM BROWSER
+   ============================================================ */
+
+.window-app.compendium-browser .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-cb-app {
+  display: flex; height: 100%;
+  background: var(--ih-bg-0); font-family: var(--ih-font-ui);
+  color: var(--ih-text-1); overflow: hidden;
+}
+
+/* Sidebar */
+.ih-cb-sidebar {
+  width: 140px; flex-shrink: 0;
+  background: var(--ih-bg-1);
+  border-right: 1px solid var(--ih-border-1);
+  display: flex; flex-direction: column;
+  padding: 6px; gap: 2px; overflow-y: auto;
+}
+
+.ih-cb-pack-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: var(--ih-radius-sm);
+  cursor: pointer; text-decoration: none;
+  color: var(--ih-text-2);
+  border: 1px solid transparent;
+  transition: var(--ih-transition);
+  font-size: 12px;
+}
+.ih-cb-pack-btn:hover { background: var(--ih-bg-3); color: var(--ih-text-1); }
+.ih-cb-pack-btn.is-active {
+  background: color-mix(in srgb, var(--pack-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--pack-color) 40%, transparent);
+  color: var(--pack-color);
+}
+.ih-cb-pack-icon  { font-size: 16px; flex-shrink: 0; }
+.ih-cb-pack-label { font-size: 11px; font-weight: 600; }
+
+.ih-cb-sidebar-sep {
+  height: 1px; background: var(--ih-border-1);
+  margin: 4px 0;
+}
+
+.ih-cb-rebuild {
+  font-size: 10px; color: var(--ih-text-3);
+  cursor: pointer; padding: 4px 8px;
+  text-decoration: none;
+  border-radius: var(--ih-radius-sm);
+  transition: var(--ih-transition);
+}
+.ih-cb-rebuild:hover { color: var(--ih-text-1); background: var(--ih-bg-3); }
+
+/* Main */
+.ih-cb-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.ih-cb-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; flex-shrink: 0;
+  border-bottom: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1); flex-wrap: wrap;
+}
+
+.ih-cb-title { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+
+.ih-cb-search {
+  flex: 1; min-width: 120px;
+}
+
+.ih-cb-tier-filters { display: flex; gap: 3px; flex-wrap: wrap; }
+
+.ih-cb-tier {
+  padding: 2px 8px; border-radius: var(--ih-radius-xl);
+  font-size: 10px; font-weight: 700; cursor: pointer;
+  text-decoration: none; color: var(--ih-text-2);
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-1);
+  transition: var(--ih-transition);
+}
+.ih-cb-tier:hover { color: var(--ih-text-1); }
+.ih-cb-tier.is-active { color: var(--ih-hp-warn); border-color: rgba(250,204,21,0.4); background: rgba(250,204,21,0.08); }
+
+/* List */
+.ih-cb-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+
+.ih-cb-tier-group { margin-bottom: 16px; }
+
+.ih-cb-tier-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ih-text-2);
+  padding: 4px 0 6px; border-bottom: 1px solid var(--ih-border-1);
+  margin-bottom: 6px;
+}
+
+.ih-cb-tier-stars { color: var(--ih-hp-warn); letter-spacing: -1px; }
+
+.ih-cb-items { display: flex; flex-direction: column; gap: 3px; }
+
+.ih-cb-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; border-radius: var(--ih-radius-sm);
+  border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-2); cursor: pointer;
+  transition: var(--ih-transition);
+}
+.ih-cb-item:hover { border-color: var(--ih-accent); background: var(--ih-bg-3); }
+
+.ih-cb-item-img {
+  width: 32px; height: 32px; border-radius: var(--ih-radius-sm);
+  object-fit: cover; flex-shrink: 0; background: var(--ih-bg-3);
+}
+
+.ih-cb-item-info { flex: 1; min-width: 0; }
+.ih-cb-item-name { font-size: 12px; font-weight: 700; color: var(--ih-text-0); margin-bottom: 2px; }
+.ih-cb-item-details { display: flex; flex-wrap: wrap; gap: 6px; }
+.ih-cb-detail { font-size: 10px; color: var(--ih-text-2); white-space: nowrap; }
+
+.ih-cb-item-tier {
+  width: 24px; height: 24px; flex-shrink: 0;
+  background: var(--ih-bg-3); border: 1px solid var(--ih-border-1);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--ih-hp-warn);
+}
+
+.ih-cb-empty {
+  padding: 32px; text-align: center;
+  color: var(--ih-text-2); font-size: 13px;
+}
+
+/* ============================================================
+   ITEM SHEET v2
+   ============================================================ */
+
+.window-app.item-sheet .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-is-app {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--ih-bg-0); font-family: var(--ih-font-ui);
+  color: var(--ih-text-1); overflow: hidden;
+}
+
+/* Шапка */
+.ih-is-header {
+  display: flex; gap: 12px; padding: 12px 14px;
+  background: var(--ih-bg-1);
+  border-bottom: 3px solid var(--quality-color, var(--ih-border-2));
+  flex-shrink: 0; align-items: flex-start;
+}
+
+.ih-is-portrait-wrap {
+  position: relative; width: 64px; height: 64px; flex-shrink: 0;
+}
+.ih-is-portrait {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: var(--ih-radius-md);
+  border: 2px solid var(--quality-color, var(--ih-border-2));
+}
+.ih-is-type-badge {
+  position: absolute; bottom: -4px; right: -4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+
+.ih-is-identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.ih-is-name {
+  font-size: 18px; font-weight: 700; color: var(--ih-text-0);
+  background: transparent; border: none;
+  border-bottom: 1px solid var(--ih-border-1);
+  width: 100%; padding: 2px 0;
+}
+.ih-is-name:focus { outline: none; border-bottom-color: var(--quality-color, var(--ih-accent)); }
+
+.ih-is-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.ih-is-field {
+  display: flex; flex-direction: column; gap: 2px;
+  flex: 1; min-width: 80px;
+}
+.ih-is-field.narrow { flex: 0 0 70px; min-width: 70px; }
+.ih-is-field.wide   { flex: 2; }
+.ih-is-field label  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ih-text-2); }
+
+.ih-is-effective-value { font-size: 11px; font-weight: 700; margin-top: 2px; }
+
+.ih-is-bonus {
+  font-size: 10px; font-weight: 700; margin-top: 2px;
+}
+
+/* Тело */
+.ih-is-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.ih-is-section { padding: 10px 14px; border-bottom: 1px solid var(--ih-border-0); }
+
+.ih-is-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ih-text-2);
+  margin-bottom: 8px;
+}
+
+.ih-is-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.ih-is-effect-hint {
+  margin-top: 8px; padding: 6px 10px;
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.25);
+  border-radius: var(--ih-radius-sm);
+  font-size: 11px; color: var(--ih-text-1);
+  line-height: 1.5;
+}
+
+.ih-is-desc {
+  width: 100%; min-height: 80px;
+  box-sizing: border-box; resize: vertical;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   NPC SHEET v2
+   ============================================================ */
+
+.window-app.npc-sheet .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-npc-v2 {
+  display:flex; flex-direction:column; height:100%;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui);
+  color:var(--ih-text-1); overflow:hidden;
+}
+
+.ih-npc-v2-header {
+  display:flex; gap:12px; padding:12px 14px;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1);
+  flex-shrink:0; align-items:flex-start;
+}
+
+.ih-npc-v2-portrait {
+  width:72px; height:72px; object-fit:cover;
+  border-radius:var(--ih-radius-md);
+  border:2px solid var(--ih-border-2); flex-shrink:0;
+}
+
+.ih-npc-v2-identity { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+
+.ih-npc-v2-name {
+  font-size:18px; font-weight:700; color:var(--ih-text-0);
+  background:transparent; border:none;
+  border-bottom:1px solid var(--ih-border-1);
+  width:100%; padding:2px 0;
+}
+.ih-npc-v2-name:focus { outline:none; border-bottom-color:var(--ih-accent); }
+
+.ih-npc-v2-meta {
+  display:flex; gap:6px; flex-wrap:wrap;
+}
+.ih-npc-v2-meta label {
+  display:flex; flex-direction:column; gap:2px; flex:1; min-width:70px;
+  font-size:9px; text-transform:uppercase; letter-spacing:0.07em; color:var(--ih-text-2);
+}
+
+.ih-npc-v2-resources { display:flex; gap:12px; }
+.ih-npc-v2-res {
+  display:flex; align-items:center; gap:4px; font-size:11px;
+}
+.ih-npc-v2-res input {
+  width:36px !important; text-align:center !important; padding:2px 4px !important;
+}
+
+/* Tabs */
+.ih-npc-tabs {
+  display:flex; gap:2px; padding:6px 8px 0;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1);
+  flex-shrink:0;
+}
+.ih-npc-tab {
+  padding:5px 12px; border-radius:var(--ih-radius-md) var(--ih-radius-md) 0 0;
+  font-size:11px; font-weight:600; cursor:pointer; text-decoration:none;
+  color:var(--ih-text-2); background:var(--ih-bg-2);
+  border:1px solid transparent; border-bottom:none; transition:var(--ih-transition);
+}
+.ih-npc-tab:hover { color:var(--ih-text-1); }
+.ih-npc-tab.is-active { color:var(--ih-text-0); background:var(--ih-bg-0); border-color:var(--ih-border-1); }
+
+.ih-npc-body { flex:1; overflow-y:auto; }
+
+.ih-npc-v2-section { padding:10px 14px; border-bottom:1px solid var(--ih-border-0); }
+.ih-npc-v2-section-title {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--ih-text-2); margin-bottom:8px;
+}
+
+.ih-npc-v2-skill-group { margin-bottom:8px; }
+.ih-npc-v2-skill-group-label {
+  font-size:9px; text-transform:uppercase; letter-spacing:0.07em;
+  color:var(--ih-text-3); margin-bottom:4px; padding:0 2px;
+}
+.ih-npc-v2-skill-row {
+  display:flex; align-items:center; gap:8px; padding:3px 4px;
+  border-radius:var(--ih-radius-sm); transition:var(--ih-transition);
+}
+.ih-npc-v2-skill-row:hover { background:var(--ih-bg-2); }
+.ih-npc-v2-skill-name { flex:1; font-size:12px; color:var(--ih-text-1); }
+.ih-npc-v2-skill-val  { width:36px !important; text-align:center !important; font-size:12px !important; font-weight:700 !important; padding:1px 3px !important; }
+
+/* NPC tab panels */
+.ih-npc-tab-panel { display: block; }
+.ih-npc-tab-panel.ih-hidden { display: none !important; }
+.ih-hidden { display: none !important; }
+
+/* Compendium — delete button */
+.ih-cb-item { position: relative; }
+.ih-cb-item-delete {
+  position: absolute; top: 4px; right: 4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ih-hp-crit-bg); border: 1px solid var(--ih-hp-crit);
+  color: var(--ih-hp-crit); font-size: 9px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer; text-decoration: none; z-index: 5;
+}
+.ih-cb-item:hover .ih-cb-item-delete { display: flex; }
+
+/* Craft — result row with quality */
+.ih-craft-result-row {
+  display: flex; flex-direction: column; gap: 1px;
+  margin-bottom: 4px;
+}
+.ih-craft-result-row > .ih-craft-result-label {
+  font-size: 10px; color: var(--ih-text-2);
+}
+.ih-craft-result-vals { display: flex; flex-direction: column; gap: 1px; }
+.ih-craft-quality-bonus {
+  font-size: 9px; color: var(--ih-hp-warn); font-style: italic;
+}
+
+/* Compendium browser — create button */
+.ih-cb-new-item {
+  font-size: 11px; font-weight: 700; color: var(--ih-accent);
+  cursor: pointer; padding: 5px 8px;
+  text-decoration: none;
+  border-radius: var(--ih-radius-sm);
+  border: 1px solid var(--ih-accent-dim);
+  background: var(--ih-accent-dim);
+  transition: var(--ih-transition);
+  text-align: center;
+}
+.ih-cb-new-item:hover { background: var(--ih-accent); color: var(--ih-bg-0); }
+
+/* Craft result list */
+.ih-craft-result-list { display: flex; flex-direction: column; gap: 3px; }
+.ih-craft-result-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; padding: 2px 0;
+}
+.ih-craft-result-label {
+  color: var(--ih-text-2); width: 80px; flex-shrink: 0;
+  font-size: 10px;
+}
+.ih-craft-quality-bonus {
+  font-size: 10px; color: var(--ih-hp-warn);
+  font-weight: 700; margin-left: auto;
+  cursor: help;
+}
+
+/* Compendium item CRUD actions */
+.ih-cb-item { position: relative; }
+.ih-cb-item-actions {
+  display: none; gap: 2px; flex-shrink: 0;
+}
+/* Только для GM — показываем при наведении */
+.ih-cb-app.is-gm .ih-cb-item:hover .ih-cb-item-actions { display: flex; }
+.ih-cb-item-actions .ih-icon-btn.tiny {
+  width: 20px; height: 20px; font-size: 10px;
+}
+
+/* Item sheet save bar */
+.ih-is-save-bar {
+  padding: 8px 14px;
+  border-top: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Character sheet — simplified inventory */
+.ih-cs-inv-row-simple { cursor: default; }
+.ih-cs-inv-row-simple:hover { background: var(--ih-bg-2); }
+.ih-cs-inv-open-btn {
+  padding: 8px 4px;
+  display: flex; justify-content: center;
+}
+.ih-cs-inv-open-btn .ih-btn {
+  width: 100%; justify-content: center;
+  font-size: 11px;
+}
+
+/* ============================================================
+   CONTAINER SHEET
+   ============================================================ */
+
+.window-app.container-sheet .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-container-sheet {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--ih-bg-0); font-family: var(--ih-font-ui);
+  color: var(--ih-text-1); overflow: hidden;
+}
+
+.ih-con-header {
+  display: flex; gap: 12px; padding: 12px 14px;
+  background: var(--ih-bg-1); border-bottom: 1px solid var(--ih-border-1);
+  flex-shrink: 0; align-items: flex-start;
+}
+
+.ih-con-portrait-wrap { position: relative; flex-shrink: 0; }
+.ih-con-portrait {
+  width: 64px; height: 64px; object-fit: cover;
+  border-radius: var(--ih-radius-md); border: 2px solid var(--ih-border-2);
+}
+.ih-con-lock {
+  position: absolute; bottom: -4px; right: -4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-1);
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.ih-con-lock.locked { background: var(--ih-hp-crit-bg); border-color: var(--ih-hp-crit); }
+
+.ih-con-identity { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.ih-con-name {
+  font-size: 18px; font-weight: 700; color: var(--ih-text-0);
+  background: transparent; border: none;
+  border-bottom: 1px solid var(--ih-border-1); width: 100%; padding: 2px 0;
+}
+.ih-con-name:focus { outline: none; border-bottom-color: var(--ih-accent); }
+.ih-con-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.ih-con-meta label { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 80px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ih-text-2); }
+
+.ih-con-locked-msg {
+  font-size: 11px; color: var(--ih-hp-warn);
+  padding: 4px 8px; background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.25); border-radius: var(--ih-radius-sm);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+
+.ih-con-body { flex: 1; overflow-y: auto; padding: 0; }
+
+.ih-con-section-title {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ih-text-2);
+  background: var(--ih-bg-1); border-bottom: 1px solid var(--ih-border-0);
+}
+
+.ih-con-items { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; }
+
+.ih-con-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-1);
+  transition: var(--ih-transition);
+}
+.ih-con-item:hover { border-color: var(--ih-accent); }
+
+.ih-con-item-img { width: 28px; height: 28px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.ih-con-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ih-con-item-name { font-size: 12px; font-weight: 600; color: var(--ih-text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ih-con-empty { padding: 24px; text-align: center; color: var(--ih-text-2); font-size: 12px; }
+
+.ih-con-actions {
+  padding: 8px 10px; border-top: 1px solid var(--ih-border-0);
+  display: flex; gap: 8px;
+}
+.ih-con-actions .ih-btn { flex: 1; justify-content: center; }
+
+/* Drop zone */
+.ih-con-drop-zone {
+  margin: 6px 10px 10px;
+  padding: 10px;
+  border: 2px dashed var(--ih-border-1);
+  border-radius: var(--ih-radius-md);
+  text-align: center; font-size: 11px; color: var(--ih-text-3);
+  transition: var(--ih-transition); flex-shrink: 0;
+}
+.ih-con-drop-zone.ih-drag-over {
+  border-color: var(--ih-accent);
+  background: var(--ih-accent-dim);
+  color: var(--ih-accent);
+}
+
+/* ============================================================
+   LOOT TRANSFER APP
+   ============================================================ */
+
+.window-app.loot-transfer .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-lt-app {
+  display:flex; flex-direction:column; height:100%;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1);
+}
+
+.ih-lt-header {
+  display:flex; align-items:center; gap:12px; padding:12px 16px;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1); flex-shrink:0;
+}
+.ih-lt-actor { display:flex; align-items:center; gap:10px; flex:1; }
+.ih-lt-portrait { width:44px; height:44px; border-radius:var(--ih-radius-md); object-fit:cover; border:2px solid var(--ih-border-2); }
+.ih-lt-actor-info { display:flex; flex-direction:column; gap:2px; }
+.ih-lt-actor-name { font-size:14px; font-weight:700; color:var(--ih-text-0); }
+.ih-lt-arrow { font-size:24px; color:var(--ih-accent); flex-shrink:0; }
+
+.ih-lt-hint {
+  font-size:10px; color:var(--ih-text-3); text-align:center;
+  padding:4px; background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-0);
+  flex-shrink:0;
+}
+
+.ih-lt-panels { display:flex; flex:1; overflow:hidden; gap:0; }
+
+.ih-lt-panel {
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+  border-right:1px solid var(--ih-border-1);
+  transition:background 150ms;
+}
+.ih-lt-panel:last-child { border-right:none; }
+.ih-lt-panel.drag-over { background:rgba(91,156,246,0.06); }
+
+.ih-lt-panel-title {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 12px; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.07em; color:var(--ih-text-2);
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-0);
+  flex-shrink:0;
+}
+
+.ih-lt-list { flex:1; overflow-y:auto; padding:6px 8px; display:flex; flex-direction:column; gap:3px; }
+
+.ih-lt-item {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 8px; border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  cursor:grab; transition:var(--ih-transition);
+  user-select:none;
+}
+.ih-lt-item:hover { border-color:var(--ih-accent); background:var(--ih-bg-3); }
+.ih-lt-item.dragging { opacity:0.4; cursor:grabbing; }
+.ih-lt-item-img { width:28px; height:28px; border-radius:4px; object-fit:cover; flex-shrink:0; }
+.ih-lt-item-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.ih-lt-item-name { font-size:12px; font-weight:600; color:var(--ih-text-0); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ih-lt-item-meta { font-size:10px; }
+.ih-lt-item-arrow { flex-shrink:0; color:var(--ih-text-3); font-size:14px; opacity:0; transition:var(--ih-transition); }
+.ih-lt-item:hover .ih-lt-item-arrow { opacity:1; color:var(--ih-accent); }
+
+.ih-lt-empty { padding:16px; text-align:center; color:var(--ih-text-3); font-size:11px; }
+
+.ih-lt-ground-zone {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  text-align:center; font-size:13px; color:var(--ih-text-3);
+  border:2px dashed var(--ih-border-1); margin:12px;
+  border-radius:var(--ih-radius-lg);
+}
+.ih-lt-panel.drag-over .ih-lt-ground-zone {
+  border-color:var(--ih-accent); color:var(--ih-accent);
+  background:var(--ih-accent-dim);
+}
+
+.ih-lt-footer {
+  padding:10px 14px; border-top:1px solid var(--ih-border-1);
+  background:var(--ih-bg-1); flex-shrink:0;
+  display:flex; justify-content:flex-end;
+}
+
+/* ============================================================
+   LOOT TRANSFER v2 — dual grid inventory
+   ============================================================ */
+.window-app.loot-transfer .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-lt2-app { display:flex; flex-direction:column; height:100%; background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1); }
+
+.ih-lt2-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; background:var(--ih-bg-1);
+  border-bottom:1px solid var(--ih-border-1); flex-shrink:0; gap:10px;
+}
+.ih-lt2-actor { display:flex; align-items:center; gap:8px; }
+.ih-lt2-portrait { width:36px; height:36px; border-radius:var(--ih-radius-md); object-fit:cover; border:2px solid var(--ih-border-2); }
+.ih-lt2-actor-name { font-size:13px; font-weight:700; color:var(--ih-text-0); }
+.ih-lt2-hint { font-size:10px; color:var(--ih-text-3); text-align:center; }
+
+.ih-lt2-panels { display:flex; flex:1; overflow:visible; gap:0; }
+
+.ih-lt2-panel {
+  flex:1; overflow-y:auto; padding:8px 10px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.ih-lt2-panel[data-side="left"] { border-right:1px solid var(--ih-border-1); }
+
+.ih-lt2-divider {
+  width:28px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--ih-accent); background:var(--ih-bg-1);
+  border-left:1px solid var(--ih-border-0); border-right:1px solid var(--ih-border-0);
+}
+
+.ih-lt2-section { display:flex; flex-direction:column; gap:4px; }
+.ih-lt2-sec-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--ih-text-2); padding:0 2px; }
+
+.ih-lt2-canvas-wrap {
+  position:relative;
+  background: repeating-conic-gradient(var(--ih-bg-2) 0% 25%, var(--ih-bg-1) 0% 50%) 0 0 / 10px 10px;
+  border:1px solid var(--ih-border-1); border-radius:var(--ih-radius-sm);
+  overflow:visible;
+}
+.ih-lt2-canvas { display:block; opacity:0; pointer-events:none; }
+.ih-lt2-canvas.drag-over + * { outline:2px solid var(--ih-accent); }
+
+.ih-lt2-canvas-wrap.drag-over {
+  outline:2px solid var(--ih-accent);
+  background: repeating-conic-gradient(rgba(91,156,246,0.08) 0% 25%, rgba(91,156,246,0.04) 0% 50%) 0 0 / 10px 10px;
+}
+
+.ih-lt2-cell {
+  position:absolute; box-sizing:border-box;
+  border:1px solid rgba(120,150,200,0.08);
+  pointer-events:none;
+}
+.ih-lt2-cell.is-pocket { border-radius:var(--ih-radius-sm); border-color:rgba(120,150,200,0.15); }
+
+.ih-lt2-item {
+  position:absolute; box-sizing:border-box;
+  background:var(--ih-bg-3); border:1px solid var(--ih-border-2);
+  border-radius:3px; cursor:grab; overflow:visible;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color 100ms;
+}
+.ih-lt2-item:hover { border-color:var(--ih-accent); z-index:10; }
+.ih-lt2-item img { width:100%; height:100%; object-fit:contain; padding:2px; pointer-events:none; }
+.ih-lt2-qty {
+  position:absolute; bottom:1px; right:2px;
+  font-size:9px; font-weight:700; color:var(--ih-hp-warn);
+  text-shadow:0 0 3px var(--ih-bg-0);
+}
+
+.ih-lt2-overflow { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; padding:4px; background:rgba(250,204,21,0.05); border-radius:4px; border:1px dashed rgba(250,204,21,0.3); }
+.ih-lt2-overflow-item { position:relative; width:36px; height:36px; flex-shrink:0; }
+
+.ih-lt2-ground {
+  flex:1; min-height:120px; display:flex; align-items:center; justify-content:center;
+  text-align:center; font-size:13px; color:var(--ih-text-3);
+  border:2px dashed var(--ih-border-1); border-radius:var(--ih-radius-lg); margin:8px;
+  transition:var(--ih-transition);
+}
+.ih-lt2-ground.drag-over { border-color:var(--ih-accent); color:var(--ih-accent); background:var(--ih-accent-dim); }
+
+.ih-lt2-footer { padding:8px 14px; border-top:1px solid var(--ih-border-1); background:var(--ih-bg-1); flex-shrink:0; display:flex; justify-content:flex-end; }
+
+/* Loot Transfer — drop overlay ПОД предметами */
+.ih-lt2-drop-overlay {
+  position:absolute; inset:0; z-index:1;
+  border-radius:var(--ih-radius-sm);
+  pointer-events:none; /* только визуальный индикатор */
+}
+.ih-lt2-drop-overlay.drag-over {
+  background:rgba(91,156,246,0.1);
+  outline:2px solid var(--ih-accent);
+}
+/* Предметы выше overlay */
+.ih-lt2-item { z-index:2; }
+/* Сташ без overlay — canvas-wrap сам принимает drop */
+.ih-lt2-stash-canvas { cursor:default; }
+.ih-lt2-stash-canvas.drag-over {
+  outline:2px solid var(--ih-accent);
+  background: repeating-conic-gradient(rgba(91,156,246,0.08) 0% 25%, rgba(91,156,246,0.04) 0% 50%) 0 0 / 10px 10px;
+}
+
+/* Stash (контейнер) */
+.ih-lt2-stash { display:flex; flex-direction:column; gap:6px; height:100%; }
+.ih-lt2-stash-title {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.07em; color:var(--ih-text-2); padding:2px 4px;
+}
+.ih-lt2-stash-list {
+  display:flex; flex-direction:column; gap:3px;
+  padding:6px; flex:1; min-height:80px;
+  border:1px solid var(--ih-border-1); border-radius:var(--ih-radius-md);
+  background:var(--ih-bg-1); overflow-y:auto;
+  transition:var(--ih-transition);
+}
+.ih-lt2-stash-list.drag-over,
+.ih-lt2-stash-empty.drag-over {
+  border-color:var(--ih-accent);
+  background:var(--ih-accent-dim);
+}
+.ih-lt2-stash-empty {
+  flex:1; min-height:80px;
+  border:2px dashed var(--ih-border-1); border-radius:var(--ih-radius-md);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--ih-text-3); font-size:11px; padding:16px;
+  text-align:center; transition:var(--ih-transition);
+}
+
+.ih-lt2-stash-item {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 8px; border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  cursor:grab; transition:var(--ih-transition);
+}
+.ih-lt2-stash-item:hover { border-color:var(--ih-accent); }
+.ih-lt2-stash-img { width:28px; height:28px; border-radius:3px; object-fit:cover; flex-shrink:0; }
+.ih-lt2-stash-info { display:flex; flex-direction:column; gap:1px; }
+.ih-lt2-stash-name { font-size:12px; font-weight:600; color:var(--ih-text-0); }
+
+/* Loot Transfer — equip slots row */
+.ih-lt2-equip-slots {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 4px; background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  margin-bottom: 6px; flex-shrink: 0;
+}
+.ih-lt2-equip-slot {
+  width: 36px; height: 36px;
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: var(--ih-text-3);
+  text-align: center; overflow: hidden; cursor: default;
+  position: relative;
+}
+.ih-lt2-equip-slot.has-item { border-color: var(--ih-accent-dim); }
+.ih-lt2-equip-slot img { width: 100%; height: 100%; object-fit: contain; padding: 2px; cursor: grab; }
+.ih-lt2-equip-empty { font-size: 7px; line-height: 1.1; padding: 2px; text-align: center; }
+
+/* Stash grid */
+.ih-lt2-stash { display:flex; flex-direction:column; height:100%; gap:4px; }
+.ih-lt2-stash-title {
+  font-size:9px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.07em; color:var(--ih-text-2); padding:2px 4px; flex-shrink:0;
+}
+.ih-lt2-stash-grid-wrap { flex:1; overflow-y:auto; }
+
+/* Equip slot drag-over highlight */
+.ih-lt2-equip-slot.drag-over {
+  border-color: var(--ih-accent);
+  background: var(--ih-accent-dim);
+  outline: 2px solid var(--ih-accent);
+}
+
+/* ── Paper Doll слоты экипировки в loot transfer ── */
+.ih-lt2-paper-doll {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px; margin-bottom: 8px;
+  background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-md);
+}
+
+.ih-lt2-pd-slot {
+  width: 48px; height: 48px;
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+  cursor: default; overflow: hidden;
+  transition: var(--ih-transition);
+}
+.ih-lt2-pd-slot.has-item {
+  border-color: var(--ih-accent-dim);
+  background: var(--ih-bg-3);
+}
+.ih-lt2-pd-slot.has-item:hover { border-color: var(--ih-accent); }
+.ih-lt2-pd-slot.drag-over {
+  border-color: var(--ih-accent);
+  background: var(--ih-accent-dim);
+  outline: 2px solid var(--ih-accent);
+}
+
+.ih-lt2-pd-slot img {
+  width: 32px; height: 32px; object-fit: contain; padding: 2px;
+  cursor: grab;
+}
+.ih-lt2-pd-icon { font-size: 18px; opacity: 0.3; }
+.ih-lt2-pd-label {
+  font-size: 7px; color: var(--ih-text-3);
+  text-align: center; position: absolute; bottom: 1px;
+  left: 0; right: 0; overflow: hidden; white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Grid drag-over */
+.ih-lt2-grid { position: relative; }
+.ih-lt2-grid.drag-over {
+  outline: 2px solid var(--ih-accent);
+  background: repeating-conic-gradient(
+    rgba(91,156,246,0.06) 0% 25%, rgba(91,156,246,0.02) 0% 50%
+  ) 0 0 / 10px 10px !important;
+}
+
+/* Stash — min-height растёт динамически */
+.ih-lt2-stash { overflow-y: auto; max-height: 400px; }
+
+/* Drag state */
+.ih-lt2-item.is-dragging { opacity: 0.4; cursor: grabbing; }
+.ih-lt2-pd-slot img.is-dragging { opacity: 0.4; }
+
+/* Paper doll — позиционированный силуэт */
+.ih-lt2-paper-doll {
+  position: relative;
+  width: 220px; height: 280px;
+  flex-shrink: 0;
+  margin: 0 auto 8px;
+  background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-md);
+}
+
+/* Каждый слот — абсолютная позиция */
+.ih-lt2-pd-slot {
+  position: absolute;
+  width: 44px; height: 44px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+  cursor: default; overflow: hidden;
+  transition: var(--ih-transition); box-sizing: border-box;
+}
+.ih-lt2-pd-slot.has-item  { border-color: var(--ih-accent-dim); }
+.ih-lt2-pd-slot.drag-over { border-color: var(--ih-accent); background: var(--ih-accent-dim); outline: 2px solid var(--ih-accent); }
+.ih-lt2-pd-slot img       { width: 36px; height: 36px; object-fit: contain; cursor: grab; }
+.ih-lt2-pd-icon  { font-size: 20px; opacity: 0.25; line-height: 1; }
+.ih-lt2-pd-label { font-size: 7px; color: var(--ih-text-3); text-align: center; white-space: nowrap; margin-top: 1px; }
+
+/* Позиции слотов (силуэт персонажа) */
+.ih-lt2-pd-head     { top:4px;   left:88px;  } /* голова по центру */
+.ih-lt2-pd-neck     { top:54px;  left:88px;  } /* шея */
+.ih-lt2-pd-torso    { top:100px; left:88px;  } /* торс */
+.ih-lt2-pd-leftArm  { top:100px; left:40px;  } /* левая рука */
+.ih-lt2-pd-rightArm { top:100px; left:136px; } /* правая рука */
+.ih-lt2-pd-legs     { top:150px; left:88px;  } /* ноги */
+.ih-lt2-pd-leftHand { top:150px; left:40px;  } /* левая кисть */
+.ih-lt2-pd-rightHand{ top:150px; left:136px; } /* правая кисть */
+.ih-lt2-pd-ringLeft { top:200px; left:40px;  } /* кольцо лев. */
+.ih-lt2-pd-ringRight{ top:200px; left:136px; } /* кольцо прав. */
+.ih-lt2-pd-belt     { top:230px; left:64px;  width:50px; } /* пояс */
+.ih-lt2-pd-backpack { top:230px; left:118px; width:50px; } /* рюкзак */
+
+/* ============================================================
+   COMBAT TECHNIQUE DIALOG
+   ============================================================ */
+
+.window-app.combat-technique .window-content { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+.ih-ct-app {
+  display:flex; flex-direction:column; height:100%;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1);
+}
+
+/* Шапка */
+.ih-ct-header {
+  display:flex; gap:12px; padding:12px 14px;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1);
+  flex-shrink:0; align-items:center;
+}
+.ih-ct-weapon-img {
+  width:52px; height:52px; object-fit:contain;
+  border-radius:var(--ih-radius-md); border:1px solid var(--ih-border-2);
+  background:var(--ih-bg-2); padding:4px; flex-shrink:0;
+}
+.ih-ct-info { display:flex; flex-direction:column; gap:3px; }
+.ih-ct-title { font-size:11px; color:var(--ih-text-2); text-transform:uppercase; letter-spacing:0.06em; }
+.ih-ct-weapon-name { font-size:16px; font-weight:700; color:var(--ih-text-0); }
+.ih-ct-tier {
+  font-size:10px; background:var(--ih-bg-3); border:1px solid var(--ih-border-1);
+  border-radius:var(--ih-radius-xl); padding:1px 6px; color:var(--ih-hp-warn);
+  font-weight:700; margin-left:6px; vertical-align:middle;
+}
+.ih-ct-skill-line { font-size:11px; color:var(--ih-text-2); }
+
+/* Табы */
+.ih-ct-tabs {
+  display:flex; gap:2px; padding:6px 8px 0;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1); flex-shrink:0;
+}
+.ih-ct-tab {
+  padding:5px 14px; border-radius:var(--ih-radius-md) var(--ih-radius-md) 0 0;
+  font-size:11px; font-weight:600; cursor:pointer; text-decoration:none;
+  color:var(--ih-text-2); background:var(--ih-bg-2);
+  border:1px solid transparent; border-bottom:none; transition:var(--ih-transition);
+}
+.ih-ct-tab:hover { color:var(--ih-text-1); }
+.ih-ct-tab.is-active { color:var(--ih-text-0); background:var(--ih-bg-0); border-color:var(--ih-border-1); }
+.ih-ct-tab.is-locked { color:var(--ih-text-3); cursor:not-allowed; font-style:italic; }
+
+/* Тело */
+.ih-ct-body { flex:1; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+
+.ih-ct-section-title {
+  font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--ih-text-2); padding:6px 4px 2px; margin-top:4px;
+}
+
+/* Базовый удар */
+.ih-ct-basic {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:var(--ih-radius-md);
+  background:var(--ih-bg-2); border:1px solid var(--ih-accent-dim);
+  cursor:pointer; text-decoration:none; transition:var(--ih-transition);
+}
+.ih-ct-basic:hover { border-color:var(--ih-accent); background:var(--ih-bg-3); }
+.ih-ct-basic-icon { font-size:22px; flex-shrink:0; }
+.ih-ct-basic-info { flex:1; display:flex; flex-direction:column; gap:2px; }
+.ih-ct-basic-label { font-size:13px; font-weight:700; color:var(--ih-text-0); }
+.ih-ct-basic-arrow { color:var(--ih-accent); font-size:16px; }
+
+/* Приём */
+.ih-ct-technique {
+  display:flex; gap:10px; padding:8px 10px;
+  border-radius:var(--ih-radius-sm); border:1px solid var(--ih-border-1);
+  background:var(--ih-bg-2); cursor:pointer; text-decoration:none;
+  transition:var(--ih-transition); align-items:flex-start;
+}
+.ih-ct-technique:hover:not(.is-locked) { border-color:var(--ih-hp-warn); background:var(--ih-bg-3); }
+.ih-ct-technique.is-locked { cursor:default; opacity:0.6; }
+.ih-ct-tech-icon { font-size:20px; flex-shrink:0; margin-top:1px; }
+.ih-ct-tech-info { flex:1; display:flex; flex-direction:column; gap:2px; }
+.ih-ct-tech-name { font-size:13px; font-weight:700; color:var(--ih-text-0); }
+.ih-ct-tech-desc { font-size:11px; color:var(--ih-text-1); line-height:1.4; }
+.ih-ct-tech-meta { font-size:10px; color:var(--ih-accent); margin-top:2px; }
+.ih-ct-tech-req  { font-size:9px; color:var(--ih-text-3); margin-top:2px; }
+
+/* Прицельный удар — зоны */
+.ih-ct-aim-grid { display:flex; flex-direction:column; gap:4px; }
+.ih-ct-zone {
+  display:flex; gap:10px; padding:8px 12px;
+  border-radius:var(--ih-radius-sm); border:1px solid var(--ih-border-1);
+  background:var(--ih-bg-2); cursor:pointer; text-decoration:none;
+  transition:var(--ih-transition); align-items:center;
+}
+.ih-ct-zone:hover { border-color:var(--ih-accent); background:var(--ih-bg-3); }
+.ih-ct-zone-icon { font-size:20px; flex-shrink:0; }
+.ih-ct-zone-info { flex:1; display:flex; flex-direction:column; gap:2px; }
+.ih-ct-zone-name { font-size:13px; font-weight:700; color:var(--ih-text-0); }
+.ih-ct-zone-stats { display:flex; gap:10px; font-size:11px; font-weight:600; }
+.ih-ct-zone-desc  { font-size:10px; color:var(--ih-text-2); }
+
+/* Footer */
+.ih-ct-footer {
+  padding:8px 14px; border-top:1px solid var(--ih-border-1);
+  background:var(--ih-bg-1); flex-shrink:0; display:flex; justify-content:flex-end;
+}
+
+/* ============================================================
+   WEATHER APP
+   ============================================================ */
+.window-app.weather-app .window-content { padding:0; }
+
+.ih-weather-app {
+  display:flex; flex-direction:column; gap:0;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1);
+  padding:12px;
+}
+
+.ih-wa-time-block {
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  background:var(--ih-bg-1); border-radius:var(--ih-radius-md);
+  border:1px solid var(--ih-border-1); margin-bottom:10px;
+}
+.ih-wa-period-icon { font-size:32px; flex-shrink:0; }
+.ih-wa-time-info { flex:1; }
+.ih-wa-time { font-size:22px; font-weight:700; color:var(--ih-text-0); line-height:1; }
+.ih-wa-period-name { font-size:11px; color:var(--ih-text-2); margin-top:2px; }
+.ih-wa-vision { font-size:10px; margin-top:2px; }
+.ih-wa-weather-current { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.ih-wa-weather-icon { font-size:22px; }
+.ih-wa-weather-label { font-size:9px; color:var(--ih-text-2); }
+
+.ih-wa-effects {
+  background:var(--ih-bg-1); border-radius:var(--ih-radius-sm);
+  border:1px solid var(--ih-border-0); padding:8px; margin-bottom:8px;
+  display:flex; flex-wrap:wrap; gap:4px;
+}
+.ih-wa-effect {
+  display:flex; gap:4px; align-items:center;
+  background:var(--ih-bg-2); border-radius:var(--ih-radius-sm);
+  padding:2px 8px; font-size:10px;
+}
+.ih-wa-effect-key { color:var(--ih-text-2); }
+.ih-wa-effect-val { font-weight:700; }
+
+.ih-wa-section-title {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:9px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--ih-text-2); padding:6px 2px 4px;
+}
+
+.ih-wa-time-btns { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; }
+.ih-wa-time-btns .ih-btn { flex:1; justify-content:center; }
+
+.ih-wa-weather-grid {
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;
+}
+.ih-wa-weather-btn {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:6px 4px; border-radius:var(--ih-radius-sm);
+  border:1px solid var(--ih-border-1); background:var(--ih-bg-2);
+  cursor:pointer; text-decoration:none; transition:var(--ih-transition);
+}
+.ih-wa-weather-btn:hover { border-color:var(--ih-accent); }
+.ih-wa-weather-btn.is-active { border-color:var(--ih-accent); background:var(--ih-accent-dim); }
+.ih-wa-wb-icon { font-size:18px; }
+.ih-wa-wb-label { font-size:8px; color:var(--ih-text-2); text-align:center; }
+
+/* Weather app — time controls */
+.ih-wa-set-time { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+.ih-wa-set-row  { display:flex; align-items:center; gap:8px; }
+.ih-wa-set-label { width:28px; font-size:10px; color:var(--ih-text-3); flex-shrink:0; }
+.ih-wa-stepper  { display:flex; align-items:center; gap:4px; flex:1; }
+.ih-wa-step-btn {
+  width:24px; height:24px; border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-3); border:1px solid var(--ih-border-1);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; cursor:pointer; color:var(--ih-text-1);
+  flex-shrink:0; text-decoration:none; transition:var(--ih-transition);
+}
+.ih-wa-step-btn:hover { border-color:var(--ih-accent); color:var(--ih-accent); }
+.ih-wa-set-input {
+  flex:1; background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  border-radius:var(--ih-radius-sm); color:var(--ih-text-0);
+  padding:3px 6px; font-size:13px; font-weight:600; text-align:center;
+}
+
+.ih-wa-fast-btns { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; }
+.ih-wa-fast-btns .ih-btn { flex:1; justify-content:center; min-width:36px; }
+
+/* Hunger/thirst/debuff tag in character sheet */
+.ih-cs-debuff-tag {
+  font-size: 10px; font-weight: 600;
+  padding: 1px 6px; margin-top: 2px;
+  border-radius: var(--ih-radius-sm);
+  background: rgba(0,0,0,0.2);
+  display: inline-block;
+}
+
+/* Travel app — energy phases */
+.ih-travel-bar-fill.energy-regen      { background: #93c5fd; }
+.ih-travel-bar-fill.energy-max        { background: #5b9cf6; }
+.ih-travel-bar-fill.energy-max-regen  { background: #a5f3fc; }
+
+/* Travel camp mode */
+.ih-travel-camp-toggle {
+  font-size: 10px; padding: 2px 8px;
+  border-radius: var(--ih-radius-sm);
+  border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-2); cursor: pointer;
+  text-decoration: none; color: var(--ih-text-2);
+  transition: var(--ih-transition);
+}
+.ih-travel-camp-toggle:hover,
+.ih-travel-camp-toggle.is-active {
+  border-color: var(--ih-accent); color: var(--ih-accent);
+  background: var(--ih-accent-dim);
+}
+.ih-travel-camp-acts {
+  display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0;
+}
+.ih-travel-char-act-label { font-size: 10px; color: var(--ih-accent); }
+
+/* ============================================================
+   SPELL CAST APP
+   ============================================================ */
+.window-app.spell-cast .window-content { padding:0; display:flex; flex-direction:column; }
+
+.ih-spell-app {
+  display:flex; flex-direction:column; height:100%;
+  background:var(--ih-bg-0); font-family:var(--ih-font-ui); color:var(--ih-text-1);
+}
+.ih-spell-header {
+  padding:10px 14px; background:var(--ih-bg-1);
+  border-bottom:1px solid var(--ih-border-1); flex-shrink:0;
+}
+.ih-spell-actor { font-size:14px; font-weight:700; color:var(--ih-text-0); }
+.ih-spell-mana  { font-size:11px; color:var(--ih-text-2); margin-top:2px; }
+
+.ih-spell-schools {
+  display:flex; gap:4px; padding:6px 10px; flex-wrap:wrap;
+  border-bottom:1px solid var(--ih-border-0); flex-shrink:0;
+  background:var(--ih-bg-1);
+}
+.ih-spell-school-btn {
+  padding:3px 10px; border-radius:var(--ih-radius-xl);
+  border:1px solid var(--ih-border-1); background:var(--ih-bg-2);
+  font-size:10px; cursor:pointer; text-decoration:none; color:var(--ih-text-2);
+  transition:var(--ih-transition);
+}
+.ih-spell-school-btn:hover { border-color:var(--school-color,var(--ih-accent)); color:var(--school-color,var(--ih-accent)); }
+.ih-spell-school-btn.is-active { background:var(--ih-accent-dim); border-color:var(--school-color,var(--ih-accent)); color:var(--school-color,var(--ih-accent)); }
+
+.ih-spell-list { flex:1; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:4px; }
+
+.ih-spell-school-group { margin-bottom:6px; }
+.ih-spell-school-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:4px 2px 3px; }
+
+.ih-spell-item {
+  display:flex; flex-direction:column; gap:3px; padding:8px 10px;
+  border-radius:var(--ih-radius-sm); border:1px solid var(--ih-border-1);
+  background:var(--ih-bg-2); cursor:pointer; text-decoration:none;
+  transition:var(--ih-transition);
+}
+.ih-spell-item:hover:not(.is-locked) { border-color:var(--ih-accent); background:var(--ih-bg-3); }
+.ih-spell-item.is-locked { opacity:0.6; cursor:default; }
+
+.ih-spell-item-head { display:flex; align-items:center; gap:8px; }
+.ih-spell-name   { font-size:13px; font-weight:700; color:var(--ih-text-0); flex:1; }
+.ih-spell-rank   { font-size:9px; color:var(--ih-text-3); background:var(--ih-bg-3); border-radius:var(--ih-radius-xl); padding:1px 6px; }
+.ih-spell-cost   { font-size:10px; color:var(--ih-accent); }
+.ih-spell-dmg    { font-size:11px; font-weight:700; color:var(--ih-hp-warn); }
+.ih-spell-desc   { font-size:10px; line-height:1.4; }
+.ih-spell-aoe-tag {
+  font-size:9px; padding:2px 6px; border-radius:var(--ih-radius-sm);
+  background:rgba(91,156,246,0.15); color:#7dd3fc; display:inline-block;
+}
+.ih-spell-lock-reason { font-size:9px; color:var(--ih-hp-crit); }
+
+.ih-spell-footer { padding:8px 14px; border-top:1px solid var(--ih-border-1); background:var(--ih-bg-1); flex-shrink:0; display:flex; justify-content:flex-end; }
+
+/* ============================================================
+   COMBAT BAR — узкая панель действий в бою
+   ============================================================ */
+#iron-hills-combat-bar {
+  position: fixed !important;
+  z-index: 70;
+  left: 0 !important;
+  width: 100vw !important;
+  height: auto !important;
+  pointer-events: auto;
+}
+
+.ih-cbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  background: rgba(12,15,22,0.92);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(91,156,246,0.2);
+  font-family: var(--ih-font-ui);
+  min-height: 50px;
+}
+
+.ih-cbar.is-my-turn {
+  border-top-color: var(--ih-accent);
+  background: rgba(8,14,28,0.95);
+}
+
+.ih-cbar-turn { flex-shrink: 0; min-width: 130px; }
+.ih-cbar-turn-info { display: flex; flex-direction: column; gap: 1px; }
+.ih-cbar-turn-name { font-size: 12px; font-weight: 700; color: var(--ih-text-0); }
+.ih-cbar-secs {
+  font-size: 18px; font-weight: 700;
+  color: var(--ih-accent); line-height: 1;
+}
+
+.ih-cbar-actions {
+  display: flex; align-items: center; gap: 4px; flex: 1; flex-wrap: wrap;
+}
+
+.ih-cbar-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 5px 10px; min-width: 52px;
+  border-radius: var(--ih-radius-md);
+  background: var(--ih-bg-2); border: 1px solid var(--ih-border-1);
+  cursor: pointer; text-decoration: none; color: var(--ih-text-1);
+  transition: var(--ih-transition); font-family: var(--ih-font-ui);
+}
+.ih-cbar-btn:hover { border-color: var(--ih-accent); color: var(--ih-text-0); background: var(--ih-bg-3); }
+.ih-cbar-btn.is-active { border-color: var(--ih-accent); background: var(--ih-accent-dim); }
+.ih-cbar-btn-icon  { font-size: 16px; line-height: 1; }
+.ih-cbar-btn-label { font-size: 9px; color: var(--ih-text-2); white-space: nowrap; }
+
+.ih-cbar-btn-secondary { border-color: var(--ih-border-2); }
+.ih-cbar-btn-warn  { border-color: var(--ih-hp-warn); color: var(--ih-hp-warn); }
+.ih-cbar-btn-end   { border-color: #4ade80; color: #4ade80; }
+.ih-cbar-btn-danger { border-color: var(--ih-hp-crit); color: var(--ih-hp-crit); }
+.ih-cbar-btn-small { min-width: 36px; padding: 5px 6px; font-size: 14px; }
+
+/* Status panel — убираем toggle, делаем чище */
+.ih-combat-hud.is-expanded .ih-exp-topbar { display: none; }
+.ih-combat-hud.is-expanded { border-radius: var(--ih-radius-md); }
+
+/* Compact HUD action buttons */
+.ih-compact-actions {
+  display: flex; gap: 3px; padding: 4px 6px;
+  border-top: 1px solid var(--ih-border-0);
+  background: var(--ih-bg-1); flex-wrap: wrap;
+}
+.ih-cact-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--ih-radius-sm); border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-2); cursor: pointer; text-decoration: none;
+  font-size: 14px; transition: var(--ih-transition); color: var(--ih-text-1);
+}
+.ih-cact-btn:hover { border-color: var(--ih-accent); background: var(--ih-bg-3); }
+.ih-cact-btn.is-active { border-color: var(--ih-accent); background: var(--ih-accent-dim); }
+.ih-cact-end { border-color: #4ade80; color: #4ade80; }
+
+/* ============================================================
+   SHOP APP
+   ============================================================ */
+.window-app.shop-app .window-content { padding:0; display:flex; flex-direction:column; }
+.ih-shop { display:flex; flex-direction:column; height:100%; background:var(--ih-bg-0); font-family:var(--ih-font-ui); }
+
+.ih-shop-header {
+  padding:8px 12px; background:var(--ih-bg-1);
+  border-bottom:1px solid var(--ih-border-1); flex-shrink:0;
+  display:flex; flex-direction:column; gap:6px;
+}
+.ih-shop-tiers { display:flex; gap:4px; flex-wrap:wrap; }
+.ih-shop-tier-btn {
+  padding:3px 10px; border-radius:var(--ih-radius-xl);
+  border:1px solid var(--ih-border-1); background:var(--ih-bg-2);
+  font-size:10px; cursor:pointer; text-decoration:none; color:var(--ih-text-2);
+  transition:var(--ih-transition);
+}
+.ih-shop-tier-btn:hover { border-color:var(--ih-accent); color:var(--ih-text-0); }
+.ih-shop-tier-btn.is-active { background:var(--ih-accent-dim); border-color:var(--ih-accent); color:var(--ih-text-0); }
+.ih-shop-buyer { font-size:10px; }
+
+.ih-shop-merchants {
+  display:flex; gap:4px; padding:6px 12px; flex-wrap:wrap;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-0); flex-shrink:0;
+}
+.ih-shop-merch-btn {
+  padding:4px 10px; border-radius:var(--ih-radius-sm);
+  border:1px solid var(--ih-border-1); background:var(--ih-bg-2);
+  font-size:11px; cursor:pointer; text-decoration:none; color:var(--ih-text-1);
+  transition:var(--ih-transition);
+}
+.ih-shop-merch-btn:hover { border-color:var(--ih-accent); }
+.ih-shop-merch-btn.is-active { background:var(--ih-accent-dim); border-color:var(--ih-accent); color:var(--ih-text-0); font-weight:700; }
+.ih-shop-restock { color:var(--ih-text-3); }
+
+.ih-shop-tier-filter {
+  display:flex; gap:4px; padding:4px 12px; align-items:center;
+  border-bottom:1px solid var(--ih-border-0); flex-shrink:0;
+}
+
+.ih-shop-list { flex:1; overflow-y:auto; padding:6px 10px; display:flex; flex-direction:column; gap:3px; }
+
+.ih-shop-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:7px 10px; border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-0);
+  transition:var(--ih-transition);
+}
+.ih-shop-item:hover { border-color:var(--ih-border-1); }
+.ih-shop-item-info { flex:1; min-width:0; }
+.ih-shop-item-name { font-size:13px; font-weight:600; color:var(--ih-text-0); }
+.ih-shop-item-meta { font-size:10px; margin-top:2px; }
+.ih-shop-item-price { display:flex; align-items:center; gap:8px; flex-shrink:0; font-size:11px; font-weight:600; }
+.ih-btn-disabled { opacity:0.4; pointer-events:none; }
+.ih-shop-empty { text-align:center; padding:30px; }
+
+/* Shop economy status */
+.ih-shop-economy {
+  display:flex; align-items:center; gap:8px; padding:5px 12px;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-0);
+  flex-shrink:0; flex-wrap:wrap;
+}
+.ih-shop-econ-status { font-size:12px; font-weight:700; color:var(--ih-text-0); }
+.ih-shop-econ-btns { display:flex; gap:3px; margin-left:auto; }
+
+/* ============================================================
+   WORLD TOOLS — вкладочный интерфейс
+   ============================================================ */
+.ih-wt { display:flex; flex-direction:column; height:100%; background:var(--ih-bg-0); font-family:var(--ih-font-ui); }
+
+.ih-wt-tabs {
+  display:flex; gap:2px; padding:6px 8px 0;
+  background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1);
+  flex-shrink:0; flex-wrap:wrap;
+}
+.ih-wt-tab {
+  padding:5px 14px; border-radius:var(--ih-radius-sm) var(--ih-radius-sm) 0 0;
+  border:1px solid transparent; cursor:pointer; text-decoration:none;
+  font-size:11px; font-weight:600; color:var(--ih-text-2);
+  transition:var(--ih-transition);
+}
+.ih-wt-tab:hover { color:var(--ih-text-0); background:var(--ih-bg-2); }
+.ih-wt-tab.is-active {
+  color:var(--ih-text-0); background:var(--ih-bg-0);
+  border-color:var(--ih-border-1) var(--ih-border-1) transparent;
+}
+
+.ih-wt-panel { display:none; flex:1; overflow-y:auto; padding:12px; }
+.ih-wt-panel.is-active { display:block; }
+
+.ih-wt-grid {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+  gap:10px;
+}
+
+.ih-wt-card {
+  background:var(--ih-bg-1); border:1px solid var(--ih-border-1);
+  border-radius:var(--ih-radius-md); padding:10px 12px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.ih-wt-card-wide { grid-column:1/-1; }
+.ih-wt-card-title {
+  font-size:12px; font-weight:700; color:var(--ih-text-0);
+  border-bottom:1px solid var(--ih-border-0); padding-bottom:6px;
+}
+
+.ih-wt-fields { display:flex; flex-direction:column; gap:5px; }
+.ih-wt-fields label {
+  display:flex; flex-direction:column; gap:2px;
+  font-size:10px; color:var(--ih-text-2);
+}
+.ih-wt-fields input, .ih-wt-fields select {
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  border-radius:var(--ih-radius-sm); color:var(--ih-text-0);
+  padding:4px 6px; font-size:11px; font-family:var(--ih-font-ui);
+}
+
+.ih-wt-actions { display:flex; gap:4px; flex-wrap:wrap; }
+.ih-wt-actions .ih-btn { font-size:10px; padding:4px 8px; }
+
+.ih-wt-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:6px; }
+.ih-wt-table th { color:var(--ih-text-2); font-weight:600; text-align:left; padding:3px 6px; border-bottom:1px solid var(--ih-border-1); }
+.ih-wt-table td { padding:3px 6px; border-bottom:1px solid var(--ih-border-0); color:var(--ih-text-1); }
+
+.ih-wt-status-list { display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+.ih-wt-status-row { display:flex; align-items:center; gap:6px; font-size:11px; }
+.ih-wt-status-row span:first-child { flex:1; color:var(--ih-text-1); }
+.ih-wt-tag {
+  padding:1px 6px; border-radius:var(--ih-radius-xl);
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  font-size:9px; color:var(--ih-text-2); white-space:nowrap;
+}
+.ih-wt-tag.tag-danger { border-color:#ef4444; color:#ef4444; }
+
+/* ── World Map POI markers ─────────────────────────────────── */
+.ih-wm-poi-marker {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: auto; cursor: pointer; z-index: 10;
+  transform: translate(-50%, -100%);
+}
+.ih-wm-poi-icon {
+  font-size: 18px; line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+.ih-wm-poi-name {
+  font-size: 8px; font-weight: 700;
+  color: #fff; background: rgba(0,0,0,0.7);
+  border-radius: 3px; padding: 1px 4px;
+  white-space: nowrap; max-width: 80px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.ih-wm-poi-marker:hover .ih-wm-poi-name { max-width: 200px; }
+
+/* ── Pending Items App ─────────────────────────────────────── */
+.window-app.pending-items-app .window-content { padding:0; }
+.ih-pending { font-family:var(--ih-font-ui); background:var(--ih-bg-0); }
+
+.ih-pending-header {
+  padding:12px 14px; background:var(--ih-bg-1);
+  border-bottom:1px solid var(--ih-border-1);
+}
+.ih-pending-title { font-size:14px; font-weight:700; color:var(--ih-text-0); }
+.ih-pending-subtitle { font-size:10px; margin-top:2px; }
+
+.ih-pending-list {
+  padding:8px 10px; display:flex; flex-direction:column; gap:4px;
+  max-height:280px; overflow-y:auto;
+}
+.ih-pending-item {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 8px; background:var(--ih-bg-2);
+  border:1px solid var(--ih-border-1); border-radius:var(--ih-radius-sm);
+}
+.ih-pending-item-info { flex:1; display:flex; flex-direction:column; gap:1px; }
+.ih-pending-item-name { font-size:12px; font-weight:600; color:var(--ih-text-0); }
+
+.ih-pending-actions {
+  display:flex; gap:6px; padding:8px 10px;
+  border-top:1px solid var(--ih-border-0);
+}
+.ih-pending-actions .ih-btn { flex:1; justify-content:center; }
+
+.ih-pending-warn {
+  font-size:10px; color:var(--ih-hp-warn);
+  padding:6px 12px; text-align:center;
+  background:rgba(251,191,36,0.08);
+  border-top:1px solid rgba(251,191,36,0.2);
+}
+
+/* ── Grid Inventory — Pending Zone ────────────────────────── */
+.ih-gi-pending-zone {
+  margin:8px 4px 4px; border:1px solid var(--ih-hp-warn);
+  border-radius:var(--ih-radius-md); background:rgba(251,191,36,0.05);
+  overflow:hidden;
+}
+.ih-gi-pending-header {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 10px; font-size:11px; font-weight:700;
+  background:rgba(251,191,36,0.12); color:var(--ih-hp-warn);
+  border-bottom:1px solid rgba(251,191,36,0.2);
+}
+.ih-gi-pending-count {
+  background:var(--ih-hp-warn); color:#000;
+  border-radius:10px; padding:0 5px; font-size:10px;
+}
+.ih-gi-pending-list {
+  padding:4px 6px; display:flex; flex-direction:column; gap:3px;
+  max-height:200px; overflow-y:auto;
+}
+.ih-gi-pending-item {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 6px; border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
+  cursor:grab;
+}
+.ih-gi-pending-item:hover { border-color:var(--ih-accent); }
+.ih-gi-pending-name { flex:1; font-size:11px; font-weight:600; color:var(--ih-text-0); }
+.ih-gi-pending-qty {
+  font-size:10px; color:var(--ih-accent); font-weight:700;
+  background:var(--ih-accent-dim); border-radius:4px; padding:1px 4px;
+}
+.ih-gi-pending-actions {
+  padding:6px 8px; border-top:1px solid rgba(251,191,36,0.2);
+}
+.ih-gi-pending-actions .ih-btn { font-size:10px; }
+
+/* ── Trade App — quantity counter ─────────────────────────── */
+.ih-trade-inv-item.has-qty-ctrl {
+  flex-wrap: nowrap; gap: 4px; align-items: center;
+}
+.ih-trade-qty-ctrl {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+}
+.ih-trade-qty-btn {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 1px solid var(--ih-border-1); background: var(--ih-bg-3);
+  color: var(--ih-text-1); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; text-decoration: none; user-select: none;
+  flex-shrink: 0;
+}
+.ih-trade-qty-btn:hover { border-color: var(--ih-accent); color: var(--ih-accent); }
+.ih-trade-qty-input {
+  width: 38px; height: 22px; text-align: center;
+  background: var(--ih-bg-0); border: 1px solid var(--ih-border-1);
+  border-radius: 4px; color: var(--ih-text-0); font-size: 12px;
+  font-weight: 700; padding: 0 2px;
+}
+.ih-trade-qty-input:focus { border-color: var(--ih-accent); outline: none; }
+.ih-trade-qty-max { font-size: 10px; flex-shrink: 0; }
+.ih-trade-inv-qty-single {
+  font-size: 11px; color: var(--ih-text-2); flex-shrink: 0;
+}
+.ih-trade-add-btn {
+  width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;
+  border: 1px solid var(--ih-accent); background: var(--ih-accent-dim);
+  color: var(--ih-accent); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; text-decoration: none; transition: var(--ih-transition);
+}
+.ih-trade-add-btn:hover { background: var(--ih-accent); color: #000; }
+
+/* ── Trade App — Tooltip & View button ─────────────────────── */
+.ih-has-tooltip { position: relative; }
+
+.ih-trade-tooltip {
+  display: none;
+  position: fixed;
+  width: 240px; z-index: 99999;
+  background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-md);
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  pointer-events: none;
+  font-size: 11px;
+  transition: none;
+}
+/* Tooltip показывается через JS на mouseenter */
+
+.ih-trade-tooltip-header {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ih-border-0);
+}
+.ih-trade-tooltip-stats {
+  color: var(--ih-text-1); margin-bottom: 4px; line-height: 1.5;
+}
+.ih-trade-tooltip-desc {
+  color: var(--ih-text-3); font-style: italic;
+  margin-bottom: 4px; line-height: 1.4;
+}
+.ih-trade-tooltip-price {
+  font-weight: 700; color: var(--ih-accent);
+  margin-top: 4px; padding-top: 4px;
+  border-top: 1px solid var(--ih-border-0);
+}
+
+.ih-trade-view-btn {
+  width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0;
+  border: 1px solid var(--ih-border-1); background: var(--ih-bg-3);
+  font-size: 12px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; text-decoration: none;
+  transition: var(--ih-transition); opacity: 0.7;
+}
+.ih-trade-view-btn:hover { opacity: 1; border-color: var(--ih-accent); }
+
+/* ── Pending Items App — Tarkov-style stash ──────────────── */
+.window-app.pending-items-app { font-family: var(--ih-font-ui); }
+.window-app.pending-items-app .window-content { padding: 0; }
+
+.ih-pi-app {
+  background: var(--ih-bg-0);
+  display: flex; flex-direction: column;
+}
+
+.ih-pi-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--ih-bg-1);
+  border-bottom: 1px solid var(--ih-border-1);
+  font-size: 12px; color: var(--ih-text-0);
+}
+
+.ih-pi-grid-wrap {
+  overflow: auto; padding: 8px;
+  background: var(--ih-bg-0);
+}
+
+.ih-pi-grid {
+  background: #0d1117;
+  border: 1px solid var(--ih-border-1);
+  border-radius: var(--ih-radius-sm);
+}
+
+.ih-pi-item {
+  cursor: grab; z-index: 2;
+  border: 1px solid rgba(91,156,246,0.5);
+  background: rgba(91,156,246,0.08);
+  border-radius: 3px;
+}
+.ih-pi-item:hover {
+  border-color: var(--ih-accent);
+  background: rgba(91,156,246,0.18);
+  z-index: 10;
+}
+.ih-pi-item.dragging { opacity: 0.4; }
+
+.ih-pi-footer {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px;
+  border-top: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1);
+}
+.ih-pi-footer .ih-btn { font-size: 11px; }
+
+.ih-pi-done {
+  padding: 20px; text-align: center;
+  color: #4ade80; font-size: 14px; font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TARKOV TRADE APP
+   ══════════════════════════════════════════════════════════ */
+.window-app.tarkov-trade-app .window-content { padding:0; }
+.tt-app { display:flex; flex-direction:column; height:100%; background:var(--ih-bg-0); font-family:var(--ih-font-ui); }
+
+/* Заголовки колонок */
+.tt-headers { display:flex; padding:8px 12px; background:var(--ih-bg-1); border-bottom:1px solid var(--ih-border-1); gap:8px; align-items:center; }
+.tt-col-header { display:flex; align-items:center; gap:8px; flex:1; font-weight:700; font-size:13px; }
+.tt-middle-header { font-size:20px; color:var(--ih-text-3); flex-shrink:0; padding:0 8px; }
+
+/* Основной layout */
+.tt-body { display:flex; flex:1; overflow:hidden; gap:0; min-height:0; }
+
+/* Колонки одинаковой ширины — flex:1 уже это делает, но явно */
+.tt-col { min-width: 0; }
+.tt-col { flex:1; display:flex; flex-direction:column; padding:8px; background:var(--ih-bg-0); border-right:1px solid var(--ih-border-0); overflow:hidden; min-width:0; }
+.tt-col:last-child { border-right:none; border-left:1px solid var(--ih-border-0); }
+
+/* Grid — фиксированная ширина, скролл по высоте */
+.tt-grid-wrap {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  min-height: 0; max-height: 580px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ih-border-1) transparent;
+}
+.tt-grid-wrap::-webkit-scrollbar { width: 6px; }
+.tt-grid-wrap::-webkit-scrollbar-track { background: transparent; }
+.tt-grid-wrap::-webkit-scrollbar-thumb { background: var(--ih-border-1); border-radius: 3px; }
+
+/* Grid */
+/* tt-grid-wrap now in .tt-col */
+.tt-grid { position:relative; background:#0d1117; border:1px solid var(--ih-border-1); border-radius:4px; }
+.tt-cell { position:absolute; border:1px solid rgba(255,255,255,0.05); box-sizing:border-box; background:rgba(255,255,255,0.01); }
+
+/* Предметы */
+.tt-item {
+  position:absolute; cursor:grab; box-sizing:border-box;
+  border:1px solid rgba(91,156,246,0.4);
+  background:rgba(91,156,246,0.06);
+  border-radius:3px; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center;
+  padding:2px; user-select:none; transition:border-color .1s;
+}
+.tt-item:hover { border-color:var(--ih-accent); background:rgba(91,156,246,0.15); z-index:10; }
+.tt-item img { width:100%; height:55%; object-fit:contain; }
+.tt-item-name { font-size:9px; color:var(--ih-text-1); text-align:center; line-height:1.2; overflow:hidden; width:100%; padding:0 2px; }
+.tt-item-qty { position:absolute; top:2px; right:2px; font-size:9px; font-weight:700; color:#facc15; background:rgba(0,0,0,.7); padding:0 3px; border-radius:2px; }
+.tt-item-price { position:absolute; bottom:1px; right:2px; font-size:8px; color:var(--ih-accent); background:rgba(0,0,0,.5); padding:0 2px; border-radius:2px; }
+
+/* Центральная панель */
+.tt-center { width:200px; flex-shrink:0; display:flex; flex-direction:column; padding:6px; gap:6px; border-left:1px solid var(--ih-border-1); border-right:1px solid var(--ih-border-1); }
+
+.tt-offer-zone {
+  flex:1; border:1px dashed var(--ih-border-1); border-radius:4px; padding:6px;
+  min-height:80px; background:var(--ih-bg-1); overflow-y:auto;
+}
+.tt-offer-zone.drag-over { border-color:var(--ih-accent); background:var(--ih-accent-dim); }
+.tt-offer-label { font-size:9px; font-weight:700; color:var(--ih-text-3); text-transform:uppercase; margin-bottom:4px; }
+.tt-offer-empty { font-size:10px; text-align:center; padding:8px 0; }
+.tt-offer-row { display:flex; align-items:center; gap:4px; padding:2px; font-size:11px; border-bottom:1px solid var(--ih-border-0); }
+.tt-offer-name { flex:1; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tt-offer-price { font-size:9px; color:var(--ih-accent); flex-shrink:0; }
+.tt-offer-total { font-size:10px; font-weight:700; text-align:right; padding-top:4px; color:var(--ih-accent); }
+.tt-remove { cursor:pointer; color:var(--ih-hp-low); font-size:10px; flex-shrink:0; }
+
+.tt-qty-ctrl { display:flex; align-items:center; gap:2px; flex-shrink:0; }
+.tt-qty-btn { width:16px; height:16px; background:var(--ih-bg-3); border:1px solid var(--ih-border-1); border-radius:3px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; user-select:none; }
+.tt-qty-btn:hover { border-color:var(--ih-accent); }
+.tt-qty-ctrl span { font-size:10px; font-weight:700; min-width:14px; text-align:center; }
+
+.tt-actions { display:flex; flex-direction:column; gap:4px; }
+.tt-balance { font-size:18px; font-weight:700; text-align:center; color:var(--ih-hp-low); }
+.tt-balance.balanced { color:#4ade80; }
+.tt-actions .ih-btn { font-size:11px; justify-content:center; }
+
+/* Tarkov Trade — search, filters, tooltip */
+.tt-search-bar {
+  padding: 6px 4px; display: flex; flex-direction: column; gap: 4px;
+}
+.tt-search {
+  width: 100%; padding: 4px 8px; background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1); border-radius: var(--ih-radius-sm);
+  color: var(--ih-text-0); font-size: 11px; font-family: var(--ih-font-ui);
+}
+.tt-search:focus { border-color: var(--ih-accent); outline: none; }
+.tt-filters { display: flex; gap: 3px; flex-wrap: wrap; }
+.tt-filter-btn {
+  padding: 2px 7px; border-radius: var(--ih-radius-xl);
+  border: 1px solid var(--ih-border-1); background: var(--ih-bg-2);
+  font-size: 10px; cursor: pointer; text-decoration: none; color: var(--ih-text-2);
+  transition: var(--ih-transition);
+}
+.tt-filter-btn:hover { border-color: var(--ih-accent); color: var(--ih-text-0); }
+.tt-filter-btn.is-active { background: var(--ih-accent-dim); border-color: var(--ih-accent); color: var(--ih-text-0); font-weight: 700; }
+
+/* Tooltip */
+.tt-tooltip {
+  display: none; position: fixed; z-index: 99999;
+  width: 200px; background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-1); border-radius: var(--ih-radius-md);
+  padding: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.7);
+  pointer-events: none; font-size: 11px;
+}
+.tt-tip-header { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--ih-border-0); }
+.tt-tip-stats { color: var(--ih-text-1); margin-bottom: 3px; line-height: 1.5; }
+.tt-tip-desc { color: var(--ih-text-3); font-style: italic; margin-bottom: 3px; line-height: 1.4; font-size: 10px; }
+.tt-tip-price { font-weight: 700; color: var(--ih-accent); padding-top: 4px; border-top: 1px solid var(--ih-border-0); }
+
+/* Tarkov Trade — coins input */
+.tt-coins-row {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 2px; border-top: 1px solid var(--ih-border-0);
+  margin-top: 4px;
+}
+.tt-coins-input {
+  width: 70px; padding: 2px 4px; font-size: 11px;
+  background: var(--ih-bg-0); border: 1px solid var(--ih-border-1);
+  border-radius: 3px; color: var(--ih-text-0); text-align: right;
+}
+.tt-coins-input:focus { border-color: var(--ih-accent); outline: none; }
+.tt-coins-all {
+  font-size: 9px; color: var(--ih-accent); cursor: pointer;
+  text-decoration: underline; flex-shrink: 0;
+}
+
+/* Tarkov Trade — multi-currency coins */
+.tt-coins-block { padding: 4px 2px; border-top: 1px solid var(--ih-border-0); margin-top: 4px; }
+.tt-coins-block .muted-text { display: block; margin-bottom: 3px; }
+.tt-coin-icon { font-size: 12px; flex-shrink: 0; }
+.tt-coin-icon.copper { color: #b87333; }
+.tt-coin-icon.silver { color: #aaa9ad; }
+.tt-coin-icon.gold   { color: #ffd700; }
+
+/* ── Durability bar in grid inventory ────────────────────── */
+.ih-gi-dur-bar {
+  position: absolute; bottom: 2px; left: 2px; right: 2px;
+  height: 3px; background: rgba(0,0,0,0.4); border-radius: 2px;
+  overflow: hidden;
+}
+.ih-gi-dur-fill {
+  height: 100%; border-radius: 2px; transition: width 0.3s;
+}
+.dur-good     { background: #4ade80; }
+.dur-worn     { background: #facc15; }
+.dur-damaged  { background: #fb923c; }
+.dur-critical { background: #ef4444; }
+.dur-broken   { background: #6b7280; }
+
+/* Item в инвентаре — чуть затемнить если сломан */
+.ih-gi-item.dur-broken { opacity: 0.6; filter: grayscale(0.5); }
+
+/* ══════════════════════════════════════════════════════════
+   CHAT — Iron Hills стиль
+   ══════════════════════════════════════════════════════════ */
+
+/* Фон сайдбара чата */
+#sidebar #chat {
+  background: var(--ih-bg-0);
+}
+#chat-log {
+  background: var(--ih-bg-0);
+}
+
+/* Сообщения */
+#chat-log .message {
+  background: var(--ih-bg-1);
+  border: 1px solid var(--ih-border-0);
+  border-radius: var(--ih-radius-sm);
+  margin: 3px 2px;
+  padding: 6px 8px;
+  color: var(--ih-text-0) !important;
+}
+#chat-log .message:hover {
+  border-color: var(--ih-border-1);
+  background: var(--ih-bg-2);
+}
+
+/* Имя отправителя */
+#chat-log .message-header .sender {
+  color: var(--ih-accent) !important;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* Время */
+#chat-log .message-header .timestamp {
+  color: var(--ih-text-3) !important;
+  font-size: 10px;
+}
+
+/* Текст сообщения */
+#chat-log .message-content {
+  color: var(--ih-text-0) !important;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#chat-log .message-content p,
+#chat-log .message-content div,
+#chat-log .message-content span {
+  color: var(--ih-text-0);
+}
+
+/* Whisper сообщения (GM) */
+#chat-log .whisper {
+  background: rgba(250,204,21,0.06) !important;
+  border-color: rgba(250,204,21,0.2) !important;
+}
+#chat-log .whisper .message-content {
+  color: #facc15 !important;
+}
+
+/* Броски кубиков */
+#chat-log .dice-roll .dice-total {
+  color: var(--ih-accent) !important;
+  font-weight: 700;
+}
+#chat-log .dice-roll .dice-formula {
+  color: var(--ih-text-2) !important;
+}
+
+/* Поле ввода */
+#chat-message {
+  background: var(--ih-bg-2) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm) !important;
+  color: var(--ih-text-0) !important;
+  font-family: var(--ih-font-ui) !important;
+  font-size: 12px !important;
+}
+#chat-message:focus {
+  border-color: var(--ih-accent) !important;
+  outline: none !important;
+}
+
+/* Флаги сообщений (IC/OOC/Emote) */
+#chat-controls .chat-control-icon {
+  color: var(--ih-text-2);
+}
+#chat-controls .chat-control-icon:hover {
+  color: var(--ih-accent);
+}
+
+/* Скроллбар чата */
+#chat-log::-webkit-scrollbar { width: 4px; }
+#chat-log::-webkit-scrollbar-track { background: transparent; }
+#chat-log::-webkit-scrollbar-thumb { background: var(--ih-border-1); border-radius: 2px; }
+
+/* Наши кастомные сообщения из Iron Hills — уже стилизованы через inline */
+/* Усиливаем читаемость b/strong тегов */
+#chat-log .message-content b,
+#chat-log .message-content strong {
+  color: #e8f0ff !important;
+  font-weight: 700;
+}
+#chat-log .message-content .muted-text {
+  color: var(--ih-text-3) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CHAT RESKIN — Iron Hills style
+   ══════════════════════════════════════════════════════════ */
+
+/* Фон чата */
+#chat-log {
+  background: var(--ih-bg-0) !important;
+}
+
+/* Сообщение */
+#chat-log .message {
+  background: var(--ih-bg-1) !important;
+  border: 1px solid var(--ih-border-0) !important;
+  border-radius: var(--ih-radius-sm) !important;
+  margin: 3px 4px !important;
+  padding: 6px 8px !important;
+  color: var(--ih-text-1) !important;
+  box-shadow: none !important;
+}
+
+#chat-log .message:hover {
+  border-color: var(--ih-border-1) !important;
+  background: var(--ih-bg-2) !important;
+}
+
+/* Заголовок сообщения (имя отправителя) */
+#chat-log .message-header {
+  border-bottom: 1px solid var(--ih-border-0) !important;
+  margin-bottom: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+#chat-log .message-sender {
+  color: var(--ih-accent) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+}
+
+#chat-log .message-timestamp {
+  color: var(--ih-text-3) !important;
+  font-size: 10px !important;
+}
+
+/* Текст сообщения */
+#chat-log .message-content {
+  color: var(--ih-text-1) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+#chat-log .message-content p {
+  color: var(--ih-text-1) !important;
+  margin: 2px 0 !important;
+}
+
+#chat-log .message-content b,
+#chat-log .message-content strong {
+  color: var(--ih-text-0) !important;
+}
+
+/* Whisper сообщения */
+#chat-log .message.whisper {
+  background: rgba(250,204,21,0.06) !important;
+  border-color: rgba(250,204,21,0.2) !important;
+}
+
+#chat-log .message.whisper .message-sender {
+  color: #facc15 !important;
+}
+
+/* Roll результаты */
+#chat-log .dice-roll .dice-result {
+  background: var(--ih-bg-2) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  border-radius: var(--ih-radius-sm) !important;
+  color: var(--ih-text-0) !important;
+}
+
+#chat-log .dice-total {
+  color: var(--ih-text-0) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+/* Iron Hills кастомные сообщения уже стилизованы — переопределяем color */
+#chat-log .message-content div[style*="padding"] {
+  color: var(--ih-text-1) !important;
+}
+
+#chat-log .message-content div[style*="padding"] b {
+  color: var(--ih-text-0) !important;
+}
+
+/* Поле ввода чата */
+#chat-message {
+  background: var(--ih-bg-2) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  color: var(--ih-text-0) !important;
+  border-radius: var(--ih-radius-sm) !important;
+  font-family: var(--ih-font-ui) !important;
+}
+
+#chat-message:focus {
+  border-color: var(--ih-accent) !important;
+  outline: none !important;
+}
+
+/* Кнопки чата */
+#chat-controls .control-buttons button {
+  background: var(--ih-bg-2) !important;
+  border: 1px solid var(--ih-border-1) !important;
+  color: var(--ih-text-1) !important;
+}
+
+#chat-controls .control-buttons button:hover {
+  border-color: var(--ih-accent) !important;
+  color: var(--ih-text-0) !important;
+}
+
+/* Флаги событий путешествия — повышенная контрастность */
+#chat-log .message-content [style*="border-left"] {
+  color: var(--ih-text-0) !important;
+}
+
+#chat-log .message-content [style*="border-left"] * {
+  color: inherit !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FACTION REPUTATION — Character Sheet
+   ══════════════════════════════════════════════════════════ */
+.ih-cs-factions {
+  padding: 8px 12px;
+  border-top: 1px solid var(--ih-border-0);
+  margin-top: 8px;
+}
+.ih-cs-faction-list { display: flex; flex-direction: column; gap: 4px; }
+.ih-cs-faction-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px;
+}
+.ih-cs-faction-name {
+  width: 120px; flex-shrink: 0;
+  color: var(--ih-text-1); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ih-cs-rep-bar {
+  flex: 1; height: 6px; background: var(--ih-bg-3);
+  border-radius: 3px; position: relative; overflow: hidden;
+}
+.ih-cs-rep-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.3s;
+}
+.ih-cs-rep-zero {
+  position: absolute; left: 50%; top: 0;
+  width: 1px; height: 100%;
+  background: var(--ih-border-1); pointer-events: none;
+}
+.ih-cs-rep-label { width: 110px; flex-shrink: 0; font-size: 10px; }
+.ih-cs-rep-val { width: 35px; text-align: right; flex-shrink: 0; font-size: 10px; }
+
+.ih-cs-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ih-cs-rep-edit {
+  opacity: 0; cursor: pointer; font-size: 10px;
+  color: var(--ih-accent); padding: 0 3px;
+  transition: opacity 0.15s;
+}
+.ih-cs-faction-row:hover .ih-cs-rep-edit { opacity: 1; }
+
+.ih-rep-hidden { display: none; }
+.ih-cs-rep-toggle {
+  display: block; font-size: 10px; cursor: pointer;
+  padding: 3px 0; text-align: center;
+}
+.ih-cs-rep-toggle:hover { color: var(--ih-accent); }
+
+/* ── Identification — unidentified items ─────────────────── */
+.ih-gi-item.is-unknown {
+  filter: grayscale(0.6) brightness(0.7);
+  border-color: rgba(168,184,208,0.3) !important;
+}
+.ih-gi-item.is-unknown .ih-gi-item-img {
+  opacity: 0.5;
+}
+.ih-gi-item.is-unknown::after {
+  content: "❓";
+  position: absolute;
+  top: 2px; left: 2px;
+  font-size: 12px;
+  filter: none;
+}
+
+/* ── Grid Inventory Tooltip ──────────────────────────────── */
+.ih-gi-tooltip {
+  display: none; position: fixed; z-index: 99999;
+  width: 210px;
+  background: #1a1a2e !important;
+  background-color: #1a1a2e !important;
+  border: 1px solid #4a6a9a !important;
+  opacity: 1 !important;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.95);
+  pointer-events: none; font-size: 12px;
+  color: #ffffff !important;
+  isolation: isolate;
+}
+/* Убираем любой фон который может просвечивать */
+.ih-gi-tooltip::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: #1a1a2e;
+  border-radius: 6px;
+  z-index: -1;
+}
+.ih-gi-tooltip * { color: #ffffff !important; }
+.ih-gi-tooltip-header {
+  display: flex; gap: 7px; align-items: center;
+  margin-bottom: 6px; padding-bottom: 6px;
+  border-bottom: 1px solid #4a6a9a;
+}
+.ih-gi-tooltip-name {
+  font-weight: 700; font-size: 13px;
+  color: #ffffff !important;
+  line-height: 1.3;
+}
+.ih-gi-tooltip-stats {
+  color: #e0e8ff !important;
+  line-height: 1.9;
+  font-size: 12px;
+}
+.ih-gi-tooltip-dur {
+  font-size: 10px; margin-top: 3px; padding-top: 3px;
+  border-top: 1px solid var(--ih-border-0);
+}
+.ih-gi-tooltip-dur.dur-good     { color: #4ade80; }
+.ih-gi-tooltip-dur.dur-worn     { color: #facc15; }
+.ih-gi-tooltip-dur.dur-damaged  { color: #fb923c; }
+.ih-gi-tooltip-dur.dur-critical { color: #ef4444; }
+.ih-gi-tooltip-dur.dur-broken   { color: #6b7280; }

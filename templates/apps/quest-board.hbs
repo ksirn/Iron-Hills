@@ -1,0 +1,114 @@
+{{!-- Iron Hills — Quest Board v2 --}}
+<div class="ih-qb-app">
+
+  {{!-- GM: Фильтры и поиск --}}
+  {{#if isGM}}
+  <div class="ih-qb-toolbar">
+    <input class="ih-qb-search" type="text" data-qb-search
+           placeholder="🔍 Поиск..." value="{{search}}">
+
+    <select class="ih-qb-filter-sel" data-filter-status>
+      <option value="all" {{#if (eq filterStatus 'all')}}selected{{/if}}>Все статусы</option>
+      {{#each statuses}}
+      <option value="{{key}}" {{#if (eq key ../filterStatus)}}selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+
+    <select class="ih-qb-filter-sel" data-filter-location>
+      <option value="">Все локации</option>
+      {{#each locations}}
+      <option value="{{this}}" {{#if (eq this ../filterLocation)}}selected{{/if}}>{{this}}</option>
+      {{/each}}
+    </select>
+
+    <select class="ih-qb-filter-sel" data-filter-type>
+      <option value="">Все типы</option>
+      {{#each types}}
+      <option value="{{key}}" {{#if (eq key ../filterType)}}selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+
+    <a class="ih-btn ih-btn-primary ih-btn-small" data-create-quest>+ Задание</a>
+  </div>
+
+  <div class="ih-qb-stats">
+    Всего: {{totalAll}} · Активных: {{totalActive}}
+  </div>
+  {{/if}}
+
+  {{!-- Список квестов --}}
+  <div class="ih-qb-list">
+    {{#if hasQuests}}
+    {{#each quests}}
+    <div class="ih-qb-quest status-{{status}}">
+
+      <div class="ih-qb-quest-icon" style="color:{{statusColor}}">{{statusIcon}}</div>
+
+      <div class="ih-qb-quest-body">
+        <div class="ih-qb-quest-header">
+          <span class="ih-qb-quest-name">{{name}}</span>
+          {{#if location}}
+          <span class="ih-qb-quest-loc muted-text">📍 {{location}}</span>
+          {{/if}}
+          {{#if typeLabel}}
+          <span class="ih-qb-quest-type">{{typeLabel}}</span>
+          {{/if}}
+          <span class="ih-qb-quest-stars" title="Сложность {{difficulty}}">{{stars}}</span>
+        </div>
+
+        {{#if description}}
+        <div class="ih-qb-quest-desc">{{description}}</div>
+        {{/if}}
+
+        {{#if reward}}
+        <div class="ih-qb-quest-reward">🎁 {{reward}}</div>
+        {{/if}}
+
+        {{!-- Назначенные группы --}}
+        {{#if hasGroups}}
+        <div class="ih-qb-groups">
+          {{#each assignedGroups}}
+          <span class="ih-qb-group-tag" style="border-color:{{color}}">
+            <span style="color:{{color}}">●</span> {{label}}
+            {{#if ../isGM}}
+            <a class="ih-icon-btn tiny" data-unassign-group
+               data-quest-id="{{../id}}" data-group-id="{{id}}">✕</a>
+            {{/if}}
+          </span>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+
+      {{!-- GM: управление --}}
+      {{#if isGM}}
+      <div class="ih-qb-quest-actions">
+        <select class="ih-qb-status-select" data-quest-status data-quest-id="{{id}}">
+          <option value="hidden"    {{#if (eq status 'hidden')}}selected{{/if}}>👁 Скрыт</option>
+          <option value="active"    {{#if (eq status 'active')}}selected{{/if}}>📋 Активен</option>
+          <option value="completed" {{#if (eq status 'completed')}}selected{{/if}}>✅ Выполнен</option>
+          <option value="failed"    {{#if (eq status 'failed')}}selected{{/if}}>✗ Провален</option>
+        </select>
+        <a class="ih-btn ih-btn-small" data-assign-group  data-quest-id="{{id}}" title="Назначить группу">👥</a>
+        <a class="ih-btn ih-btn-small" data-set-location  data-quest-id="{{id}}" title="Задать локацию">📍</a>
+        <a class="ih-btn ih-btn-small" data-open-quest    data-quest-id="{{id}}" title="Открыть">✏</a>
+      </div>
+      {{/if}}
+
+    </div>
+    {{/each}}
+    {{else}}
+    <div class="ih-qb-empty">
+      <div style="font-size:36px;opacity:0.2">📋</div>
+      {{#if isGM}}
+      <div>Нет заданий</div>
+      <div class="muted-text">Создай вручную или через World Journal → 📋 Квест</div>
+      {{else}}
+      <div>Заданий нет</div>
+      <div class="muted-text">В вашей локации и группе нет активных заданий</div>
+      {{/if}}
+    </div>
+    {{/if}}
+  </div>
+
+</div>

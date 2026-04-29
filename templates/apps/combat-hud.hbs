@@ -1,16 +1,7 @@
-{{!-- ============================================================
-  IRON HILLS — Combat HUD v2
-  Compact:  портрет (+ эффекты) + силуэт + ресурс-бары
-  Expanded: силуэт крупный слева + действия справа (Вариант Б)
-  ============================================================ --}}
-
-<section class="ih-combat-hud {{#if compactMode}}is-compact{{/if}} {{actorSideClass}}">
+{{!-- Iron Hills — Status Panel (compact, always on) --}}
+<section class="ih-combat-hud is-compact {{actorSideClass}}">
 {{#if hasActor}}
 
-{{!-- ═══════════════════════════════════════════════════════
-      COMPACT MODE
-══════════════════════════════════════════════════════════ --}}
-{{#if compactMode}}
 <div class="ih-hud-compact-layout">
 
   {{!-- Topbar: портрет + эффекты + имя + статус + toggle --}}
@@ -43,7 +34,6 @@
       {{/if}}
     </div>
 
-    <a class="ih-hud-toggle" data-toggle-compact title="Развернуть">⊞</a>
   </div>
 
   {{!-- Тело + ресурсы --}}
@@ -180,15 +170,31 @@
   </div>
   {{/if}}
 
-  {{!-- Кнопки хода --}}
+  {{!-- Action кнопки (только в бой/свой ход) --}}
   {{#if combatActive}}{{#if isCurrentTurn}}
-  <div class="ih-compact-turn-btns">
-    {{#if canEndTurn}}<a class="ih-btn ih-btn-small ih-btn-primary" data-end-turn>Завершить ход</a>{{/if}}
+  <div class="ih-compact-actions">
+    <a class="ih-cact-btn" data-attack-hand="leftHand" title="{{leftHandName}}">⚔</a>
+    {{#if rightHandEquipped}}
+    <a class="ih-cact-btn" data-attack-hand="rightHand" title="{{rightHandName}}">🗡</a>
+    {{/if}}
+    {{#if hasMana}}
+    <a class="ih-cact-btn" data-cast-spell title="Заклинания">✨</a>
+    {{/if}}
+    {{#if canBreathe}}
+    <a class="ih-cact-btn" data-breathe title="Перевести дух">💨</a>
+    {{/if}}
+    <a class="ih-cact-btn ih-cact-sprint {{#if isSprinting}}is-active{{/if}}"
+       data-toggle-sprint title="Шаг/Рывок">{{#if isSprinting}}🏃{{else}}🚶{{/if}}</a>
+    {{#if canEndTurn}}
+    <a class="ih-cact-btn ih-cact-end" data-end-turn title="Завершить ход">✓</a>
+    {{/if}}
+    {{#if isGM}}
+    <a class="ih-cact-btn" data-next-turn title="Следующий">→</a>
+    {{/if}}
   </div>
   {{/if}}{{/if}}
 
 </div>{{!-- .ih-hud-compact-layout --}}
-{{/if}}{{!-- compactMode --}}
 
 
 {{!-- ═══════════════════════════════════════════════════════
@@ -196,250 +202,11 @@
       Слева: портрет + большой силуэт + ресурсы
       Справа: статус хода + действия
 ══════════════════════════════════════════════════════════ --}}
-{{#unless compactMode}}
-<div class="ih-hud-expanded-layout">
 
-  {{!-- Toggle кнопка --}}
-  <div class="ih-exp-topbar">
-    <a class="ih-hud-toggle" data-toggle-compact title="Свернуть">⊟</a>
-  </div>
 
-  <div class="ih-exp-body">
 
-    {{!-- ── ЛЕВАЯ КОЛОНКА ── --}}
-    <div class="ih-exp-left">
 
-      {{!-- Портрет с эффектами --}}
-      <div class="ih-exp-portrait-wrap {{actorSideClass}}">
-        <img class="ih-exp-portrait-img" src="{{actorImg}}" alt="{{actorName}}">
-        {{#if hasGlobalEffects}}
-        <div class="ih-portrait-effects exp">
-          {{#each globalEffects}}{{#if active}}
-          <span class="ih-fx-icon" style="color:{{color}}" title="{{label}}: {{value}}">
-            <i class="fas {{icon}}"></i>
-          </span>
-          {{/if}}{{/each}}
-        </div>
-        {{/if}}
-        <div class="ih-exp-portrait-name">
-          <span>{{actorName}}</span>
-          <span class="ih-hud-side {{actorSideClass}}">{{actorSide}}</span>
-        </div>
-      </div>
-
-      {{!-- Ресурс-бары --}}
-      <div class="ih-exp-resources">
-        <div class="ih-res-bar" title="Энергия: {{energyValue}}/{{energyMax}}">
-          <span class="ih-res-icon energy">⚡</span>
-          <div class="ih-res-track"><div class="ih-res-fill energy" style="width:{{energyPct}}%"></div></div>
-          <span class="ih-res-val">{{energyValue}}/{{energyMax}}</span>
-        </div>
-        <div class="ih-res-bar" title="Мана: {{manaValue}}/{{manaMax}}">
-          <span class="ih-res-icon mana">✦</span>
-          <div class="ih-res-track"><div class="ih-res-fill mana" style="width:{{manaPct}}%"></div></div>
-          <span class="ih-res-val">{{manaValue}}/{{manaMax}}</span>
-        </div>
-        <div class="ih-res-bar" title="Сытость: {{satietyValue}}/{{satietyMax}}">
-          <span class="ih-res-icon food">🍖</span>
-          <div class="ih-res-track"><div class="ih-res-fill food" style="width:{{satietyPct}}%"></div></div>
-          <span class="ih-res-val">{{satietyValue}}/{{satietyMax}}</span>
-        </div>
-        <div class="ih-res-bar" title="Жажда: {{hydrationValue}}/{{hydrationMax}}">
-          <span class="ih-res-icon water">💧</span>
-          <div class="ih-res-track"><div class="ih-res-fill water" style="width:{{hydrationPct}}%"></div></div>
-          <span class="ih-res-val">{{hydrationValue}}/{{hydrationMax}}</span>
-        </div>
-      </div>
-
-      {{!-- Большой силуэт --}}
-      <div class="ih-exp-figure">
-
-        {{!-- Голова --}}
-        {{#each zones}}{{#if (eq key "head")}}
-        <div class="ih-exp-fig-part ih-exp-head {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-          <div class="ih-exp-fig-label">Г</div>
-          <div class="ih-exp-fig-hp">{{value}}</div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-            {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-            {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-            {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet"></span>{{/if}}
-            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-
-        {{!-- Руки + Торс --}}
-        <div class="ih-exp-fig-row">
-          {{#each zones}}{{#if (eq key "leftArm")}}
-          <div class="ih-exp-fig-part ih-exp-arm {{cssClass}}" title="{{tooltip}}">
-            <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-            <div class="ih-exp-fig-label">ЛР</div>
-            <div class="ih-exp-fig-hp">{{value}}</div>
-            <div class="ih-fig-dots">
-              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-              {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-              {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-              {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet"></span>{{/if}}
-              {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-            </div>
-          </div>
-          {{/if}}{{/each}}
-
-          {{#each zones}}{{#if (eq key "torso")}}
-          <div class="ih-exp-fig-part ih-exp-torso {{cssClass}}" title="{{tooltip}}">
-            <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-            <div class="ih-exp-fig-label">Т</div>
-            <div class="ih-exp-fig-hp">{{value}}</div>
-            <div class="ih-fig-dots">
-              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-              {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-              {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-            </div>
-          </div>
-          {{/if}}{{/each}}
-
-          {{#each zones}}{{#if (eq key "rightArm")}}
-          <div class="ih-exp-fig-part ih-exp-arm {{cssClass}}" title="{{tooltip}}">
-            <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-            <div class="ih-exp-fig-label">ПР</div>
-            <div class="ih-exp-fig-hp">{{value}}</div>
-            <div class="ih-fig-dots">
-              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-              {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-              {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-              {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet"></span>{{/if}}
-              {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-            </div>
-          </div>
-          {{/if}}{{/each}}
-        </div>
-
-        {{!-- Живот --}}
-        {{#each zones}}{{#if (eq key "abdomen")}}
-        <div class="ih-exp-fig-part ih-exp-abdomen {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-          <div class="ih-exp-fig-label">Ж</div>
-          <div class="ih-exp-fig-hp">{{value}}</div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-            {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-
-        {{!-- Ноги --}}
-        <div class="ih-exp-fig-row legs">
-          {{#each zones}}{{#if (eq key "leftLeg")}}
-          <div class="ih-exp-fig-part ih-exp-leg {{cssClass}}" title="{{tooltip}}">
-            <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-            <div class="ih-exp-fig-label">ЛН</div>
-            <div class="ih-exp-fig-hp">{{value}}</div>
-            <div class="ih-fig-dots">
-              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-              {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-              {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-            </div>
-          </div>
-          {{/if}}{{/each}}
-          <div class="ih-fig-gap"></div>
-          {{#each zones}}{{#if (eq key "rightLeg")}}
-          <div class="ih-exp-fig-part ih-exp-leg {{cssClass}}" title="{{tooltip}}">
-            <div class="ih-exp-fig-fill" style="height:{{pct}}%"></div>
-            <div class="ih-exp-fig-label">ПН</div>
-            <div class="ih-exp-fig-hp">{{value}}</div>
-            <div class="ih-fig-dots">
-              {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-              {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-              {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-            </div>
-          </div>
-          {{/if}}{{/each}}
-        </div>
-
-      </div>{{!-- .ih-exp-figure --}}
-
-    </div>{{!-- .ih-exp-left --}}
-
-    {{!-- ── ПРАВАЯ КОЛОНКА — действия ── --}}
-    <div class="ih-exp-right">
-
-      {{!-- Статус хода --}}
-      {{#if combatActive}}
-        {{#if isCurrentTurn}}
-        <div class="ih-turn-panel is-active">
-          <div class="ih-turn-panel-title">⚔ Ваш ход</div>
-          <div class="ih-turn-panel-secs">{{secondsLeft}} сек.</div>
-          {{#if canEndTurn}}<a class="ih-btn ih-btn-primary" data-end-turn>Завершить ход</a>{{/if}}
-          {{#if isGM}}<a class="ih-btn ih-btn-small" data-next-turn>→ Далее</a>{{/if}}
-        </div>
-        {{else}}
-        <div class="ih-turn-panel">
-          <div class="ih-turn-panel-title">Ходит</div>
-          <div class="ih-turn-panel-who">{{currentTurnName}}</div>
-          {{#if isGM}}<a class="ih-btn ih-btn-small" data-next-turn>→ Принудительно</a>{{/if}}
-        </div>
-        {{/if}}
-      {{else}}
-      <div class="ih-turn-panel is-peace">
-        <div class="ih-turn-panel-title">✦ Мирное время</div>
-      </div>
-      {{/if}}
-
-      {{!-- Pending action --}}
-      {{#if hasPendingAction}}
-      <div class="ih-action-block pending">
-        <div class="ih-action-title">⏳ Длительное действие</div>
-        <div class="ih-pending-name">{{pendingActionLabel}}</div>
-        <div class="ih-pending-secs-full">Осталось: {{pendingActionRemainingSeconds}} сек.</div>
-        <div class="ih-action-btns">
-          {{#if canContinuePendingAction}}<a class="ih-btn ih-btn-small ih-btn-primary" data-continue-pending>Продолжить</a>{{/if}}
-          {{#if canCancelPendingAction}}<a class="ih-btn ih-btn-small ih-btn-danger" data-cancel-pending>Отменить</a>{{/if}}
-        </div>
-      </div>
-      {{/if}}
-
-      {{!-- Оружие --}}
-      <div class="ih-action-block">
-        <div class="ih-action-title">Оружие</div>
-        <a class="ih-weapon-btn" data-attack-hand="leftHand" title="Атака левой рукой">
-          <span class="ih-weapon-hand">Л</span>
-          <span class="ih-weapon-name">{{leftHandName}}</span>
-        </a>
-        <a class="ih-weapon-btn" data-attack-hand="rightHand" title="Атака правой рукой">
-          <span class="ih-weapon-hand">П</span>
-          <span class="ih-weapon-name">{{rightHandName}}</span>
-        </a>
-      </div>
-
-      {{!-- Быстрые слоты --}}
-      <div class="ih-action-block">
-        <div class="ih-action-title">Быстрые слоты</div>
-        <div class="ih-quick-grid-exp">
-          {{#each quickSlots}}
-          <a class="ih-quick-tile" data-quickslot="{{slotKey}}" title="{{itemName}}">
-            <span class="ih-quick-tile-num">{{short}}</span>
-            <span class="ih-quick-tile-name">{{itemName}}</span>
-          </a>
-          {{/each}}
-        </div>
-      </div>
-
-      {{!-- GM controls --}}
-      {{#if isGM}}
-      <div class="ih-action-block">
-        <div class="ih-action-title">GM</div>
-        <a class="ih-btn ih-btn-small ih-btn-danger" data-end-combat>Завершить бой</a>
-      </div>
-      {{/if}}
-
-    </div>{{!-- .ih-exp-right --}}
-  </div>{{!-- .ih-exp-body --}}
-
-  {{!-- Очередь участников --}}
+{{!-- Очередь участников --}}
   {{#if combatActive}}
   <div class="ih-queue-strip">
     {{#each queue}}
@@ -450,17 +217,12 @@
     </div>
     {{/each}}
   </div>
-  {{/if}}
+  {{/if}}{{!-- combatActive --}}
 
-</div>{{!-- .ih-hud-expanded-layout --}}
-{{/unless}}
-
-{{else}}
+{{else}}{{!-- hasActor --}}
 <div class="ih-hud-empty">
   <div class="ih-hud-empty-icon">⚔</div>
-  <div>Нет выбранного персонажа</div>
-  <div class="ih-hud-empty-hint">Выдели токен или назначь User Character</div>
+  <div class="ih-hud-empty-hint">Нет персонажа</div>
 </div>
-{{/if}}
-
+{{/if}}{{!-- hasActor --}}
 </section>

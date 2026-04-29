@@ -32,10 +32,15 @@ export function relationTypeLabel(type) {
   return labels[type] ?? type ?? "Связь";
 }
 
-export function getRelationsForCharacter(characterName) {
+export function getRelationsForCharacter(characterName, characterId = null) {
   return game.actors
     .filter(a => a.type === "relation")
-    .filter(a => (a.system.info?.characterName || "") === characterName)
+    .filter(a => {
+      // Приоритет: по ID, потом по имени
+      if (characterId && a.system.info?.characterId)
+        return a.system.info.characterId === characterId;
+      return (a.system.info?.characterName || "") === characterName;
+    })
     .sort((a, b) => {
       const at = a.system.info?.targetType || "";
       const bt = b.system.info?.targetType || "";
@@ -73,6 +78,7 @@ export function buildRelationsSummary(actor) {
 }
 
 export function buildWeapon(name, tier, opts = {}) {
+  const skill = opts.skill ?? "sword";
   return {
     name,
     type: "weapon",
@@ -83,11 +89,26 @@ export function buildWeapon(name, tier, opts = {}) {
       quantity: opts.quantity ?? 1,
       damage: opts.damage ?? (2 + tier),
       damageType: opts.damageType ?? "physical",
-      skill: opts.skill ?? "sword",
+      skill,
       twoHanded: opts.twoHanded ?? false,
-      energyCost: opts.energyCost ?? (8 + tier)
+      energyCost: opts.energyCost ?? (8 + tier),
+      range: opts.range ?? defaultRangeBySkill(skill),
+      affixes: {
+        ignoreArmor:        Number(opts.affixes?.ignoreArmor        ?? 0),
+        disarmChance:       Number(opts.affixes?.disarmChance       ?? 0),
+        stunChance:         Number(opts.affixes?.stunChance         ?? 0),
+        bleedingBonus:      Number(opts.affixes?.bleedingBonus      ?? 0),
+        lifeSteal:          Number(opts.affixes?.lifeSteal          ?? 0),
+        executeBelowHp:     Number(opts.affixes?.executeBelowHp     ?? 0),
+        criticalDamageMult: Number(opts.affixes?.criticalDamageMult ?? 1),
+      }
     }
   };
+}
+
+function defaultRangeBySkill(skill) {
+  const m = { knife:1, sword:1, axe:1, mace:1, flail:1, spear:2, bow:8, crossbow:10, throwing:4, exotic:1 };
+  return m[skill] ?? 1;
 }
 
 export function buildArmor(name, tier, slot, physical, magical = 0, weight = 2) {

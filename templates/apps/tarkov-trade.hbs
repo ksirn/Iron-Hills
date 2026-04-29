@@ -1,0 +1,209 @@
+{{!-- Iron Hills — Tarkov Trade --}}
+<div class="tt-app">
+
+  {{!-- Шапки --}}
+  <div class="tt-headers">
+    <div class="tt-col-header">
+      <img src="{{merchantImg}}" width="28" height="28"
+           style="border-radius:50%;object-fit:cover;background:#1a1f2e">
+      <div>
+        <div style="font-weight:700">{{merchantName}}</div>
+        <div class="muted-text" style="font-size:10px">🪙 {{merchantCoins}} · ×{{priceFactor}}</div>
+      </div>
+    </div>
+    <div class="tt-middle-header">⇄</div>
+    <div class="tt-col-header" style="justify-content:flex-end">
+      <div style="text-align:right">
+        <div style="font-weight:700">{{buyerName}}</div>
+        <div class="muted-text" style="font-size:10px">🪙 {{buyerCoins}}</div>
+      </div>
+      <img src="{{buyerImg}}" width="28" height="28"
+           style="border-radius:50%;object-fit:cover;background:#1a1f2e">
+    </div>
+  </div>
+
+  <div class="tt-body">
+
+    {{!-- Грид торговца --}}
+    <div class="tt-col">
+      <div class="tt-search-bar">
+        <input class="tt-search" type="text" placeholder="🔍 Поиск..."
+               value="{{mSearch}}" data-search-m>
+        <div class="tt-filters">
+          {{#each mCats}}
+          <a class="tt-filter-btn {{#if active}}is-active{{/if}}"
+             data-filter-m="{{key}}">{{label}}</a>
+          {{/each}}
+        </div>
+      </div>
+      <div class="tt-grid-wrap">
+        <div class="tt-grid" style="width:{{mGrid.gridW}}px;height:{{mGrid.gridH}}px">
+          {{#each mGrid.cells}}
+          <div class="tt-cell" style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          {{/each}}
+          {{#each mGrid.placed}}
+          <div class="tt-item" draggable="true"
+               data-item-id="{{item.id}}" data-side="merchant"
+               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px">
+            <img src="{{item.img}}" alt="{{item.name}}">
+            <span class="tt-item-name">{{item.name}}</span>
+            {{#if qty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
+            <span class="tt-item-price">{{priceStr}}</span>
+            {{!-- Tooltip --}}
+            <div class="tt-tooltip">
+              <div class="tt-tip-header">
+                <img src="{{item.img}}" width="24" height="24">
+                <div>
+                  <div style="font-weight:700;font-size:11px">{{item.name}}</div>
+                  <div class="muted-text" style="font-size:9px">Тир {{tier}}</div>
+                </div>
+              </div>
+              {{#if tooltipStats}}<div class="tt-tip-stats">{{tooltipStats}}</div>{{/if}}
+              {{#if tooltipDesc}}<div class="tt-tip-desc">{{tooltipDesc}}</div>{{/if}}
+              <div class="tt-tip-price">🪙 {{priceStr}}</div>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    {{!-- Центр: предложения и кнопки --}}
+    <div class="tt-center">
+
+      {{!-- Offer торговца --}}
+      <div class="tt-offer-zone" data-target="merchant">
+        <div class="tt-offer-label">Отдаёт торговец</div>
+        {{#each offer}}
+        <div class="tt-offer-row">
+          <img src="{{img}}" width="20" height="20">
+          <span class="tt-offer-name">{{name}}</span>
+          <div class="tt-qty-ctrl">
+            <a class="tt-qty-btn tt-qty-dec" data-item-id="{{itemId}}" data-side="merchant">−</a>
+            <span>{{qty}}</span>
+            <a class="tt-qty-btn tt-qty-inc" data-item-id="{{itemId}}" data-side="merchant">+</a>
+          </div>
+          <span class="tt-offer-price">{{priceStr}}</span>
+          <a class="tt-remove" data-remove-offer data-item-id="{{itemId}}" data-side="merchant">✕</a>
+        </div>
+        {{else}}
+        <div class="tt-offer-empty muted-text">Перетащи сюда</div>
+        {{/each}}
+        {{!-- Монеты торговца --}}
+        <div class="tt-coins-block">
+          <span class="muted-text" style="font-size:10px">Монеты торговца</span>
+          <div class="tt-coins-row">
+            <span class="tt-coin-icon copper">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{mCopperOffer}}" data-m-coins="copper" placeholder="0">
+            <span class="tt-coin-icon silver">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{mSilverOffer}}" data-m-coins="silver" placeholder="0">
+            <span class="tt-coin-icon gold">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{mGoldOffer}}" data-m-coins="gold" placeholder="0">
+          </div>
+        </div>
+        {{#if offer.length}}
+        <div class="tt-offer-total">Итого: {{offerTotalStr}}</div>
+        {{/if}}
+      </div>
+
+      {{!-- Баланс и кнопки --}}
+      <div class="tt-actions">
+        <div class="tt-balance {{#if balanced}}balanced{{/if}}">
+          {{balanceSign}} {{balanceStr}}
+        </div>
+        <a class="ih-btn ih-btn-primary" data-accept>✓ Принять</a>
+        {{#if isGM}}
+        <a class="ih-btn" data-accept-gm>✓ GM (без денег)</a>
+        {{/if}}
+        <a class="ih-btn" data-reset>✕ Сброс</a>
+      </div>
+
+      {{!-- Offer игрока --}}
+      <div class="tt-offer-zone" data-target="player">
+        <div class="tt-offer-label">Отдаёт игрок</div>
+        {{#each playerOffer}}
+        <div class="tt-offer-row">
+          <img src="{{img}}" width="20" height="20">
+          <span class="tt-offer-name">{{name}}</span>
+          <div class="tt-qty-ctrl">
+            <a class="tt-qty-btn tt-qty-dec" data-item-id="{{itemId}}" data-side="player">−</a>
+            <span>{{qty}}</span>
+            <a class="tt-qty-btn tt-qty-inc" data-item-id="{{itemId}}" data-side="player">+</a>
+          </div>
+          <span class="tt-offer-price">{{priceStr}}</span>
+          <a class="tt-remove" data-remove-offer data-item-id="{{itemId}}" data-side="player">✕</a>
+        </div>
+        {{else}}
+        <div class="tt-offer-empty muted-text">Перетащи сюда</div>
+        {{/each}}
+        {{!-- Монеты игрока --}}
+        <div class="tt-coins-block">
+          <span class="muted-text" style="font-size:10px">Монеты игрока</span>
+          <div class="tt-coins-row">
+            <span class="tt-coin-icon copper">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{pCopperOffer}}" data-p-coins="copper" placeholder="0">
+            <span class="tt-coin-icon silver">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{pSilverOffer}}" data-p-coins="silver" placeholder="0">
+            <span class="tt-coin-icon gold">●</span>
+            <input class="tt-coins-input" type="number" min="0"
+                   value="{{pGoldOffer}}" data-p-coins="gold" placeholder="0">
+          </div>
+        </div>
+        {{#if playerOffer.length}}
+        <div class="tt-offer-total">Итого: {{playerOfferTotalStr}}</div>
+        {{/if}}
+      </div>
+
+    </div>
+
+    {{!-- Грид игрока --}}
+    <div class="tt-col">
+      <div class="tt-search-bar">
+        <input class="tt-search" type="text" placeholder="🔍 Поиск..."
+               value="{{pSearch}}" data-search-p>
+        <div class="tt-filters">
+          {{#each pCats}}
+          <a class="tt-filter-btn {{#if active}}is-active{{/if}}"
+             data-filter-p="{{key}}">{{label}}</a>
+          {{/each}}
+        </div>
+      </div>
+      <div class="tt-grid-wrap">
+        <div class="tt-grid" style="width:{{pGrid.gridW}}px;height:{{pGrid.gridH}}px">
+          {{#each pGrid.cells}}
+          <div class="tt-cell" style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          {{/each}}
+          {{#each pGrid.placed}}
+          <div class="tt-item" draggable="true"
+               data-item-id="{{item.id}}" data-side="player"
+               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px">
+            <img src="{{item.img}}" alt="{{item.name}}">
+            <span class="tt-item-name">{{item.name}}</span>
+            {{#if qty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
+            <span class="tt-item-price">{{priceStr}}</span>
+            {{!-- Tooltip --}}
+            <div class="tt-tooltip">
+              <div class="tt-tip-header">
+                <img src="{{item.img}}" width="24" height="24">
+                <div>
+                  <div style="font-weight:700;font-size:11px">{{item.name}}</div>
+                  <div class="muted-text" style="font-size:9px">Тир {{tier}}</div>
+                </div>
+              </div>
+              {{#if tooltipStats}}<div class="tt-tip-stats">{{tooltipStats}}</div>{{/if}}
+              {{#if tooltipDesc}}<div class="tt-tip-desc">{{tooltipDesc}}</div>{{/if}}
+              <div class="tt-tip-price">🪙 {{priceStr}}</div>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

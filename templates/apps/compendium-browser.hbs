@@ -1,0 +1,87 @@
+{{!-- Iron Hills — Compendium Browser --}}
+<div class="ih-cb-app {{#if isGM}}is-gm{{/if}}">
+
+  {{!-- Левая панель --}}
+  <div class="ih-cb-sidebar">
+    {{#each packs}}
+    <a class="ih-cb-pack-btn {{#if (eq packName ../activePack)}}is-active{{/if}}"
+       data-pack="{{packName}}" style="--pack-color:{{color}}">
+      <span class="ih-cb-pack-icon">{{icon}}</span>
+      <span class="ih-cb-pack-label">{{label}}</span>
+    </a>
+    {{/each}}
+
+    {{#if isGM}}
+    <div class="ih-cb-sidebar-sep"></div>
+    <a class="ih-cb-new-item" data-new-item title="Создать новый предмет">✚ Создать</a>
+    <a class="ih-cb-rebuild" data-rebuild-packs title="Перезаполнить из каталога (сотрёт правки!)">🔄 Обновить</a>
+    {{/if}}
+  </div>
+
+  {{!-- Основная панель --}}
+  <div class="ih-cb-main">
+
+    {{!-- Шапка --}}
+    <div class="ih-cb-header">
+      <span class="ih-cb-title" style="color:{{activeCfg.color}}">
+        {{activeCfg.icon}} {{activeCfg.label}}
+      </span>
+      <input class="ih-cb-search" type="text" data-cb-search
+             placeholder="Поиск..." value="{{search}}">
+
+      <div class="ih-cb-tier-filters">
+        <a class="ih-cb-tier {{#unless filterTier}}is-active{{/unless}}"
+           data-tier-filter="0">Все</a>
+        {{#each allTiers}}
+        <a class="ih-cb-tier {{#if (eq this ../filterTier)}}is-active{{/if}}"
+           data-tier-filter="{{this}}">{{this}}</a>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- Список --}}
+    <div class="ih-cb-list">
+      {{#if loading}}
+      <div class="ih-cb-empty">⏳ Загрузка...</div>
+      {{else if isEmpty}}
+      <div class="ih-cb-empty">
+        Ничего не найдено
+        {{#if isGM}}<br><a data-new-item style="cursor:pointer;color:var(--ih-accent)">✚ Создать первый предмет</a>{{/if}}
+      </div>
+      {{else}}
+      {{#each tiers}}
+      <div class="ih-cb-tier-group">
+        <div class="ih-cb-tier-header">
+          <span class="ih-cb-tier-stars">{{tierStars}}</span>
+          <span>{{label}}</span>
+          <span class="muted-text">({{items.length}})</span>
+        </div>
+        <div class="ih-cb-items">
+          {{#each items}}
+          <div class="ih-cb-item" data-item-uuid="{{uuid}}">
+            <img class="ih-cb-item-img" src="{{img}}" alt="{{name}}">
+            <div class="ih-cb-item-info">
+              <div class="ih-cb-item-name">{{name}}</div>
+              <div class="ih-cb-item-details">
+                {{#each details}}
+                <span class="ih-cb-detail">{{this}}</span>
+                {{/each}}
+              </div>
+            </div>
+            <div class="ih-cb-item-tier">{{tier}}</div>
+            <div class="ih-cb-item-actions">
+              <a class="ih-icon-btn tiny" data-edit-item="{{uuid}}" title="Редактировать">✏</a>
+              <a class="ih-icon-btn tiny" data-dupe-item="{{uuid}}" title="Дублировать">⎘</a>
+              <a class="ih-icon-btn tiny" data-del-item="{{uuid}}" title="Удалить"
+                 style="color:var(--ih-hp-crit)">✕</a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+      {{/if}}
+    </div>
+
+  </div>
+</div>

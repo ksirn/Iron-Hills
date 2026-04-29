@@ -6,12 +6,40 @@
 import { IronHillsActorSheet }   from "./apps/actor-sheet.mjs";
 import { IronHillsItemSheet }    from "./apps/item-sheet.mjs";
 import { IronHillsTradeApp }     from "./apps/trade-app.mjs";
-import { IronHillsGridInventoryApp } from "./apps/grid-inventory-app.mjs";
+import { IronHillsGridInventoryApp, buildContainers as _buildContainers } from "./apps/grid-inventory-app.mjs";
 import { IronHillsTravelApp } from "./apps/travel-app.mjs";
 import { IronHillsPartyManagerApp, registerPartySettings } from "./services/party-manager.mjs";
 import { IronHillsCraftApp } from "./apps/craft-app.mjs";
 import { IronHillsAlchemyApp } from "./apps/alchemy-app.mjs";
 import { IronHillsWorldMapApp } from "./apps/world-map-app.mjs";
+import { EntityPickerDialog } from "./apps/entity-picker.mjs";
+import { IronHillsQuestBoardApp } from "./apps/quest-board-app.mjs";
+import { IronHillsGodSheet } from "./apps/god-sheet.mjs";
+import { IronHillsNpcSheet } from "./apps/npc-sheet.mjs";
+import { IronHillsWeatherApp } from "./apps/weather-app.mjs";
+import { IronHillsCombatBarApp } from "./apps/combat-bar-app.mjs";
+import { PendingItemsApp } from "./apps/pending-items-app.mjs";
+import { TarkovTradeApp } from "./apps/tarkov-trade-app.mjs";
+import { placeAoeTemplate, applyAoeDamage, AOE_TYPES } from "./services/aoe-service.mjs";
+import { actorsAreAllies, getActorDisposition, DISPOSITION } from "./services/disposition-service.mjs";
+import { SPELLS, SPELL_SCHOOLS, SPELLS_BY_SCHOOL } from "./constants/spells-catalog.mjs";
+import {
+  getWeatherSkillMod, getWeatherMovementMult, getEffectiveVision,
+  getCurrentWeather, getTimePeriod, getCurrentHour,
+  applyLightingToScene, setWeather, rollWeather,
+} from "./services/weather-service.mjs";
+import { formatCurrency } from "./utils/currency.mjs";
+import { IronHillsCombatTechniqueApp } from "./apps/combat-technique-app.mjs";
+import { TECHNIQUES, getAvailableTechniques } from "./constants/combat-techniques.mjs";
+import { IronHillsContainerSheet } from "./apps/container-sheet.mjs";
+import { IronHillsLootTransfer } from "./apps/loot-transfer-app.mjs";
+import { RACES } from "./constants/races.mjs";
+import { buildCompendiums, initCompendiums } from "./compendium-builder.mjs";
+import { IronHillsCompendiumBrowser } from "./apps/compendium-browser.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS } from "./constants/items-catalog.mjs";
+import { IRON_HILLS_POI } from "./constants/world-map.mjs";
+import { IronHillsLauncherApp } from "./apps/launcher-app.mjs";
+import { initToolbar } from "./apps/toolbar-app.mjs";
 import { IronHillsWorldJournalApp } from "./apps/world-journal-app.mjs";
 import { DISEASES } from "./constants/diseases.mjs";
 import { IronHillsCombatHudApp } from "./apps/combat-hud-app.mjs";
@@ -30,7 +58,8 @@ import {
 } from "./services/inventory-service.mjs";
 import {
   queueActorSheetRender,
-  refreshAllTradeUIs
+  refreshAllTradeUIs,
+  rerenderOpenIronHillsActorSheets
 } from "./services/ui-refresh-service.mjs";
 import { registerDebugSetting, debugLog } from "./utils/debug-utils.mjs";
 import {
@@ -39,40 +68,88 @@ import {
   ensureCombatActorBodyStatus,
   continuePendingAction,
   cancelPendingAction,
-  nextTurn,
-  endCombat,
-  isCombatActive
 } from "./services/combat-flow-service.mjs";
+import {
+  registerMigrationSettings,
+  runWorldMigrations,
+  runOneMigration,
+  listMigrations
+} from "./migrations.mjs";
+import {
+  registerCombatMovementHooks,
+  setMoveMode as setCombatMoveMode,
+  getMoveMode as getCombatMoveMode
+} from "./services/combat-movement-service.mjs";
 
 
-// Handlebars хелперы для шаблонов
-Hooks.once("init", () => {
-  registerPartySettings();
-
-  // Карта мира — пользовательские регионы
-  game.settings.register("iron-hills-system", "worldRegions", {
-    name:    "Регионы карты мира",
-    scope:   "world",
-    config:  false,
-    type:    Object,
-    default: {}
-  });
-  globalThis._IH_DISEASES = DISEASES; // кэш для синхронного доступа
-  Handlebars.registerHelper("neg", v => -Number(v));
-  Handlebars.registerHelper("lt",  (a, b) => Number(a) < Number(b));
-  Handlebars.registerHelper("gt",  (a, b) => Number(a) > Number(b));
-  Handlebars.registerHelper("eq",  (a, b) => String(a) === String(b));
-  Handlebars.registerHelper("add", (a, b) => Number(a) + Number(b));
-});
-
+// Единый init: регистрация настроек, шитов, Handlebars-хелперов.
 Hooks.once("init", () => {
   console.log("Iron Hills System | init");
   registerDebugSetting();
+  registerPartySettings();
+  registerMigrationSettings();
+  registerCombatMovementHooks();
   debugLog("System init started");
-  Handlebars.registerHelper("eq", (a, b) => a === b);
 
+  // ── Settings ────────────────────────────────────────────
+  game.settings.register("iron-hills-system", "settlementEconomy", {
+    name: "Экономика поселений",
+    scope: "world", config: false, type: Object, default: {},
+  });
+  game.settings.register("iron-hills-system", "ironHillsCombatState", {
+    name: "Состояние боя Iron Hills",
+    scope: "world", config: false, type: Object, default: {},
+  });
+  game.settings.register("iron-hills-system", "currentWeather", {
+    name: "Текущая погода",
+    hint: "Активный погодный пресет",
+    scope: "world", config: false, type: String, default: "clear",
+  });
+  game.settings.register("iron-hills-system", "worldRegions", {
+    name: "Регионы карты мира",
+    scope: "world", config: false, type: Object, default: {},
+  });
+
+  // Глобальный кэш — нужно для синхронного доступа из шаблонов.
+  globalThis._IH_DISEASES = DISEASES;
+
+  // ── Handlebars helpers ──────────────────────────────────
+  Handlebars.registerHelper("neg", v => -Number(v));
+  Handlebars.registerHelper("lt",  (a, b) => Number(a) < Number(b));
+  Handlebars.registerHelper("gt",  (a, b) => Number(a) > Number(b));
+  Handlebars.registerHelper("gte", (a, b) => Number(a) >= Number(b));
+  Handlebars.registerHelper("lte", (a, b) => Number(a) <= Number(b));
+  Handlebars.registerHelper("eq",  (a, b) => String(a) === String(b));
+  Handlebars.registerHelper("add", (a, b) => Number(a) + Number(b));
+
+  // ── Preload chat templates (хорошая практика для горячих путей) ─
+  loadTemplates([
+    "systems/iron-hills-system/templates/chat/attack.hbs",
+    "systems/iron-hills-system/templates/chat/aoe.hbs",
+    "systems/iron-hills-system/templates/chat/item-broken.hbs",
+  ]);
+
+  // ── Sheets ──────────────────────────────────────────────
   Actors.unregisterSheet("core", ActorSheet);
   Actors.registerSheet("iron-hills-system", IronHillsActorSheet, { makeDefault: true });
+
+  Actors.registerSheet("iron-hills-system", IronHillsGodSheet, {
+    types: ["god"],
+    makeDefault: true,
+    label: "Iron Hills — Бог"
+  });
+
+  Actors.registerSheet("iron-hills-system", IronHillsNpcSheet, {
+    types: ["npc", "monster"],
+    makeDefault: true,
+    label: "Iron Hills — NPC"
+  });
+
+  Actors.registerSheet("iron-hills-system", IronHillsContainerSheet, {
+    types: ["container"],
+    makeDefault: true,
+    label: "Iron Hills — Контейнер"
+  });
 
   Items.unregisterSheet("core", ItemSheet);
   Items.registerSheet("iron-hills-system", IronHillsItemSheet, { makeDefault: true });
@@ -153,167 +230,18 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", async () => {
   game.ironHills = game.ironHills || {};
-  async function migrateUnifiedTargetingForItem(item) {
-    if (!item) return;
 
-    const supportedTypes = new Set(["consumable", "potion", "spell", "scroll"]);
-    if (!supportedTypes.has(item.type)) return;
-
-    const system = item.system ?? {};
-    const updates = {};
-
-    if (system.actionType === undefined) {
-      updates["system.actionType"] = "";
-    }
-
-    if (system.applicationScope === undefined || system.applicationScope === null || system.applicationScope === "") {
-      updates["system.applicationScope"] = item.type === "potion" ? "global" : "targeted";
-    }
-
-    if (system.targetPart === undefined || system.targetPart === null) {
-      updates["system.targetPart"] = "";
-    }
-
-    const currentActionType = String(system.actionType ?? "").trim();
-    const legacyMedicalAction = String(system.medicalAction ?? "").trim();
-    const legacyEffectType = String(system.effectType ?? "").trim();
-
-    if (!currentActionType) {
-      if (legacyMedicalAction) {
-        updates["system.actionType"] = legacyMedicalAction;
-      } else if (legacyEffectType) {
-        if (legacyEffectType === "reduceBleeding") updates["system.actionType"] = "bandage";
-        else if (legacyEffectType === "restoreEnergy") updates["system.actionType"] = "restore-energy";
-        else if (legacyEffectType === "restoreMana") updates["system.actionType"] = "restore-mana";
-        else if (legacyEffectType === "healHP") updates["system.actionType"] = "heal-body";
-        else if (legacyEffectType === "heal") {
-          updates["system.actionType"] = system.targetPart ? "heal-part" : "heal-body";
-        }
-      }
-    }
-
-    if (system.medicalAction !== undefined) {
-      updates["system.-=medicalAction"] = null;
-    }
-
-    if (system.effectType !== undefined) {
-      updates["system.-=effectType"] = null;
-    }
-
-    if (system.effectType2 !== undefined) {
-      updates["system.-=effectType2"] = null;
-    }
-
-    if (Object.keys(updates).length) {
-      await item.update(updates);
-    }
-  }
-
-  async function migrateUnifiedTargetingForAllItems() {
-    for (const item of game.items ?? []) {
-      try {
-        await migrateUnifiedTargetingForItem(item);
-      } catch (err) {
-        console.error("Iron Hills | item migration error", item?.name, err);
-      }
-    }
-
-    for (const actor of game.actors ?? []) {
-      for (const item of actor.items ?? []) {
-        try {
-          await migrateUnifiedTargetingForItem(item);
-        } catch (err) {
-          console.error("Iron Hills | embedded item migration error", actor?.name, item?.name, err);
-        }
-      }
-    }
-  }
   game.ironHills.endTurnForActor = endTurnForActor;
   game.ironHills.isActorActiveTurn = isActorActiveTurn;
-  game.ironHills.migrateUnifiedTargetingForAllItems = migrateUnifiedTargetingForAllItems;
-  // openWorldTools регистрируется в world-sim-tools.mjs через его собственный ready hook.
-  // Дублирующая регистрация здесь удалена.
 
-  // Миграция: добавить abdomen тем акторам у которых его нет
-  async function migrateAbdomenForAllActors() {
-    for (const actor of game.actors ?? []) {
-      try {
-        const hp = actor.system?.resources?.hp;
-        if (!hp || hp.abdomen !== undefined) continue;
-
-        await actor.update({
-          "system.resources.hp.abdomen": { value: 25, max: 25 }
-        });
-        console.log(`Iron Hills | Added abdomen HP to: ${actor.name}`);
-      } catch (err) {
-        console.error("Iron Hills | abdomen migration error", actor?.name, err);
-      }
-    }
-  }
-  void migrateAbdomenForAllActors();
-
-  // Миграция: добавить soulReserve акторам у которых его нет
-  async function migrateSoulReserveForAllActors() {
-    for (const actor of game.actors ?? []) {
-      try {
-        if (actor.type !== "character") continue;
-        const sr = actor.system?.resources?.soulReserve;
-        if (sr !== undefined) continue;
-
-        await actor.update({
-          "system.resources.soulReserve": { mana: 0, energy: 0, daysSinceDeath: 0 }
-        });
-        console.log(`Iron Hills | Added soulReserve to: ${actor.name}`);
-      } catch (err) {
-        console.error("Iron Hills | soulReserve migration error", actor?.name, err);
-      }
-    }
-  }
-  void migrateSoulReserveForAllActors();
-
-  // Миграция: обновить NPC на новую структуру (части тела + новый combat)
-  async function migrateNpcStructure() {
-    for (const actor of game.actors ?? []) {
-      try {
-        if (actor.type !== "npc") continue;
-        const updates = {};
-
-        // Если hp — одна полоска (старая monster-система) → конвертируем в части тела
-        const hp = actor.system?.resources?.hp;
-        if (hp && hp.value !== undefined && hp.torso === undefined) {
-          const baseHp = Number(hp.value ?? 30);
-          updates["system.resources.hp"] = {
-            head:     { value: Math.ceil(baseHp * 0.25), max: Math.ceil(baseHp * 0.25) },
-            torso:    { value: Math.ceil(baseHp * 0.50), max: Math.ceil(baseHp * 0.50) },
-            abdomen:  { value: Math.ceil(baseHp * 0.40), max: Math.ceil(baseHp * 0.40) },
-            leftArm:  { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
-            rightArm: { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
-            leftLeg:  { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) },
-            rightLeg: { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) }
-          };
-        }
-
-        // Добавить базовый порог если нет
-        if (actor.system?.combat?.baseThreshold === undefined) {
-          updates["system.combat.baseThreshold"] = 4;
-        }
-
-        // Добавить abdomen если нет
-        if (actor.system?.resources?.hp?.torso !== undefined &&
-            actor.system?.resources?.hp?.abdomen === undefined) {
-          updates["system.resources.hp.abdomen"] = { value: 25, max: 25 };
-        }
-
-        if (Object.keys(updates).length) {
-          await actor.update(updates);
-          console.log(`Iron Hills | NPC migrated: ${actor.name}`);
-        }
-      } catch (err) {
-        console.error("Iron Hills | NPC migration error", actor?.name, err);
-      }
-    }
-  }
-  void migrateNpcStructure();
+  // Все одноразовые миграции данных живут в module/migrations.mjs.
+  // Идёмпотентны и трекаются через game.settings("schemaState").
+  game.ironHills.migrations = {
+    run:     runWorldMigrations,
+    runOne:  runOneMigration,
+    list:    listMigrations,
+  };
+  void runWorldMigrations();
 
   // GM-команда: прошёл день после смерти — тикаем резерв
   game.ironHills.tickSoulDecay = async () => {
@@ -324,27 +252,34 @@ Hooks.once("ready", async () => {
         if (actor.type !== "character") continue;
         const sr = actor.system?.resources?.soulReserve;
         if (!sr) continue;
-        if (sr.daysSinceDeath <= 0) continue; // живой или воскрешён
+        if (!sr.isDead) continue; // живой
+
+        const res = actor.system?.resources ?? {};
+
+        // Резерв = текущие значения soul.energyReserve/manaReserve
+        const curEnRes = Number(res.soul?.energyReserve?.value ?? res.energy?.max ?? 10);
+        const curMnRes = Number(res.soul?.manaReserve?.value  ?? res.mana?.max   ?? 10);
+
+        const newEnRes = Math.max(0, curEnRes - 1);
+        const newMnRes = Math.max(0, curMnRes - 1);
 
         const updates = {
-          "system.resources.soulReserve.daysSinceDeath": sr.daysSinceDeath + 1,
-          "system.resources.mana.max": Math.max(0, Number(actor.system?.resources?.mana?.max ?? 10) - 1),
-          "system.resources.energy.max": Math.max(0, Number(actor.system?.resources?.energy?.max ?? 10) - 1)
+          "system.resources.soulReserve.daysSinceDeath": (sr.daysSinceDeath ?? 0) + 1,
+          "system.resources.soul.energyReserve.value":   newEnRes,
+          "system.resources.soul.manaReserve.value":     newMnRes,
         };
-
-        const newManaMax = updates["system.resources.mana.max"];
-        const newEnergyMax = updates["system.resources.energy.max"];
 
         await actor.update(updates);
         ticked++;
 
-        if (newManaMax <= 0 || newEnergyMax <= 0) {
+        if (newEnRes <= 0 || newMnRes <= 0) {
           await ChatMessage.create({
-            content: `<b style="color:#ef4444">☠ ${actor.name}</b> — резерв иссяк. Пробуждённый потерян навсегда. Требуется создать нового персонажа.`
+            content: `<b style="color:#ef4444">☠ ${actor.name}</b> — резерв души иссяк. Пробуждённый потерян навсегда.`
           });
         } else {
+          const daysLeft = Math.min(newEnRes, newMnRes);
           await ChatMessage.create({
-            content: `⏳ <b>${actor.name}</b> — душа угасает. Мана: ${newManaMax}, Энергия: ${newEnergyMax}. Осталось дней: ~${Math.min(newManaMax, newEnergyMax)}`
+            content: `⏳ <b>${actor.name}</b> — душа угасает. Резерв: ⚡${newEnRes} ✦${newMnRes}. Осталось дней: ~${daysLeft}`
           });
         }
       } catch (err) {
@@ -417,19 +352,46 @@ Hooks.once("ready", async () => {
   };
   
   function ensureDefaultPlayerHud() {
-    if (game.user?.isGM) return;
-    if (!game.user?.character) return;
-
+    // HUD всегда открыт для всех
     window.setTimeout(() => {
       try {
         const existing = game.ironHills?.apps?.combatHud;
         if (existing?.rendered) return;
         game.ironHills.openCombatHud({ compactMode: true });
       } catch (err) {
-        console.warn("Iron Hills | failed to auto-open player HUD", err);
+        console.warn("Iron Hills | failed to auto-open HUD", err);
       }
     }, 300);
+
+    // Восстанавливаем PendingItemsApp если у игрока есть нераспределённые предметы
+    window.setTimeout(async () => {
+      try {
+        const character = game.user?.character;
+        if (!character) return;
+        const { PendingItemsApp } = await import("./apps/pending-items-app.mjs");
+        await PendingItemsApp.openIfNeeded(character);
+      } catch (err) {
+        console.warn("Iron Hills | failed to restore PendingItemsApp", err);
+      }
+    }, 800);
   }
+
+  // Логика движения в бою (стоимость секунд/энергии, откат при нехватке)
+  // живёт в module/services/combat-movement-service.mjs.
+  // Хуки preUpdateToken/updateToken регистрируются в Hooks.once("init").
+
+  // ── Динамическое освещение при смене времени ───────────────
+  Hooks.on("updateWorldTime", async (worldTime, delta) => {
+    // Обновляем освещение при каждом изменении времени —
+    // getSmoothLighting() сам плавно интерполирует между периодами.
+    // Throttle: не чаще раза в 500мс чтобы не спамить scene.update
+    if (game.ironHills._lightingThrottle) return;
+    game.ironHills._lightingThrottle = true;
+    setTimeout(() => { game.ironHills._lightingThrottle = false; }, 500);
+
+    await applyLightingToScene(canvas?.scene);
+    game.ironHills.apps?.weather?.render?.(false);
+  });
 
   Hooks.on("controlToken", (_token, controlled) => {
     try {
@@ -482,11 +444,148 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
     queueActorSheetRender(actor);
     refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
   }
+
+  // Обновляем HUD если актор является текущим участником боя
+  const hud = game.ironHills?.apps?.combatHud;
+  if (hud?.rendered) {
+    const hudActor = hud._getHudActor?.() ?? null;
+    if (!hudActor || hudActor.id === actor.id || actor.type !== "character") {
+      hud._refreshHud?.({ keepOnTop: true });
+    }
+  }
 });
 
   ensureDefaultPlayerHud();
-  
-void migrateUnifiedTargetingForAllItems();
+  game.ironHills.pickEntity       = (options) => EntityPickerDialog.pick(options);
+  game.ironHills.RACES            = RACES;
+  game.ironHills.ITEMS            = { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS };
+  game.ironHills.MAP_POI          = IRON_HILLS_POI;
+  game.ironHills.buildCompendiums = buildCompendiums;
+  game.ironHills.openLootTransfer = (left, right) => IronHillsLootTransfer.open(left, right);
+  game.ironHills.dropToGround = (items, actor) => IronHillsLootTransfer.dropToGround(items, actor);
+  game.ironHills.TECHNIQUES           = TECHNIQUES;
+  game.ironHills.getAvailableTech     = getAvailableTechniques;
+  game.ironHills.openCombatTechnique  = IronHillsCombatTechniqueApp.choose.bind(IronHillsCombatTechniqueApp);
+  game.ironHills.openTrade = async () => {
+    // Ищем торговца: сначала в таргетах, потом в выделенных токенах
+    const merchantToken = [...(game.user.targets ?? [])]
+      .find(t => t.actor?.type === "merchant")
+      ?? canvas?.tokens?.controlled?.find(t => t.actor?.type === "merchant");
+    const merchant = merchantToken?.actor ?? null;
+
+    if (!merchant) {
+      ui.notifications.info("Возьми торговца в таргет (T) или выдели его токен");
+      return;
+    }
+
+    // Проверка расстояния для игроков
+    if (!game.user?.isGM) {
+      const char = game.user?.character;
+      const charToken = canvas?.tokens?.placeables?.find(t => t.actor?.id === char?.id);
+      if (charToken && merchantToken) {
+        const gs = canvas.grid?.size ?? 100;
+        const dx = charToken.x - merchantToken.x;
+        const dy = charToken.y - merchantToken.y;
+        if (Math.sqrt(dx*dx + dy*dy) > gs * 1.5) {
+          ui.notifications.warn("Слишком далеко от торговца"); return;
+        }
+      }
+    }
+
+    // Открываем Tarkov-стиль торговли
+    const char = game.user?.character
+              ?? canvas?.tokens?.controlled?.find(t => t.actor?.type === "character")?.actor;
+    TarkovTradeApp.open(merchant, char);
+  };
+
+  game.ironHills.openSearch = async () => {
+    // Персонаж — назначенный игроку, без необходимости выделять токен
+    const char = game.user?.character
+              ?? canvas?.tokens?.controlled?.find(t => t.actor?.type === "character")?.actor;
+    if (!char) { ui.notifications.warn("Нет персонажа — назначь его в настройках игрока"); return; }
+
+    // Контейнер — из таргетов (T) или выбранных токенов
+    const targetToken = [...(game.user.targets ?? [])]
+      .find(t => t.actor && t.actor.id !== char.id &&
+            ["container","npc","monster","character"].includes(t.actor.type));
+
+    const controlledToken = canvas?.tokens?.controlled
+      ?.find(t => t.actor?.id !== char.id &&
+            ["container","npc","monster"].includes(t.actor?.type));
+
+    const contToken = targetToken ?? controlledToken ?? null;
+    const container = contToken?.actor ?? null;
+
+    if (!container) {
+      ui.notifications.info("Возьми цель в таргет (T) чтобы обыскать");
+      return;
+    }
+
+    // Проверяем расстояние — не дальше 1 квадрата (grid size)
+    const charToken = canvas?.tokens?.placeables?.find(t => t.actor?.id === char.id);
+    if (charToken && contToken) {
+      const gridSize  = canvas.grid?.size ?? 100;
+      const maxDist   = gridSize * 1.5; // допуск 1.5 клетки с диагональю
+      const dx = charToken.x - contToken.x;
+      const dy = charToken.y - contToken.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > maxDist) {
+        ui.notifications.warn(`Слишком далеко для обыска (${Math.round(dist/gridSize*10)/10} кл.)`);
+        return;
+      }
+    }
+
+
+
+    IronHillsLootTransfer.open(char, container);
+  };
+  game.ironHills.dropItemOnGround = async (item, x, y) => {
+    if (!game.user?.isGM && !game.settings?.get?.("core","leftClickRelease")) {
+      const pos = canvas?.tokens?.controlled?.[0]?.center ?? { x: 500, y: 500 };
+      x = x ?? pos.x; y = y ?? pos.y;
+    }
+    // Создаём актора-контейнер типа "куча"
+    const pile = await Actor.create({
+      name:  `${item.name} (куча)`,
+      type:  "container",
+      img:   item.img,
+      system:{ info:{ theme:"pile", tier: item.system?.tier ?? 1, lockDifficulty:0 }},
+    });
+    // Переносим предмет
+    const itemData = item.toObject();
+    delete itemData._id;
+    await Item.create(itemData, { parent: pile });
+    // Размещаем токен на сцене
+    if (canvas?.scene) {
+      await canvas.scene.createEmbeddedDocuments("Token", [{
+        actorId: pile.id, x: x ?? 500, y: y ?? 500,
+        name: pile.name, img: pile.img,
+        width: 1, height: 1, disposition: 0,
+      }]);
+    }
+    await item.delete();
+    ui.notifications.info(`${item.name} выброшен`);
+  };
+game.ironHills.openCompendiumBrowser = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsCompendiumBrowser);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsCompendiumBrowser().render(true);
+};
+
+game.ironHills.openLauncher = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsLauncherApp);
+  if (existing?.rendered) { existing.close(); return; }
+  return new IronHillsLauncherApp().render(true);
+};
+
+// Toolbar — инициализируем после ready
+
+game.ironHills.openQuestBoard = () => {
+  const existing = Object.values(ui.windows).find(w => w instanceof IronHillsQuestBoardApp);
+  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
+  return new IronHillsQuestBoardApp().render(true);
+};
+
 game.ironHills.openWorldJournal = () => {
   const existing = Object.values(ui.windows).find(w => w instanceof IronHillsWorldJournalApp);
   if (existing?.rendered) { existing.bringToTop?.(); return existing; }
@@ -563,22 +662,12 @@ game.ironHills.openCombatManager = () => {
   app.render(true);
   return app;
 };
-});
 
-
-
-  function rerenderOpenIronHillsActorSheets() {
-    for (const app of Object.values(ui.windows ?? {})) {
-      if (!app?.rendered) continue;
-      if (app.constructor?.name !== "IronHillsActorSheet") continue;
-      try { app.render(false); } catch (err) {
-        console.warn("Iron Hills | actor sheet rerender failed", err);
-      }
-    }
-  }
 
   Hooks.on("ironHillsCombatUpdated", () => {
     rerenderOpenIronHillsActorSheets();
+    // Обновляем HUD при изменении секунд хода
+    game.ironHills?.apps?.combatHud?._refreshHud?.({ keepOnTop: true });
   });
 
   Hooks.on("ironHillsCombatStateUpdated", () => {
@@ -794,6 +883,55 @@ Hooks.on("deleteItem", async (item, options = {}) => {
 // Второй дублированный хук удалён (содержал subset той же логики без syncDerivedConditions).
 
 // ============================================================
+
+
+// ── Сохранение фокуса и позиции курсора при re-render ───────
+// Foundry перерисовывает весь HTML при render(false), теряя фокус.
+// Патчим _render чтобы восстанавливать позицию курсора.
+// Идемпотентно: каждый app оборачивается ровно один раз.
+function preserveInputFocus(app) {
+  if (!app || app._ironHillsFocusPatched) return;
+  const origRender = app._render.bind(app);
+  app._render = async function(force, options) {
+    const active   = document.activeElement;
+    const isInput  = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA");
+    const savedName  = isInput ? (active.name || active.dataset.currency || active.className) : null;
+    const savedStart = isInput ? active.selectionStart : null;
+    const savedEnd   = isInput ? active.selectionEnd   : null;
+
+    await origRender(force, options);
+
+    if (savedName && savedStart !== null) {
+      const el = app.element?.[0];
+      if (!el) return;
+      const restored = el.querySelector(`[name="${savedName}"]`)
+        ?? el.querySelector(`[data-currency="${savedName}"]`)
+        ?? (savedName ? el.querySelector(`.${savedName.split(" ")[0]}`) : null);
+      if (restored && (restored.tagName === "INPUT" || restored.tagName === "TEXTAREA")) {
+        restored.focus();
+        try { restored.setSelectionRange(savedStart, savedEnd); } catch {}
+      }
+    }
+  };
+  app._ironHillsFocusPatched = true;
+}
+
+Hooks.on("renderApplication", (app) => {
+  // Применяем только к нашим окнам
+  const ourClasses = ["trade-app","travel-app","craft-app","alchemy-app",
+                      "grid-inventory","party-manager","world-map","world-journal",
+                      "entity-picker","quest-board","world-tools"];
+  if (ourClasses.some(c => app.options?.classes?.includes(c))) {
+    preserveInputFocus(app);
+  }
+});
+
+}); // close Hooks.once("ready") L216
+
+// Тулбар — вызываем на верхнем уровне чтобы его Hooks.once("ready") сработал
+initToolbar();
+
+// ====
 // HOTKEYS — автоматическое создание макросов на макробаре
 // Вызывается один раз после загрузки мира (только для GM)
 // ============================================================
@@ -801,152 +939,434 @@ Hooks.on("deleteItem", async (item, options = {}) => {
 async function ensureIronHillsMacros() {
   if (!game.user?.isGM) return;
 
-  const MACROS = [
-    {
-      slot: 1,
-      name: "⚔ Combat HUD",
-      command: "game.ironHills?.toggleCombatHud?.()",
-      img: "icons/svg/sword.svg",
-      tooltip: "Открыть/закрыть Combat HUD"
-    },
-    {
-      slot: 2,
-      name: "⚔ Combat Manager",
-      command: "game.ironHills?.openCombatManager?.()",
-      img: "icons/svg/combat.svg",
-      tooltip: "Открыть менеджер боя"
-    },
-    {
-      slot: 3,
-      name: "🛒 Торговля",
-      command: `
-const token = canvas.tokens?.controlled?.[0];
-const actor = token?.actor ?? game.user?.character;
-if (!actor) { ui.notifications.warn("Выбери токен торговца"); return; }
-if (actor.type !== "merchant") { ui.notifications.warn("Выбери токен торговца"); return; }
-const { IronHillsTradeApp } = await import("/systems/iron-hills-system/module/apps/trade-app.mjs");
-new IronHillsTradeApp(actor).render(true);
-      `.trim(),
-      img: "icons/svg/coins.svg",
-      tooltip: "Открыть окно торговли с выбранным торговцем"
-    },
-    {
-      slot: 4,
-      name: "🗓 Soul Decay",
-      command: "game.ironHills?.tickSoulDecay?.()",
-      img: "icons/svg/skull.svg",
-      tooltip: "Тик угасания души (GM: используй раз в игровой день)"
-    },
-    {
-      slot: 5,
-      name: "🎒 Инвентарь",
-      command: "game.ironHills?.openGridInventory?.()",
-      img: "icons/svg/item-bag.svg",
-      tooltip: "Открыть сетку инвентаря персонажа"
-    },
-    {
-      slot: 6,
-      name: "⏳ Время",
-      command: "game.ironHills?.openTravelManager?.()",
-      img: "icons/svg/clockwork.svg",
-      tooltip: "Менеджер времени и путешествий (GM)"
-    },
-    {
-      slot: 7,
-      name: "👥 Группы",
-      command: "game.ironHills?.openPartyManager?.()",
-      img: "icons/svg/village.svg",
-      tooltip: "Управление группами персонажей (GM)"
-    },
-    {
-      slot: 8,
-      name: "🔨 Крафт",
-      command: "game.ironHills?.openCraftWindow?.()",
-      img: "icons/svg/anvil.svg",
-      tooltip: "Открыть окно крафта"
-    },
-    {
-      slot: 9,
-      name: "⚗ Алхимия",
-      command: "game.ironHills?.openAlchemyWindow?.()",
-      img: "icons/svg/daze.svg",
-      tooltip: "Открыть окно алхимии"
-    },
-    {
-      slot: 10,
-      name: "🗺 Карта",
-      command: "game.ironHills?.openWorldMap?.()",
-      img: "icons/svg/map.svg",
-      tooltip: "Открыть карту мира"
-    },
-  ];
+  // Удаляем старые автосозданные макросы с номерами
+  const oldMacros = (game.macros ?? []).filter(m =>
+    m.flags?.["iron-hills-system"]?.autoCreated &&
+    !m.flags?.["iron-hills-system"]?.isLauncher
+  );
+  for (const m of oldMacros) {
+    try { await m.delete(); } catch {}
+  }
 
-  // World Tools подключается через собственный ready hook в world-sim-tools.mjs
-  // Но добавляем его и в макробар через отложенный вызов
-  setTimeout(() => {
-    if (game.user?.isGM && game.ironHills?.openWorldTools) {
-      game.macros?.find(m => m.name === "🌍 World Tools") === undefined &&
-        Macro.create({
-          name: "🌍 World Tools",
-          type: "script",
-          command: "game.ironHills?.openWorldTools?.()",
-          img: "icons/svg/globe.svg",
-          flags: { "iron-hills-system": { autoCreated: true } }
-        }).then(macro => macro && game.user.assignHotbarMacro(macro, 0));
+  // Лаунчер в слот 1
+  const existing = (game.macros ?? []).find(m =>
+    m.flags?.["iron-hills-system"]?.isLauncher
+  );
+  let macro = existing;
+
+  if (!macro) {
+    macro = await Macro.create({
+      name:    "⚙ Iron Hills",
+      type:    "script",
+      command: "game.ironHills?.openLauncher?.()",
+      img:     "icons/svg/aura.svg",
+      flags:   { "iron-hills-system": { autoCreated: true, isLauncher: true } }
+    });
+  }
+
+  if (macro) {
+    try { await game.user.assignHotbarMacro(macro, 1); } catch(e) {
+      console.warn("Iron Hills | слот занят:", e.message);
     }
-  }, 3000);
+  }
+}
 
-  const hotbar = game.macros;
 
-  for (const def of MACROS) {
-    // Проверяем есть ли уже макрос с таким именем
-    const existing = hotbar.find(m => m.name === def.name);
-    let macro = existing;
+// ── Резерв души — синхронизация и раскачка ──────────────────
+Hooks.on("updateActor", async (actor, changes) => {
+  if (actor.type !== "character") return;
 
-    if (!macro) {
-      macro = await Macro.create({
-        name:    def.name,
-        type:    "script",
-        command: def.command,
-        img:     def.img,
-        flags:   { "iron-hills-system": { autoCreated: true } }
-      });
-    }
+  // Защита от рекурсии — пропускаем если сами обновляем soul
+  if (foundry.utils.getProperty(changes, "system.resources.soul")) return;
 
-    if (macro) {
-      // Назначаем в слот макробара
-      await game.user.assignHotbarMacro(macro, def.slot);
+  const res     = actor.system?.resources ?? {};
+  const updates = {};
+
+  // ── 1. Синхронизируем max резерва с max ресурса ─────────────
+  const energyMax = Number(res.energy?.max ?? 100);
+  const manaMax   = Number(res.mana?.max   ?? 50);
+
+  const curEnResMax = Number(res.soul?.energyReserve?.max ?? -1);
+  const curMnResMax = Number(res.soul?.manaReserve?.max   ?? -1);
+
+  if (curEnResMax !== energyMax) updates["system.resources.soul.energyReserve.max"] = energyMax;
+  if (curMnResMax !== manaMax)   updates["system.resources.soul.manaReserve.max"]   = manaMax;
+
+  // ── 2. Раскачка через накопленное восстановление ─────────────
+  // Считаем только РЕАЛЬНОЕ восстановление потраченного (не полный → полный вхолостую)
+  const changedEnergy = foundry.utils.getProperty(changes, "system.resources.energy.value");
+  const changedMana   = foundry.utils.getProperty(changes, "system.resources.mana.value");
+
+  // Энергия
+  if (changedEnergy !== undefined) {
+    const newVal  = Number(changedEnergy);
+    const oldVal  = Number(res.energy?.value ?? newVal);
+    const gained  = newVal - oldVal;  // сколько восстановили в этот раз
+
+    // Считаем только если было реальное восстановление (gained > 0) и не был полный бак
+    if (gained > 0 && oldVal < energyMax) {
+      const actualGain  = Math.min(gained, energyMax - oldVal); // не больше дефицита
+      const soul        = res.soul?.energyReserve ?? {};
+      const accum       = Number(soul.trainingAccum ?? 0) + actualGain;
+      const resVal      = Number(soul.value ?? energyMax);
+      const resMax      = energyMax; // max резерва = max ресурса
+
+      // Порог раскачки = max резерва * 5 (нужно 5x полных восстановлений)
+      // Это замедляет рост: на 1ст (max=10) нужно восстановить 50 единиц энергии
+      // На 5ст (max=50) нужно восстановить 250 — т.е. примерно 25 полных циклов
+      const threshold   = resMax * 5;
+      if (accum >= threshold && resVal < resMax) {
+        // Резерв +1, счётчик сбрасывается (остаток переходит)
+        updates["system.resources.soul.energyReserve.value"]        = Math.min(resMax, resVal + 1);
+        updates["system.resources.soul.energyReserve.trainingAccum"] = accum - threshold;
+        await ChatMessage.create({
+          content: `✨ <b>${actor.name}</b> — резерв энергии вырос! (${resVal} → ${Math.min(resMax, resVal + 1)} / ${resMax})`
+        });
+      } else {
+        updates["system.resources.soul.energyReserve.trainingAccum"] = accum;
+      }
     }
   }
 
-  console.log("Iron Hills | Макросы созданы на слотах 1-4");
-}
+  // Мана
+  if (changedMana !== undefined) {
+    const newVal  = Number(changedMana);
+    const oldVal  = Number(res.mana?.value ?? newVal);
+    const gained  = newVal - oldVal;
 
-// Запускаем после полной загрузки мира
-Hooks.once("ready", () => {
-  setTimeout(() => ensureIronHillsMacros(), 2000);
+    if (gained > 0 && oldVal < manaMax) {
+      const actualGain  = Math.min(gained, manaMax - oldVal);
+      const soul        = res.soul?.manaReserve ?? {};
+      const accum       = Number(soul.trainingAccum ?? 0) + actualGain;
+      const resVal      = Number(soul.value ?? manaMax);
+      const resMax      = manaMax;
+      const threshold   = resMax * 5;
+
+      if (accum >= threshold && resVal < resMax) {
+        updates["system.resources.soul.manaReserve.value"]        = Math.min(resMax, resVal + 1);
+        updates["system.resources.soul.manaReserve.trainingAccum"] = accum - threshold;
+        await ChatMessage.create({
+          content: `✨ <b>${actor.name}</b> — резерв маны вырос! (${resVal} → ${Math.min(resMax, resVal + 1)} / ${resMax})`
+        });
+      } else {
+        updates["system.resources.soul.manaReserve.trainingAccum"] = accum;
+      }
+    }
+  }
+
+  if (Object.keys(updates).length) {
+    await actor.update(updates);
+  }
 });
 
-// Таблица прочности по ступени предмета
-function getDurabilityByTier(tier) {
-  const table = {1:15, 2:25, 3:40, 4:65, 5:100, 6:140, 7:185, 8:230, 9:265, 10:300};
-  return table[Math.max(1, Math.min(10, tier))] ?? 100;
-}
-
-// Миграция: добавить прочность существующим предметам
 Hooks.once("ready", async () => {
-  if (!game.user?.isGM) return;
-  const DURABLE = ["weapon", "armor", "tool"];
-  for (const actor of game.actors ?? []) {
-    for (const item of actor.items ?? []) {
-      if (!DURABLE.includes(item.type)) continue;
-      if (item.system?.durability !== undefined) continue;
-      const tier = Number(item.system?.tier ?? 1);
-      const maxDur = getDurabilityByTier(tier);
-      await item.update({
-        "system.durability": { value: maxDur, max: maxDur }
+  setTimeout(() => ensureIronHillsMacros(), 2000);
+  setTimeout(() => initCompendiums(), 5000); // заполняем компендиумы при первом запуске
+
+  // soul-reserve max sync вынесена в module/migrations.mjs.
+
+  // Макро для ручного сброса резерва души до текущих max ресурсов
+    // ── Перемотка времени ─────────────────────────────────────
+  game.ironHills.advanceTime = async (hours) => {
+    if (!game.user?.isGM) return;
+    if (!hours || hours <= 0) return;
+    await game.time.advance(hours * 3600);
+    ui.notifications.info(`⏰ Время перемотано на ${hours}ч.`);
+  };
+
+  // ── Отдых — восстановление максимума энергии ──────────────
+  game.ironHills.rest = async (type = "short") => {
+    // type: "short" = ~1 час, "long" = ~8 часов
+    const actors = canvas?.tokens?.controlled?.map(t => t.actor).filter(Boolean);
+    const char   = game.user?.character;
+    const targets = actors?.length ? actors : (char ? [char] : []);
+
+    if (!targets.length) { ui.notifications.warn("Выбери токен персонажа"); return; }
+
+    for (const actor of targets) {
+      const baseMax = Number(actor.system?.resources?.energy?.baseMax ?? 10);
+      const curMax  = Number(actor.system?.resources?.energy?.max     ?? baseMax);
+      const missing = baseMax - curMax; // сколько max потеряно от усталости
+
+      let newMax;
+      if (type === "long") {
+        newMax = baseMax; // полное восстановление max
+      } else {
+        // Короткий: +50% от потерянного max (минимум 1 если есть потери)
+        newMax = Math.min(baseMax, curMax + Math.max(missing > 0 ? 1 : 0, Math.floor(missing * 0.5)));
+      }
+
+      const updates = {
+        "system.resources.energy.max":   newMax,
+        "system.resources.energy.value": newMax, // текущая тоже до max
+      };
+
+      // ── Прокачка baseMax ────────────────────────────────────
+      // baseMax растёт только если реально восстановили потерянный max.
+      // Логика: каждое полное восстановление = 1 очко опыта выносливости.
+      // При накоплении N очков → baseMax+1.
+      // N зависит от текущего baseMax (чем выше — тем сложнее растить).
+      const restoredMax = newMax - curMax; // сколько max восстановили
+      if (restoredMax > 0) {
+        const GROWTH_KEY = "flags.iron-hills-system.energyGrowthXp";
+        const curXp      = Number(actor.getFlag("iron-hills-system", "energyGrowthXp") ?? 0);
+        const threshold  = baseMax; // нужно baseMax очков чтобы вырасти (тяжёлые бойцы растут медленнее)
+        const xpGained   = restoredMax; // очков = сколько max восстановлено
+        const newXp      = curXp + xpGained;
+
+        if (newXp >= threshold) {
+          // Рост baseMax!
+          updates["system.resources.energy.baseMax"] = baseMax + 1;
+          updates[GROWTH_KEY] = newXp - threshold;
+          await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<div style="padding:6px">
+              💪 <b>${actor.name}</b> закалился — резерв энергии вырос до <b>${baseMax + 1}</b>!
+            </div>`
+          });
+        } else {
+          await actor.setFlag("iron-hills-system", "energyGrowthXp", newXp);
+        }
+      }
+
+      await actor.update(updates);
+
+      const label   = type === "long" ? "Длинный отдых" : "Короткий отдых";
+      const restHours = type === "long" ? 8 : 1;
+      const xpInfo  = restoredMax > 0
+        ? `<br>Опыт выносливости: +${restoredMax}`
+        : "";
+      ui.notifications.info(`${actor.name}: ${label} — энергия ${newMax}/${newMax}`);
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div style="font-family:var(--font-primary);padding:6px">
+          <b>${label}</b> — ${actor.name}<br>
+          ⚡ Энергия: <b>${curMax} → ${newMax} / ${newMax}</b>
+          ${restoredMax > 0 ? ` (+${restoredMax} макс.)` : " (макс. не изменился)"}
+          ${xpInfo}<br>
+          ⏰ Прошло ${restHours}ч.
+        </div>`
       });
-      console.log(`Iron Hills | Added durability to ${actor.name}/${item.name}: ${maxDur}`);
     }
-  }
+
+    // Перематываем время на длительность отдыха (один раз, не за каждого актора)
+    const restHoursTotal = type === "long" ? 8 : 1;
+    await game.time.advance(restHoursTotal * 3600);
+    await applyLightingToScene(canvas?.scene);
+    game.ironHills.apps?.weather?.render?.(false);
+  };
+
+  game.ironHills.formatCurrency = formatCurrency;
+  game.ironHills.openWeather   = () => {
+    const app = new IronHillsWeatherApp();
+    app.render(true);
+    game.ironHills.apps = game.ironHills.apps ?? {};
+    game.ironHills.apps.weather = app;
+  };
+  game.ironHills.setWeather    = setWeather;
+
+  // Влияние действий игроков на мир
+  game.ironHills.applyWorldImpact = async (settlement, impact, reason) => {
+    const { applyWorldImpact } = await import("./world-sim-tools.mjs").catch(() => ({}));
+    if (!applyWorldImpact) {
+      ui.notifications.warn("World Tools недоступны");
+      return null;
+    }
+    return applyWorldImpact(settlement, impact, reason);
+  };
+  // Алиас для обратной совместимости (старое имя)
+  game.ironHills.worldImpact = game.ironHills.applyWorldImpact;
+
+  game.ironHills.WorldEvents = {
+    clearedBandit:   (s, t=1) => game.ironHills.applyWorldImpact(s, { danger: -(t||1), supply: t > 2 ? 1 : 0 }, "Бандиты уничтожены"),
+    robbedMerchant:  (s)      => game.ironHills.applyWorldImpact(s, { supply: -1, prosperity: -1 }, "Торговец ограблен"),
+    escortedCaravan: (s)      => game.ironHills.applyWorldImpact(s, { supply: 2 }, "Защитили Каравана"),
+    aidedBandits:    (s)      => game.ironHills.applyWorldImpact(s, { danger: 2, supply: -1 }, "Помогли бандитам"),
+    helpedVillagers: (s)      => game.ironHills.applyWorldImpact(s, { prosperity: 1 }, "Помогли жителям"),
+    destroyedThreat: (s, t=1) => game.ironHills.applyWorldImpact(s, { danger: -Math.ceil((t||1)/2), prosperity: 1 }, "Угроза устранена"),
+  };
+
+  // Фракции — API через консоль
+  game.ironHills.reputation = {
+    get: async (charName, factionName) => {
+      const { getReputation, getAllFactions } = await import("./services/faction-service.mjs");
+      const char    = game.actors?.find(a => a.name === charName && a.type === "character");
+      const faction = getAllFactions().find(f => f.name === factionName);
+      return char && faction ? getReputation(char, faction) : null;
+    },
+    change: async (charName, factionName, delta, reason = "GM") => {
+      const { changeReputation, getAllFactions } = await import("./services/faction-service.mjs");
+      const char    = game.actors?.find(a => a.name === charName && a.type === "character");
+      const faction = getAllFactions().find(f => f.name === factionName);
+      if (char && faction) return changeReputation(char, faction, delta, reason);
+    },
+    changeNpc: async (charName, npcName, delta, reason = "GM") => {
+      const { changeNpcRep } = await import("./services/faction-service.mjs");
+      const char = game.actors?.find(a => a.name === charName && a.type === "character");
+      const npc  = game.actors?.find(a => a.name === npcName);
+      if (char && npc) return changeNpcRep(char, npc, delta, reason);
+    },
+  };
+
+  // buildContainers для PendingItemsApp
+  game.ironHills._gridInventoryHelpers = { buildContainers: _buildContainers };
+
+  // Faction service — кэшированная ссылка для tarkov-trade-app и других синхронных потребителей
+  import("./services/faction-service.mjs").then(m => {
+    game.ironHills._factionService = m;
+  }).catch(() => {});
+
+  game.ironHills.fixMerchantPrices = async () => {
+    const { fixMerchantPrices } = await import("./world-sim-tools.mjs").catch(() => ({}));
+    if (!fixMerchantPrices) {
+      ui.notifications.warn("World Tools недоступны");
+      return null;
+    }
+    return fixMerchantPrices();
+  };
+  game.ironHills.restockMerchant = async (merchant) => {
+    const { restockMerchant } = await import("./world-sim-tools.mjs").catch(() => ({}));
+    if (!restockMerchant) {
+      ui.notifications.warn("World Tools недоступны");
+      return null;
+    }
+    return restockMerchant(merchant);
+  };
+  // openShop убран — используй openTrade с токеном торговца
+  game.ironHills.placeAoe    = placeAoeTemplate;
+  game.ironHills.applyAoe    = applyAoeDamage;
+  game.ironHills.AOE_TYPES   = AOE_TYPES;
+  game.ironHills.disposition = {
+    DISPOSITION,
+    getActorDisposition,
+    actorsAreAllies,
+  };
+  game.ironHills.SPELLS        = SPELLS;
+  game.ironHills.SPELL_SCHOOLS = SPELL_SCHOOLS;
+  game.ironHills.rollWeather   = rollWeather;
+  game.ironHills.getWeatherMod = getWeatherSkillMod;
+  // Режим движения в бою: реализация в services/combat-movement-service.mjs.
+  // Внешнее API сохранено: game.ironHills._moveMode (read) и setMoveMode(mode) (write).
+  Object.defineProperty(game.ironHills, "_moveMode", {
+    configurable: true,
+    get: () => getCombatMoveMode(),
+  });
+  game.ironHills.setMoveMode = (mode) => setCombatMoveMode(mode);
+
+  game.ironHills.restShort = () => game.ironHills.rest("short");
+  game.ironHills.restLong  = () => game.ironHills.rest("long");
+
+  game.ironHills.openTimeDialog = async () => {
+    // Перенаправляем в WeatherApp — единое место управления временем
+    if (game.user?.isGM) { game.ironHills.openWeather?.(); return; }
+    if (!game.user?.isGM) { ui.notifications.warn("Только GM"); return; }
+
+    const current = game.time?.worldTime ?? 0;
+    const curDays  = Math.floor(current / 86400);
+    const curHours = Math.floor((current % 86400) / 3600);
+
+    return new Promise(resolve => {
+      new Dialog({
+        title: "⏰ Перемотка времени",
+        content: `
+          <form style="font-family:var(--ih-font-ui,system-ui);color:#e8edf5;padding:6px">
+            <p style="color:#6a7d99;font-size:11px;margin-bottom:10px">
+              Текущее время: День ${curDays + 1}, ${curHours}ч
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6a7d99">
+                Дней
+                <input id="adv-days"  type="number" value="0" min="0"
+                  style="background:#232e42;border:1px solid rgba(120,150,200,0.2);
+                         border-radius:6px;color:#e8edf5;padding:4px 8px;font-size:14px">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6a7d99">
+                Часов
+                <input id="adv-hours" type="number" value="8" min="0" max="23"
+                  style="background:#232e42;border:1px solid rgba(120,150,200,0.2);
+                         border-radius:6px;color:#e8edf5;padding:4px 8px;font-size:14px">
+              </label>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" data-preset="1h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1ч</button>
+              <button type="button" data-preset="4h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">4ч</button>
+              <button type="button" data-preset="8h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">8ч (ночь)</button>
+              <button type="button" data-preset="24h" style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1 день</button>
+              <button type="button" data-preset="168h" style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1 неделя</button>
+            </div>
+          </form>
+        `,
+        buttons: {
+          advance: {
+            label: "⏩ Перемотать",
+            callback: async (html) => {
+              const days  = Number(html.find("#adv-days").val())  || 0;
+              const hours = Number(html.find("#adv-hours").val()) || 0;
+              const total = days * 24 + hours;
+              if (total <= 0) { ui.notifications.warn("Укажи время"); return; }
+              await game.time.advance(total * 3600);
+              // Тик угасания душ за каждый прошедший день
+              if (days > 0) {
+                for (let d = 0; d < days; d++) await game.ironHills.tickSoulDecay?.();
+              }
+              ui.notifications.info(`⏰ Перемотано на ${days > 0 ? days + "д " : ""}${hours > 0 ? hours + "ч" : ""}`);
+              resolve(total);
+            }
+          },
+          cancel: { label: "Отмена", callback: () => resolve(null) }
+        },
+        render: (html) => {
+          html.find("[data-preset]").on("click", e => {
+            const h = parseInt(e.currentTarget.dataset.preset);
+            const d = Math.floor(h / 24);
+            const rem = h % 24;
+            html.find("#adv-days").val(d);
+            html.find("#adv-hours").val(rem);
+          });
+        },
+        default: "advance",
+      }).render(true);
+    });
+  };
+
+  game.ironHills.syncSoulReserve = async (actor) => {
+    if (!actor) actor = canvas?.tokens?.controlled?.[0]?.actor ?? game.user?.character;
+    if (!actor || actor.type !== "character") { ui.notifications.warn("Выбери персонажа"); return; }
+    const res       = actor.system?.resources ?? {};
+    const energyMax = Number(res.energy?.max ?? 10);
+    const manaMax   = Number(res.mana?.max   ?? 10);
+    await actor.update({
+      "system.resources.soul.energyReserve.max":   energyMax,
+      "system.resources.soul.energyReserve.value": energyMax,
+      "system.resources.soul.manaReserve.max":     manaMax,
+      "system.resources.soul.manaReserve.value":   manaMax,
+    });
+    ui.notifications.info(`${actor.name}: резерв синхронизирован (⚡${energyMax} ✦${manaMax})`);
+  };
+
+  // Сброс энергии/маны к дефолтным 10/10 для всех персонажей со старыми значениями
+  game.ironHills.resetEnergyManaDefaults = async () => {
+    if (!game.user?.isGM) return;
+    let count = 0;
+    for (const actor of game.actors ?? []) {
+      if (actor.type !== "character") continue;
+      const res = actor.system?.resources ?? {};
+      // Только если max = 100 или 50 (старые дефолты из template) и value = max (нетронутые)
+      const eMax = Number(res.energy?.max ?? 0);
+      const mMax = Number(res.mana?.max   ?? 0);
+      const eVal = Number(res.energy?.value ?? 0);
+      const mVal = Number(res.mana?.value   ?? 0);
+      const updates = {};
+      if (eMax === 100 && eVal === 100) { updates["system.resources.energy.max"] = 10; updates["system.resources.energy.value"] = 10; }
+      if (mMax === 50  && mVal === 50)  { updates["system.resources.mana.max"]   = 10; updates["system.resources.mana.value"]   = 10; }
+      if (Object.keys(updates).length) {
+        await actor.update(updates);
+        count++;
+      }
+    }
+    ui.notifications.info(`Сброшено ${count} персонажей к 10/10`);
+  };
 });
+
+// Прочность и unified targeting / soul-reserve / abdomen и пр. — все одноразовые
+// миграции вынесены в module/migrations.mjs и запускаются из единой точки в Hooks.once("ready").

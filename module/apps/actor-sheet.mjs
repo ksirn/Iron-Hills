@@ -1,5 +1,7 @@
 import { CRAFT_RECIPES } from "../constants/recipes.mjs";
-import { getExpNext, formatSignedNumber, buildChatSectionRow } from "../utils/text-utils.mjs";
+import { getWeatherSkillMod } from "../services/weather-service.mjs";
+import { EntityPickerDialog } from "./entity-picker.mjs";
+import { getExpNext, buildChatSectionRow } from "../utils/text-utils.mjs";
 import {
   getLiveActor,
   getPersistentActor,
@@ -39,8 +41,6 @@ import {
   buildTradeSummary,
   buildOverviewSummary,
   buildSkillGroups,
-  getAttackThreshold,
-  getFailureDegree,
   getExpNextForSkill
 } from "../services/actor-state-service.mjs";
 import {
@@ -74,8 +74,15 @@ import {
   queueActorSheetRender,
   refreshMerchantTradeViews,
   rerenderOpenTradeApps,
-  refreshAllTradeUIs
+  refreshAllTradeUIs,
+  rerenderOpenIronHillsActorSheets
 } from "../services/ui-refresh-service.mjs";
+import {
+  resolveSingleAttack,
+  formatAttackChatHtml,
+  applyDamageToBodyPart,
+  applyInjuryEffects
+} from "../services/combat-attack-service.mjs";
 import {
   isCombatActive,
   getCombatSummary,
@@ -98,24 +105,12 @@ import {
 } from "../services/combat-flow-service.mjs";
 import { IronHillsTradeApp } from "./trade-app.mjs";
 import { debugLog, debugWarn, debugError } from "../utils/debug-utils.mjs";
+import { getWeaponRange, getTokenGridDistance, getActorToken } from "../utils/item-utils.mjs";
 
 const TRADE_LOCKS = new Set();
 
 function makeTradeLockKey({ merchantId = "", characterId = "", itemId = "", action = "" } = {}) {
   return [merchantId, characterId, itemId, action].join("::");
-}
-
-function rerenderOpenIronHillsActorSheets() {
-  for (const app of Object.values(ui.windows ?? {})) {
-    if (!app?.rendered) continue;
-    if (app.constructor?.name !== "IronHillsActorSheet") continue;
-
-    try {
-      app.render(false);
-    } catch (err) {
-      console.warn("Iron Hills | actor sheet rerender failed", err);
-    }
-  }
 }
 
 async function runWithTradeLock(lockData, callback) {
@@ -444,17 +439,29 @@ async getData() {
     context.items = actor.items;
     context.allItems = actor.items;
 
-    context.weapons = actor.items.filter(i => i.type === "weapon");
-    context.armors = actor.items.filter(i => i.type === "armor");
-    context.foods = actor.items.filter(i => i.type === "food");
-    context.materials = actor.items.filter(i => i.type === "material");
-    context.resourcesItems = actor.items.filter(i => i.type === "resource");
-    context.tools = actor.items.filter(i => i.type === "tool");
-    context.spells = actor.items.filter(i => i.type === "spell");
-    context.potions = actor.items.filter(i => i.type === "potion");
-    context.scrolls = actor.items.filter(i => i.type === "scroll");
-    context.throwables = actor.items.filter(i => i.type === "throwable");
-    context.consumables = actor.items.filter(i => i.type === "consumable");
+    // Только размещённые предметы (имеют sectionKey или в экипировке)
+    // Нераспределённые (pending) не показываем в листе — только в PendingItemsApp
+    const equip = actor.system?.equipment ?? {};
+    const equippedIds = new Set(Object.values(equip).filter(Boolean));
+    const placedItems = actor.items.filter(i => {
+      if (equippedIds.has(i.id)) return true;
+      const f = i.flags?.["iron-hills-system"] ?? {};
+      return !!f.sectionKey; // размещён в контейнере
+    });
+
+    const filterPlaced = (type) => placedItems.filter(i => i.type === type);
+
+    context.weapons      = filterPlaced("weapon");
+    context.armors       = filterPlaced("armor");
+    context.foods        = filterPlaced("food");
+    context.materials    = filterPlaced("material");
+    context.resourcesItems = filterPlaced("resource");
+    context.tools        = filterPlaced("tool");
+    context.spells       = filterPlaced("spell");
+    context.potions      = filterPlaced("potion");
+    context.scrolls      = filterPlaced("scroll");
+    context.throwables   = filterPlaced("throwable");
+    context.consumables  = filterPlaced("consumable");
 
     context.rightHandWeapon = context.weapons.find(w => w.id === actor.system.equipment?.rightHand);
     context.leftHandWeapon = context.weapons.find(w => w.id === actor.system.equipment?.leftHand);
@@ -473,6 +480,17 @@ async getData() {
     context.encumbrance = getEncumbranceInfo(actor);
     context.injuries = getActorInjuryInfo(actor);
     context.recipes = Object.values(CRAFT_RECIPES);
+
+    // Прогресс раскачки резерва души (0–100%)
+    const _soul = actor.system?.resources?.soul ?? {};
+    const _enRes = _soul.energyReserve ?? {};
+    const _mnRes = _soul.manaReserve   ?? {};
+    context.soulEnergyTrainPct = _enRes.max
+      ? Math.min(100, Math.round(((_enRes.trainingAccum ?? 0) / _enRes.max) * 100))
+      : 0;
+    context.soulManaTrainPct = _mnRes.max
+      ? Math.min(100, Math.round(((_mnRes.trainingAccum ?? 0) / _mnRes.max) * 100))
+      : 0;
 
     const groupedItems = buildGroupedItems(actor);
     const totalInventoryWeight = groupedItems.reduce(
@@ -710,13 +728,43 @@ if (actor.type === "monster") {
   context.hpClass = hpClass;
 }
 
-    return context;
+    // Репутация у фракций
+    try {
+      const { getAllReputations } = await import("../services/faction-service.mjs");
+      context.factions = getAllReputations(this.actor);
+    } catch(e) {
+      context.factions = [];
+    }
+
+    // Репутация у фракций
+    try {
+      const { getAllReputations } = await import("../services/faction-service.mjs");
+      context.factions = getAllReputations(this.actor);
+    } catch(e) {
+      context.factions = [];
+    }
+
+        return context;
   }
 
   _getCombatActionSeconds(actionType, item = null) {
     if (actionType === "attack") {
-      if (item?.system?.twoHanded) return Number(item.system?.actionSeconds ?? 4);
-      return Number(item?.system?.actionSeconds ?? 3);
+      // Используем timeCost из предмета если есть, иначе actionSeconds, иначе дефолт по типу
+      if (item?.system?.timeCost)      return Number(item.system.timeCost);
+      if (item?.system?.actionSeconds) return Number(item.system.actionSeconds);
+      // Дефолты по типу оружия (если нет timeCost в предмете)
+      const skillDefaults = {
+        knife:1.0, throwing:1.0, unarmed:1.0, crossbow:1.5,
+        mace:2.0, sword:2.0, bow:3.0, axe:2.5, spear:2.5, flail:2.5
+      };
+      const skill = item?.system?.skill;
+      if (skill && skillDefaults[skill]) {
+        return item?.system?.twoHanded
+          ? skillDefaults[skill] + 0.5
+          : skillDefaults[skill];
+      }
+      if (item?.system?.twoHanded) return 3.0;
+      return 2.0;
     }
 
     if (actionType === "spell") {
@@ -748,6 +796,14 @@ if (actor.type === "monster") {
     }
 
     return 2;
+  }
+
+  // Применяем модификаторы скорости из условий персонажа
+  _applySpeedModifier(actor, seconds) {
+    const conditions = actor.system?.conditions ?? {};
+    if (conditions.slowed  > 0) return seconds * 2.0;   // замедление удваивает время
+    if (conditions.hasted  > 0) return seconds * 0.5;   // ускорение уполовинивает
+    return seconds;
   }
 
   async _handlePostActionSecondsState(actor) {
@@ -784,7 +840,8 @@ if (actor.type === "monster") {
       };
     }
 
-    const secondsCost = Math.max(1, Number(totalSeconds || this._getCombatActionSeconds(actionType, item)));
+    const rawSeconds  = Number(totalSeconds || this._getCombatActionSeconds(actionType, item));
+    const secondsCost = Math.max(0.5, this._applySpeedModifier(actor, rawSeconds));
     const remaining = Number(commitCheck.remainingSeconds ?? 0);
 
     if (remaining >= secondsCost) {
@@ -1019,59 +1076,10 @@ if (actor.type === "monster") {
     });
   }
 
-  // Карта переходящего урона: если конечность на 0 HP,
-  // избыток урона идёт в соседнюю часть тела (как в EFT).
-  _getOverflowTarget(locationKey) {
-    const map = {
-      head:     "torso",
-      leftArm:  "torso",
-      rightArm: "torso",
-      leftLeg:  "abdomen",
-      rightLeg: "abdomen",
-      abdomen:  "torso",
-      torso:    "head"
-    };
-    return map[locationKey] ?? null;
-  }
-
-  async _applyDamage(targetActor, locationKey, damage, _depth = 0) {
-    if (damage <= 0) return { newHP: 0, overflow: 0, overflowTarget: null };
-    // Защита от бесконечной рекурсии (head→torso→head)
-    if (_depth > 4) return { newHP: 0, overflow: 0, overflowTarget: null };
-
-    const path = `system.resources.hp.${locationKey}.value`;
-    const currentHP = Number(foundry.utils.getProperty(targetActor, path) ?? 0);
-
-    // Конечность уже уничтожена — весь урон уходит в overflow сразу
-    if (currentHP <= 0) {
-      const overflowTarget = this._getOverflowTarget(locationKey);
-      if (overflowTarget) {
-        return this._applyDamage(targetActor, overflowTarget, damage, _depth + 1);
-      }
-      return { newHP: 0, overflow: damage, overflowTarget: null };
-    }
-
-    const absorbed = Math.min(currentHP, damage);
-    const overflow = damage - absorbed;
-    const newHP = currentHP - absorbed;
-
-    await targetActor.update({ [path]: newHP });
-
-    // Если летальная зона достигла 0 — персонаж мёртв
-    if (newHP <= 0 && (locationKey === "head" || locationKey === "torso")) {
-      await this._markActorDead(targetActor);
-    }
-
-    // Если есть переходящий урон и конечность уничтожена этим ударом
-    if (overflow > 0 && newHP <= 0) {
-      const overflowTarget = this._getOverflowTarget(locationKey);
-      if (overflowTarget) {
-        await this._applyDamage(targetActor, overflowTarget, overflow, _depth + 1);
-        return { newHP, overflow, overflowTarget };
-      }
-    }
-
-    return { newHP, overflow: 0, overflowTarget: null };
+  async _applyDamage(targetActor, locationKey, damage) {
+    return applyDamageToBodyPart(targetActor, locationKey, damage, {
+      onLethal: (a) => this._markActorDead(a),
+    });
   }
 
   async _healTargetPart(targetActor, locationKey, amount) {
@@ -1090,30 +1098,7 @@ if (actor.type === "monster") {
   }
 
   async _applyInjuryEffects(targetActor, locationKey, finalDamage) {
-    const hpData = targetActor.system.resources.hp?.[locationKey];
-    if (!hpData) return;
-
-    const maxHP = Number(hpData.max ?? 0);
-    const halfThreshold = Math.ceil(maxHP / 2);
-
-    const updates = {};
-
-    if (finalDamage >= halfThreshold) {
-      updates["system.conditions.bleeding"] = Number(targetActor.system.conditions?.bleeding ?? 0) + 1;
-
-      if (locationKey === "leftArm") updates["system.conditions.fractures.leftArm"] = true;
-      if (locationKey === "rightArm") updates["system.conditions.fractures.rightArm"] = true;
-      if (locationKey === "leftLeg") updates["system.conditions.fractures.leftLeg"] = true;
-      if (locationKey === "rightLeg") updates["system.conditions.fractures.rightLeg"] = true;
-
-      if (locationKey === "head" || locationKey === "torso" || locationKey === "abdomen") {
-        updates["system.conditions.shock"] = Number(targetActor.system.conditions?.shock ?? 0) + 1;
-      }
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await targetActor.update(updates);
-    }
+    return applyInjuryEffects(targetActor, locationKey, finalDamage);
   }
 
   async _applyPoison(targetActor, amount) {
@@ -1395,16 +1380,27 @@ refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
 
     if (effectType === "restoreEnergy") {
       const current = Number(actor.system.resources.energy.value ?? 0);
-      const max = Number(actor.system.resources.energy.max ?? 100);
-      const next = Math.min(max, current + power);
-
-      await actor.update({
-        "system.resources.energy.value": next
-      });
-
+      const max     = Number(actor.system.resources.energy.max   ?? 100);
+      const next    = Math.min(max, current + power);
+      await actor.update({ "system.resources.energy.value": next });
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>Энергия: +${power}`
+        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>⚡ Энергия: ${current} → ${next}/${max}`
+      });
+    }
+
+    if (effectType === "restoreEnergyMax") {
+      const baseMax = Number(actor.system.resources.energy.baseMax ?? actor.system.resources.energy.max ?? 10);
+      const curMax  = Number(actor.system.resources.energy.max   ?? 10);
+      const newMax  = Math.min(baseMax, curMax + power);
+      const newCur  = Math.min(newMax, Number(actor.system.resources.energy.value ?? 0) + power);
+      await actor.update({
+        "system.resources.energy.max":   newMax,
+        "system.resources.energy.value": newCur,
+      });
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>⚡ Макс. энергия: ${curMax} → ${newMax} (+${power})`
       });
     }
 
@@ -2399,6 +2395,8 @@ refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
       ${buildChatSectionRow("Поглощение", reduction)}
       ${buildChatSectionRow("Итоговый урон", `<span style="font-size:1.1em;"><b>${finalDamage}</b></span>`)}
       ${buildChatSectionRow("Осталось HP", remainingHP)}
+      ${technique ? buildChatSectionRow("Приём", `${technique.icon ?? "⚔"} ${technique.label}`) : ""}
+      ${aimed ? buildChatSectionRow("Прицел", `🎯 ${locationLabel}`) : ""}
       ${dmgOverflow > 0 ? buildChatSectionRow("Переходящий урон", `${dmgOverflow} → ${getTargetPartLabel(dmgOverflowTarget)}`) : ""}
       ${buildChatSectionRow("Яд", poison)}
       ${buildChatSectionRow("Горение", burning)}
@@ -2884,26 +2882,6 @@ async _sellToMerchant(itemId, sellerUuid = "") {
   }
 
   /**
-   * Заразить актора болезнью (GM)
-   */
-  async _infectActor(actor, diseaseKey) {
-    const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
-    if (diseases[diseaseKey]?.stage >= 0) {
-      ui.notifications.info(`${actor.name} уже болен: ${diseaseKey}`);
-      return;
-    }
-    diseases[diseaseKey] = { stage: 0, progress: 0, duration: 0 };
-    await actor.update({ "system.diseases": diseases });
-
-    const { DISEASES } = await import("../constants/diseases.mjs");
-    const def = DISEASES[diseaseKey];
-    await ChatMessage.create({
-      content: `${def?.icon ?? "🦠"} <b>${actor.name}</b> заразился: <b>${def?.label ?? diseaseKey}</b>`,
-      speaker: ChatMessage.getSpeaker({ actor })
-    });
-  }
-
-  /**
    * Вылечить болезнь
    */
   async _cureDisease(actor, diseaseKey) {
@@ -2918,33 +2896,6 @@ async _sellToMerchant(itemId, sellerUuid = "") {
       content: `✅ <b>${actor.name}</b> вылечен от: <b>${def?.label ?? diseaseKey}</b>`,
       speaker: ChatMessage.getSpeaker({ actor })
     });
-  }
-
-  /**
-   * Износ предмета на N единиц прочности.
-   * Если прочность <= 0 — предмет сломан (не работает).
-   * @param {Actor} actor
-   * @param {Item}  item
-   * @param {number} amount — сколько прочности снять
-   */
-  async _wearItem(actor, item, amount = 1) {
-    if (!item || !actor) return;
-    const durVal = Number(item.system?.durability?.value ?? 100);
-    const durMax = Number(item.system?.durability?.max   ?? 100);
-    if (durMax <= 0) return; // предмет без прочности
-
-    const newDur = Math.max(0, durVal - amount);
-    await item.update({ "system.durability.value": newDur });
-
-    // Сообщение о поломке
-    if (newDur === 0 && durVal > 0) {
-      await ChatMessage.create({
-        content: `<b>⚠ ${item.name}</b> сломан! Требует ремонта.`,
-        speaker: ChatMessage.getSpeaker({ actor })
-      });
-    }
-
-    return newDur;
   }
 
   /**
@@ -3297,7 +3248,16 @@ async _performAttack({
   baseDamage = 1,
   energyCost = 5,
   weapon = null,
-  skipTimeCost = false
+  skipTimeCost = false,
+  // Боевые приёмы и прицельный удар
+  hitBonus       = 0,
+  ignoreArmor    = 0,
+  targetZone     = null,
+  aimed          = false,
+  technique      = null,
+  applyCondition = null,
+  conditionDuration = 0,
+  conditionChance   = 1.0,
 }) {
     const actor = this._getActorForState();
     if (!actor.system.resources?.energy) return;
@@ -3318,6 +3278,13 @@ if (!derivedConditions.canMeleeAttack) {
     }
     const finalEnergyCost = Math.ceil(Number(energyCost) * encumbrance.energyMultiplier);
 
+    // Модификатор от погоды (дождь штрафует луки, туман — всё)
+    const weatherMod = typeof getWeatherSkillMod === "function"
+      ? getWeatherSkillMod(skillKey)
+      : 0;
+    // Применяем к hitBonus
+    hitBonus = (hitBonus ?? 0) + weatherMod;
+
     const blockReason = getActionBlockReason(actor, "attack", {
       hand,
       weapon,
@@ -3335,7 +3302,8 @@ if (!derivedConditions.canMeleeAttack) {
       return;
     }
 
-    const targetActor = [...targets][0].actor;
+    const targetToken = [...targets][0];
+    const targetActor = targetToken?.actor;
     if (!targetActor) {
       ui.notifications.warn("У цели нет актёра");
       return;
@@ -3345,6 +3313,17 @@ if (!derivedConditions.canMeleeAttack) {
     if (!skill) {
       ui.notifications.warn(`У персонажа нет навыка ${skillKey}`);
       return;
+    }
+
+    // Проверка дальности атаки (range оружия в клетках)
+    const attackerToken = getActorToken(actor);
+    if (attackerToken && targetToken && canvas?.scene) {
+      const dist = getTokenGridDistance(attackerToken, targetToken);
+      const range = weapon ? getWeaponRange(weapon) : (skillKey === "exotic" ? 1 : 1);
+      if (dist > range) {
+        ui.notifications.warn(`Цель вне досягаемости: расстояние ${Math.ceil(dist)} клеток, дальность оружия ${range}`);
+        return;
+      }
     }
 
     if (!skipTimeCost) {
@@ -3364,167 +3343,41 @@ if (!derivedConditions.canMeleeAttack) {
         }
       });
 
-      if (timeState?.queued) {
-        return;
-      }
-
-      if (!timeState?.ok) {
-        return;
-      }
+      if (timeState?.queued) return;
+      if (!timeState?.ok)    return;
     }
 
-    // ── PATCH 5: Новая боевая формула ──────────────────────────────
-    // ШАГ 1: Взрыв кубов — бросок навыка
-    const { total: rollTotal, rolls: rollHistory, exploded } =
-      await this._explodingDiceRoll(skill.value);
+    // Окружение (сколько целей атакует игрок одновременно)
+    const targetsCount = [...(game.user?.targets ?? [])].length;
+    const surroundCount = targetsCount > 1 ? targetsCount - 1 : 0;
 
-    const dieSize = Math.max(2, skill.value * 2);
-
-    // ШАГ 2: Порог попадания цели
-    // Определяем щит цели
-    const targetLeftHand = targetActor.system?.equipment?.leftHand
-      ? targetActor.items.get(targetActor.system.equipment.leftHand)
-      : null;
-    const targetHasShield = Boolean(
-      targetLeftHand?.system?.isShield ||
-      targetLeftHand?.type === "armor"
-    );
-
-    // Определяем окружение (сколько союзников атакуют эту же цель)
-    const surroundCount = [...(game.user?.targets ?? [])].length > 1
-      ? [...(game.user?.targets ?? [])].length - 1
-      : 0;
-
-    // Броня цели — для монстров берём из resources.armor
-    const targetArmorTier = targetActor.type === "monster"
-      ? Number(targetActor.system?.resources?.armor?.physical ?? 0)
-      : Number(targetActor.system?.info?.armorTier ?? 0);
-
-    const threshold = getAttackThreshold(targetActor, {
-      hasShield:    targetHasShield,
-      isLying:      Boolean(targetActor.system?.conditions?.prone),
-      isStunned:    Number(targetActor.system?.conditions?.stunned ?? 0) > 0,
-      targetFeared: Number(targetActor.system?.conditions?.feared ?? 0) > 0,
+    // Боевой пайплайн целиком — в сервисе.
+    const result = await resolveSingleAttack({
+      attacker:      actor,
+      target:        targetActor,
+      skillKey,
+      baseDamage,
+      damageType,
+      energyCost,
+      weapon,
+      hitBonus,
+      ignoreArmor,
+      targetZone,
       surroundCount,
-      inDarkness:   false,
-      armorTierOverride: targetActor.type === "monster" ? targetArmorTier : undefined
+      encumbrance,
+      injuries,
+      dieRoller: (sv) => this._explodingDiceRoll(sv),
+      onLethal:  (a) => this._markActorDead(a),
     });
+    if (!result) return;
 
-    // Штраф атакующего снижает результат броска
-    const attackPenalty =
-      Number(encumbrance.attackPenalty) +
-      Number(injuries.meleePenalty ?? injuries.attackPenalty ?? 0);
-    const effectiveRoll = rollTotal - attackPenalty;
-
-    // ШАГ 3: Попал или нет
-    const failDegree = getFailureDegree(effectiveRoll, threshold, dieSize);
-    const success = !failDegree.isFail;
-
-    await actor.update({
-      "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost)
+    const content = await formatAttackChatHtml({
+      label, skillKey, attacker: actor, target: targetActor, result,
     });
-
-    // Износ оружия при атаке (1 единица прочности)
-    if (weapon) {
-      await this._wearItem(actor, weapon, 1);
-    }
-
-    const rollDesc = rollHistory.map(r => `d${r.die}=${r.result}`).join(" → ");
-    const rollDisplay = exploded ? `💥 ${rollDesc} = ${rollTotal}` : `${rollTotal}`;
-
-    let content = `
-      <h3>Атака: ${label}</h3>
-      ${buildChatSectionRow("Атакующий", actor.name)}
-      ${buildChatSectionRow("Цель", targetActor.name)}
-      ${buildChatSectionRow("Навык", skillKey)}
-      ${buildChatSectionRow("Куб", `d${dieSize}`)}
-      ${buildChatSectionRow("Бросок", rollDisplay)}
-      ${attackPenalty > 0 ? buildChatSectionRow("Штраф", formatSignedNumber(-attackPenalty)) : ""}
-      ${buildChatSectionRow("Эффективный бросок", effectiveRoll)}
-      ${buildChatSectionRow("Порог попадания", threshold)}
-      ${buildChatSectionRow("Энергия", `-${finalEnergyCost}`)}
-    `;
-
-    if (!success) {
-      // Антикрит
-      if (failDegree.isAnticrit) {
-        content += `<p><b>💀 АНТИКРИТ!</b> Тяжёлые последствия (степень: ${failDegree.degree})</p>`;
-      } else if (failDegree.degree >= 8) {
-        content += `<p><b>Результат:</b> Жёсткий промах (степень: ${failDegree.degree})</p>`;
-      } else {
-        content += `<p><b>Результат:</b> Промах</p>`;
-      }
-      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
-      await this._applySkillExp(skillKey, label);
-      return;
-    }
-
-    // ШАГ 4: Попал — считаем урон
-    const margin = effectiveRoll - threshold;
-    const rawDamage = Number(baseDamage) + margin;
-
-    const locationRoll = await new Roll("1d20").evaluate();
-    const locationKey = getHitLocation(locationRoll.total);
-    const locationLabel = getHitLabel(locationKey);
-
-    // Берём лучший резист из всех слоёв брони (стек)
-    const armorItem = getEquippedArmorForLocation(targetActor, locationKey);
-    const reduction = getBestResistForZone(targetActor, locationKey, damageType);
-
-    // Большой перевес = пробитие брони
-    const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
-    const effectiveReduction = Math.max(0, reduction - armorPenetration);
-    const finalDamage = Math.max(0, rawDamage - effectiveReduction);
-
-    let remainingHP, dmgOverflow = 0, dmgOverflowTarget = null;
-
-    if (targetActor.type === "monster") {
-      // Монстр — одна полоска HP, учитываем броню
-      const monsterArmorPhys = Number(targetActor.system?.resources?.armor?.physical ?? 0);
-      const monsterArmorMag  = Number(targetActor.system?.resources?.armor?.magical  ?? 0);
-      const monsterReduction = damageType === "magical" ? monsterArmorMag : monsterArmorPhys;
-      const monsterPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
-      const monsterEffReduction = Math.max(0, monsterReduction - monsterPenetration);
-      const monsterFinalDamage = Math.max(0, rawDamage - monsterEffReduction);
-      const currentHp = Number(targetActor.system?.resources?.hp?.value ?? 0);
-      remainingHP = Math.max(0, currentHp - monsterFinalDamage);
-      await targetActor.update({ "system.resources.hp.value": remainingHP });
-    } else {
-      const result = await this._applyDamage(targetActor, locationKey, finalDamage);
-      remainingHP = result.newHP;
-      dmgOverflow = result.overflow;
-      dmgOverflowTarget = result.overflowTarget;
-      await this._applyInjuryEffects(targetActor, locationKey, finalDamage);
-    }
-
-    content += `
-      <p><b>Результат:</b> Попадание${margin >= 8 ? " (пробитие!)" : ""}</p>
-      ${targetActor.type !== "monster" ? buildChatSectionRow("Часть тела", `${locationLabel} (d20: ${locationRoll.total})`) : ""}
-      ${buildChatSectionRow("Перевес", margin)}
-      ${buildChatSectionRow("Базовый урон", baseDamage)}
-      ${buildChatSectionRow("Сырой урон", rawDamage)}
-      ${buildChatSectionRow("Тип урона", damageType === "magical" ? "Магический" : "Физический")}
-      ${buildChatSectionRow("Броня", armorItem ? armorItem.name : "Нет")}
-      ${buildChatSectionRow("Поглощение", `${effectiveReduction}${armorPenetration > 0 ? ` (пробито: ${armorPenetration})` : ""}`)}
-      ${buildChatSectionRow("Итоговый урон", `<span style="font-size:1.1em;"><b>${finalDamage}</b></span>`)}
-      ${buildChatSectionRow("Осталось HP", remainingHP)}
-      ${dmgOverflow > 0 ? buildChatSectionRow("Переходящий урон", `${dmgOverflow} → ${getTargetPartLabel(dmgOverflowTarget)}`) : ""}
-    `;
-
-    if ((locationKey === "head" || locationKey === "torso") && remainingHP <= 0) {
-      content += `<p><b>Цель погибает!</b></p>`;
-    }
-
-    // Износ брони цели при попадании
-    if (targetActor.type !== "monster" && armorItem && finalDamage > 0) {
-      await this._wearItem(targetActor, armorItem, 1);
-      const newDur = Number(armorItem.system?.durability?.value ?? 100) - 1;
-      if (newDur > 0) {
-        content += buildChatSectionRow("Прочность брони", `${newDur}/${armorItem.system?.durability?.max ?? 100}`);
-      }
-    }
-
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content,
+    });
     await this._applySkillExp(skillKey, label);
     this.render(false);
   }
@@ -3532,6 +3385,12 @@ if (!derivedConditions.canMeleeAttack) {
   activateListeners(html) {
     super.activateListeners(html);
     const actor = this._getActorForState();
+
+    // Кнопка "Открыть инвентарь" в листе персонажа
+    html.find("[data-open-inventory]").on("click", () => {
+      const a = this._getActorForState?.() ?? this.actor;
+      game.ironHills?.openGridInventory?.(a);
+    });
 
     html.find("a.is-disabled").on("click", event => {
       event.preventDefault();
@@ -3696,6 +3555,14 @@ if (!derivedConditions.canMeleeAttack) {
 
     // ── Болезни ──────────────────────────────────────────────
     // ── Репутация ─────────────────────────────────────────────
+    // ── Пробуждённый ─────────────────────────────────────────
+    html.find("[data-toggle-awakened]").on("click", async () => {
+      if (!game.user?.isGM) return;
+      const current = actor.system?.resources?.awakened?.isAwakened ?? false;
+      await actor.update({ "system.resources.awakened.isAwakened": !current });
+      this.render(false);
+    });
+
     html.find("[data-rel-change]").on("click", async event => {
       if (!game.user?.isGM) return;
       const relId  = event.currentTarget.dataset.relId;
@@ -3729,44 +3596,38 @@ if (!derivedConditions.canMeleeAttack) {
     html.find("[data-add-relation]").on("click", async () => {
       if (!game.user?.isGM) return;
 
-      const targetName = await new Promise(resolve => {
-        const dlg = new Dialog({
-          title: "Добавить репутацию",
-          content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;">
-            <label style="display:block;margin-bottom:4px;">Цель (поселение/фракция)</label>
-            <input id="rel-target" type="text" style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;">
-            <label style="display:block;margin:8px 0 4px;">Тип</label>
-            <select id="rel-type" style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;">
-              <option value="faction">Фракция</option>
-              <option value="settlement">Поселение</option>
-            </select>
-          </div>`,
-          buttons: {
-            ok: { label: "Добавить", callback: () => ({
-              name: document.getElementById("rel-target")?.value,
-              type: document.getElementById("rel-type")?.value
-            })}
-          },
-          default: "ok",
-          close: () => resolve(null)
-        });
-        dlg.render(true);
-        dlg.element?.find(".dialog-button.ok").one("click", () => resolve({
-          name: document.getElementById("rel-target")?.value,
-          type: document.getElementById("rel-type")?.value
-        }));
+      // Пикер — выбор существующей сущности
+      const picked = await EntityPickerDialog.pick({
+        title:       "Выбрать цель репутации",
+        types:       ["settlement", "faction"],
+        placeholder: "Поиск поселения или фракции...",
+        groupBy:     a => a.type === "settlement" ? "Поселения" : "Фракции",
       });
 
-      if (!targetName?.name) return;
+      if (!picked) return;
+
+      // Проверяем нет ли уже такой записи
+      const existing = game.actors.find(a =>
+        a.type === "relation" &&
+        a.system.info?.characterName === actor.name &&
+        a.system.info?.targetName    === picked.name
+      );
+      if (existing) {
+        ui.notifications.warn(`Репутация с "${picked.name}" уже существует.`);
+        return;
+      }
 
       await Actor.create({
-        name:   `${actor.name} → ${targetName.name}`,
+        name:   `${actor.name} → ${picked.name}`,
         type:   "relation",
+        img:    picked.img,
         system: {
           info: {
+            characterId:   actor.id,
             characterName: actor.name,
-            targetName:    targetName.name,
-            targetType:    targetName.type,
+            targetId:      picked.id,
+            targetName:    picked.name,
+            targetType:    picked.type,
             score:         0,
             tier:          "neutral",
             notes:         ""
@@ -3899,6 +3760,53 @@ if (!derivedConditions.canMeleeAttack) {
     });
 
   }
+  async _editRepDialog(faction) {
+    const { changeReputation, getReputation, getRepLevel } = await import("../services/faction-service.mjs").catch(()=>({}));
+    if (!changeReputation) return;
+
+    const cur   = getReputation(this.actor, faction);
+    const level = getRepLevel(cur);
+
+    const result = await Dialog.wait({
+      title:   `Репутация: ${this.actor.name} ↔ ${faction.name}`,
+      content: `
+        <div style="padding:8px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:${level.color};font-size:20px">●</span>
+            <div>
+              <div style="font-weight:700">${level.label}</div>
+              <div style="font-size:11px;color:#a8b8d0">Текущая: ${cur}</div>
+            </div>
+          </div>
+          <label style="font-size:12px">Установить значение (−100..+100):
+            <input type="number" id="rep-val" value="${cur}" min="-100" max="100"
+                   style="width:100%;margin-top:4px;padding:4px;background:#1a1f2e;
+                          border:1px solid #3a4a6a;border-radius:4px;color:#e0e8f0">
+          </label>
+          <label style="font-size:12px">Причина:
+            <input type="text" id="rep-reason" value="" placeholder="Необязательно"
+                   style="width:100%;margin-top:4px;padding:4px;background:#1a1f2e;
+                          border:1px solid #3a4a6a;border-radius:4px;color:#e0e8f0">
+          </label>
+        </div>`,
+      buttons: {
+        ok:     { label: "✓ Применить", callback: html => ({
+          val:    Number(html.find("#rep-val").val()),
+          reason: html.find("#rep-reason").val() || "GM",
+        })},
+        cancel: { label: "Отмена", callback: () => null },
+      },
+      default: "ok",
+    });
+
+    if (!result) return;
+    const delta = result.val - cur;
+    if (delta === 0) return;
+    await changeReputation(this.actor, faction, delta, result.reason);
+    this.render(false);
+  }
+
+
 }
 
 export { IronHillsActorSheet };

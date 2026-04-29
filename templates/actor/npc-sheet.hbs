@@ -1,150 +1,140 @@
-<form class="iron-hills-sheet npc-sheet">
+{{!-- Iron Hills — NPC Sheet v2 --}}
+<form class="ih-npc-v2" autocomplete="off">
 
   {{!-- Шапка --}}
-  <div class="npc-header">
-    <div class="npc-portrait-wrap">
-      <img class="npc-portrait" src="{{actor.img}}" alt="{{actor.name}}">
-    </div>
-    <div class="npc-header-info">
-      <h1 class="npc-name">
-        <input type="text" name="name" value="{{actor.name}}" placeholder="Имя">
-      </h1>
-      <div class="npc-meta-row">
-        <div class="npc-meta-field">
-          <label>Роль</label>
-          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Бандит, торговец...">
-        </div>
-        <div class="npc-meta-field">
-          <label>Фракция</label>
-          <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="Гильдия...">
-        </div>
-        <div class="npc-meta-field narrow">
-          <label>Ступень</label>
+  <div class="ih-npc-v2-header">
+    <img class="ih-npc-v2-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+    <div class="ih-npc-v2-identity">
+      <input class="ih-npc-v2-name" type="text" name="name" value="{{actor.name}}">
+      <div class="ih-npc-v2-meta">
+        <label>Роль
+          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Стражник...">
+        </label>
+        <label>Ступень
           <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10">
+        </label>
+        <label>Фракция
+          <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="—">
+        </label>
+      </div>
+      <div class="ih-npc-v2-resources">
+        <div class="ih-npc-v2-res">
+          <span style="color:#60a5fa" title="Энергия / Макс / База">⚡</span>
+          <input type="number" name="system.resources.energy.value" value="{{energy.value}}" min="0">
+          <span class="muted-text">/</span>
+          <input type="number" name="system.resources.energy.max" value="{{energy.max}}" min="0">
+          <span class="muted-text" style="font-size:9px" title="Базовый максимум (до боя)">({{energy.baseMax}})</span>
         </div>
-        <div class="npc-meta-field narrow">
-          <label>Инициатива</label>
-          <input type="number" name="system.initiative" value="{{system.initiative}}" min="1">
+        <div class="ih-npc-v2-res">
+          <span style="color:#a78bfa">✦</span>
+          <input type="number" name="system.resources.mana.value" value="{{mana.value}}" min="0">
+          <span class="muted-text">/</span>
+          <input type="number" name="system.resources.mana.max" value="{{mana.max}}" min="0">
         </div>
       </div>
     </div>
   </div>
 
-  {{!-- HP по частям тела (как у персонажа) --}}
-  <div class="npc-combat-block">
-    <div class="npc-section-title">Тело</div>
-    <div class="npc-body-grid">
-      {{#each zones}}
-      <div class="npc-body-part {{cssClass}}">
-        <div class="npc-body-part-bar">
-          <div class="npc-body-part-fill" style="width:{{pct}}%"></div>
+  {{!-- Табы --}}
+  <nav class="ih-npc-tabs">
+    <a class="ih-npc-tab" data-tab="stats">⚔ Статы</a>
+    <a class="ih-npc-tab" data-tab="hp">❤ HP</a>
+    <a class="ih-npc-tab" data-tab="items">🎒 Снаряжение</a>
+    <a class="ih-npc-tab" data-tab="info">📋 Инфо</a>
+  </nav>
+
+  <div class="ih-npc-body">
+
+    {{!-- Вкладка: Навыки --}}
+    <div class="ih-npc-tab-panel" data-panel="stats">
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">
+          Навыки
+          {{#if isGM}}<a class="ih-cs-section-action" data-add-skill>+ Добавить</a>{{/if}}
         </div>
-        <div class="npc-body-part-info">
-          <span class="npc-body-part-name">{{label}}</span>
-          <span class="npc-body-part-hp">
-            <input type="number" name="system.resources.hp.{{key}}.value"
-                   value="{{value}}" class="npc-hp-input"> /
-            <input type="number" name="system.resources.hp.{{key}}.max"
-                   value="{{max}}" class="npc-hp-input muted">
-          </span>
-        </div>
-        {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor" title="Мал. кровотечение"></span>{{/if}}
-        {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="Сильн. кровотечение"></span>{{/if}}
-        {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture" title="Перелом"></span>{{/if}}
-        {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed" title="Уничтожено"></span>{{/if}}
-      </div>
-      {{/each}}
-    </div>
-  </div>
-
-  {{!-- Боевые параметры --}}
-  <div class="npc-combat-block">
-    <div class="npc-section-title">Бой</div>
-    <div class="npc-combat-grid">
-      <div class="npc-stat-field">
-        <label>Порог защиты</label>
-        <input type="number" name="system.combat.baseThreshold"
-               value="{{system.combat.baseThreshold}}" min="1" max="20">
-      </div>
-      <div class="npc-stat-field">
-        <label>Навык атаки</label>
-        <input type="number" name="system.combat.unarmedSkill"
-               value="{{system.combat.unarmedSkill}}" min="1" max="10">
-      </div>
-      <div class="npc-stat-field">
-        <label>Урон</label>
-        <input type="number" name="system.combat.unarmedDamage"
-               value="{{system.combat.unarmedDamage}}" min="1">
-      </div>
-      <div class="npc-stat-field">
-        <label>Щит</label>
-        <input type="checkbox" name="system.combat.shield"
-               {{#if system.combat.shield}}checked{{/if}}>
-      </div>
-    </div>
-  </div>
-
-  {{!-- Состояния --}}
-  <div class="npc-conditions-block">
-    <div class="npc-section-title">Состояния</div>
-    <div class="npc-conditions-grid">
-      <div class="npc-stat-field">
-        <label>Кровотечение</label>
-        <input type="number" name="system.conditions.bleeding" value="{{system.conditions.bleeding}}" min="0">
-      </div>
-      <div class="npc-stat-field">
-        <label>Яд</label>
-        <input type="number" name="system.conditions.poison" value="{{system.conditions.poison}}" min="0">
-      </div>
-      <div class="npc-stat-field">
-        <label>Шок</label>
-        <input type="number" name="system.conditions.shock" value="{{system.conditions.shock}}" min="0">
-      </div>
-      <div class="npc-stat-field">
-        <label>Горение</label>
-        <input type="number" name="system.conditions.burning" value="{{system.conditions.burning}}" min="0">
-      </div>
-      <div class="npc-stat-field">
-        <label>Оглушение</label>
-        <input type="number" name="system.conditions.stunned" value="{{system.conditions.stunned}}" min="0">
-      </div>
-    </div>
-  </div>
-
-  {{!-- Экипировка --}}
-  <div class="npc-inventory-block">
-    <div class="npc-section-title">Экипировка</div>
-    <div class="npc-equip-row">
-      <span class="npc-equip-label">П. рука:</span>
-      {{#if rightHandWeapon}}
-        <span class="npc-equip-item">{{rightHandWeapon.name}}</span>
-        <a class="ih-btn ih-btn-small" data-unequip-right>Снять</a>
-      {{else}}
-        <span class="npc-equip-empty">—</span>
-      {{/if}}
-    </div>
-    <div class="npc-equip-row">
-      <span class="npc-equip-label">Л. рука:</span>
-      {{#if leftHandWeapon}}
-        <span class="npc-equip-item">{{leftHandWeapon.name}}</span>
-        <a class="ih-btn ih-btn-small" data-unequip-left>Снять</a>
-      {{else}}
-        <span class="npc-equip-empty">—</span>
-      {{/if}}
-    </div>
-    <div class="npc-items-list">
-      {{#each allItems}}
-      <div class="npc-item-row">
-        <span class="npc-item-name">{{name}}</span>
-        <span class="npc-item-type muted-text">{{type}}</span>
-        {{#if (eq type "weapon")}}
-          <a class="ih-btn ih-btn-small" data-equip-right data-item-id="{{id}}">П</a>
-          <a class="ih-btn ih-btn-small" data-equip-left data-item-id="{{id}}">Л</a>
+        {{#if skillGroups.length}}
+          {{#each skillGroups}}
+          <div class="ih-npc-v2-skill-group">
+            <div class="ih-npc-v2-skill-group-label">{{label}}</div>
+            {{#each skills}}
+            <div class="ih-npc-v2-skill-row">
+              <span class="ih-npc-v2-skill-name">{{label}}</span>
+              <div class="ih-cs-skill-exp-track">
+                <div class="ih-cs-skill-exp-fill" style="width:{{exp}}%"></div>
+              </div>
+              <input class="ih-npc-v2-skill-val" type="number"
+                     name="system.skills.{{key}}.value" value="{{value}}" min="0" max="10">
+              <span class="muted-text" style="font-size:10px;width:26px;text-align:center">d{{dieSize}}</span>
+            </div>
+            {{/each}}
+          </div>
+          {{/each}}
+        {{else}}
+          <div class="muted-text" style="padding:8px">
+            Нет навыков{{#if isGM}} — нажми + Добавить{{/if}}
+          </div>
         {{/if}}
-        <a class="ih-btn ih-btn-small ih-btn-danger" data-delete-item data-item-id="{{id}}">✕</a>
       </div>
-      {{/each}}
     </div>
-  </div>
 
+    {{!-- Вкладка: HP --}}
+    <div class="ih-npc-tab-panel" data-panel="hp">
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Части тела</div>
+        {{#each bodyParts}}
+        <div class="ih-cs-zone {{#if (lt pct 30)}}is-critical{{else if (lt pct 60)}}is-bad{{/if}}">
+          <span class="ih-cs-zone-label">{{label}}</span>
+          <div class="ih-cs-zone-bar-track">
+            <div class="ih-cs-zone-bar" style="width:{{pct}}%"></div>
+          </div>
+          <div class="ih-cs-zone-hp">
+            <input class="ih-cs-hp-input" type="number"
+                   name="system.resources.hp.{{key}}.value" value="{{value}}" min="0">
+            <span class="muted-text">/</span>
+            <input class="ih-cs-hp-input" type="number"
+                   name="system.resources.hp.{{key}}.max" value="{{max}}" min="0">
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- Вкладка: Снаряжение --}}
+    <div class="ih-npc-tab-panel" data-panel="items">
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Снаряжение ({{items.length}})</div>
+        {{#if items.length}}
+          {{#each items}}
+          <div class="ih-cs-inv-row">
+            <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
+            <span class="ih-cs-inv-name" data-item-id="{{id}}" style="cursor:pointer">{{name}}</span>
+            <span class="muted-text" style="font-size:10px">{{type}}</span>
+            {{#if ../isGM}}
+            <a class="ih-icon-btn tiny" data-delete-item data-item-id="{{id}}">✕</a>
+            {{/if}}
+          </div>
+          {{/each}}
+        {{else}}
+          <div class="muted-text" style="padding:8px">Нет предметов</div>
+        {{/if}}
+      </div>
+    </div>
+
+    {{!-- Вкладка: Информация --}}
+    <div class="ih-npc-tab-panel" data-panel="info">
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Описание</div>
+        <textarea name="system.info.desc"
+                  style="width:100%;min-height:80px;box-sizing:border-box;resize:vertical"
+                  placeholder="Описание NPC...">{{system.info.desc}}</textarea>
+      </div>
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Заметки GM</div>
+        <textarea name="system.info.notes"
+                  style="width:100%;min-height:60px;box-sizing:border-box;resize:vertical"
+                  placeholder="Заметки...">{{system.info.notes}}</textarea>
+      </div>
+    </div>
+
+  </div>
 </form>

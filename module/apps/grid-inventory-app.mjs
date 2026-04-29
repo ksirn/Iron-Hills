@@ -4,7 +4,36 @@
  * Стек брони: резист берётся лучший из слоёв покрывающих зону.
  */
 
+import { getPersistentActor, isSyntheticActorDocument } from "../utils/actor-utils.mjs";
+import {
+  getBestResistForZone as _getBestResistForZone,
+  DEFAULT_SLOT_COVERS as SLOT_COVERS
+} from "../services/actor-state-service.mjs";
+
+// Реэкспорт канонической функции — для обратной совместимости с прежним публичным API.
+// Все новые потребители должны импортировать напрямую из services/actor-state-service.mjs.
+export const getBestResistForZone = _getBestResistForZone;
+
 const CELL = 46;
+
+/** Возвращает world-актора — всегда пишем в него, не в токен */
+function toWorldActor(actor) {
+  if (!actor) return actor;
+  return getPersistentActor(actor) ?? actor;
+}
+
+function _refreshPendingApp(actor) {
+  if (!actor) return;
+  for (const app of Object.values(ui.windows ?? {})) {
+    if (app.constructor?.name !== "PendingItemsApp") continue;
+    if (app._actor?.id !== actor.id) continue;
+    if (!app.rendered) break;
+    const remaining = app._getPendingItems?.() ?? [];
+    if (remaining.length === 0) app.close({ force: true });
+    else app.render(false);
+    break;
+  }
+}
 
 // Слоты экипировки — расположение на силуэте
 const EQUIP_SLOTS = [
@@ -29,38 +58,6 @@ const EQUIP_SLOTS = [
   { key:"backpack",  label:"Рюкзак",    icon:"🎒",  x:114, y:264, w:100, h:40, accepts:["backpack"],       group:"carry" },
 ];
 
-// Карта: слот брони → зоны тела которые защищает (по умолчанию)
-const SLOT_COVERS = {
-  head:       ["head"],
-  torso:      ["torso"],
-  leftArm:    ["leftArm"],
-  rightArm:   ["rightArm"],
-  legs:       ["leftLeg", "rightLeg"],
-};
-
-// ─── Лучший резист для зоны (стек брони) ─────────────────
-export function getBestResistForZone(actor, zone, damageType = "physical") {
-  const equip = actor.system?.equipment ?? {};
-  let best = 0;
-
-  for (const [slot, itemId] of Object.entries(equip)) {
-    if (!itemId) continue;
-    const item = actor.items.get(itemId);
-    if (!item || item.type !== "armor") continue;
-
-    const covers = item.system?.covers ?? SLOT_COVERS[slot] ?? [];
-    if (!covers.includes(zone)) continue;
-
-    const durVal = Number(item.system?.durability?.value ?? 100);
-    const durMax = Number(item.system?.durability?.max   ?? 100);
-    const scale  = durMax > 0 ? Math.max(0, durVal / durMax) : 1;
-    const scalef = scale >= 0.5 ? 1 : scale * 2;
-    const resist = Math.floor(Number(item.system?.resist ?? 0) * scalef);
-    if (resist > best) best = resist;
-  }
-  return best;
-}
-
 // ─── Алгоритм сетки ──────────────────────────────────────
 
 function makeGrid(cols, rows) {
@@ -83,7 +80,7 @@ function placeOnGrid(grid, col, row, w, h, id) {
 }
 
 function findFreeSlot(grid, w, h) {
-  if (!grid.length || !grid[0].length) return null;
+  if (!grid || !grid.length || !grid[0] || !grid[0].length) return null;
   for (let r = 0; r < grid.length; r++)
     for (let c = 0; c < grid[0].length; c++)
       if (canPlace(grid, c, r, w, h)) return { col: c, row: r };
@@ -135,7 +132,8 @@ function buildContainers(actor) {
           label: ai.system?.addsLabel ?? ai.name,
           cols: ai.system?.addsSlots?.cols ?? 3,
           rows: ai.system?.addsSlots?.rows ?? 1,
-          allowedTypes: Array.isArray(ai.system?.allowedTypes) ? ai.system.allowedTypes : null,
+          allowedTypes:  Array.isArray(ai.system?.allowedTypes)  ? ai.system.allowedTypes  : null,
+          allowedSkills: Array.isArray(ai.system?.allowedSkills) ? ai.system.allowedSkills : null,
           maxItemW: null, maxItemH: null,
           accessSeconds: ai.system?.accessSeconds ?? 1,
           sourceItemId: ai.id,
@@ -170,7 +168,8 @@ function buildContainers(actor) {
           label: ai.system?.addsLabel ?? ai.name,
           cols: ai.system?.addsSlots?.cols ?? 2,
           rows: ai.system?.addsSlots?.rows ?? 2,
-          allowedTypes: Array.isArray(ai.system?.allowedTypes) ? ai.system.allowedTypes : null,
+          allowedTypes:  Array.isArray(ai.system?.allowedTypes)  ? ai.system.allowedTypes  : null,
+          allowedSkills: Array.isArray(ai.system?.allowedSkills) ? ai.system.allowedSkills : null,
           maxItemW: null, maxItemH: null,
           accessSeconds: ai.system?.accessSeconds ?? 1,
           sourceItemId: ai.id,
@@ -209,7 +208,13 @@ function buildContainers(actor) {
       const mine = allItems
         .filter(i => {
           const f = getF(i);
-          return f.sectionKey === sec.key && !Object.values(equip).includes(i.id);
+          if (f.sectionKey !== sec.key) return false;
+          if (Object.values(equip).includes(i.id)) return false;
+          // Фильтр по навыку (для ножен, крюков и т.д.)
+          if (sec.allowedSkills?.length && i.system?.skill) {
+            if (!sec.allowedSkills.includes(i.system.skill)) return false;
+          }
+          return true;
         })
         .sort((a, b) => {
           const pa = getF(a).gridPos, pb = getF(b).gridPos;
@@ -259,11 +264,7 @@ function buildContainers(actor) {
       && !["spell","attachment"].includes(i.type);
   });
 
-  const target = containers.find(c => c.key === "backpack")
-    ?? containers.find(c => c.key === "pockets");
-  if (target?.sections?.[0]) target.sections[0].overflow.push(...unassigned);
-
-  return containers;
+    return containers;
 }
 
 // ─── App ─────────────────────────────────────────────────
@@ -314,6 +315,29 @@ class IronHillsGridInventoryApp extends Application {
         durPct:    item?.system?.durability
           ? Math.round(item.system.durability.value / Math.max(1, item.system.durability.max) * 100)
           : null,
+        durClass: (() => {
+          if (!item?.system?.durability) return "dur-good";
+          const pct = Math.round(item.system.durability.value / Math.max(1,item.system.durability.max)*100);
+          return pct<=0?"dur-broken":pct<=25?"dur-critical":pct<=50?"dur-damaged":pct<=75?"dur-worn":"dur-good";
+        })(),
+        itemTooltipStats: (() => {
+          if (!item) return "";
+          const s = item.system ?? {};
+          const parts = [];
+          if (s.damage)               parts.push(`⚔ Урон: ${s.damage}`);
+          if (s.skill)                parts.push(`🎯 Навык: ${s.skill}`);
+          if (s.energyCost)           parts.push(`⚡ Энергия: ${s.energyCost}`);
+          if (s.twoHanded)            parts.push(`🤲 Двуручное`);
+          if (s.protection?.physical) parts.push(`🛡 Защита: ${s.protection.physical}`);
+          if (s.satiety)              parts.push(`🍖 Сытость: +${s.satiety}`);
+          if (s.hydration)            parts.push(`💧 Жажда: +${s.hydration}`);
+          if (s.power && s.actionType) parts.push(`✦ Сила: ${s.power}`);
+          if (s.school)               parts.push(`✨ ${s.school} ранг ${s.rank??1}`);
+          if (s.weight)               parts.push(`⚖ ${s.weight} кг`);
+          const desc = s.description ?? s.desc ?? "";
+          if (desc) parts.push(String(desc).replace(/<[^>]+>/g,"").slice(0,80));
+          return parts.join(" · ");
+        })(),
       };
     });
 
@@ -362,18 +386,51 @@ class IronHillsGridInventoryApp extends Application {
 
   _mapPlaced(p, pocketMode = false) {
     const gap = pocketMode ? 8 : 0;
+    const identified  = p.item.system?.identified !== false;
+    const visibleName = identified
+      ? p.item.name
+      : (p.item.system?.unidentifiedName || "❓ Неизвестный предмет");
+    const sys = p.item.system ?? {};
+    const tooltipParts = [];
+    if (identified) {
+      if (sys.damage)               tooltipParts.push(`⚔ Урон: ${sys.damage}`);
+      if (sys.skill)                tooltipParts.push(`🎯 Навык: ${sys.skill}`);
+      if (sys.energyCost)           tooltipParts.push(`⚡ Энергия: ${sys.energyCost}`);
+      if (sys.twoHanded)            tooltipParts.push(`🤲 Двуручное`);
+      if (sys.protection?.physical) tooltipParts.push(`🛡 Защита: ${sys.protection.physical}`);
+      if (sys.satiety)              tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
+      if (sys.hydration)            tooltipParts.push(`💧 Жажда: +${sys.hydration}`);
+      if (sys.power && sys.actionType) {
+        const ACT = { healHp:"❤ Лечение", restoreEnergy:"⚡ Энергия",
+                      restoreMana:"💧 Мана", curePoison:"☠ Лечит яд",
+                      healBleeding:"🩸 Кровотечение" };
+        tooltipParts.push(`${ACT[sys.actionType]??`✦ Эффект`}: +${sys.power}`);
+      }
+      if (sys.school)               tooltipParts.push(`✨ ${sys.school} ранг ${sys.rank??1}`);
+      if (sys.weight)               tooltipParts.push(`⚖ ${sys.weight} кг`);
+      const desc = sys.description ?? sys.desc ?? "";
+      if (desc) tooltipParts.push(String(desc).replace(/<[^>]+>/g,"").slice(0,80));
+    }
+    const durVal = p.item.system?.durability?.value ?? -1;
+    const durMax = p.item.system?.durability?.max   ?? 100;
+    const durPct = durVal >= 0 && durMax > 0
+      ? Math.round(durVal / durMax * 100) : null;
+    const durClass = !durPct ? "" : durPct <= 0 ? "dur-broken"
+      : durPct <= 25 ? "dur-critical" : durPct <= 50 ? "dur-damaged"
+      : durPct <= 75 ? "dur-worn" : "dur-good";
+
     return {
       itemId:  p.item.id, name: p.item.name,
       img:     p.item.img ?? "icons/svg/item-bag.svg",
       type:    p.item.type, tier: p.item.system?.tier ?? 1,
       qty:     p.item.system?.quantity ?? 1,
       w:p.w, h:p.h, col:p.col, row:p.row, rotated:p.rotated,
-      durPct:  p.item.system?.durability
-        ? Math.round(p.item.system.durability.value / Math.max(1,p.item.system.durability.max)*100)
-        : null,
+      durPct, durClass,
       isBroken: (p.item.system?.durability?.value ?? 1) <= 0,
       cssLeft: p.col*(CELL+gap), cssTop: p.row*CELL,
       cssW: p.w*CELL-3, cssH: p.h*CELL-3,
+      identified, visibleName,
+      tooltipStats: tooltipParts.join(" · "),
     };
   }
 
@@ -389,7 +446,51 @@ class IronHillsGridInventoryApp extends Application {
       html.find(`[data-sec-key="${this._activeSec}"]`).addClass("is-active");
     });
 
-    // Drag start с предмета
+    // Tooltip позиционирование
+    html.on("mouseenter", ".ih-gi-item", e => {
+      const tip = $(e.currentTarget).find(".ih-gi-tooltip").first();
+      if (!tip.length) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      let left = rect.right + 8;
+      let top  = rect.top;
+      if (left + 200 > window.innerWidth)  left = rect.left - 210;
+      if (top  + 160 > window.innerHeight) top  = window.innerHeight - 165;
+      tip.css({ display:"block", position:"fixed", top:Math.max(4,top), left:Math.max(4,left), zIndex:99999 });
+    });
+    html.on("mouseleave", ".ih-gi-item", () => {
+      html.find(".ih-gi-tooltip").css("display","none");
+    });
+
+      // Tooltip позиционирование в инвентаре
+    html.on("mouseenter", ".ih-gi-item", e => {
+      const tip = $(e.currentTarget).find(".ih-gi-tooltip").first();
+      if (!tip.length) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      let left = rect.right + 8;
+      let top  = rect.top;
+      if (left + 200 > window.innerWidth)  left = rect.left - 210;
+      if (top  + 160 > window.innerHeight) top  = window.innerHeight - 165;
+      tip.css({ display:"block", position:"fixed",
+                top:Math.max(4,top), left:Math.max(4,left), zIndex:99999 });
+    });
+    html.on("mouseleave", ".ih-gi-item, .ih-gi-equip-slot", () => {
+      html.find(".ih-gi-tooltip").css("display", "none");
+    });
+
+    // Tooltip на слотах экипировки
+    html.on("mouseenter", ".ih-gi-equip-slot.has-item", e => {
+      const tip = $(e.currentTarget).find(".ih-gi-tooltip").first();
+      if (!tip.length) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      let left = rect.right + 8;
+      let top  = rect.top;
+      if (left + 200 > window.innerWidth)  left = rect.left - 210;
+      if (top  + 160 > window.innerHeight) top  = window.innerHeight - 165;
+      tip.css({ display:"block", position:"fixed",
+                top:Math.max(4,top), left:Math.max(4,left), zIndex:99999 });
+    });
+
+      // Drag start с предмета
     html.find(".ih-gi-item").on("dragstart", e => {
       const el = e.currentTarget;
       this._dragData = { itemId: el.dataset.itemId, fromSec: el.dataset.secKey };
@@ -412,6 +513,13 @@ class IronHillsGridInventoryApp extends Application {
         e.preventDefault();
         $(canvasEl).find(".ih-gi-cell").removeClass("drag-over");
         const secKey = canvasEl.dataset.secKey;
+        // Принимаем drag из pending stash
+        if (!this._dragData) {
+          try {
+            const ext = JSON.parse(e.dataTransfer?.getData("text/plain") ?? "{}");
+            if (ext.itemId) this._dragData = ext;
+          } catch {}
+        }
         this._onCanvasDrop(e, canvasEl, secKey);
       });
     });
@@ -420,6 +528,13 @@ class IronHillsGridInventoryApp extends Application {
     html.find(".ih-gi-equip-slot").on("dragover", e => e.preventDefault());
     html.find(".ih-gi-equip-slot").on("drop", e => {
       e.preventDefault(); e.stopPropagation();
+      // Принимаем drag из pending stash
+      if (!this._dragData) {
+        try {
+          const ext = JSON.parse((e.originalEvent ?? e).dataTransfer?.getData("text/plain") ?? "{}");
+          if (ext.itemId) this._dragData = ext;
+        } catch {}
+      }
       this._onEquipDrop(e.currentTarget.dataset.slot, e.originalEvent ?? e);
     });
 
@@ -440,12 +555,72 @@ class IronHillsGridInventoryApp extends Application {
       this._ctxMenu(e.currentTarget.dataset.itemId, e.currentTarget.dataset.secKey);
     });
 
-    // ПКМ на слот экипировки — снять
+    // ПКМ на слот экипировки — контекстное меню
     html.find(".ih-gi-equip-slot.has-item").on("contextmenu", async e => {
       e.preventDefault();
       const slot   = e.currentTarget.dataset.slot;
       const itemId = this.actor.system?.equipment?.[slot];
-      if (itemId) await this._unequip(slot, itemId);
+      if (!itemId) return;
+      const item = this.actor.items.get(itemId);
+      if (!item) return;
+
+      // Строим кнопки идентификации
+      let identBtns = {};
+      const isIdentifiable = ["weapon","armor","tool","potion","spell","material"].includes(item.type);
+      if (isIdentifiable) {
+        try {
+          const { IDENTIFY_ASPECTS, getIdentStatus } = await import("../services/identification-service.mjs");
+          const status = getIdentStatus(item);
+          const isIdentified = item.system?.identified !== false;
+          if (!isIdentified) {
+            for (const asp of status.applicable) {
+              if (!asp.revealed) {
+                identBtns[`ident_${asp.key}`] = {
+                  label: `${asp.label} (DC ${asp.dc})`,
+                  callback: () => `ident_${asp.key}`,
+                };
+              }
+            }
+          }
+          if (game.user?.isGM) {
+            if (!isIdentified)
+              identBtns["ident_all"] = { label: "✅ Опознать (GM)", callback: () => "ident_all" };
+            else
+              identBtns["unident"]   = { label: "❓ Сделать неопознанным", callback: () => "unident" };
+          }
+        } catch {}
+      }
+
+      const choice = await Dialog.wait({
+        title:   item.name,
+        content: `<p style="margin:4px 0;color:#a8b8d0;font-size:12px">${item.name}</p>`,
+        buttons: {
+          unequip: { label: "↩ Снять",            callback: () => "unequip" },
+
+          ...identBtns,
+        },
+        default: "view",
+        close:   () => null,
+      });
+
+      if (!choice) return;
+      if (choice === "unequip") { await this._unequip(slot, itemId); return; }
+
+      if (choice === "ident_all") {
+        const { fullyIdentify } = await import("../services/identification-service.mjs").catch(()=>({}));
+        if (fullyIdentify) await fullyIdentify(item, null, 0);
+        this.render(false); return;
+      }
+      if (choice === "unident") {
+        const { makeUnidentified } = await import("../services/identification-service.mjs").catch(()=>({}));
+        if (makeUnidentified) await makeUnidentified(item);
+        this.render(false); return;
+      }
+      if (choice?.startsWith("ident_")) {
+        const { attemptIdentify } = await import("../services/identification-service.mjs").catch(()=>({}));
+        if (attemptIdentify) await attemptIdentify(this.actor, item, choice.replace("ident_", ""));
+        this.render(false); return;
+      }
     });
 
     // Дабл-клик — быстрая экипировка
@@ -496,7 +671,8 @@ class IronHillsGridInventoryApp extends Application {
     const bw = Number(item.system?.gridW ?? 1), bh = Number(item.system?.gridH ?? 1);
     const w  = rt ? bh : bw, h = rt ? bw : bh;
 
-    if (sec.maxItemW && w > sec.maxItemW) { ui.notifications.warn(`Предмет слишком широк`); return; }
+    if (sec.maxItemW && w > sec.maxItemW) { ui.notifications.warn(`Предмет слишком широк для "${sec.label}"`); return; }
+    if (sec.maxItemH && h > sec.maxItemH) { ui.notifications.warn(`Предмет слишком длинный для "${sec.label}"`); return; }
 
     // Убираем из старой позиции
     if (sec.grid) {
@@ -514,6 +690,8 @@ class IronHillsGridInventoryApp extends Application {
       "flags.iron-hills-system.gridPos":    { col, row },
     });
     this.render(false);
+    // Уведомляем PendingItemsApp об изменении
+    _refreshPendingApp(this.actor);
   }
 
   async _onEquipDrop(slot, e) {
@@ -529,23 +707,90 @@ class IronHillsGridInventoryApp extends Application {
       ui.notifications.warn(`В "${slotCfg?.label}" нельзя надеть ${item.type}`); return;
     }
 
-    const curId = this.actor.system?.equipment?.[slot];
-    if (curId && curId !== data.itemId) {
-      const old = this.actor.items.get(curId);
-      if (old) await old.update({ "flags.iron-hills-system.sectionKey": null, "flags.iron-hills-system.gridPos": null });
+    const equip = this.actor.system?.equipment ?? {};
+
+    // Снимаем предмет из старого слота если он уже надет куда-то
+    const oldSlot = Object.entries(equip).find(([k, v]) => v === data.itemId)?.[0];
+    if (oldSlot && oldSlot !== slot) {
+      await this.actor.update({ [`system.equipment.${oldSlot}`]: "" });
     }
 
-    await this.actor.update({ [`system.equipment.${slot}`]: data.itemId });
+    // Если в новом слоте что-то было — снимаем это
+    const curId = equip[slot];
+    if (curId && curId !== data.itemId) {
+      const displaced = this.actor.items.get(curId);
+      if (displaced) await displaced.update({
+        "flags.iron-hills-system.sectionKey": null,
+        "flags.iron-hills-system.gridPos": null
+      });
+      await toWorldActor(this.actor).update({ [`system.equipment.${slot}`]: "" });
+    }
+
+    await toWorldActor(this.actor).update({ [`system.equipment.${slot}`]: data.itemId });
     await item.update({ "flags.iron-hills-system.sectionKey": null, "flags.iron-hills-system.gridPos": null });
     this.render(false);
+    _refreshPendingApp(this.actor);
   }
 
   async _unequip(slot, itemId) {
     const item = this.actor.items.get(itemId);
     if (!item) return;
-    await this.actor.update({ [`system.equipment.${slot}`]: "" });
-    await item.update({ "flags.iron-hills-system.sectionKey": null, "flags.iron-hills-system.gridPos": null });
+
+    // При снятии контейнерных предметов (рюкзак/пояс) — очищаем sectionKey у вложенных
+    const CONTAINER_SLOTS = ["backpack", "belt"];
+    if (CONTAINER_SLOTS.includes(slot)) {
+      // Находим все секции этого контейнера
+      const contKey  = slot; // "backpack" или "belt"
+      const updates  = [];
+      for (const i of this.actor.items) {
+        const f = i.flags?.["iron-hills-system"] ?? {};
+        // Предметы в секциях этого контейнера (ключ начинается с contKey)
+        if (f.sectionKey && (f.sectionKey.startsWith(contKey + "_") || f.sectionKey === contKey + "_main")) {
+          updates.push(i.update({
+            "flags.iron-hills-system.sectionKey": null,
+            "flags.iron-hills-system.gridPos":    null,
+          }));
+        }
+      }
+      if (updates.length) await Promise.all(updates);
+    }
+
+    const worldActor = toWorldActor(this.actor);
+    await worldActor.update({ [`system.equipment.${slot}`]: "" });
+    // Сбрасываем позицию в grid чтобы предмет попал в нераспределённые
+    const worldItem = worldActor.items.get(itemId) ?? item;
+    await worldItem.update({
+      "flags.iron-hills-system.sectionKey": null,
+      "flags.iron-hills-system.gridPos":    null,
+    });
+
+    // Небольшая пауза чтобы Foundry успел обновить состояние
+    await new Promise(r => setTimeout(r, 100));
+
+    // Пробуем авторазместить в контейнер
+    const conts = buildContainers(worldActor);
+    const placed = await IronHillsGridInventoryApp._autoPlaceItem(worldActor, worldItem, conts);
+
+    if (!placed) {
+      const drop = await Dialog.confirm({
+        title:   `${worldItem.name} не влезает`,
+        content: `<p>В рюкзаках и карманах нет места для <b>${worldItem.name}</b>.</p>
+                  <p>Выбросить на землю?</p>`,
+        yes:     () => true,
+        no:      () => false,
+        defaultYes: false,
+      });
+      if (drop) {
+        await game.ironHills?.dropToGround?.([worldItem], worldActor);
+      } else {
+        // Отказался выбрасывать — открываем PendingItemsApp
+        const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(()=>({}));
+        if (PendingItemsApp) await PendingItemsApp.openIfNeeded(worldActor);
+      }
+    }
+
     this.render(false);
+    _refreshPendingApp(this.actor);
   }
 
   async _rotate(itemId) {
@@ -565,6 +810,125 @@ class IronHillsGridInventoryApp extends Application {
     const free   = compat.find(s => !equip[s.key]) ?? compat[0];
     await this._onEquipDrop(free.key, { dataTransfer: { getData: () => JSON.stringify({ itemId }) } });
   }
+
+  /**
+   * Авторазместить все нераспределённые предметы актора.
+   * Возвращает массив предметов которые не влезли.
+   */
+  static async autoPlaceAllItems(actor) {
+    const conts = buildContainers(actor);
+    const assigned = new Set();
+    for (const c of conts)
+      for (const s of c.sections)
+        for (const p of (s.placed ?? []))
+          assigned.add(p.item.id);
+
+    const equip = actor.system?.equipment ?? {};
+    const unplaced = actor.items.filter(i =>
+      !assigned.has(i.id) &&
+      !Object.values(equip).includes(i.id) &&
+      !["spell","attachment"].includes(i.type)
+    );
+
+    const failed = [];
+    for (const item of unplaced) {
+      const equipped = await IronHillsGridInventoryApp._tryAutoEquip(actor, item);
+      if (equipped) continue;
+      const placed = await IronHillsGridInventoryApp._autoPlaceItem(actor, item, conts);
+      if (!placed) failed.push(item);
+    }
+    return failed;
+  }
+
+  /** Попытка разместить один предмет в свободную ячейку */
+  static async _autoPlaceItem(actor, item, conts) {
+    const f  = item.flags?.["iron-hills-system"] ?? {};
+    const rt = !!f.rotated;
+    const w  = rt ? (item.system?.gridH ?? 1) : (item.system?.gridW ?? 1);
+    const h  = rt ? (item.system?.gridW ?? 1) : (item.system?.gridH ?? 1);
+
+    for (const cont of conts) {
+      if (cont.isPending) continue;
+      for (const sec of cont.sections) {
+        if (sec.allowedTypes && !sec.allowedTypes.includes(item.type)) continue;
+        if (sec.maxItemW && w > sec.maxItemW) continue;
+        if (sec.maxItemH && h > sec.maxItemH) continue;
+        const slot = findFreeSlot(sec.grid, w, h);
+        if (slot) {
+          await item.update({
+            "flags.iron-hills-system.sectionKey": sec.key,
+            "flags.iron-hills-system.gridPos": { col: slot.col, row: slot.row }
+          });
+          // Обновляем grid для следующей итерации
+          for (let r = slot.row; r < slot.row + h; r++)
+            for (let c = slot.col; c < slot.col + w; c++)
+              if (sec.grid[r]) sec.grid[r][c] = item.id;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
+  /** Попытка надеть предмет в подходящий свободный слот экипировки */
+  static async _tryAutoEquip(actor, item) {
+    const qty = Number(item.system?.quantity ?? 1);
+    if (qty > 1) return false;
+
+    const equip   = actor.system?.equipment ?? {};
+    // Слот свободен если: не задан, пустая строка, или предмет с таким id не существует
+    const slotCfg = EQUIP_SLOTS.find(s => {
+      if (!s.accepts?.includes(item.type)) return false;
+      const cur = equip[s.key];
+      if (!cur) return true; // пусто
+      return !actor.items.get(cur); // предмет удалён
+    });
+    if (!slotCfg) return false;
+
+    const target = toWorldActor(actor);
+    await target.update({ [`system.equipment.${slotCfg.key}`]: item.id });
+    await item.update({
+      "flags.iron-hills-system.sectionKey": null,
+      "flags.iron-hills-system.gridPos":    null,
+    });
+    return true;
+  }
+
+  /**
+   * Авторазместить все нераспределённые предметы актора.
+   * Возвращает массив предметов которые не влезли.
+   */
+  
+  static async _autoPlaceItem(actor, item, conts) {
+    const f = item.flags?.["iron-hills-system"] ?? {};
+    const rt = !!f.rotated;
+    const w  = rt ? (item.system?.gridH ?? 1) : (item.system?.gridW ?? 1);
+    const h  = rt ? (item.system?.gridW ?? 1) : (item.system?.gridH ?? 1);
+
+    for (const cont of conts) {
+      if (cont.isPending) continue;
+      for (const sec of cont.sections) {
+        if (sec.allowedTypes && !sec.allowedTypes.includes(item.type)) continue;
+        if (sec.maxItemW && w > sec.maxItemW) continue;
+        if (sec.maxItemH && h > sec.maxItemH) continue;
+        const slot = findFreeSlot(sec.grid, w, h);
+        if (slot) {
+          await item.update({
+            "flags.iron-hills-system.sectionKey": sec.key,
+            "flags.iron-hills-system.gridPos": { col: slot.col, row: slot.row }
+          });
+          for (let r = slot.row; r < slot.row + h; r++)
+            for (let c2 = slot.col; c2 < slot.col + w; c2++)
+              if (sec.grid[r]) sec.grid[r][c2] = item.id;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
 
   async _autoPlace(itemId) {
     const item  = this.actor.items.get(itemId);
@@ -602,19 +966,87 @@ class IronHillsGridInventoryApp extends Application {
         moveBtns[sec.key] = { label:`${cont.icon} → ${sec.label}`, callback:()=>`move:${sec.key}` };
       }
 
+    // Стоимость ремонта
+    const durCur  = Number(item.system?.durability?.value ?? 100);
+    const durMax  = Number(item.system?.durability?.max   ?? 100);
+    const durTier = Number(item.system?.tier ?? 1);
+    const repairCostDisplay = Math.ceil(Math.max(0, durMax - durCur) * durTier * 10);
+
+    // Опции идентификации
+    const isIdentifiable = ["weapon","armor","tool","potion","spell","material"].includes(item.type);
+    const isIdentified   = item.system?.identified !== false;
+    let identBtns = {};
+    if (isIdentifiable) {
+      const { IDENTIFY_ASPECTS, getIdentStatus } = await import("../services/identification-service.mjs").catch(()=>({}));
+      if (IDENTIFY_ASPECTS) {
+        const status = getIdentStatus(item);
+        if (!isIdentified) {
+          // Кнопки раскрытия аспектов
+          for (const asp of status.applicable) {
+            if (!asp.revealed) {
+              identBtns[`ident_${asp.key}`] = {
+                label: `${asp.label} (DC ${asp.dc})`,
+                callback: () => `ident_${asp.key}`
+              };
+            }
+          }
+        }
+        if (game.user?.isGM) {
+          if (!isIdentified) {
+            identBtns["ident_all"] = { label: "✅ Опознать полностью (GM)", callback: () => "ident_all" };
+          } else {
+            identBtns["unident"]   = { label: "❓ Сделать неопознанным",    callback: () => "unident"   };
+          }
+        }
+      }
+    }
+
     const choice = await Dialog.wait({
       title: item.name,
       content:`<p style="color:#a8b8d0;font-family:'Segoe UI',sans-serif">${item.name} · ст.${item.system?.tier??1}</p>`,
       buttons:{
         ...equipBtns, ...moveBtns,
         rotate:{ label:"↺ Повернуть", callback:()=>"rotate" },
-        del:   { label:"🗑 Выбросить",  callback:()=>"delete" },
+        ...( ["weapon","armor","tool"].includes(item.type) && Number(item.system?.durability?.value??100) < Number(item.system?.durability?.max??100)
+          ? { repair: { label:`🔨 Починить (${repairCostDisplay} мед.)`, callback:()=>"repair" } } : {} ),
+        ...identBtns,
+        drop:  { label:"🪨 На землю",    callback:()=>"ground" },
+        del:   { label:"🗑 Удалить",      callback:()=>"delete" },
       },
       default:"rotate"
     });
 
     if (!choice) return;
+
+    // Идентификация
+    if (choice?.startsWith?.("ident_")) {
+      const { attemptIdentify, fullyIdentify, IDENTIFY_ASPECTS } = await import("../services/identification-service.mjs").catch(()=>({}));
+      if (!attemptIdentify) return;
+      if (choice === "ident_all") {
+        await fullyIdentify(item, null, 0);
+      } else {
+        const aspect = choice.replace("ident_", "");
+        await attemptIdentify(this.actor, item, aspect);
+      }
+      this.render(false); return;
+    }
+    if (choice === "unident") {
+      const { makeUnidentified } = await import("../services/identification-service.mjs").catch(()=>({}));
+      if (makeUnidentified) await makeUnidentified(item);
+      this.render(false); return;
+    }
+
+    if (choice==="repair") {
+      const { repairItem } = await import("../services/durability-service.mjs");
+      await repairItem(item, this.actor, game.user?.isGM);
+      this.render(false); return;
+    }
     if (choice==="rotate")        { await this._rotate(itemId); return; }
+    if (choice==="ground")        {
+      await game.ironHills.dropToGround?.([item], this.actor)
+         ?? ui.notifications.warn("dropToGround не доступен");
+      this.render(false); return;
+    }
     if (choice==="delete")        { await item.delete(); this.render(false); return; }
     if (choice.startsWith("move:")){ const t=choice.replace("move:",""); await item.update({"flags.iron-hills-system.sectionKey":t,"flags.iron-hills-system.gridPos":null}); this.render(false); return; }
     await this._onEquipDrop(choice, { dataTransfer:{getData:()=>JSON.stringify({itemId})} });

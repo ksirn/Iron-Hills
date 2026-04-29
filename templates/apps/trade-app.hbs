@@ -78,21 +78,57 @@
         {{!-- Предметы --}}
         <div class="ih-trade-inv-list">
           {{#each merchantItems}}
-          <div class="ih-trade-inv-item" draggable="true"
-               data-item-id="{{id}}" data-side="right"
-               title="{{name}} — {{price}} мед. | Двойной клик или перетащи в предложение">
+          <div class="ih-trade-inv-item {{#if multiQty}}has-qty-ctrl{{/if}} ih-has-tooltip"
+               data-item-id="{{id}}" data-side="right">
             <img class="ih-trade-inv-icon" src="{{img}}" alt="{{name}}">
             <div class="ih-trade-inv-info">
               <div class="ih-trade-inv-name">{{name}}</div>
               <div class="ih-trade-inv-meta">
                 <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
-                <span class="ih-trade-inv-qty">×{{qty}}</span>
+                <span class="muted-text" style="font-size:10px">Тир {{tier}}</span>
               </div>
             </div>
+            {{!-- Tooltip --}}
+            <div class="ih-trade-tooltip">
+              <div class="ih-trade-tooltip-header">
+                <img src="{{img}}" width="28" height="28" style="border-radius:4px">
+                <div>
+                  <div style="font-weight:700;font-size:12px">{{name}}</div>
+                  <div class="muted-text" style="font-size:10px">Тир {{tier}} · {{categoryLabel}}</div>
+                </div>
+              </div>
+              {{#if tooltipStats}}
+              <div class="ih-trade-tooltip-stats">{{tooltipStats}}</div>
+              {{/if}}
+              {{#if tooltipDesc}}
+              <div class="ih-trade-tooltip-desc">{{tooltipDesc}}</div>
+              {{/if}}
+              <div class="ih-trade-tooltip-price">🪙 {{priceFormatted.val}} {{priceFormatted.currency}}</div>
+            </div>
+            {{!-- Счётчик --}}
+            {{#if multiQty}}
+            <div class="ih-trade-qty-ctrl" data-item-id="{{id}}" data-side="right"
+                 data-max="{{qty}}">
+              <a class="ih-trade-qty-btn" data-qty-dec>−</a>
+              <input class="ih-trade-qty-input" type="number"
+                     value="1" min="1" max="{{qty}}"
+                     data-qty-input data-item-id="{{id}}">
+              <a class="ih-trade-qty-btn" data-qty-inc>+</a>
+              <span class="ih-trade-qty-max muted-text">/{{qty}}</span>
+            </div>
+            {{else}}
+            <span class="ih-trade-inv-qty-single">×{{qty}}</span>
+            {{/if}}
             <div class="ih-trade-inv-price">
               <span class="ih-trade-price-main-val {{priceFormatted.cssClass}}">{{priceFormatted.val}}</span>
               <span class="ih-trade-price-currency">{{priceFormatted.currency}}</span>
             </div>
+            <a class="ih-trade-view-btn" data-view-item
+               data-item-id="{{id}}" data-side="right"
+               title="Открыть карточку предмета">📖</a>
+            <a class="ih-trade-add-btn" data-add-to-offer
+               data-item-id="{{id}}" data-side="right"
+               title="Добавить в предложение">→</a>
           </div>
           {{else}}
           <div class="ih-trade-empty-inv">Нет предметов</div>
@@ -253,21 +289,57 @@
         {{!-- Предметы --}}
         <div class="ih-trade-inv-list right">
           {{#each charItems}}
-          <div class="ih-trade-inv-item" draggable="true"
-               data-item-id="{{id}}" data-side="left"
-               title="{{name}} — {{price}} мед. | Двойной клик или перетащи в предложение">
+          <div class="ih-trade-inv-item {{#if multiQty}}has-qty-ctrl{{/if}} ih-has-tooltip"
+               data-item-id="{{id}}" data-side="left">
+            <img class="ih-trade-inv-icon" src="{{img}}" alt="{{name}}">
+            <div class="ih-trade-inv-info">
+              <div class="ih-trade-inv-name">{{name}}</div>
+              <div class="ih-trade-inv-meta">
+                <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
+                <span class="muted-text" style="font-size:10px">Тир {{tier}}</span>
+              </div>
+            </div>
+            {{!-- Tooltip --}}
+            <div class="ih-trade-tooltip">
+              <div class="ih-trade-tooltip-header">
+                <img src="{{img}}" width="28" height="28" style="border-radius:4px">
+                <div>
+                  <div style="font-weight:700;font-size:12px">{{name}}</div>
+                  <div class="muted-text" style="font-size:10px">Тир {{tier}} · {{categoryLabel}}</div>
+                </div>
+              </div>
+              {{#if tooltipStats}}
+              <div class="ih-trade-tooltip-stats">{{tooltipStats}}</div>
+              {{/if}}
+              {{#if tooltipDesc}}
+              <div class="ih-trade-tooltip-desc">{{tooltipDesc}}</div>
+              {{/if}}
+              <div class="ih-trade-tooltip-price">🪙 {{priceFormatted.val}} {{priceFormatted.currency}}</div>
+            </div>
+            {{!-- Счётчик --}}
+            {{#if multiQty}}
+            <div class="ih-trade-qty-ctrl" data-item-id="{{id}}" data-side="left"
+                 data-max="{{qty}}">
+              <a class="ih-trade-qty-btn" data-qty-dec>−</a>
+              <input class="ih-trade-qty-input" type="number"
+                     value="1" min="1" max="{{qty}}"
+                     data-qty-input data-item-id="{{id}}">
+              <a class="ih-trade-qty-btn" data-qty-inc>+</a>
+              <span class="ih-trade-qty-max muted-text">/{{qty}}</span>
+            </div>
+            {{else}}
+            <span class="ih-trade-inv-qty-single">×{{qty}}</span>
+            {{/if}}
             <div class="ih-trade-inv-price">
               <span class="ih-trade-price-main-val {{priceFormatted.cssClass}}">{{priceFormatted.val}}</span>
               <span class="ih-trade-price-currency">{{priceFormatted.currency}}</span>
             </div>
-            <div class="ih-trade-inv-info right">
-              <div class="ih-trade-inv-name">{{name}}</div>
-              <div class="ih-trade-inv-meta">
-                <span class="ih-trade-inv-qty">×{{qty}}</span>
-                <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
-              </div>
-            </div>
-            <img class="ih-trade-inv-icon" src="{{img}}" alt="{{name}}">
+            <a class="ih-trade-view-btn" data-view-item
+               data-item-id="{{id}}" data-side="left"
+               title="Открыть карточку">📖</a>
+            <a class="ih-trade-add-btn" data-add-to-offer
+               data-item-id="{{id}}" data-side="left"
+               title="Добавить в предложение">→</a>
           </div>
           {{else}}
           <div class="ih-trade-empty-inv">Нет предметов</div>

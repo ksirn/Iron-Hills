@@ -1,4 +1,6 @@
 import { NPC_ROLE_PROFILES } from "./constants/npc-profiles.mjs";
+import { MERCHANT_TYPES, ECONOMY_STATES, setSettlementEconomy } from "./services/merchant-service.mjs";
+import { EntityPickerDialog } from "./apps/entity-picker.mjs";
 import { randInt, choice, clamp } from "./utils/math-utils.mjs";
 import {
   makeName,
@@ -82,34 +84,17 @@ const POI_TYPES = {
   }
 };
 
+import {
+  getSettlements,
+  getMerchants,
+  getFactions,
+  getPois,
+  findFactionByName,
+  findSettlementByName,
+} from "./utils/world-helpers.mjs";
+
 function todayStamp() {
   return new Date().toLocaleString("ru-RU");
-}
-
-function getSettlements() {
-  return game.actors.filter(a => a.type === "settlement");
-}
-
-function getMerchants() {
-  return game.actors.filter(a => a.type === "merchant");
-}
-
-function getFactions() {
-  return game.actors.filter(a => a.type === "faction");
-}
-
-function getPois() {
-  return game.actors.filter(a => a.type === "poi");
-}
-
-function findFactionByName(name) {
-  if (!name) return null;
-  return getFactions().find(f => f.name === name) ?? null;
-}
-
-function findSettlementByName(name) {
-  if (!name) return null;
-  return getSettlements().find(s => s.name === name) ?? null;
 }
 
 function getMerchantCountForSettlement(settlementName) {
@@ -145,6 +130,21 @@ function getSettlementMilitia(settlement) {
   const factionPressure = Number(settlement.system.economy?.factionPressure ?? 0);
   const base = 3 + Math.max(0, factionPressure) + (danger >= 7 ? 2 : 0);
   return clamp(base + randInt(-1, 2), 0, 10);
+}
+
+/**
+ * Вычисляет ECONOMY_STATE id по параметрам поселения.
+ * Результат записывается в system.economy.economyStatus
+ * и читается ShopApp для расчёта цен/наличия товаров.
+ */
+function computeEconomyStatus(prosperity, danger, supply, activeCrisis) {
+  if (activeCrisis === "plague") return "plague";
+  if (activeCrisis === "war" || danger >= 9)   return "war";
+  if (danger >= 7 && supply <= 3)              return "crisis";
+  if (supply <= 3 || prosperity <= 2)          return "shortage";
+  if (prosperity >= 8 && supply >= 7)          return "boom";
+  if (prosperity >= 6 && danger <= 3)          return "festival";
+  return "normal";
 }
 
 function computeSettlementEconomy(settlementLike) {
@@ -348,48 +348,106 @@ async function createPoi({
   return actor;
 }
 
-async function restockMerchant(merchant, settlement = null) {
-  const specialty = merchant.system.info?.specialty ?? "general";
-  const tier = Number(merchant.system.info?.tier ?? 1);
+export async function restockMerchant(merchant, settlement = null) {
+  const specialty        = merchant.system.info?.specialty ?? "general";
+  const tier             = Number(merchant.system.info?.tier ?? 1);
   const linkedSettlement = settlement ?? findSettlementByName(merchant.system.info?.settlement ?? "");
 
-  const currentItems = merchant.items.size;
-  const desiredMin = 5 + tier * 2;
-  let added = 0;
+  // Экономика поселения → priceFactor
+  const econData = linkedSettlement ? computeSettlementEconomy(linkedSettlement) : null;
+  const econStatus = linkedSettlement?.system?.economy?.economyStatus ?? "normal";
+  const { ECONOMY_STATES } = await import("./services/merchant-service.mjs");
+  const econState = ECONOMY_STATES[econStatus] ?? ECONOMY_STATES.normal;
 
-  if (currentItems < desiredMin) {
-    const batch = linkedSettlement
-      ? getContextualMerchantStock(linkedSettlement, specialty, tier)
-      : randomMerchantStock(specialty, tier);
-    await merchant.createEmbeddedDocuments("Item", batch);
-    added = batch.length;
-  }
+  const SPECIALTY_PRICE = {
+    general:     econData?.foodPrice      ?? 1,
+    weaponsmith: econData?.armsPrice      ?? 1,
+    armorsmith:  econData?.armsPrice      ?? 1,
+    alchemist:   econData?.alchemyPrice   ?? 1,
+    mage:        econData?.alchemyPrice   ?? 1,
+    jeweler:     econData?.materialsPrice ?? 1,
+    blackmarket: 0.8,
+    // старые названия для совместимости
+    blacksmith:  econData?.armsPrice      ?? 1,
+    innkeeper:   econData?.foodPrice      ?? 1,
+    hunter:      econData?.foodPrice      ?? 1,
+  };
+  const factor = Number(((SPECIALTY_PRICE[specialty] ?? 1) * econState.priceMult).toFixed(2));
 
-  const settlementEconomy = linkedSettlement
-    ? computeSettlementEconomy(linkedSettlement)
-    : {
-        foodPrice: 1,
-        materialsPrice: 1,
-        alchemyPrice: 1,
-        armsPrice: 1,
-        lodgingPrice: 1
-      };
+  // Очищаем старый инвентарь только если торговец пуст или принудительное пополнение
+  const currentCount = merchant.items.size;
+  const targetCount  = Math.round((5 + tier * 2) * econState.stockMult);
 
-  let factor = 1;
-  if (specialty === "general" || specialty === "innkeeper") factor = settlementEconomy.foodPrice;
-  if (specialty === "blacksmith") factor = settlementEconomy.armsPrice;
-  if (specialty === "alchemist") factor = settlementEconomy.alchemyPrice;
-  if (specialty === "hunter") {
-    factor = Number(((settlementEconomy.foodPrice + settlementEconomy.materialsPrice) / 2).toFixed(2));
+  if (currentCount < targetCount) {
+    // Берём предметы из компендиума ih-weapons / ih-armor / ih-potions / ih-food / ih-materials
+    const batch = await _buildStockFromCompendium(specialty, tier, targetCount - currentCount, econState);
+    if (batch.length) {
+      await merchant.createEmbeddedDocuments("Item", batch);
+    }
   }
 
   await merchant.update({
-    "system.market.lastRestock": todayStamp(),
+    "system.market.lastRestock":        todayStamp(),
     "system.market.currentPriceFactor": factor,
-    "system.market.stockRating": clamp(merchant.items.size, 0, 10)
+    "system.market.stockRating":        clamp(merchant.items.size, 0, 10),
+    "system.economy.economyStatus":     econStatus,
   });
 
-  return { added, factor };
+  return { added: Math.max(0, merchant.items.size - currentCount), factor };
+}
+
+/**
+ * Получить предметы из компендиумов для пополнения торговца.
+ * Фильтрует по тиру и типу магазина.
+ */
+async function _buildStockFromCompendium(specialty, tier, count, econState) {
+  // Маппинг специализации → нужные паки
+  const SPECIALTY_PACKS = {
+    weaponsmith: ["ih-weapons", "ih-materials"],
+    armorsmith:  ["ih-armor",   "ih-materials"],
+    alchemist:   ["ih-potions", "ih-materials", "ih-food"],
+    mage:        ["ih-potions", "ih-materials"],
+    jeweler:     ["ih-materials"],
+    blackmarket: ["ih-weapons", "ih-armor", "ih-potions", "ih-materials"],
+    general:     ["ih-weapons", "ih-armor", "ih-potions", "ih-food", "ih-materials", "ih-tools"],
+    blacksmith:  ["ih-weapons", "ih-materials"],
+    hunter:      ["ih-food",    "ih-materials", "ih-tools"],
+    innkeeper:   ["ih-food"],
+  };
+
+  const maxTier = Math.min(10, tier + 1);
+  const packNames = SPECIALTY_PACKS[specialty] ?? SPECIALTY_PACKS.general;
+  const pool = [];
+
+  for (const packName of packNames) {
+    const pack = game.packs.get(`iron-hills-system.${packName}`);
+    if (!pack) continue;
+    const docs = await pack.getDocuments();
+    for (const doc of docs) {
+      const itemTier = Number(doc.system?.tier ?? 1);
+      if (itemTier >= 1 && itemTier <= maxTier) {
+        pool.push(doc);
+      }
+    }
+  }
+
+  if (!pool.length) return [];
+
+  // Случайная выборка с учётом stockMult (при кризисе меньше)
+  const actualCount = Math.max(1, Math.round(count * (econState?.stockMult ?? 1)));
+  const result = [];
+  for (let i = 0; i < actualCount && pool.length; i++) {
+    const doc = pool[Math.floor(Math.random() * pool.length)];
+    const data = doc.toObject();
+    delete data._id;
+    data.system.quantity = Math.max(1, Math.floor(Math.random() * 3) + 1);
+    // Проставляем system.price из system.value (чтобы trade-app показывал цену)
+    if (!data.system.price || data.system.price <= 0) {
+      data.system.price = Number(data.system.value ?? 0);
+    }
+    result.push(data);
+  }
+  return result;
 }
 
 function getRegionGroups() {
@@ -861,27 +919,38 @@ async function tickSettlement(settlement) {
 
   const nextPopulation = Math.max(0, oldPopulation + populationShift);
 
+  // Вычисляем состояние экономики и обновляем его
+  const economyStatus = computeEconomyStatus(
+    nextProsperity, nextDanger, nextSupply, activeCrisis
+  );
+
   await settlement.update({
-    "system.info.population": nextPopulation,
-    "system.info.prosperity": nextProsperity,
-    "system.info.danger": nextDanger,
-    "system.info.supply": nextSupply,
+    "system.info.population":        nextPopulation,
+    "system.info.prosperity":        nextProsperity,
+    "system.info.danger":            nextDanger,
+    "system.info.supply":            nextSupply,
     "system.economy.factionPressure": factionPressure,
-    "system.economy.merchantCount": merchantCount,
-    "system.economy.routeValue": routeValue
+    "system.economy.merchantCount":  merchantCount,
+    "system.economy.routeValue":     routeValue,
+    "system.economy.economyStatus":  economyStatus, // → читается ShopApp
   });
+
+  // Обновляем экономику в merchant-service (для ShopApp всех торговцев поселения)
+  const { setSettlementEconomy } = await import("./services/merchant-service.mjs");
+  await setSettlementEconomy(settlement.id, economyStatus).catch(() => {});
 
   const prices = computeSettlementEconomy(settlement);
 
+  const ECON_LABELS = {
+    boom:"📈 Расцвет", normal:"⚖ Норма", shortage:"📉 Дефицит",
+    crisis:"🔥 Кризис", war:"⚔ Война", festival:"🎉 Праздник", plague:"☠ Чума"
+  };
   const summary =
-    `Население ${oldPopulation}→${nextPopulation}, ` +
-    `благополучие ${oldProsperity}→${nextProsperity}, ` +
-    `опасность ${oldDanger}→${nextDanger}, ` +
-    `снабжение ${oldSupply}→${nextSupply}, ` +
-    `торговый баланс ${tradeBalance}, ` +
-    `караваны ${caravanTraffic}, ` +
-    `стабильность ${stability}, ` +
-    `милиция ${militiaPower}.`;
+    `Нас. ${oldPopulation}→${nextPopulation} | ` +
+    `Благ. ${oldProsperity}→${nextProsperity} | ` +
+    `Опасн. ${oldDanger}→${nextDanger} | ` +
+    `Снаб. ${oldSupply}→${nextSupply} | ` +
+    `Эконом.: ${ECON_LABELS[economyStatus] ?? economyStatus}`;
 
   await settlement.update({
     "system.economy.foodPrice": prices.foodPrice,
@@ -917,6 +986,7 @@ async function tickSettlement(settlement) {
     eventText,
     rumorText,
     summary,
+    economyStatus,
     activeCrisis: settlement.system.regionSim?.activeCrisis ?? activeCrisis,
     crisisResolved
   };
@@ -1110,20 +1180,76 @@ class IronHillsWorldToolsV5 extends Application {
 
   async getData() {
     const settlements = getSettlements().map(a => ({ id: a.id, name: a.name }));
-    const factions = getFactions().map(a => ({ id: a.id, name: a.name }));
-    const regions = [...new Set(getSettlements().map(s => s.system.info?.region || "Без региона"))];
+    const factions    = getFactions().map(a => ({ id: a.id, name: a.name }));
+    const regions     = [...new Set(getSettlements().map(s => s.system.info?.region || "Iron Hills"))];
+
+    // Статус мира для вкладки Симуляция
+    const worldStatus = getSettlements().map(s => ({
+      settlement:  s.name,
+      prosperity:  Number(s.system.info?.prosperity ?? 5),
+      danger:      Number(s.system.info?.danger     ?? 5),
+      supply:      Number(s.system.info?.supply      ?? 5),
+      economy:     s.system.economy?.economyStatus ?? "normal",
+    }));
+
+    // POI для выбора в квестах
+    const pois = getPois().map(a => ({
+      id:   a.id,
+      name: a.name,
+      type: a.system.info?.poiType ?? "camp",
+      tier: a.system.info?.tier ?? 1,
+    }));
 
     return {
       settlements,
       factions,
-      regions
+      regions,
+      pois,
+      worldStatus:   this._showWorldStatus ? worldStatus : null,
+      factionReport: this._showFactionReport ? buildFactionReport() : null,
     };
   }
 
   async _createSettlement(html) {
-    const tier = Number(html.find("[name='settlement-tier']").val() || 1);
-    const region = html.find("[name='settlement-region']").val() || "";
-    const name = html.find("[name='settlement-name']").val() || `Поселение ${randInt(100, 999)}`;
+    const tier   = Number(html.find("[name='settlement-tier']").val() || 1);
+    let region = html.find("[name='settlement-region']").val() || "Iron Hills";
+    if (region === "__new") {
+      region = html.find("[name='settlement-region-new']").val().trim() || "Новый регион";
+    }
+    const name   = html.find("[name='settlement-name']").val() || `Поселение ${randInt(100, 999)}`;
+
+    // Выбор тайла на карте
+    let mapCol = null, mapRow = null;
+    const mapChoice = await Dialog.confirm({
+      title:   "Разместить на карте?",
+      content: `<p style="color:#a8b8d0">Привязать <b>${name}</b> к тайлу на глобальной карте?</p>`
+    });
+
+    if (mapChoice) {
+      // Открываем пикер тайла
+      const colStr = await Dialog.wait({
+        title: "Координаты тайла",
+        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>Колонка (0-9)<br><input id="tile-col" type="number" min="0" max="9" value="5"
+            style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:5px;border-radius:6px;"></label>
+          <label>Ряд (0-9)<br><input id="tile-row" type="number" min="0" max="9" value="5"
+            style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:5px;border-radius:6px;"></label>
+        </div>`,
+        buttons: {
+          ok: {
+            label: "Разместить",
+            callback: () => ({
+              col: parseInt(document.getElementById("tile-col")?.value ?? "5"),
+              row: parseInt(document.getElementById("tile-row")?.value ?? "5")
+            })
+          },
+          cancel: { label: "Пропустить", callback: () => null }
+        },
+        default: "ok"
+      }).catch(() => null);
+
+      if (colStr) { mapCol = colStr.col; mapRow = colStr.row; }
+    }
 
     const actor = await Actor.create({
       name,
@@ -1137,7 +1263,10 @@ class IronHillsWorldToolsV5 extends Application {
           danger: randInt(2, 6),
           supply: randInt(3, 7),
           controllingFaction: "",
-          tags: ""
+          tags: "",
+          mapCol,
+          mapRow,
+          sceneId: "",
         },
         economy: {
           foodPrice: 1,
@@ -1167,13 +1296,37 @@ class IronHillsWorldToolsV5 extends Application {
       }
     });
 
+    // Обновляем тайл на карте если задан
+    if (mapCol !== null && mapRow !== null) {
+      try {
+        const regions = game.settings.get("iron-hills-system", "worldRegions") ?? {};
+        const regionId = Object.keys(regions).find(k => regions[k].label === region)
+          ?? "iron_hills";
+        const { DEFAULT_REGIONS } = await import("./constants/world-map.mjs");
+        const baseRegion = foundry.utils.deepClone(regions[regionId] ?? DEFAULT_REGIONS[regionId] ?? {});
+        if (baseRegion.tiles) {
+          const tile = baseRegion.tiles.find(t => t.col === mapCol && t.row === mapRow);
+          if (tile) {
+            tile.label  = name;
+            tile.poi    = true;
+            tile.terrain = tile.terrain === "plains" ? "town" : tile.terrain;
+            regions[regionId] = baseRegion;
+            await game.settings.set("iron-hills-system", "worldRegions", regions);
+            ui.notifications.info(`${name} размещено на карте [${mapCol}, ${mapRow}]`);
+          }
+        }
+      } catch(e) { console.warn("Map update failed:", e); }
+    }
+
     ui.notifications.info(`Создано поселение: ${actor.name}`);
   }
 
   async _generateNpc(html) {
     const role = html.find("[name='npc-role']").val();
     const tier = Number(html.find("[name='npc-tier']").val() || 1);
-    const faction = html.find("[name='npc-faction']").val() || "";
+    // Faction через пикер
+    const factionActor = this._pickedFaction ?? null;
+    const faction = factionActor?.name ?? html.find("[name='npc-faction']").val() ?? "";
 
     const profile = NPC_ROLE_PROFILES[role] ?? NPC_ROLE_PROFILES.villager;
     const actor = await Actor.create({
@@ -1222,38 +1375,73 @@ class IronHillsWorldToolsV5 extends Application {
   }
 
   async _generateMerchant(html) {
-    const specialty = html.find("[name='merchant-specialty']").val();
-    const tier = Number(html.find("[name='merchant-tier']").val() || 1);
-    const settlement = html.find("[name='merchant-settlement']").val() || "";
-    const faction = html.find("[name='merchant-faction']").val() || "";
+    const nameInput   = html.find("[name='merchant-name']").val().trim();
+    const specialty   = html.find("[name='merchant-specialty']").val() || "general";
+    const tier        = Number(html.find("[name='merchant-tier']").val() || 1);
+    const economy     = html.find("[name='merchant-economy']").val() || "normal";
+    const faction     = html.find("[name='merchant-faction']").val() || "";
+
+    const settlementActor = this._pickedMerchantSettlement ?? null;
+    const settlement      = settlementActor?.name ?? html.find("[name='merchant-settlement']").val() ?? "";
+    const settlementId    = settlementActor?.id ?? "";
+
+    // Имя: явное или случайное с типом
+    const typeName  = MERCHANT_TYPES[specialty]?.label ?? "Торговец";
+    const actorName = nameInput || `${typeName} ${makeName()}`;
+
+    // Монеты пропорционально тиру - 10-ступенчатая система
+    const TIER_COPPER = [0, 200, 500, 1500, 5000, 15000, 40000, 100000, 250000, 500000, 1000000];
+    const baseCopper  = TIER_COPPER[Math.min(tier, 10)];
+    const goldCoins   = Math.floor(baseCopper / 10000);
+    const silverCoins = Math.floor((baseCopper % 10000) / 100);
+    const copperCoins = baseCopper % 100;
 
     const actor = await Actor.create({
-      name: `Торговец ${makeName()}`,
+      name: actorName,
       type: "merchant",
       system: {
         info: {
-          specialty,
-          settlement,
-          tier,
-          faction
+          specialty, settlement, settlementId, tier, faction,
         },
         economy: {
-          wealth: 40 + tier * 20,
-          markup: 1 + tier * 0.05
+          wealth:          40 + tier * 20,
+          markup:          1 + tier * 0.05,
+          economyStatus:   economy,
         },
         market: {
-          lastRestock: "",
-          currentPriceFactor: 1,
-          stockRating: 5
-        }
+          lastRestock:        "",
+          currentPriceFactor: parseFloat((1 + (tier - 1) * 0.05).toFixed(2)),
+          stockRating:        5,
+        },
+        currency: { gold: goldCoins, silver: silverCoins, copper: copperCoins, platinum: 0 }
       }
     });
 
-    const stock = randomMerchantStock(specialty, tier);
-    await actor.createEmbeddedDocuments("Item", stock);
-    await restockMerchant(actor, findSettlementByName(settlement));
+    // Сохраняем экономику поселения
+    if (settlementId && economy !== "normal") {
+      await setSettlementEconomy(settlementId, economy);
+    }
 
-    ui.notifications.info(`Создан торговец: ${actor.name}`);
+    // Наполняем инвентарь
+    await restockMerchant(actor, settlementActor ?? findSettlementByName(settlement));
+    this._pickedMerchantSettlement = null;
+
+    const econLabel = ECONOMY_STATES[economy]?.label ?? economy;
+    ui.notifications.info(
+      `✅ Создан "${actorName}" | ${typeName} | Тир ${tier} | ${econLabel}`
+    );
+  }
+
+  async _restockSelectedMerchant() {
+    // Пополняем выбранного торговца (первый выделенный токен типа merchant)
+    const token = canvas?.tokens?.controlled?.find(t => t.actor?.type === "merchant");
+    const actor = token?.actor ?? game.actors?.find(a => a.type === "merchant" && a.sheet?.rendered);
+    if (!actor) {
+      ui.notifications.warn("Выдели токен торговца или открой его лист");
+      return;
+    }
+    await restockMerchant(actor);
+    ui.notifications.info(`🔄 ${actor.name}: ассортимент обновлён`);
   }
 
   async _generateContainer(html) {
@@ -1543,6 +1731,47 @@ class IronHillsWorldToolsV5 extends Application {
   activateListeners(html) {
     super.activateListeners(html);
 
+    // ── Вкладки ─────────────────────────────────────────────
+    html.find("[data-tab]").on("click", e => {
+      const tab = e.currentTarget.dataset.tab;
+      html.find("[data-tab]").removeClass("is-active");
+      html.find("[data-panel]").removeClass("is-active");
+      e.currentTarget.classList.add("is-active");
+      html.find(`[data-panel="${tab}"]`).addClass("is-active");
+    });
+
+    // ── Новый регион ─────────────────────────────────────────
+    html.find("[name='settlement-region']").on("change", e => {
+      const isNew = e.currentTarget.value === "__new";
+      html.find(".ih-wt-new-region").toggle(isNew);
+    });
+
+    // Пикер фракции для генератора NPC
+    html.find("[data-pick-faction]").on("click", async () => {
+      const picked = await EntityPickerDialog.pick({
+        title: "Выбрать фракцию",
+        types: ["faction"],
+        placeholder: "Поиск фракции...",
+      });
+      if (picked) {
+        html.find("[name='npc-faction']").val(picked.name);
+        this._pickedFaction = picked;
+      }
+    });
+
+    // Пикер поселения для генератора торговца
+    html.find("[data-pick-merchant-settlement]").on("click", async () => {
+      const picked = await EntityPickerDialog.pick({
+        title:       "Выбрать поселение торговца",
+        types:       ["settlement"],
+        placeholder: "Поиск поселения...",
+      });
+      if (picked) {
+        html.find("[name='merchant-settlement']").val(picked.name);
+        this._pickedMerchantSettlement = picked;
+      }
+    });
+
     html.find("[data-action='create-settlement']").on("click", async event => {
       event.preventDefault();
       await this._createSettlement(html);
@@ -1623,6 +1852,47 @@ class IronHillsWorldToolsV5 extends Application {
       await this._evolvePois(html);
     });
   }
+  async _createFaction(html) {
+    const name       = html.find("[name='faction-name']").val().trim() || `Фракция ${randInt(1,99)}`;
+    const type       = html.find("[name='faction-type']").val() || "guild";
+    const power      = Number(html.find("[name='faction-power']").val() || 5);
+    const wealth     = Number(html.find("[name='faction-wealth']").val() || 5);
+    const settlement = html.find("[name='faction-settlement']").val() || "";
+    const ICONS = { guild:"🔨", military:"⚔", religious:"✝", criminal:"🌑", noble:"👑", merchant:"🏪" };
+    await Actor.create({
+      name: `${ICONS[type] ?? "⚔"} ${name}`, type: "faction",
+      system: { power, wealth, info: { type, baseSettlement: settlement } }
+    });
+    ui.notifications.info(`Фракция "${name}" создана`);
+  }
+
+  async _generateNpcPack(html) {
+    for (let i = 0; i < 5; i++) {
+      await this._generateNpc(html);
+      await new Promise(r => setTimeout(r, 150));
+    }
+    ui.notifications.info("Создано 5 NPC");
+  }
+
+  async _cleanupPois() {
+    const removed = await cleanupCollapsedPois();
+    ui.notifications.info(`Убрано ${removed ?? 0} рухнувших POI`);
+  }
+
+  async _setRegionEconomy(html) {
+    const region  = html.find("[name='region-select']").val();
+    const economy = html.find("[name='region-economy']").val() || "normal";
+    const { setSettlementEconomy } = await import("./services/merchant-service.mjs");
+    const list = getSettlements().filter(s =>
+      (s.system.info?.region || "Iron Hills") === region
+    );
+    for (const s of list) {
+      await setSettlementEconomy(s.id, economy);
+      await s.update({ "system.economy.economyStatus": economy });
+    }
+    ui.notifications.info(`Экономика "${region}" → ${economy} (${list.length} поселений)`);
+  }
+
 }
 
 function injectOrRetargetWorldToolsButton(html) {
@@ -1652,3 +1922,128 @@ Hooks.once("ready", () => {
 Hooks.on("renderActorDirectory", (app, html) => {
   injectOrRetargetWorldToolsButton(html);
 });
+/**
+ * Обновить system.price у всех предметов всех торговцев
+ * из system.value (для уже созданных торговцев).
+ * Запускать один раз из консоли: game.ironHills.fixMerchantPrices()
+ */
+export async function fixMerchantPrices() {
+  let fixed = 0;
+  for (const actor of game.actors ?? []) {
+    if (actor.type !== "merchant") continue;
+    for (const item of actor.items ?? []) {
+      const val   = Number(item.system?.value ?? 0);
+      const price = Number(item.system?.price ?? 0);
+      if (val > 0 && price <= 0) {
+        await item.update({ "system.price": val });
+        fixed++;
+      }
+    }
+  }
+  ui.notifications.info(`Обновлено цен: ${fixed}`);
+  return fixed;
+}
+
+// ============================================================
+// ВЛИЯНИЕ ИГРОКОВ НА МИР — вызывается после квестов/событий
+// ============================================================
+
+/**
+ * Применить последствие действия игроков к поселению.
+ * @param {string} settlementName  — название поселения
+ * @param {object} impact — { prosperity, danger, supply, tradeBalance }
+ * @param {string} reason — описание для лога
+ */
+export async function applyWorldImpact(settlementName, impact = {}, reason = "") {
+  const settlement = findSettlementByName(settlementName);
+  if (!settlement) {
+    console.warn(`Iron Hills | applyWorldImpact: settlement "${settlementName}" not found`);
+    return;
+  }
+
+  const updates = {};
+  if (impact.prosperity !== undefined)
+    updates["system.info.prosperity"] = clamp(
+      Number(settlement.system.info?.prosperity ?? 5) + impact.prosperity, 0, 10
+    );
+  if (impact.danger !== undefined)
+    updates["system.info.danger"] = clamp(
+      Number(settlement.system.info?.danger ?? 5) + impact.danger, 0, 10
+    );
+  if (impact.supply !== undefined)
+    updates["system.info.supply"] = clamp(
+      Number(settlement.system.info?.supply ?? 5) + impact.supply, 0, 10
+    );
+
+  await settlement.update(updates);
+
+  // Пересчитываем экономику сразу
+  const p = Number(settlement.system.info?.prosperity ?? 5) + (impact.prosperity ?? 0);
+  const d = Number(settlement.system.info?.danger     ?? 5) + (impact.danger ?? 0);
+  const s = Number(settlement.system.info?.supply     ?? 5) + (impact.supply ?? 0);
+  const newStatus = computeEconomyStatus(
+    clamp(p,0,10), clamp(d,0,10), clamp(s,0,10),
+    settlement.system.regionSim?.activeCrisis ?? ""
+  );
+
+  await settlement.update({ "system.economy.economyStatus": newStatus });
+  const { setSettlementEconomy } = await import("./services/merchant-service.mjs");
+  await setSettlementEconomy(settlement.id, newStatus).catch(() => {});
+
+  // Пополняем торговцев поселения если supply вырос
+  if ((impact.supply ?? 0) > 0) {
+    const merchants = getMerchants().filter(m =>
+      m.system.info?.settlement === settlementName
+    );
+    for (const m of merchants) await restockMerchant(m, settlement);
+  }
+
+  // Лог в чат
+  const ECON = { boom:"📈 Расцвет", normal:"⚖ Норма", shortage:"📉 Дефицит",
+                 crisis:"🔥 Кризис", war:"⚔ Война", festival:"🎉 Праздник", plague:"☠ Чума" };
+  const parts = [];
+  if (impact.prosperity) parts.push(`Благ. ${impact.prosperity > 0 ? "+" : ""}${impact.prosperity}`);
+  if (impact.danger)     parts.push(`Опасн. ${impact.danger > 0 ? "+" : ""}${impact.danger}`);
+  if (impact.supply)     parts.push(`Снаб. ${impact.supply > 0 ? "+" : ""}${impact.supply}`);
+
+  await ChatMessage.create({
+    content: `<div style="padding:6px;font-family:var(--font-primary)">
+      🌍 <b>${settlementName}</b> — последствия: ${parts.join(", ")}<br>
+      Экономика: <b>${ECON[newStatus] ?? newStatus}</b>
+      ${reason ? `<br><i style="color:#a8b8d0">${reason}</i>` : ""}
+    </div>`
+  });
+}
+
+// Быстрые хелперы для типовых событий
+export const WorldEvents = {
+  // Игроки зачистили бандитский лагерь поблизости
+  clearedBanditCamp: (settlement, tier = 1) =>
+    applyWorldImpact(settlement, { danger: -tier, supply: tier > 2 ? 1 : 0 },
+      "Бандитский лагерь уничтожен"),
+
+  // Игроки ограбили торговца/склад
+  robbedMerchant: (settlement) =>
+    applyWorldImpact(settlement, { supply: -1, prosperity: -1 },
+      "Торговец ограблен — товары исчезли"),
+
+  // Игроки сопроводили/защитили торговый караван
+  escortedCaravan: (settlement) =>
+    applyWorldImpact(settlement, { supply: 2, tradeBalance: 1 },
+      "Успешная торговая экспедиция"),
+
+  // Игроки помогли бандитам/злодеям
+  aidedBandits: (settlement) =>
+    applyWorldImpact(settlement, { danger: 2, supply: -1 },
+      "Банда усилилась — деревня страдает"),
+
+  // Игроки вылечили болезнь / помогли жителям
+  helpedVillagers: (settlement) =>
+    applyWorldImpact(settlement, { prosperity: 1, danger: -1 },
+      "Жители получили помощь"),
+
+  // Игроки уничтожили POI угрозу
+  destroyedThreat: (settlement, tier = 1) =>
+    applyWorldImpact(settlement, { danger: -Math.ceil(tier / 2), prosperity: 1 },
+      "Угроза региона устранена"),
+};

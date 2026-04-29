@@ -6,10 +6,9 @@
     <div class="ih-gi-equip-title">Экипировка</div>
     <div class="ih-gi-silhouette">
       {{#each equipSlots}}
-      <div class="ih-gi-equip-slot {{#if hasItem}}has-item{{/if}}"
+      <div class="ih-gi-equip-slot {{#if hasItem}}has-item ih-has-inv-tooltip{{/if}}"
            data-slot="{{key}}"
            draggable="{{#if hasItem}}true{{else}}false{{/if}}"
-           title="{{label}}{{#if hasItem}}: {{itemName}}{{#if resist}} · Резист {{resist}}{{/if}}{{/if}}"
            style="left:{{x}}px; top:{{y}}px; width:{{w}}px; height:{{h}}px;">
         {{#if hasItem}}
           <img class="ih-gi-equip-img" src="{{itemImg}}" alt="{{itemName}}">
@@ -19,6 +18,25 @@
           </div>
           {{/if}}
           {{#if resist}}<span class="ih-gi-equip-resist">{{resist}}</span>{{/if}}
+          {{!-- Tooltip для слота экипировки --}}
+          <div class="ih-gi-tooltip">
+            <div class="ih-gi-tooltip-header">
+              <img src="{{itemImg}}" width="24" height="24">
+              <div>
+                <div class="ih-gi-tooltip-name">{{itemName}}</div>
+                <div class="muted-text" style="font-size:9px">{{label}}</div>
+              </div>
+            </div>
+            {{#if itemTooltipStats}}
+            <div class="ih-gi-tooltip-stats">{{itemTooltipStats}}</div>
+            {{/if}}
+            {{#if durPct}}
+            <div class="ih-gi-tooltip-dur {{durClass}}">
+              🔧 {{durPct}}%
+              {{#if (lt durPct 26)}}— Критический{{else if (lt durPct 51)}}— Повреждён{{else if (lt durPct 76)}}— Изношен{{else}}— Норма{{/if}}
+            </div>
+            {{/if}}
+          </div>
         {{else}}
           <span class="ih-gi-slot-icon">{{icon}}</span>
           <span class="ih-gi-slot-label">{{label}}</span>
@@ -30,7 +48,9 @@
 
   {{!-- ── ПРАВАЯ: все секции вертикально ── --}}
   <div class="ih-gi-grid-panel">
-    <div class="ih-gi-hint">ПКМ — меню · Дабл-клик — надеть · ↺ в меню — повернуть</div>
+    <div class="ih-gi-hint">
+    ПКМ → надеть / переложить / на землю &nbsp;·&nbsp; 2×клик → надеть автоматически &nbsp;·&nbsp; ПКМ на слот → снять
+  </div>
 
     <div class="ih-gi-all-sections">
       {{#each allSections}}
@@ -69,11 +89,10 @@
             {{/each}}
 
             {{#each placed}}
-            <div class="ih-gi-item {{#if isBroken}}is-broken{{/if}} {{#if rotated}}is-rotated{{/if}}"
+            <div class="ih-gi-item {{#if isBroken}}is-broken{{/if}} {{#if rotated}}is-rotated{{/if}} {{#unless identified}}is-unknown{{/unless}} ih-has-inv-tooltip"
                  draggable="true"
                  data-item-id="{{itemId}}"
                  data-sec-key="{{../key}}"
-                 title="{{name}}"
                  style="left:{{cssLeft}}px; top:{{cssTop}}px;
                         width:{{cssW}}px; height:{{cssH}}px;">
               <img class="ih-gi-item-img" src="{{img}}" alt="{{name}}">
@@ -86,6 +105,28 @@
                      style="width:{{durPct}}%"></div>
               </div>
               {{/if}}
+              {{!-- Tooltip --}}
+              <div class="ih-gi-tooltip">
+                <div class="ih-gi-tooltip-header">
+                  <img src="{{img}}" width="24" height="24">
+                  <div>
+                    <div class="ih-gi-tooltip-name">{{visibleName}}</div>
+                    <div class="muted-text" style="font-size:9px">Тир {{tier}}{{#if (gt qty 1)}} · ×{{qty}}{{/if}}</div>
+                  </div>
+                </div>
+                {{#if tooltipStats}}
+                <div class="ih-gi-tooltip-stats">{{tooltipStats}}</div>
+                {{/if}}
+                {{#if durPct}}
+                <div class="ih-gi-tooltip-dur {{durClass}}">
+                  🔧 {{durPct}}%
+                  {{#if (lt durPct 26)}}— Критический{{else if (lt durPct 51)}}— Повреждён{{else if (lt durPct 76)}}— Изношен{{else}}— Норма{{/if}}
+                </div>
+                {{/if}}
+                {{#unless identified}}
+                <div style="color:#facc15;font-size:10px;margin-top:3px">❓ Не опознан</div>
+                {{/unless}}
+              </div>
             </div>
             {{/each}}
 
@@ -115,6 +156,38 @@
         <div class="muted-text">Надень ремень, рюкзак или броню с карманами</div>
       </div>
       {{/unless}}
+
+
+      {{!-- Нераспределённые предметы --}}
+      {{#if hasPending}}
+      <div class="ih-gi-pending-zone">
+        <div class="ih-gi-pending-header">
+          📥 К распределению <span class="ih-gi-pending-count">{{pendingItems.length}}</span>
+          <span class="muted-text" style="font-size:10px;font-weight:400">
+            — перетащи в слот или нажми + для авторазмещения
+          </span>
+        </div>
+        <div class="ih-gi-pending-list">
+          {{#each pendingItems}}
+          <div class="ih-gi-pending-item" draggable="true"
+               data-pending-item-id="{{itemId}}">
+            <img src="{{img}}" width="24" height="24"
+                 style="border-radius:3px;object-fit:contain;background:#1a1f2e">
+            <span class="ih-gi-pending-name">{{name}}</span>
+            <span class="muted-text" style="font-size:10px">{{w}}×{{h}}</span>
+            {{#if qty}}<span class="ih-gi-pending-qty">×{{qty}}</span>{{/if}}
+            <a class="ih-btn ih-btn-small" data-auto-place data-item-id="{{itemId}}"
+               title="Авторазместить">+</a>
+            <a class="ih-btn ih-btn-small ih-btn-danger" data-drop-to-ground
+               data-item-id="{{itemId}}" title="Выбросить">🪨</a>
+          </div>
+          {{/each}}
+        </div>
+        <div class="ih-gi-pending-actions">
+          <a class="ih-btn ih-btn-primary" data-auto-place-all>✨ Разместить всё</a>
+        </div>
+      </div>
+      {{/if}}
 
     </div>{{!-- .ih-gi-all-sections --}}
   </div>{{!-- .ih-gi-grid-panel --}}

@@ -1,0 +1,96 @@
+{{!-- Iron Hills — God Sheet --}}
+<form class="ih-god-sheet" autocomplete="off">
+
+  {{!-- Шапка --}}
+  <div class="ih-god-header">
+    <div class="ih-god-portrait-wrap">
+      <img class="ih-god-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+      <div class="ih-god-status status-{{system.info.status}}" title="{{system.info.status}}">
+        {{#if (eq system.info.status 'active')}}⬤{{else if (eq system.info.status 'dormant')}}◉{{else}}✕{{/if}}
+      </div>
+    </div>
+    <div class="ih-god-identity">
+      <input class="ih-god-name" type="text" name="name" value="{{actor.name}}" placeholder="Имя бога">
+      <input class="ih-god-title" type="text" name="system.info.title" value="{{system.info.title}}" placeholder="Эпитет (Кузнец, Страж Звёзд...)">
+      <div class="ih-god-meta-row">
+        <label>Домен
+          <input type="text" name="system.info.domain" value="{{system.info.domain}}" placeholder="война, ремесло...">
+        </label>
+        <label>Эра
+          <input type="text" name="system.info.era" value="{{system.info.era}}" placeholder="Космическая, Атомная...">
+        </label>
+        <label>Статус
+          <select name="system.info.status">
+            <option value="active"  {{#if (eq system.info.status 'active')}}selected{{/if}}>⬤ Активен</option>
+            <option value="dormant" {{#if (eq system.info.status 'dormant')}}selected{{/if}}>◉ Дремлет</option>
+            <option value="dead"    {{#if (eq system.info.status 'dead')}}selected{{/if}}>✕ Мёртв</option>
+          </select>
+        </label>
+        <label>Известен
+          <select name="system.info.knownTo">
+            <option value="all"     {{#if (eq system.info.knownTo 'all')}}selected{{/if}}>Всем</option>
+            <option value="faction" {{#if (eq system.info.knownTo 'faction')}}selected{{/if}}>Фракции</option>
+            <option value="secret"  {{#if (eq system.info.knownTo 'secret')}}selected{{/if}}>Тайна</option>
+          </select>
+        </label>
+      </div>
+      {{!-- Если бог — пробудившийся --}}
+      <div class="ih-god-awakened-row">
+        <span class="muted-text">Пробудившийся-прообраз:</span>
+        <input type="text" name="system.info.playerName" value="{{system.info.playerName}}" placeholder="Имя игрока или персонажа (опц.)">
+        <input type="text" name="system.info.originalWorld" value="{{system.info.originalWorld}}" placeholder="Мир происхождения">
+      </div>
+    </div>
+  </div>
+
+  {{!-- Тело --}}
+  <div class="ih-god-body">
+
+    {{!-- Лента вкладок --}}
+    <div class="ih-god-tabs">
+      <a class="ih-god-tab {{#if (eq activeTab 'history')}}is-active{{/if}}" data-tab="history">📜 История</a>
+      <a class="ih-god-tab {{#if (eq activeTab 'lore')}}is-active{{/if}}"    data-tab="lore">🕊 Культ</a>
+    </div>
+
+    {{!-- История --}}
+    {{#if (eq activeTab 'history')}}
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Происхождение</div>
+      <textarea name="system.history.origin" placeholder="Кем был до пробуждения? Из какой эпохи? Какой мир оставил позади...">{{system.history.origin}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Великие деяния</div>
+      <textarea name="system.history.deeds" placeholder="Что сделало его богом? Ключевые события...">{{system.history.deeds}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Последователи</div>
+      <textarea name="system.history.worshippers" placeholder="Кто поклоняется? Фракции, народы, профессии...">{{system.history.worshippers}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Символы и атрибуты</div>
+      <textarea name="system.history.symbols" placeholder="Священные символы, животные, предметы...">{{system.history.symbols}}</textarea>
+    </div>
+    {{/if}}
+
+    {{!-- Культ --}}
+    {{#if (eq activeTab 'lore')}}
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Молитвы и обращения</div>
+      <textarea name="system.lore.prayers" placeholder="Как обращаются к богу? Формулы молитв...">{{system.lore.prayers}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Храмы и святилища</div>
+      <textarea name="system.lore.temples" placeholder="Где есть храмы? В каких городах?">{{system.lore.temples}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Праздники</div>
+      <textarea name="system.lore.festivals" placeholder="Когда и как чтят бога?">{{system.lore.festivals}}</textarea>
+    </div>
+    <div class="ih-god-section">
+      <div class="ih-god-section-title">Запреты и табу</div>
+      <textarea name="system.lore.taboos" placeholder="Что запрещено последователям?">{{system.lore.taboos}}</textarea>
+    </div>
+    {{/if}}
+
+  </div>
+</form>

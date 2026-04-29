@@ -1,0 +1,88 @@
+{{!-- Iron Hills — Combat Bar (появляется только в бою) --}}
+<div class="ih-cbar {{#if isCurrentTurn}}is-my-turn{{/if}}">
+
+  {{!-- Статус хода --}}
+  <div class="ih-cbar-turn">
+    {{#if isCurrentTurn}}
+      <div class="ih-cbar-turn-info">
+        <span class="ih-cbar-turn-name">⚔ {{actorName}}</span>
+        <span class="ih-cbar-secs">{{secondsLeft}}с</span>
+      </div>
+    {{else}}
+      <div class="ih-cbar-turn-info muted-text">
+        <span>↻ {{currentTurnName}}</span>
+      </div>
+    {{/if}}
+  </div>
+
+  {{!-- Действия (только в свой ход) --}}
+  {{#if isCurrentTurn}}
+  <div class="ih-cbar-actions">
+
+    {{!-- Атака --}}
+    <a class="ih-cbar-btn" data-attack-hand="leftHand" title="{{leftHandName}}">
+      <span class="ih-cbar-btn-icon">⚔</span>
+      <span class="ih-cbar-btn-label">{{leftHandShort}}</span>
+    </a>
+    {{#if rightHandName}}
+    <a class="ih-cbar-btn" data-attack-hand="rightHand" title="{{rightHandName}}">
+      <span class="ih-cbar-btn-icon">🗡</span>
+      <span class="ih-cbar-btn-label">{{rightHandShort}}</span>
+    </a>
+    {{/if}}
+
+    {{!-- Заклинания --}}
+    {{#if hasMana}}
+    <a class="ih-cbar-btn" data-cast-spell title="Заклинания ({{manaCur}}/{{manaMax}} ✨)">
+      <span class="ih-cbar-btn-icon">✨</span>
+      <span class="ih-cbar-btn-label">Магия</span>
+    </a>
+    {{/if}}
+
+    {{!-- Перевести дух --}}
+    {{#if canBreathe}}
+    <a class="ih-cbar-btn ih-cbar-btn-secondary" data-breathe title="Восстановить энергию (весь ход)">
+      <span class="ih-cbar-btn-icon">💨</span>
+      <span class="ih-cbar-btn-label">Дух</span>
+    </a>
+    {{/if}}
+
+    {{!-- Pending action --}}
+    {{#if hasPendingAction}}
+    <a class="ih-cbar-btn ih-cbar-btn-warn" data-continue-pending title="{{pendingActionLabel}}">
+      <span class="ih-cbar-btn-icon">⏳</span>
+      <span class="ih-cbar-btn-label">{{pendingActionLabel}}</span>
+    </a>
+    {{/if}}
+
+    {{!-- Режим движения --}}
+    <a class="ih-cbar-btn ih-cbar-btn-small {{#if isSprinting}}is-active{{/if}}"
+       data-toggle-sprint title="Шаг / Рывок">
+      <span class="ih-cbar-btn-icon">{{#if isSprinting}}🏃{{else}}🚶{{/if}}</span>
+    </a>
+
+    {{!-- Конец хода --}}
+    {{#if canEndTurn}}
+    <a class="ih-cbar-btn ih-cbar-btn-end" data-end-turn>
+      <span class="ih-cbar-btn-icon">✓</span>
+      <span class="ih-cbar-btn-label">Ход</span>
+    </a>
+    {{/if}}
+
+    {{!-- GM --}}
+    {{#if isGM}}
+    <a class="ih-cbar-btn ih-cbar-btn-small" data-next-turn title="Следующий ход">→</a>
+    {{/if}}
+
+  </div>
+  {{else}}
+  {{!-- Не свой ход — только GM кнопки --}}
+  {{#if isGM}}
+  <div class="ih-cbar-actions">
+    <a class="ih-cbar-btn ih-cbar-btn-small" data-next-turn>→ Далее</a>
+    <a class="ih-cbar-btn ih-cbar-btn-small ih-cbar-btn-danger" data-end-combat>Стоп</a>
+  </div>
+  {{/if}}
+  {{/if}}
+
+</div>

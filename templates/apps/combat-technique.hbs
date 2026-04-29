@@ -1,0 +1,123 @@
+{{!-- Iron Hills — Combat Technique Dialog --}}
+<div class="ih-ct-app">
+
+  {{!-- Шапка --}}
+  <div class="ih-ct-header">
+    <img class="ih-ct-weapon-img" src="{{weaponImg}}" alt="{{weaponName}}">
+    <div class="ih-ct-info">
+      <div class="ih-ct-title">{{actorName}} атакует</div>
+      <div class="ih-ct-weapon-name">{{weaponName}}
+        <span class="ih-ct-tier">ст.{{weaponTier}}</span>
+      </div>
+      <div class="ih-ct-skill-line">
+        Навык: <b>{{skillVal}}</b>
+        · Куб: <b>d{{baseAttack.dieSize}}</b>
+        · Урон: <b>{{baseAttack.damage}}</b>
+        · Энергия: <b>{{baseAttack.energyCost}}</b>
+      </div>
+    </div>
+  </div>
+
+  {{!-- Табы --}}
+  <div class="ih-ct-tabs">
+    <a class="ih-ct-tab {{#if (eq tab 'techniques')}}is-active{{/if}}" data-tab="techniques">⚔ Приёмы</a>
+    {{#if canAim}}
+    <a class="ih-ct-tab {{#if (eq tab 'aim')}}is-active{{/if}}" data-tab="aim">🎯 Прицельный удар</a>
+    {{else}}
+    <a class="ih-ct-tab is-locked" title="Нужен навык {{aimReq}}">🎯 Прицел (нужен навык {{aimReq}})</a>
+    {{/if}}
+  </div>
+
+  <div class="ih-ct-body">
+
+    {{!-- Вкладка: приёмы --}}
+    {{#if (eq tab 'techniques')}}
+
+    {{!-- Базовый удар --}}
+    <a class="ih-ct-basic" data-basic-attack>
+      <span class="ih-ct-basic-icon">⚔</span>
+      <div class="ih-ct-basic-info">
+        <span class="ih-ct-basic-label">Обычный удар</span>
+        <span class="muted-text">Урон {{baseAttack.damage}} · {{baseAttack.energyCost}} энергии</span>
+      </div>
+      <span class="ih-ct-basic-arrow">→</span>
+    </a>
+
+    {{!-- Доступные приёмы --}}
+    {{#if available.length}}
+    <div class="ih-ct-section-title">Доступные приёмы</div>
+    {{#each available}}
+    <a class="ih-ct-technique" data-technique="{{id}}">
+      <span class="ih-ct-tech-icon">{{icon}}</span>
+      <div class="ih-ct-tech-info">
+        <div class="ih-ct-tech-name">{{label}}</div>
+        <div class="ih-ct-tech-desc">{{desc}}</div>
+        <div class="ih-ct-tech-meta">
+          {{#if energyCost}}⚡ +{{energyCost}} энергии{{/if}}
+          {{#if effect.damage}}
+            {{#if (lt effect.damage 1.0)}} · ×{{effect.damage}} урон{{/if}}
+            {{#if (gt effect.damage 1.0)}} · ×{{effect.damage}} урон{{/if}}
+          {{/if}}
+          {{#if effect.ignoreArmor}} · Игнор брони {{effect.ignoreArmor}}{{/if}}
+          {{#if effect.applyCondition}}
+            · {{lookup ../conditionLabels effect.applyCondition 'icon'}}
+            {{lookup ../conditionLabels effect.applyCondition 'label'}}
+          {{/if}}
+        </div>
+        <div class="ih-ct-tech-req">Навык {{reqSkill}}+ · Оружие {{reqWeaponTier}}+ ст.</div>
+      </div>
+    </a>
+    {{/each}}
+    {{/if}}
+
+    {{!-- Заблокированные приёмы --}}
+    {{#if locked.length}}
+    <div class="ih-ct-section-title muted-text">Недоступно</div>
+    {{#each locked}}
+    <div class="ih-ct-technique is-locked" title="{{lockReason}}">
+      <span class="ih-ct-tech-icon" style="opacity:0.3">{{icon}}</span>
+      <div class="ih-ct-tech-info">
+        <div class="ih-ct-tech-name" style="opacity:0.5">{{label}}</div>
+        <div class="ih-ct-tech-req" style="color:var(--ih-hp-crit)">🔒 {{lockReason}}</div>
+      </div>
+    </div>
+    {{/each}}
+    {{/if}}
+
+    {{/if}}{{!-- end tab techniques --}}
+
+    {{!-- Вкладка: прицельный удар --}}
+    {{#if (eq tab 'aim')}}
+    <div class="ih-ct-aim-grid">
+      {{#each aimZones}}
+      <a class="ih-ct-zone" data-aim-zone="{{key}}">
+        <span class="ih-ct-zone-icon">{{icon}}</span>
+        <div class="ih-ct-zone-info">
+          <div class="ih-ct-zone-name">{{label}}</div>
+          <div class="ih-ct-zone-stats">
+            {{#if hitMod}}
+            <span class="{{#if (lt hitMod 0)}}text-bad{{else}}text-good{{/if}}">
+              {{#if (gt hitMod 0)}}+{{/if}}{{hitMod}} к броску
+            </span>
+            {{/if}}
+            {{#if damageMult}}
+            <span class="{{#if (gt damageMult 1.0)}}text-good{{else if (lt damageMult 1.0)}}muted-text{{/if}}">
+              ×{{damageMult}} урон
+            </span>
+            {{/if}}
+          </div>
+          <div class="ih-ct-zone-desc muted-text">{{desc}}</div>
+        </div>
+      </a>
+      {{/each}}
+    </div>
+    {{/if}}
+
+  </div>
+
+  {{!-- Кнопка отмены --}}
+  <div class="ih-ct-footer">
+    <a class="ih-btn" data-cancel>Отмена</a>
+  </div>
+
+</div>

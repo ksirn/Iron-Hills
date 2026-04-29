@@ -303,9 +303,24 @@ debugLog("transferItemQuantityBetweenActors:start", {
     throw new Error("Недостаточно количества предмета для передачи");
   }
 
-  const itemData = cloneItemDataForTransfer(liveItem, qty);
+  const { isStackable } = await import("../utils/item-utils.mjs");
 
-  await addItemToActorOrStack(targetActor, itemData);
+  if (isStackable(liveItem.type)) {
+    // Стакуемые (боеприпасы) — передаём одним предметом с qty
+    const itemData = cloneItemDataForTransfer(liveItem, qty);
+    await addItemToActorOrStack(targetActor, itemData);
+  } else {
+    // Нестакуемые — каждая единица отдельным предметом
+    for (let i = 0; i < qty; i++) {
+      const itemData = cloneItemDataForTransfer(liveItem, 1);
+      // Сбрасываем grid позицию → попадёт в pending
+      if (itemData.flags?.["iron-hills-system"]) {
+        itemData.flags["iron-hills-system"].gridPos   = null;
+        itemData.flags["iron-hills-system"].sectionKey = null;
+      }
+      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+    }
+  }
   await removeQuantityFromItem(sourceActor, liveItem, qty);
 
   await recalculateActorWeight(sourceActor);

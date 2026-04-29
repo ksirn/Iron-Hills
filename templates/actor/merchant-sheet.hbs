@@ -28,7 +28,7 @@
         <h2>Торговля</h2>
         <p>Для торговли используй отдельное окно.</p>
         <div class="inventory-actions">
-          <a data-open-trade-app>Открыть окно торговли</a>
+{{!-- Торговля через кнопку в тулбаре --}}
         </div>
       </div>
       {{#unless hasActiveTradeCharacter}}
@@ -77,11 +77,25 @@
         <div class="status-card">
           <h2>Основные данные</h2>
           <div class="grid two-col">
-            <label>Специализация
-              <input type="text" name="system.info.specialty" value="{{system.info.specialty}}">
+            <label>Тип магазина
+              <select name="system.info.specialty">
+                <option value="general"    {{#if (eq system.info.specialty "general")}}selected{{/if}}>🏪 Общая лавка</option>
+                <option value="weaponsmith"{{#if (eq system.info.specialty "weaponsmith")}}selected{{/if}}>⚔ Оружейник</option>
+                <option value="armorsmith" {{#if (eq system.info.specialty "armorsmith")}}selected{{/if}}>🛡 Бронник</option>
+                <option value="alchemist"  {{#if (eq system.info.specialty "alchemist")}}selected{{/if}}>⚗ Алхимик</option>
+                <option value="mage"       {{#if (eq system.info.specialty "mage")}}selected{{/if}}>✨ Маг-торговец</option>
+                <option value="jeweler"    {{#if (eq system.info.specialty "jeweler")}}selected{{/if}}>💎 Ювелир</option>
+                <option value="blackmarket"{{#if (eq system.info.specialty "blackmarket")}}selected{{/if}}>🌑 Чёрный рынок</option>
+              </select>
             </label>
-            <label>Поселение
-              <input type="text" name="system.info.settlement" value="{{system.info.settlement}}">
+            <label>Тир поселения
+              <select name="system.info.tier">
+                <option value="1" {{#if (eq system.info.tier 1)}}selected{{/if}}>1 — Деревня</option>
+                <option value="2" {{#if (eq system.info.tier 2)}}selected{{/if}}>2 — Посёлок</option>
+                <option value="3" {{#if (eq system.info.tier 3)}}selected{{/if}}>3 — Город</option>
+                <option value="4" {{#if (eq system.info.tier 4)}}selected{{/if}}>4 — Большой город</option>
+                <option value="5" {{#if (eq system.info.tier 5)}}selected{{/if}}>5 — Столица</option>
+              </select>
             </label>
             <label>Фракция
               <input type="text" name="system.info.faction" value="{{system.info.faction}}">

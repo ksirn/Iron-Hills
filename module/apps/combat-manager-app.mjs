@@ -10,18 +10,15 @@ import {
   syncCombatParticipantsWithActors,
   advanceTurnIfReady,
   forceAdvanceTurn,
-  getActiveTurnTransitionState
+  getActiveTurnTransitionState,
+  getSideLabel
 } from "../services/combat-flow-service.mjs";
 
 import {
   getPersistentActor,
   getPersistentActorUuid
 } from "../utils/actor-utils.mjs";
-
-function num(value, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
+import { num } from "../utils/math-utils.mjs";
 
 function getSceneCombatTokens() {
   const placeables = canvas?.tokens?.placeables ?? [];
@@ -36,12 +33,6 @@ function getDefaultSideForActor(actor) {
   if (!actor) return "neutral";
   if (actor.type === "character") return "ally";
   return "enemy";
-}
-
-function getSideLabel(side) {
-  if (side === "ally") return "Союзник";
-  if (side === "enemy") return "Враг";
-  return "Нейтрал";
 }
 
 function buildCombatRefFromToken(token, side = "neutral") {

@@ -1,229 +1,543 @@
-<div class="iron-hills-tools-app">
-  <div class="status-grid">
-    <div class="status-card">
-      <h3>Создать поселение</h3>
-      <div class="grid two-col">
-        <label>Название
-          <input type="text" name="settlement-name" value="Rivergate">
-        </label>
-        <label>Регион
-          <input type="text" name="settlement-region" value="Iron Hills">
-        </label>
-        <label>Тир
-          <input type="number" name="settlement-tier" value="1">
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="create-settlement">Создать поселение</a>
-      </div>
-    </div>
+{{!-- Iron Hills World Tools — вкладочный интерфейс --}}
+<div class="ih-wt">
 
-    <div class="status-card">
-      <h3>Генератор NPC</h3>
-      <div class="grid two-col">
-        <label>Роль
-          <select name="npc-role">
-            <option value="villager">Житель</option>
-            <option value="guard">Стражник</option>
-            <option value="bandit">Бандит</option>
-            <option value="mage">Маг</option>
-            <option value="crafter">Ремесленник</option>
-            <option value="hunter">Охотник</option>
-          </select>
-        </label>
-        <label>Тир
-          <input type="number" name="npc-tier" value="1">
-        </label>
-        <label>Фракция
-          <input type="text" name="npc-faction" value="">
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="generate-npc">Создать NPC</a>
-      </div>
-    </div>
+  {{!-- Навигация по вкладкам --}}
+  <nav class="ih-wt-tabs">
+    <a class="ih-wt-tab is-active" data-tab="settlements">🏘 Поселения</a>
+    <a class="ih-wt-tab" data-tab="merchants">🏪 Торговцы</a>
+    <a class="ih-wt-tab" data-tab="poi">🗺 POI</a>
+    <a class="ih-wt-tab" data-tab="factions">⚔ Фракции</a>
+    <a class="ih-wt-tab" data-tab="quests">📜 Квесты</a>
+    <a class="ih-wt-tab" data-tab="npc">👤 NPC</a>
+    <a class="ih-wt-tab" data-tab="simulation">🌍 Симуляция</a>
+  </nav>
 
-    <div class="status-card">
-      <h3>Генератор торговца</h3>
-      <div class="grid two-col">
-        <label>Специализация
-          <select name="merchant-specialty">
-            <option value="general">general</option>
-            <option value="blacksmith">blacksmith</option>
-            <option value="alchemist">alchemist</option>
-            <option value="hunter">hunter</option>
-            <option value="innkeeper">innkeeper</option>
-          </select>
-        </label>
-        <label>Тир
-          <input type="number" name="merchant-tier" value="1">
-        </label>
-        <label>Поселение
-          <input type="text" name="merchant-settlement" value="">
-        </label>
-        <label>Фракция
-          <input type="text" name="merchant-faction" value="">
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="generate-merchant">Создать торговца</a>
-      </div>
-    </div>
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: ПОСЕЛЕНИЯ --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel is-active" data-panel="settlements">
+    <div class="ih-wt-grid">
 
-    <div class="status-card">
-      <h3>Генератор контейнера</h3>
-      <div class="grid two-col">
-        <label>Тема
-          <select name="container-theme">
-            <option value="bandit">bandit</option>
-            <option value="ruins">ruins</option>
-            <option value="hunter">hunter</option>
-            <option value="alchemy">alchemy</option>
-          </select>
-        </label>
-        <label>Тир
-          <input type="number" name="container-tier" value="1">
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="generate-container">Создать контейнер</a>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h3>Слух поселения</h3>
-      <div class="grid two-col">
-        <label>Поселение
-          <select name="rumor-settlement">
-            {{#each settlements}}
-              <option value="{{this.id}}">{{this.name}}</option>
-            {{/each}}
-          </select>
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="generate-rumor">Сгенерировать слух</a>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h3>Недельный тик одного поселения</h3>
-      <div class="grid two-col">
-        <label>Поселение
-          <select name="tick-settlement">
-            {{#each settlements}}
-              <option value="{{this.id}}">{{this.name}}</option>
-            {{/each}}
-          </select>
-        </label>
-      </div>
-      <div class="inventory-actions">
-        <a data-action="advance-settlement">Сделать тик поселения</a>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h3>Региональные инструменты</h3>
-      <div class="grid two-col">
-        <label>Регион
-          <select name="region-select">
-            {{#each regions}}
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">🏘 Создать поселение</div>
+        <div class="ih-wt-fields">
+          <label>Название
+            <input type="text" name="settlement-name" placeholder="Оукхолл">
+          </label>
+          <label>Регион
+            <select name="settlement-region">
+              <option value="Iron Hills">Iron Hills (тир 1-3)</option>
+              {{#each regions}}
               <option value="{{this}}">{{this}}</option>
-            {{/each}}
-          </select>
-        </label>
+              {{/each}}
+              <option value="__new">+ Новый регион...</option>
+            </select>
+          </label>
+          <div class="ih-wt-new-region" style="display:none">
+            <label>Название нового региона
+              <input type="text" name="settlement-region-new" placeholder="Название региона">
+            </label>
+          </div>
+          <label>Тир (1-10)
+            <select name="settlement-tier">
+              <option value="1">1 — Деревня (медь)</option>
+              <option value="2">2 — Посёлок (бронза)</option>
+              <option value="3">3 — Малый город (железо)</option>
+              <option value="4">4 — Город (сталь)</option>
+              <option value="5">5 — Крупный город</option>
+              <option value="6">6 — Торговый центр</option>
+              <option value="7">7 — Столица региона (митрил)</option>
+              <option value="8">8 — Имперский город</option>
+              <option value="9">9 — Древний город</option>
+              <option value="10">10 — Легендарный</option>
+            </select>
+          </label>
+          <label>Фракция контроля
+            <input type="text" name="settlement-faction" placeholder="Название фракции">
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="create-settlement">✨ Создать</a>
+        </div>
       </div>
-      <div class="inventory-actions">
-        <a data-action="region-crisis">Сгенерировать кризис региона</a>
-        <a data-action="run-caravans">Прогнать караваны</a>
-        <a data-action="stabilize-region">Стабилизировать регион</a>
-      </div>
-    </div>
 
-    <div class="status-card">
-      <h3>POI генератор</h3>
-      <div class="grid two-col">
-        <label>Тип POI
-          <select name="poi-type">
-            <option value="camp">camp</option>
-            <option value="lair">lair</option>
-            <option value="ruins">ruins</option>
-            <option value="shrine">shrine</option>
-            <option value="road">road</option>
-          </select>
-        </label>
-        <label>Тир
-          <input type="number" name="poi-tier" value="1">
-        </label>
-        <label>Ближайшее поселение
-          <input type="text" name="poi-settlement" value="">
-        </label>
-        <label>Фракция
-          <input type="text" name="poi-faction" value="">
-        </label>
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📊 Тик поселения</div>
+        <div class="ih-wt-fields">
+          <label>Поселение
+            <select name="tick-settlement">
+              {{#each settlements}}
+              <option value="{{id}}">{{name}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="advance-settlement">⏩ Недельный тик</a>
+          <a class="ih-btn" data-action="generate-rumor">💬 Слух</a>
+        </div>
       </div>
-      <div class="inventory-actions">
-        <a data-action="generate-poi">Создать POI</a>
-        <a data-action="generate-poi-pack">Создать набор POI</a>
-        <a data-action="generate-regional-threat">Создать угрозу региона</a>
-        <a data-action="evolve-pois">Прогнать эволюцию POI</a>
-      </div>
-    </div>
 
-    <div class="status-card">
-      <h3>Квесты</h3>
-      <div class="grid two-col">
-        <label>Тип квеста
-          <select name="quest-type">
-            <option value="auto">auto</option>
-            <option value="gathering">gathering</option>
-            <option value="delivery">delivery</option>
-            <option value="exploration">exploration</option>
-            <option value="combat">combat</option>
-            <option value="world">world</option>
-          </select>
-        </label>
-        <label>Целевое поселение
-          <input type="text" name="quest-settlement" value="">
-        </label>
-        <label>Тип арки
-          <select name="arc-type">
-            <option value="auto">auto</option>
-            <option value="crisis">crisis</option>
-            <option value="recovery">recovery</option>
-          </select>
-        </label>
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">🗺 Региональные инструменты</div>
+        <div class="ih-wt-fields">
+          <label>Регион
+            <select name="region-select">
+              {{#each regions}}
+              <option value="{{this}}">{{this}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>Экономика региона
+            <select name="region-economy">
+              <option value="normal">⚖ Норма</option>
+              <option value="boom">📈 Расцвет</option>
+              <option value="shortage">📉 Дефицит</option>
+              <option value="crisis">🔥 Кризис</option>
+              <option value="war">⚔ Война</option>
+              <option value="plague">☠ Чума</option>
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="region-crisis">💥 Кризис</a>
+          <a class="ih-btn" data-action="run-caravans">🚛 Караваны</a>
+          <a class="ih-btn" data-action="stabilize-region">🕊 Стабилизировать</a>
+          <a class="ih-btn" data-action="set-region-economy">💱 Сменить экономику</a>
+        </div>
       </div>
-      <div class="inventory-actions">
-        <a data-action="generate-quest">Создать квест</a>
-        <a data-action="generate-quest-pack">Создать набор квестов</a>
-        <a data-action="generate-regional-quests">Создать региональные квесты</a>
-        <a data-action="generate-story-arc">Создать сюжетную арку</a>
-      </div>
-    </div>
 
-    <div class="status-card">
-      <h3>Глобальный мир-тик</h3>
-      <p>Обновляет поселения, кризисы, стабилизацию, караваны, POI и торговцев.</p>
-      <div class="inventory-actions">
-        <a data-action="advance-world">Сделать глобальный тик мира</a>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h3>Ресток всех торговцев</h3>
-      <p>Принудительно обновляет stock и price factor у всех merchant.</p>
-      <div class="inventory-actions">
-        <a data-action="restock-merchants">Обновить всех торговцев</a>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <h3>Отчёт по фракциям</h3>
-      <p>Показывает давление controllingFaction на поселения.</p>
-      <div class="inventory-actions">
-        <a data-action="faction-report">Сделать отчёт</a>
-      </div>
     </div>
   </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: ТОРГОВЦЫ --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="merchants">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">🏪 Создать торговца</div>
+        <div class="ih-wt-fields">
+          <label>Имя (пусто = случайное)
+            <input type="text" name="merchant-name" placeholder="Борин Кузнец">
+          </label>
+          <label>Тип магазина
+            <select name="merchant-specialty">
+              <option value="general">🏪 Общая лавка</option>
+              <option value="weaponsmith">⚔ Оружейник</option>
+              <option value="armorsmith">🛡 Бронник</option>
+              <option value="alchemist">⚗ Алхимик</option>
+              <option value="mage">✨ Маг-торговец</option>
+              <option value="jeweler">💎 Ювелир</option>
+              <option value="blackmarket">🌑 Чёрный рынок</option>
+            </select>
+          </label>
+          <label>Тир поселения (1-10)
+            <select name="merchant-tier">
+              <option value="1">1 — Деревня (медь)</option>
+              <option value="2">2 — Посёлок (бронза)</option>
+              <option value="3">3 — Малый город (железо)</option>
+              <option value="4">4 — Город (сталь)</option>
+              <option value="5">5 — Крупный город</option>
+              <option value="6">6 — Торговый центр</option>
+              <option value="7">7 — Столица региона (митрил)</option>
+              <option value="8">8 — Имперский город</option>
+              <option value="9">9 — Древний город</option>
+              <option value="10">10 — Легендарный рынок</option>
+            </select>
+          </label>
+          <label>Состояние экономики
+            <select name="merchant-economy">
+              <option value="normal">⚖ Норма</option>
+              <option value="boom">📈 Расцвет (дёшево, много)</option>
+              <option value="shortage">📉 Дефицит (дорого, мало)</option>
+              <option value="crisis">🔥 Кризис</option>
+              <option value="war">⚔ Война</option>
+              <option value="festival">🎉 Праздник</option>
+              <option value="plague">☠ Чума</option>
+            </select>
+          </label>
+          <label>Поселение
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="text" name="merchant-settlement" placeholder="Или выбрать →" style="flex:1">
+              <a class="ih-btn ih-btn-small" data-pick-merchant-settlement>📍</a>
+            </div>
+          </label>
+          <label>Фракция
+            <input type="text" name="merchant-faction" value="">
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="generate-merchant">✨ Создать и наполнить</a>
+          <a class="ih-btn" data-action="restock-selected-merchant">🔄 Пополнить выбранного</a>
+          <a class="ih-btn" data-action="restock-merchants">🔄 Пополнить всех</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📦 Контейнер/Тайник</div>
+        <div class="ih-wt-fields">
+          <label>Тема
+            <select name="container-theme">
+              <option value="bandit">Бандит</option>
+              <option value="ruins">Руины</option>
+              <option value="hunter">Охотник</option>
+              <option value="alchemy">Алхимия</option>
+              <option value="military">Военный</option>
+            </select>
+          </label>
+          <label>Тир
+            <select name="container-tier">
+              <option value="1">1 — Бедный</option>
+              <option value="2">2 — Обычный</option>
+              <option value="3">3 — Богатый</option>
+              <option value="4">4 — Редкий</option>
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="generate-container">📦 Создать</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: POI --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="poi">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📍 Создать POI</div>
+        <div class="ih-wt-fields">
+          <label>Тип
+            <select name="poi-type">
+              <option value="camp">⛺ Лагерь</option>
+              <option value="lair">🐉 Логово</option>
+              <option value="ruins">🏚 Руины</option>
+              <option value="shrine">⛩ Святилище</option>
+              <option value="road">🛣 Дорожная точка</option>
+              <option value="dungeon">⚔ Подземелье</option>
+              <option value="tower">🗼 Башня</option>
+              <option value="cave">🕳 Пещера</option>
+            </select>
+          </label>
+          <label>Тир опасности (1-10)
+            <select name="poi-tier">
+              <option value="1">1 — Новичок (медные орудия)</option>
+              <option value="2">2 — Начинающий</option>
+              <option value="3">3 — Опытный (железо)</option>
+              <option value="4">4 — Умелый (сталь)</option>
+              <option value="5">5 — Ветеран</option>
+              <option value="6">6 — Элита</option>
+              <option value="7">7 — Мастер (митрил)</option>
+              <option value="8">8 — Герой</option>
+              <option value="9">9 — Легенда</option>
+              <option value="10">10 — Эпик (адамантий)</option>
+            </select>
+          </label>
+          <label>Регион
+            <select name="poi-region">
+              {{#each regions}}
+              <option value="{{this}}">{{this}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>Ближайшее поселение
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="text" name="poi-settlement" placeholder="Или выбрать →" style="flex:1">
+              <a class="ih-btn ih-btn-small" data-pick-poi-settlement>📍</a>
+            </div>
+          </label>
+          <label>Фракция
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="text" name="poi-faction" placeholder="Или выбрать →" style="flex:1">
+              <a class="ih-btn ih-btn-small" data-pick-faction>📋</a>
+            </div>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="generate-poi">📍 Создать POI</a>
+          <a class="ih-btn" data-action="generate-poi-pack">🗺 Набор POI (5 шт)</a>
+          <a class="ih-btn" data-action="generate-regional-threat">⚠ Угроза региона</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">⚙ Управление POI</div>
+        <div class="ih-wt-fields">
+          <label class="muted-text" style="font-size:11px">
+            Выдели токены POI на сцене или оставь пустым — применится ко всем
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="evolve-pois">🔄 Эволюция POI</a>
+          <a class="ih-btn" data-action="cleanup-pois">🗑 Убрать рухнувшие</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: ФРАКЦИИ --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="factions">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">⚔ Создать фракцию</div>
+        <div class="ih-wt-fields">
+          <label>Название
+            <input type="text" name="faction-name" placeholder="Гильдия кузнецов">
+          </label>
+          <label>Тип
+            <select name="faction-type">
+              <option value="guild">🔨 Гильдия</option>
+              <option value="military">⚔ Военная</option>
+              <option value="religious">✝ Религиозная</option>
+              <option value="criminal">🌑 Криминальная</option>
+              <option value="noble">👑 Дворянская</option>
+              <option value="merchant">🏪 Торговая</option>
+            </select>
+          </label>
+          <label>Сила (1-10)
+            <input type="number" name="faction-power" value="5" min="1" max="10">
+          </label>
+          <label>Богатство (1-10)
+            <input type="number" name="faction-wealth" value="5" min="1" max="10">
+          </label>
+          <label>Базовое поселение
+            <select name="faction-settlement">
+              <option value="">— Без базы —</option>
+              {{#each settlements}}
+              <option value="{{name}}">{{name}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="create-faction">✨ Создать фракцию</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📊 Отчёт по фракциям</div>
+        <div class="ih-wt-actions" style="margin-top:8px">
+          <a class="ih-btn" data-action="faction-report">📊 Показать отчёт</a>
+        </div>
+        {{#if factionReport}}
+        <table class="ih-wt-table">
+          <thead><tr><th>Поселение</th><th>Фракция</th><th>Сила</th><th>Давление</th></tr></thead>
+          <tbody>
+            {{#each factionReport}}
+            <tr>
+              <td>{{settlement}}</td>
+              <td>{{faction}}</td>
+              <td>{{power}}</td>
+              <td class="{{#if (gt pressure 0)}}text-good{{else if (lt pressure 0)}}text-bad{{/if}}">
+                {{pressure}}
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+        {{/if}}
+      </div>
+
+    </div>
+  </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: КВЕСТЫ --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="quests">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📜 Генератор квеста</div>
+        <div class="ih-wt-fields">
+          <label>Тип квеста
+            <select name="quest-type">
+              <option value="auto">🎲 Авто</option>
+              <option value="gathering">🌿 Сбор/Добыча</option>
+              <option value="delivery">📦 Доставка</option>
+              <option value="exploration">🗺 Исследование</option>
+              <option value="combat">⚔ Зачистка</option>
+              <option value="escort">🛡 Сопровождение</option>
+              <option value="investigation">🔍 Расследование</option>
+            </select>
+          </label>
+          <label>Целевое поселение
+            <select name="quest-settlement">
+              <option value="">— Любое —</option>
+              {{#each settlements}}
+              <option value="{{name}}">{{name}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>Связанный POI
+            <select name="quest-poi">
+              <option value="">— Без привязки —</option>
+              {{#each pois}}
+              <option value="{{id}}">{{name}} ({{type}} т{{tier}})</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>Сложность (1-10, 0 = авто)
+            <select name="quest-difficulty">
+              <option value="0">🎲 Авто</option>
+              <option value="1">1 — Подручный (медь, травы)</option>
+              <option value="2">2 — Новичок</option>
+              <option value="3">3 — Опытный (железо, бандиты)</option>
+              <option value="4">4 — Умелый (сталь, логова)</option>
+              <option value="5">5 — Ветеран</option>
+              <option value="6">6 — Профессионал (подземелья)</option>
+              <option value="7">7 — Мастер (митрил, боссы)</option>
+              <option value="8">8 — Элита</option>
+              <option value="9">9 — Герой (легендарные угрозы)</option>
+              <option value="10">10 — Легенда</option>
+            </select>
+          </label>
+          <label>Награда (медь, 0 = авто)
+            <input type="number" name="quest-reward" value="0">
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="generate-quest">📜 Создать квест</a>
+          <a class="ih-btn" data-action="generate-quest-pack">📚 Набор квестов (3 шт)</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">🎭 Сюжетная арка</div>
+        <div class="ih-wt-fields">
+          <label>Тип арки
+            <select name="arc-type">
+              <option value="auto">🎲 Авто</option>
+              <option value="crisis">🔥 Кризис поселения</option>
+              <option value="recovery">🌱 Восстановление</option>
+              <option value="war">⚔ Война фракций</option>
+              <option value="mystery">🔮 Тайна</option>
+            </select>
+          </label>
+          <label>Регион
+            <select name="arc-region">
+              {{#each regions}}
+              <option value="{{this}}">{{this}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="generate-regional-quests">🗺 Региональные квесты</a>
+          <a class="ih-btn" data-action="generate-story-arc">🎭 Сюжетная арка</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: NPC --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="npc">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">👤 Генератор NPC</div>
+        <div class="ih-wt-fields">
+          <label>Роль
+            <select name="npc-role">
+              <option value="villager">🏘 Житель</option>
+              <option value="guard">🛡 Стражник</option>
+              <option value="bandit">🗡 Бандит</option>
+              <option value="mage">✨ Маг</option>
+              <option value="crafter">🔨 Ремесленник</option>
+              <option value="hunter">🏹 Охотник</option>
+              <option value="noble">👑 Дворянин</option>
+              <option value="priest">✝ Жрец</option>
+            </select>
+          </label>
+          <label>Тир (1-10)
+            <select name="npc-tier">
+              <option value="1">1 — Простолюдин (медь)</option>
+              <option value="2">2 — Начинающий (бронза)</option>
+              <option value="3">3 — Опытный (железо)</option>
+              <option value="4">4 — Умелый (сталь)</option>
+              <option value="5">5 — Ветеран</option>
+              <option value="6">6 — Профессионал</option>
+              <option value="7">7 — Мастер (митрил)</option>
+              <option value="8">8 — Элита</option>
+              <option value="9">9 — Герой</option>
+              <option value="10">10 — Легенда (адамантий)</option>
+            </select>
+          </label>
+          <label>Фракция
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="text" name="npc-faction" placeholder="Или выбрать →" style="flex:1">
+              <a class="ih-btn ih-btn-small" data-pick-faction>📋</a>
+            </div>
+          </label>
+          <label>Поселение
+            <select name="npc-settlement">
+              <option value="">— Без привязки —</option>
+              {{#each settlements}}
+              <option value="{{name}}">{{name}}</option>
+              {{/each}}
+            </select>
+          </label>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="generate-npc">👤 Создать NPC</a>
+          <a class="ih-btn" data-action="generate-npc-pack">👥 Группа (5 шт)</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  {{!-- ВКЛАДКА: СИМУЛЯЦИЯ --}}
+  {{!-- ══════════════════════════════════════════════════════ --}}
+  <div class="ih-wt-panel" data-panel="simulation">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">🌍 Глобальный тик мира</div>
+        <p class="muted-text" style="font-size:11px;margin:4px 0 8px">
+          Обновляет все поселения, кризисы, стабилизацию, POI, торговцев.
+          Рекомендуется раз в игровую неделю.
+        </p>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="advance-world">⏩ Глобальный тик</a>
+          <a class="ih-btn" data-action="restock-merchants">🔄 Пополнить всех торговцев</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card">
+        <div class="ih-wt-card-title">📈 Состояние мира</div>
+        <div class="ih-wt-actions" style="margin-top:8px">
+          <a class="ih-btn" data-action="world-status">📊 Показать статус</a>
+        </div>
+        {{#if worldStatus}}
+        <div class="ih-wt-status-list">
+          {{#each worldStatus}}
+          <div class="ih-wt-status-row">
+            <span>{{settlement}}</span>
+            <span class="ih-wt-tag">P{{prosperity}}</span>
+            <span class="ih-wt-tag {{#if (gt danger 6)}}tag-danger{{/if}}">D{{danger}}</span>
+            <span class="ih-wt-tag">{{economy}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+
+    </div>
+  </div>
+
 </div>

@@ -118,6 +118,20 @@ export function refreshAllTradeUIs(actorSheetClass, tradeAppClass) {
   rerenderOpenTradeApps(tradeAppClass);
 }
 
+/**
+ * Обновляет все открытые листы IronHillsActorSheet.
+ * Канонический шорткат, чтобы не плодить локальных копий.
+ */
+export function rerenderOpenIronHillsActorSheets() {
+  for (const app of Object.values(ui.windows ?? {})) {
+    if (!app?.rendered) continue;
+    if (app.constructor?.name !== "IronHillsActorSheet") continue;
+    try { app.render(false); } catch (err) {
+      console.warn("Iron Hills | actor sheet rerender failed", err);
+    }
+  }
+}
+
 export function injectWorldToolsButton(html, onClick) {
   if (html.find(".iron-hills-tools-button").length) return;
 

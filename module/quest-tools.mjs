@@ -1,65 +1,23 @@
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function choice(arr) {
-  return arr[randInt(0, arr.length - 1)];
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+import { randInt, choice, clamp } from "./utils/math-utils.mjs";
+import {
+  getSettlements,
+  getPois,
+  getFactions,
+  getQuests,
+  getCharacters,
+  findSettlementByName,
+  findPoiByName,
+  findFactionByName,
+  findCharacterByName,
+  getRegionSettlements,
+} from "./utils/world-helpers.mjs";
 
 function makeChainId() {
   return `arc-${Date.now()}-${randInt(1000, 9999)}`;
 }
 
-function getSettlements() {
-  return game.actors.filter(a => a.type === "settlement");
-}
-
-function getPois() {
-  return game.actors.filter(a => a.type === "poi");
-}
-
-function getFactions() {
-  return game.actors.filter(a => a.type === "faction");
-}
-
-function getQuests() {
-  return game.actors.filter(a => a.type === "quest");
-}
-
-function getCharacters() {
-  return game.actors.filter(a => a.type === "character");
-}
-
 function getWorldItems() {
   return game.items ? Array.from(game.items) : [];
-}
-
-function findSettlementByName(name) {
-  if (!name) return null;
-  return getSettlements().find(s => s.name === name) ?? null;
-}
-
-function findPoiByName(name) {
-  if (!name) return null;
-  return getPois().find(p => p.name === name) ?? null;
-}
-
-function findFactionByName(name) {
-  if (!name) return null;
-  return getFactions().find(f => f.name === name) ?? null;
-}
-
-function findCharacterByName(name) {
-  if (!name) return null;
-  return getCharacters().find(c => c.name === name) ?? null;
-}
-
-function getRegionSettlements(region) {
-  return getSettlements().filter(s => (s.system.info?.region || "") === region);
 }
 
 async function appendSettlementHistory(settlement, field, text, limit = 12) {
@@ -298,7 +256,8 @@ function baseQuestData({
   };
 }
 
-function makeGatheringQuest(settlement = null, region = "") {
+function makeGatheringQuest(settlement = null, region = "", difficulty = null) {
+  const tier = Math.max(1, Math.min(10, difficulty ?? randInt(1, 3)));
   const variants = [
     {
       title: "Сбор лечебных трав",
@@ -343,7 +302,7 @@ function makeGatheringQuest(settlement = null, region = "") {
     region,
     issuer: v.issuer,
     targetSettlement: settlement?.name || "",
-    difficulty: randInt(1, 3),
+    difficulty: tier,
     reward: v.rewardText,
     dueText: "Когда будет удобно",
     summary: v.title,
@@ -358,7 +317,8 @@ function makeGatheringQuest(settlement = null, region = "") {
   });
 }
 
-function makeDeliveryQuest(settlement = null, region = "") {
+function makeDeliveryQuest(settlement = null, region = "", difficulty = null) {
+  const tier = Math.max(1, Math.min(10, difficulty ?? randInt(1, 4)));
   return baseQuestData({
     name: "Доставка провизии",
     questType: "delivery",
@@ -381,7 +341,8 @@ function makeDeliveryQuest(settlement = null, region = "") {
   });
 }
 
-function makeExplorationQuest(settlement = null, region = "", poi = null) {
+function makeExplorationQuest(settlement = null, region = "", poi = null, difficulty = null) {
+  const tier = Math.max(1, Math.min(10, difficulty ?? randInt(2, 5)));
   const targetPoi = poi ?? choice(getPois().filter(p => (p.system.info?.region || "") === region));
 
   return baseQuestData({
@@ -416,7 +377,8 @@ function makeExplorationQuest(settlement = null, region = "", poi = null) {
   });
 }
 
-function makeCombatQuest(settlement = null, region = "", poi = null) {
+function makeCombatQuest(settlement = null, region = "", poi = null, difficulty = null) {
+  const tier = Math.max(1, Math.min(10, difficulty ?? randInt(3, 7)));
   const candidates = poi
     ? [poi]
     : getPois().filter(p => {
@@ -525,8 +487,8 @@ function pickQuestTypeWeighted(settlement = null) {
   return "gathering";
 }
 
-function buildQuestByType(type, settlement = null, region = "") {
-  if (type === "gathering") return makeGatheringQuest(settlement, region);
+function buildQuestByType(type, settlement = null, region = "", difficulty = null) {
+  if (type === "gathering") return makeGatheringQuest(settlement, region, difficulty);
   if (type === "delivery") return makeDeliveryQuest(settlement, region);
   if (type === "exploration") return makeExplorationQuest(settlement, region);
   if (type === "combat") return makeCombatQuest(settlement, region);
@@ -1037,11 +999,12 @@ function bindQuestSheetButtons(app, html) {
 async function generateSingleQuestFromUi(html) {
   const settlementName = html.find("[name='quest-settlement']").val() || "";
   const region = html.find("[name='region-select']").val() || "";
-  const type = html.find("[name='quest-type']").val() || "auto";
+  const type       = html.find("[name='quest-type']").val()       || "auto";
+  const difficulty = Number(html.find("[name='quest-difficulty']").val()) || null;
   const settlement = settlementName ? findSettlementByName(settlementName) : null;
 
   const finalType = type === "auto" ? pickQuestTypeWeighted(settlement) : type;
-  const quest = await Actor.create(buildQuestByType(finalType, settlement, region));
+  const quest = await Actor.create(buildQuestByType(finalType, settlement, region, difficulty));
 
   await ChatMessage.create({
     content: `<h3>Новый квест</h3><p><b>${quest.name}</b></p><p>Тип: ${quest.system.info.questType}</p>`
@@ -1053,6 +1016,7 @@ async function generateSingleQuestFromUi(html) {
 async function generateQuestPackFromUi(html) {
   const settlementName = html.find("[name='quest-settlement']").val() || "";
   const region = html.find("[name='region-select']").val() || "";
+  const difficulty = Number(html.find("[name='quest-difficulty']").val()) || null;
   const settlement = settlementName ? findSettlementByName(settlementName) : null;
 
   const count = randInt(3, 6);
@@ -1060,7 +1024,7 @@ async function generateQuestPackFromUi(html) {
 
   for (let i = 0; i < count; i++) {
     const type = pickQuestTypeWeighted(settlement);
-    const quest = await Actor.create(buildQuestByType(type, settlement, region));
+    const quest = await Actor.create(buildQuestByType(type, settlement, region, difficulty));
     created.push(quest.name);
   }
 
@@ -1086,7 +1050,7 @@ async function generateRegionalQuestsFromUi(html) {
   for (let i = 0; i < count; i++) {
     const settlement = choice(settlements);
     const type = pickQuestTypeWeighted(settlement);
-    const quest = await Actor.create(buildQuestByType(type, settlement, region));
+    const quest = await Actor.create(buildQuestByType(type, settlement, region, difficulty));
     created.push(`${quest.name} (${settlement.name})`);
   }
 

@@ -83,26 +83,31 @@ export function getDamageReduction(armorItem, damageType) {
 }
 
 /**
+ * Карта по умолчанию: ключ слота экипировки → какие зоны тела этот слот покрывает.
+ * Используется когда у предмета не задано system.covers.
+ */
+export const DEFAULT_SLOT_COVERS = Object.freeze({
+  head:       ["head"],
+  torso:      ["torso"],
+  torsoUnder: ["torso", "abdomen"],
+  leftArm:    ["leftArm"],
+  rightArm:   ["rightArm"],
+  legs:       ["leftLeg", "rightLeg"],
+});
+
+/**
  * Возвращает лучший резист для зоны из всех слоёв брони.
  * Используется вместо getEquippedArmorForLocation когда нужен стек.
  */
 export function getBestResistForZone(actor, zone, damageType = "physical") {
   const equip = actor.system?.equipment ?? {};
-  const SLOT_COVERS = {
-    head:       ["head"],
-    torso:      ["torso"],
-    torsoUnder: ["torso", "abdomen"],
-    leftArm:    ["leftArm"],
-    rightArm:   ["rightArm"],
-    legs:       ["leftLeg", "rightLeg"],
-  };
 
   let best = 0;
   for (const [slot, itemId] of Object.entries(equip)) {
     if (!itemId) continue;
     const item = actor.items.get(itemId);
     if (!item || item.type !== "armor") continue;
-    const covers = item.system?.covers ?? SLOT_COVERS[slot] ?? [];
+    const covers = item.system?.covers ?? DEFAULT_SLOT_COVERS[slot] ?? [];
     if (!covers.includes(zone)) continue;
     const r = getDamageReduction(item, damageType);
     if (r > best) best = r;
@@ -859,7 +864,24 @@ export function buildGroupedItems(actor) {
     groupsMap.set(type, []);
   }
 
+  const equip  = actor.system?.equipment ?? {};
+  const equippedIds = new Set(Object.values(equip).filter(Boolean));
+
   for (const item of items) {
+    // Скрываем предметы внутри НЕнадетых контейнеров
+    // (они там хранятся физически но не должны быть видны в листе)
+    const secKey = item.flags?.["iron-hills-system"]?.sectionKey ?? null;
+    if (secKey) {
+      const contType = secKey.startsWith("backpack_") ? "backpack"
+                     : secKey.startsWith("belt_")     ? "belt"
+                     : null;
+      if (contType) {
+        // Проверяем надет ли соответствующий контейнер
+        const isEquipped = equip[contType] && equippedIds.has(equip[contType]);
+        if (!isEquipped) continue; // не показываем
+      }
+    }
+
     const type = item.type || "other";
     if (!groupsMap.has(type)) groupsMap.set(type, []);
     groupsMap.get(type).push(item);
@@ -1215,10 +1237,28 @@ export function buildOverviewSummary(actor) {
     coins: getActorCurrency(actor),
     encumbranceLabel: encumbrance.label,
     calculatedTier: calculatedTier,
-    bleeding: num(conditions.bleeding, 0),
-    shock:    num(conditions.shock, 0),
-    poison:   num(conditions.poison, 0),
-    burning:  num(conditions.burning, 0)
+    bleeding:     num(conditions.bleeding, 0),
+    shock:        num(conditions.shock, 0),
+    poison:       num(conditions.poison, 0),
+    burning:      num(conditions.burning, 0),
+    unconscious:  num(conditions.unconscious, 0),
+    // Статус голода и жажды
+    hungerState:  (() => {
+      const p = num(resources.satiety?.value, 100) / Math.max(1, num(resources.satiety?.max, 100));
+      if (p <= 0)    return { label:"☠ Голодная смерть",    color:"#ef4444", icon:"💀", penalty:20 };
+      if (p <= 0.1)  return { label:"😵 Крайнее истощение", color:"#f87171", icon:"😵", penalty:10 };
+      if (p <= 0.25) return { label:"😰 Сильный голод",     color:"#fb923c", icon:"😰", penalty:5  };
+      if (p <= 0.5)  return { label:"🍽 Голод",              color:"#fbbf24", icon:"🍽", penalty:2  };
+      return null;
+    })(),
+    thirstState:  (() => {
+      const p = num(resources.hydration?.value, 100) / Math.max(1, num(resources.hydration?.max, 100));
+      if (p <= 0)    return { label:"☠ Смерть от жажды",    color:"#3b82f6", icon:"💀", penalty:30 };
+      if (p <= 0.1)  return { label:"🏜 Критическая жажда", color:"#60a5fa", icon:"🏜", penalty:15 };
+      if (p <= 0.25) return { label:"😓 Сильная жажда",     color:"#7dd3fc", icon:"😓", penalty:8  };
+      if (p <= 0.5)  return { label:"💧 Жажда",              color:"#bae6fd", icon:"💧", penalty:3  };
+      return null;
+    })(),
   };
 }
 

@@ -18,9 +18,16 @@
       <div class="ih-cs-meta-row">
         <div class="ih-cs-meta-field">
           <label>Раса</label>
-          <input type="text" name="system.info.race" value="{{system.info.race}}" placeholder="—">
+          <select name="system.info.race">
+            <option value="human"     {{#if (eq system.info.race 'human')}}selected{{/if}}>Человек</option>
+            <option value="dwarf"     {{#if (eq system.info.race 'dwarf')}}selected{{/if}}>Гном</option>
+            <option value="halfling"  {{#if (eq system.info.race 'halfling')}}selected{{/if}}>Полурослик</option>
+            <option value="goblin"    {{#if (eq system.info.race 'goblin')}}selected{{/if}}>Гоблин</option>
+            <option value="stoneling" {{#if (eq system.info.race 'stoneling')}}selected{{/if}}>Каменник</option>
+            <option value="other"     {{#if (eq system.info.race 'other')}}selected{{/if}}>Иное</option>
+          </select>
         </div>
-        <div class="ih-cs-meta-field narrow-age">
+        <div class="ih-cs-meta-field narrow">
           <label>Возраст</label>
           <input type="number" name="system.info.age" value="{{system.info.age}}">
         </div>
@@ -28,9 +35,9 @@
           <label>Фракция</label>
           <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="—">
         </div>
-        <div class="ih-cs-meta-field narrow">
-          <label>Ступень</label>
-          <span class="ih-cs-meta-value" title="Рассчитывается от максимального навыка">{{calculatedTier}}</span>
+        <div class="ih-cs-meta-field">
+          <label>Роль/Класс</label>
+          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="—">
         </div>
       </div>
     </div>
@@ -159,6 +166,9 @@
               <span class="ih-cs-res-max">/{{system.resources.energy.max}}</span>
             </div>
             <div class="ih-cs-res-track"><div class="ih-cs-res-fill energy" style="width:{{overviewSummary.energyPct}}%"></div></div>
+            {{#if overviewSummary.unconscious}}
+            <div class="ih-cs-debuff-tag" style="color:#ef4444">💀 Без сознания</div>
+            {{/if}}
           </div>
           <div class="ih-cs-res-row">
             <span class="ih-cs-res-icon mana">✦</span>
@@ -177,6 +187,12 @@
               <span class="ih-cs-res-max">/{{system.resources.satiety.max}}</span>
             </div>
             <div class="ih-cs-res-track"><div class="ih-cs-res-fill food" style="width:{{overviewSummary.satietyPct}}%"></div></div>
+            {{#if overviewSummary.hungerState}}
+            <div class="ih-cs-debuff-tag" style="color:{{overviewSummary.hungerState.color}}"
+                 title="−{{overviewSummary.hungerState.penalty}} макс. энергии">
+              {{overviewSummary.hungerState.icon}} {{overviewSummary.hungerState.label}}
+            </div>
+            {{/if}}
           </div>
           <div class="ih-cs-res-row">
             <span class="ih-cs-res-icon water">💧</span>
@@ -186,6 +202,12 @@
               <span class="ih-cs-res-max">/{{system.resources.hydration.max}}</span>
             </div>
             <div class="ih-cs-res-track"><div class="ih-cs-res-fill water" style="width:{{overviewSummary.hydrationPct}}%"></div></div>
+            {{#if overviewSummary.thirstState}}
+            <div class="ih-cs-debuff-tag" style="color:{{overviewSummary.thirstState.color}}"
+                 title="−{{overviewSummary.thirstState.penalty}} макс. энергии">
+              {{overviewSummary.thirstState.icon}} {{overviewSummary.thirstState.label}}
+            </div>
+            {{/if}}
           </div>
           <div class="ih-cs-res-row">
             <span class="ih-cs-res-icon" style="color:var(--ih-text-2)">⚖</span>
@@ -231,16 +253,79 @@
       </div>
       {{/if}}
 
+      {{!-- Пробудившийся --}}
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          Пробудившийся
+          {{#if isGM}}
+          <a class="ih-cs-section-action" data-toggle-awakened>
+            {{#if system.resources.awakened.isAwakened}}⬤ Активен{{else}}◯ Нет{{/if}}
+          </a>
+          {{/if}}
+        </div>
+        {{#if system.resources.awakened.isAwakened}}
+        <div class="ih-cs-awakened">
+          <div class="ih-cs-awakened-badge">⚡ Пробудившийся</div>
+          <div class="ih-cs-awakened-fields">
+            <label>Игрок (из нашего мира)
+              <input type="text" name="system.resources.awakened.playerName"
+                     value="{{system.resources.awakened.playerName}}"
+                     placeholder="Имя..." {{#unless isGM}}readonly{{/unless}}>
+            </label>
+            <label>Тип пробуждения
+              {{#if isGM}}
+              <select name="system.resources.awakened.awakeningType">
+                <option value="" {{#unless system.resources.awakened.awakeningType}}selected{{/unless}}>— не задано —</option>
+                <option value="mental"    {{#if (eq system.resources.awakened.awakeningType 'mental')}}selected{{/if}}>Ментальный недуг носителя</option>
+                <option value="weak-soul" {{#if (eq system.resources.awakened.awakeningType 'weak-soul')}}selected{{/if}}>Слабая душа носителя</option>
+                <option value="ritual"    {{#if (eq system.resources.awakened.awakeningType 'ritual')}}selected{{/if}}>Ритуал</option>
+                <option value="accident"  {{#if (eq system.resources.awakened.awakeningType 'accident')}}selected{{/if}}>Случайность</option>
+                <option value="unknown"   {{#if (eq system.resources.awakened.awakeningType 'unknown')}}selected{{/if}}>Неизвестно</option>
+              </select>
+              {{else}}
+              <span class="muted-text">{{system.resources.awakened.awakeningType}}</span>
+              {{/if}}
+            </label>
+            <label>Дата пробуждения
+              <input type="text" name="system.resources.awakened.awakeningDate"
+                     value="{{system.resources.awakened.awakeningDate}}"
+                     placeholder="День X эпохи Y..." {{#unless isGM}}readonly{{/unless}}>
+            </label>
+            {{#if system.resources.awakened.notes}}
+            <div class="ih-cs-awakened-notes">{{system.resources.awakened.notes}}</div>
+            {{/if}}
+          </div>
+        </div>
+        {{else}}
+        <div class="ih-cs-awakened-none muted-text">Обычная душа</div>
+        {{/if}}
+      </div>
+
       <div class="ih-cs-section">
         <div class="ih-cs-section-title">Резерв души</div>
         <div class="ih-cs-soul-grid">
+          {{!-- Энергия резерва --}}
           <div class="ih-cs-soul-item">
-            <span class="ih-cs-soul-label" style="color:var(--ih-energy)">Энергия</span>
+            <span class="ih-cs-soul-label" style="color:var(--ih-energy)">⚡ Энергия</span>
             <div class="ih-cs-soul-val">{{system.resources.soul.energyReserve.value}} / {{system.resources.soul.energyReserve.max}}</div>
+            {{!-- Прогресс раскачки --}}
+            {{#if system.resources.soul.energyReserve.max}}
+            <div class="ih-cs-soul-accum" title="Накоплено восстановлений: {{system.resources.soul.energyReserve.trainingAccum}} / {{system.resources.soul.energyReserve.max}}">
+              <div class="ih-cs-soul-accum-fill" style="width:{{soulEnergyTrainPct}}%;background:var(--ih-energy)"></div>
+            </div>
+            <span class="ih-cs-soul-accum-label">{{system.resources.soul.energyReserve.trainingAccum}} / {{system.resources.soul.energyReserve.max}}</span>
+            {{/if}}
           </div>
+          {{!-- Мана резерва --}}
           <div class="ih-cs-soul-item">
-            <span class="ih-cs-soul-label" style="color:var(--ih-mana)">Мана</span>
+            <span class="ih-cs-soul-label" style="color:var(--ih-mana)">✦ Мана</span>
             <div class="ih-cs-soul-val">{{system.resources.soul.manaReserve.value}} / {{system.resources.soul.manaReserve.max}}</div>
+            {{#if system.resources.soul.manaReserve.max}}
+            <div class="ih-cs-soul-accum" title="Накоплено восстановлений: {{system.resources.soul.manaReserve.trainingAccum}} / {{system.resources.soul.manaReserve.max}}">
+              <div class="ih-cs-soul-accum-fill" style="width:{{soulManaTrainPct}}%;background:var(--ih-mana)"></div>
+            </div>
+            <span class="ih-cs-soul-accum-label">{{system.resources.soul.manaReserve.trainingAccum}} / {{system.resources.soul.manaReserve.max}}</span>
+            {{/if}}
           </div>
           {{#if system.resources.soulReserve.isDead}}
           <div class="ih-cs-soul-warning">☠ Мёртв — день {{system.resources.soulReserve.daysSinceDeath}}</div>
@@ -359,7 +444,7 @@
           <div class="ih-cs-inv-group">
             <div class="ih-cs-inv-group-title">{{label}}</div>
             {{#each items}}
-            <div class="ih-cs-inv-row">
+            <div class="ih-cs-inv-row ih-cs-inv-row-simple">
               <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
               <span class="ih-cs-inv-name">{{name}}</span>
               {{#if system.quantity}}<span class="ih-cs-inv-qty">×{{system.quantity}}</span>{{/if}}
@@ -370,21 +455,60 @@
               </div>
               {{/if}}
               <span class="ih-cs-inv-weight muted-text">{{system.weight}}кг</span>
-              <div class="ih-cs-inv-actions">
-                {{#if system.durability}}<a class="ih-icon-btn" data-item-repair data-item-id="{{id}}" title="Починить">🔨</a>{{/if}}
-                <a class="ih-icon-btn" data-item-edit data-item-id="{{id}}" title="Редактировать">✎</a>
-                <a class="ih-icon-btn" data-item-delete data-item-id="{{id}}" title="Удалить">✕</a>
-              </div>
             </div>
             {{/each}}
           </div>
           {{/if}}
           {{/each}}
+          {{!-- Кнопка открыть инвентарь --}}
+          <div class="ih-cs-inv-open-btn">
+            <a class="ih-btn" data-open-inventory>🎒 Открыть инвентарь</a>
+          </div>
         </div>
       </div>
 
     </div>
 
+  </div>
+
+  {{!-- ФРАКЦИИ ─────────────────────────────────────────────────── --}}
+  <div class="ih-cs-factions">
+    <div class="ih-cs-section-header">
+      <div class="ih-cs-section-title">⚔ Репутация</div>
+      {{#if isGM}}
+      <a class="ih-btn ih-btn-small" data-action="edit-reputation" title="Изменить репутацию">✏</a>
+      {{/if}}
+    </div>
+    {{#if factions.length}}
+    <div class="ih-cs-faction-list" data-rep-list>
+      {{#each factions}}
+      {{!-- Показываем первые 5, остальные скрыты --}}
+      <div class="ih-cs-faction-row {{#if (gt @index 4)}}ih-rep-hidden{{/if}}"
+           title="{{factionName}}: {{rep}}">
+        <span class="ih-cs-faction-name">{{factionName}}</span>
+        <div class="ih-cs-rep-bar">
+          <div class="ih-cs-rep-fill" style="width:{{pct}}%;background:{{level.color}}"></div>
+          <div class="ih-cs-rep-zero"></div>
+        </div>
+        <span class="ih-cs-rep-label" style="color:{{level.color}}">{{level.label}}</span>
+        <span class="ih-cs-rep-val muted-text">{{rep}}</span>
+        {{#if @root.isGM}}
+        <a class="ih-cs-rep-edit" data-edit-rep="{{factionId}}" title="Изменить">✏</a>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{#if (gt factions.length 5)}}
+    <a class="ih-cs-rep-toggle muted-text" data-rep-toggle>
+      ▼ Показать все ({{factions.length}})
+    </a>
+    {{/if}}
+    {{else}}
+    <div class="muted-text" style="font-size:11px;padding:4px 0">
+      Нет взаимодействий с фракциями.
+      {{#if isGM}}<a data-action="edit-reputation" style="color:var(--ih-accent)">Добавить ✏</a>{{/if}}
+    </div>
+    {{/if}}
   </div>
 
 </form>

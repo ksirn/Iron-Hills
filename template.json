@@ -10,7 +10,8 @@
       "poi",
       "monster",
       "party",
-      "group"
+      "group",
+      "god"
     ],
     "templates": {
       "commonResources": {
@@ -46,12 +47,14 @@
             }
           },
           "energy": {
-            "value": 100,
-            "max": 100
+            "value": 10,
+            "max": 10,
+            "baseMax": 10
           },
           "mana": {
-            "value": 50,
-            "max": 50
+            "value": 10,
+            "max": 10,
+            "baseMax": 10
           },
           "satiety": {
             "value": 100,
@@ -66,18 +69,28 @@
             "max": 20
           },
           "soul": {
-            "manaReserve": {
-              "value": 10,
-              "max": 10
-            },
             "energyReserve": {
               "value": 10,
-              "max": 10
+              "max": 10,
+              "trainingAccum": 0
+            },
+            "manaReserve": {
+              "value": 10,
+              "max": 10,
+              "trainingAccum": 0
             }
           },
           "soulReserve": {
             "daysSinceDeath": 0,
             "isDead": false
+          },
+          "awakened": {
+            "isAwakened": false,
+            "playerName": "",
+            "awakeningDate": "",
+            "awakeningType": "",
+            "originWorld": "",
+            "notes": ""
           }
         },
         "conditions": {
@@ -95,7 +108,10 @@
           "stunned": 0,
           "silencedUntil": 0,
           "slowPenalty": 0,
-          "feared": 0
+          "feared": 0,
+          "hasted": 0,
+          "slowed": 0,
+          "unconscious": 0
         },
         "initiative": 10,
         "diseases": {}
@@ -112,7 +128,8 @@
           },
           "energy": {
             "value": 50,
-            "max": 50
+            "max": 50,
+            "baseMax": 50
           }
         },
         "tier": 1,
@@ -199,27 +216,7 @@
           "exp": 0,
           "expNext": 25
         },
-        "bows": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "crossbows": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
         "throwing": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "shields": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "armor": {
           "value": 1,
           "exp": 0,
           "expNext": 25
@@ -328,6 +325,91 @@
           "value": 1,
           "exp": 0,
           "expNext": 25
+        },
+        "stealth": {
+          "value": 1,
+          "exp": 0
+        },
+        "riding": {
+          "value": 1,
+          "exp": 0
+        },
+        "trade": {
+          "value": 1,
+          "exp": 0
+        },
+        "streetwise": {
+          "value": 1,
+          "exp": 0
+        },
+        "leadership": {
+          "value": 1,
+          "exp": 0
+        },
+        "lore": {
+          "value": 1,
+          "exp": 0
+        },
+        "shield": {
+          "value": 1,
+          "exp": 0
+        },
+        "mining": {
+          "value": 1,
+          "exp": 0
+        },
+        "herbalism": {
+          "value": 1,
+          "exp": 0
+        },
+        "mace": {
+          "value": 1,
+          "exp": 0
+        },
+        "flail": {
+          "value": 1,
+          "exp": 0
+        },
+        "bow": {
+          "value": 1,
+          "exp": 0
+        },
+        "crossbow": {
+          "value": 1,
+          "exp": 0
+        },
+        "exotic": {
+          "value": 1,
+          "exp": 0
+        },
+        "enchanting": {
+          "value": 1,
+          "exp": 0
+        },
+        "jewelry": {
+          "value": 1,
+          "exp": 0
+        },
+        "swimming": {
+          "value": 1,
+          "exp": 0
+        },
+        "lockpicking": {
+          "value": 1,
+          "exp": 0
+        },
+        "acting": {
+          "value": 1,
+          "exp": 0
+        },
+        "taming": {
+          "value": 1,
+          "exp": 0
+        },
+        "appraisal": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
         }
       },
       "inventory": {
@@ -347,7 +429,8 @@
       "partyKey": "",
       "partyRole": "",
       "group": "",
-      "diseases": {}
+      "diseases": {},
+      "factions": {}
     },
     "npc": {
       "templates": [
@@ -370,7 +453,8 @@
       "info": {
         "role": "",
         "faction": "",
-        "tier": 1
+        "tier": 1,
+        "settlement": ""
       },
       "skills": {
         "athletics": {
@@ -383,7 +467,7 @@
           "exp": 0,
           "expNext": 25
         },
-        "swords": {
+        "sword": {
           "value": 1,
           "exp": 0,
           "expNext": 25
@@ -404,16 +488,21 @@
         "shock": 0,
         "poison": 0,
         "burning": 0,
-        "stunned": 0
+        "stunned": 0,
+        "hasted": 0,
+        "slowed": 0,
+        "unconscious": 0
       },
-      "initiative": 10
+      "initiative": 10,
+      "personalRep": {}
     },
     "merchant": {
       "info": {
         "specialty": "general",
         "settlement": "",
         "tier": 1,
-        "faction": ""
+        "faction": "",
+        "settlementId": ""
       },
       "economy": {
         "wealth": 50,
@@ -423,14 +512,22 @@
         "lastRestock": "",
         "currentPriceFactor": 1.0,
         "stockRating": 5
-      }
+      },
+      "currency": {
+        "copper": 0,
+        "silver": 0,
+        "gold": 0,
+        "platinum": 0
+      },
+      "personalRep": {}
     },
     "container": {
       "info": {
         "theme": "bandit",
         "tier": 1,
         "lockDifficulty": 0,
-        "danger": 0
+        "danger": 0,
+        "isLocked": false
       }
     },
     "settlement": {
@@ -442,7 +539,10 @@
         "danger": 5,
         "supply": 5,
         "controllingFaction": "",
-        "tags": ""
+        "tags": "",
+        "mapCol": null,
+        "mapRow": null,
+        "sceneId": ""
       },
       "economy": {
         "foodPrice": 1.0,
@@ -500,7 +600,17 @@
       "power": 1,
       "wealth": 1,
       "region": "",
-      "goals": []
+      "goals": [],
+      "info": {
+        "type": "guild",
+        "baseSettlement": "",
+        "description": "",
+        "territoryTiles": [],
+        "hostile": false
+      },
+      "reputation": {},
+      "settlementRep": {},
+      "log": []
     },
     "monster": {
       "templates": [],
@@ -512,6 +622,16 @@
         "armor": {
           "physical": 0,
           "magical": 0
+        },
+        "energy": {
+          "value": 10,
+          "max": 10,
+          "baseMax": 10
+        },
+        "mana": {
+          "value": 5,
+          "max": 5,
+          "baseMax": 5
         }
       },
       "combat": {
@@ -528,7 +648,10 @@
       "conditions": {
         "stunned": 0,
         "poison": 0,
-        "burning": 0
+        "burning": 0,
+        "hasted": 0,
+        "slowed": 0,
+        "unconscious": 0
       },
       "initiative": 10,
       "loot": []
@@ -549,6 +672,30 @@
       "localTime": 0,
       "location": "",
       "status": "idle"
+    },
+    "god": {
+      "info": {
+        "title": "",
+        "domain": "",
+        "era": "",
+        "originalWorld": "",
+        "playerName": "",
+        "status": "active",
+        "knownTo": "all"
+      },
+      "history": {
+        "origin": "",
+        "deeds": "",
+        "worshippers": "",
+        "symbols": "",
+        "relations": []
+      },
+      "lore": {
+        "prayers": "",
+        "temples": "",
+        "festivals": "",
+        "taboos": ""
+      }
     }
   },
   "Item": {
@@ -578,7 +725,9 @@
         "targetName": "",
         "score": 0,
         "tier": "neutral",
-        "notes": ""
+        "notes": "",
+        "targetId": "",
+        "characterId": ""
       }
     },
     "quest": {
@@ -592,7 +741,9 @@
         "targetFaction": "",
         "difficulty": 1,
         "reward": "",
-        "dueText": ""
+        "dueText": "",
+        "settlementId": "",
+        "assignedGroupIds": []
       },
       "description": {
         "summary": "",
@@ -658,13 +809,32 @@
       "skill": "sword",
       "twoHanded": false,
       "energyCost": 10,
+      "range": 1,
+      "affixes": {
+        "ignoreArmor": 0,
+        "disarmChance": 0,
+        "stunChance": 0,
+        "bleedingBonus": 0,
+        "lifeSteal": 0,
+        "executeBelowHp": 0,
+        "criticalDamageMult": 1
+      },
       "durability": {
         "value": 100,
         "max": 100
       },
       "actionSeconds": 3,
       "gridW": 1,
-      "gridH": 3
+      "gridH": 3,
+      "timeCost": 2.0,
+      "identified": true,
+      "unidentifiedName": "",
+      "identifiedAspects": {
+        "craft": false,
+        "alchemy": false,
+        "enchant": false,
+        "appraisal": false
+      }
     },
     "armor": {
       "tier": 1,
@@ -692,7 +862,15 @@
       "covers": [
         "torso"
       ],
-      "layer": "outer"
+      "layer": "outer",
+      "identified": true,
+      "unidentifiedName": "",
+      "identifiedAspects": {
+        "craft": false,
+        "alchemy": false,
+        "enchant": false,
+        "appraisal": false
+      }
     },
     "food": {
       "tier": 1,
@@ -714,7 +892,15 @@
         "max": 100
       },
       "gridW": 1,
-      "gridH": 2
+      "gridH": 2,
+      "identified": true,
+      "unidentifiedName": "",
+      "identifiedAspects": {
+        "craft": false,
+        "alchemy": false,
+        "enchant": false,
+        "appraisal": false
+      }
     },
     "resource": {
       "tier": 1,
@@ -740,7 +926,15 @@
       "targetActorMode": "selected-or-self",
       "targetPart": "",
       "gridW": 1,
-      "gridH": 1
+      "gridH": 1,
+      "identified": true,
+      "unidentifiedName": "",
+      "identifiedAspects": {
+        "craft": false,
+        "alchemy": false,
+        "enchant": false,
+        "appraisal": false
+      }
     },
     "potion": {
       "tier": 1,
@@ -753,7 +947,15 @@
       "targetActorMode": "self",
       "targetPart": "",
       "gridW": 1,
-      "gridH": 1
+      "gridH": 1,
+      "identified": true,
+      "unidentifiedName": "",
+      "identifiedAspects": {
+        "craft": false,
+        "alchemy": false,
+        "enchant": false,
+        "appraisal": false
+      }
     },
     "scroll": {
       "school": "life",
@@ -843,7 +1045,9 @@
           "label": "Крепление 2"
         }
       ],
-      "accessSeconds": 1
+      "accessSeconds": 1,
+      "weightFactor": 1.0,
+      "description": ""
     },
     "backpack": {
       "tier": 1,
@@ -861,7 +1065,9 @@
         "rows": 6
       },
       "attachmentSlots": [],
-      "accessSeconds": 3
+      "accessSeconds": 3,
+      "weightFactor": 0.8,
+      "description": ""
     },
     "attachment": {
       "tier": 1,
@@ -886,7 +1092,9 @@
         "throwable",
         "food"
       ],
-      "accessSeconds": 1
+      "accessSeconds": 1,
+      "allowedSkills": [],
+      "description": ""
     }
   },
   "system": {}

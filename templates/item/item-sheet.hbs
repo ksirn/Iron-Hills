@@ -1,0 +1,254 @@
+{{!-- Iron Hills — Item Sheet v2 --}}
+<form class="ih-is-app" autocomplete="off">
+
+  {{!-- Шапка --}}
+  <div class="ih-is-header" style="--quality-color:{{qualityCfg.color}}">
+    <div class="ih-is-portrait-wrap">
+      <img class="ih-is-portrait" src="{{item.img}}" alt="{{item.name}}">
+      <div class="ih-is-type-badge">
+        {{#if isWeapon}}⚔{{else if isArmor}}🛡{{else if isPotion}}⚗{{else if isFood}}🍖{{else if isMaterial}}⛏{{else if isTool}}🔨{{else if isSpell}}✦{{else}}📦{{/if}}
+      </div>
+    </div>
+    <div class="ih-is-identity">
+      <input class="ih-is-name" type="text" name="name" value="{{item.name}}" placeholder="Название">
+      <div class="ih-is-meta">
+        {{!-- Тир --}}
+        <div class="ih-is-field narrow">
+          <label>Ступень</label>
+          <input type="number" name="system.tier" value="{{system.tier}}" min="1" max="10">
+        </div>
+        {{!-- Качество --}}
+        <div class="ih-is-field">
+          <label>Качество</label>
+          <select name="system.quality">
+            {{#each qualityOpts}}
+            <option value="{{key}}" {{#if (eq key ../system.quality)}}selected{{/if}}
+                    style="color:{{color}}">{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        {{!-- Вес --}}
+        <div class="ih-is-field narrow">
+          <label>Вес</label>
+          <input type="number" name="system.weight" value="{{system.weight}}" min="0" step="0.1">
+        </div>
+        {{!-- Количество --}}
+        <div class="ih-is-field narrow">
+          <label>Кол-во</label>
+          <input type="number" name="system.quantity" value="{{system.quantity}}" min="0">
+        </div>
+        {{!-- Цена --}}
+        <div class="ih-is-field narrow">
+          <label>Цена (мед.)</label>
+          <input type="number" name="system.value" value="{{system.value}}" min="0">
+        </div>
+      </div>
+      {{!-- Цена с качеством --}}
+      {{#if effectiveValue}}
+      <div class="ih-is-effective-value" style="color:{{qualityCfg.color}}">
+        💰 {{effectiveValue}} мед. с учётом качества (×{{qualityCfg.mult}})
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- Тело --}}
+  <div class="ih-is-body">
+
+    {{!-- ── ОРУЖИЕ ── --}}
+    {{#if isWeapon}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">⚔ Боевые параметры</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Навык</label>
+          <select name="system.skill">
+            {{#each skillOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.skill)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Тип урона</label>
+          <select name="system.damageType">
+            <option value="physical" {{#if (eq system.damageType 'physical')}}selected{{/if}}>⚔ Физический</option>
+            <option value="magical"  {{#if (eq system.damageType 'magical')}}selected{{/if}}>✦ Магический</option>
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Базовый урон</label>
+          <input type="number" name="system.damage" value="{{system.damage}}" min="0">
+          {{#if qualityDamageBonus}}
+          <span class="ih-is-bonus" style="color:{{qualityCfg.color}}">{{qualityDamageBonus}}</span>
+          {{/if}}
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Затрата энергии</label>
+          <input type="number" name="system.energyCost" value="{{system.energyCost}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Прочность</label>
+          <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Двуручное</label>
+          <input type="checkbox" name="system.twoHanded" {{checked system.twoHanded}}>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- ── БРОНЯ ── --}}
+    {{#if isArmor}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">🛡 Защита</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Слот</label>
+          <select name="system.slot">
+            {{#each armorSlots}}
+            <option value="{{key}}" {{#if (eq key ../system.slot)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>⚔ Физ. защита</label>
+          <input type="number" name="system.protection.physical" value="{{system.protection.physical}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>✦ Маг. защита</label>
+          <input type="number" name="system.protection.magical" value="{{system.protection.magical}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Прочность</label>
+          <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0">
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- ── ЗЕЛЬЕ / РАСХОДНИК ── --}}
+    {{#if isPotion}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">⚗ Эффект</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field wide">
+          <label>Тип эффекта</label>
+          <select name="system.effect">
+            {{#each effectLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.effect)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Сила эффекта</label>
+          <input type="number" name="system.power" value="{{system.power}}" min="0">
+        </div>
+        <div class="ih-is-field">
+          <label>Область применения</label>
+          <select name="system.scope">
+            {{#each scopeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.scope)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        {{!-- Зона тела — только для лечащих эффектов --}}
+        {{#if (eq system.scope 'targeted')}}
+        <div class="ih-is-field">
+          <label>Часть тела (по умолчанию)</label>
+          <select name="system.zone">
+            <option value="">— на выбор —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.zone)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        {{/if}}
+        <div class="ih-is-field narrow">
+          <label>Длительность (сек)</label>
+          <input type="number" name="system.duration" value="{{system.duration}}" min="0"
+                 placeholder="0 = мгновенно">
+        </div>
+      </div>
+      {{!-- Описание эффекта --}}
+      {{#if effectLabel}}
+      <div class="ih-is-effect-hint">
+        ℹ {{effectLabel}} — сила {{system.power}}
+        {{#if system.duration}}в течение {{system.duration}}с{{/if}}
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ── ЕДА ── --}}
+    {{#if isFood}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">🍖 Питательность</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field narrow">
+          <label>🍖 Сытость</label>
+          <input type="number" name="system.satiety" value="{{system.satiety}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>💧 Жажда</label>
+          <input type="number" name="system.hydration" value="{{system.hydration}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>⚡ Бонус энергии</label>
+          <input type="number" name="system.energyBonus" value="{{system.energyBonus}}" min="0">
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- ── МАТЕРИАЛ ── --}}
+    {{#if isMaterial}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">⛏ Свойства</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Категория</label>
+          <select name="system.category">
+            {{#each matCategories}}
+            <option value="{{key}}" {{#if (eq key ../system.category)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- ── ИНСТРУМЕНТ ── --}}
+    {{#if isTool}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">🔨 Параметры</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Тип крафта</label>
+          <select name="system.craftType">
+            {{#each craftTypes}}
+            <option value="{{key}}" {{#if (eq key ../system.craftType)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Прочность</label>
+          <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0">
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- Описание (для всех) --}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">📝 Описание</div>
+      <textarea class="ih-is-desc" name="system.description"
+                placeholder="Описание предмета...">{{system.description}}</textarea>
+    </div>
+
+  </div>
+
+  <div class="ih-is-save-bar">
+    <a class="ih-btn ih-btn-primary" data-save-item>💾 Сохранить</a>
+  </div>
+</form>

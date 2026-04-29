@@ -1,0 +1,83 @@
+{{!-- Iron Hills — Shop App --}}
+<div class="ih-shop">
+
+  {{!-- Шапка: тир поселения --}}
+  <div class="ih-shop-header">
+    <div class="ih-shop-tiers">
+      {{#each settlementTiers}}
+      <a class="ih-shop-tier-btn {{#if active}}is-active{{/if}}" data-set-tier="{{tier}}">
+        {{icon}} {{label}}
+      </a>
+      {{/each}}
+    </div>
+    <div class="ih-shop-buyer muted-text">
+      👤 {{buyerName}} · 🪙 {{buyerCoinsStr}}
+    </div>
+  </div>
+
+  {{!-- Тип торговца --}}
+  <div class="ih-shop-merchants">
+    {{#each merchants}}
+    <a class="ih-shop-merch-btn {{#if (eq id ../merchantType)}}is-active{{/if}}"
+       data-set-merchant="{{id}}">{{icon}} {{label}}</a>
+    {{/each}}
+    <a class="ih-shop-merch-btn ih-shop-restock" data-restock title="Обновить ассортимент">🔄</a>
+  </div>
+
+  {{!-- Статус экономики --}}
+  <div class="ih-shop-economy">
+    <span class="ih-shop-econ-status">{{economy.icon}} {{economy.label}}</span>
+    <span class="muted-text" style="font-size:10px">{{economy.desc}}</span>
+    {{#if isGM}}
+    <div class="ih-shop-econ-btns">
+      {{#each economyStates}}
+      <a class="ih-chip {{#if (eq id ../economy.id)}}is-active{{/if}}"
+         data-set-economy="{{id}}" title="{{desc}}">{{icon}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+
+  {{!-- Фильтр по тиру --}}
+  {{#if tiers.length}}
+  <div class="ih-shop-tier-filter">
+    <span class="muted-text" style="font-size:10px">Тир:</span>
+    {{#each tiers}}
+    <a class="ih-chip {{#if (eq this ../filterTier)}}is-active{{/if}}"
+       data-filter-tier="{{this}}">{{this}}</a>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{!-- Список товаров --}}
+  <div class="ih-shop-list">
+    {{#each stock}}
+    <div class="ih-shop-item">
+      <div class="ih-shop-item-info">
+        <span class="ih-shop-item-name">{{label}}</span>
+        <div class="ih-shop-item-meta muted-text">
+          Тир {{tier}}
+          {{#if damage}} · ⚔ {{damage}}{{/if}}
+          {{#if skill}} · {{skill}}{{/if}}
+          {{#if school}} · {{school}} ранг {{rank}}{{/if}}
+          {{#if protection}} · 🛡 {{protection.physical}}{{/if}}
+          · ⚖ {{weight}} кг
+          {{#if qty}} · ×{{qty}}{{/if}}
+        </div>
+      </div>
+      <div class="ih-shop-item-price">
+        <span class="{{#unless canAfford}}text-bad{{/unless}}">
+          🪙 {{shopPriceFormatted}}
+        </span>
+        {{#if ../hasBuyer}}
+        <a class="ih-btn ih-btn-small {{#unless canAfford}}ih-btn-disabled{{/unless}}"
+           data-buy="{{@index}}">Купить</a>
+        {{/if}}
+      </div>
+    </div>
+    {{else}}
+    <div class="ih-shop-empty muted-text">Нет товаров в наличии</div>
+    {{/each}}
+  </div>
+
+</div>

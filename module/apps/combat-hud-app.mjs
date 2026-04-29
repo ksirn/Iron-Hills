@@ -1,3 +1,7 @@
+import { IronHillsCombatTechniqueApp } from "./combat-technique-app.mjs";
+import { IronHillsSpellCastApp } from "./spell-cast-app.mjs";
+import { placeAoeTemplate, applyAoeDamage, removeAoeTemplate, AOE_TYPES } from "../services/aoe-service.mjs";
+import { getAvailableTechniques } from "../constants/combat-techniques.mjs";
 import {
   getCombatUiState,
   isCombatActive,
@@ -9,7 +13,9 @@ import {
   cancelPendingAction,
   endTurnForActor,
   isActorActiveTurn,
-  advanceTurnIfReady
+  advanceTurnIfReady,
+  spendActorSeconds,
+  spendActionSeconds
 } from "../services/combat-flow-service.mjs";
 
 import {
@@ -17,11 +23,13 @@ import {
   getPersistentActorUuid,
   resolvePersistentActorFromTokenOrUser
 } from "../utils/actor-utils.mjs";
-
-function num(value, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
+import {
+  getHitLocation,
+  getBestResistForZone
+} from "../services/actor-state-service.mjs";
+import { actorsAreAllies } from "../services/disposition-service.mjs";
+import { num } from "../utils/math-utils.mjs";
+import { getWeaponRange, getTokenGridDistance, getActorToken } from "../utils/item-utils.mjs";
 
 function getRatio(value, max) {
   const safeMax = Math.max(1, num(max, 1));
@@ -79,17 +87,28 @@ function buildZoneTooltip(label, value, max, trauma) {
 export class IronHillsCombatHudApp extends Application {
   constructor(options = {}) {
     super(options);
-    this._compactMode = Boolean(options.compactMode ?? true);
+    // Компактный режим убран — панель всегда развёрнута
   }
 
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["iron-hills", "combat-hud-app"],
-      width: 620,
-      height: 430,
-      resizable: true,
-      title: "Combat HUD"
+      classes:   ["iron-hills", "combat-hud-app"],
+      width:     220,
+      height:    "auto",
+      resizable: false,
+      title:     "HUD",
+      popOut:    true,
     });
+  }
+
+  setPosition(pos = {}) {
+    // Фиксируем в нижнем левом углу над тулбаром
+    const tbH = document.getElementById("ih-tb")?.offsetHeight ?? 60;
+    const h   = this.element?.[0]?.offsetHeight ?? 400;
+    pos.left   = 4;
+    pos.top    = window.innerHeight - tbH - h - 8;
+    pos.width  = 320;
+    return super.setPosition(pos);
   }
 
   get template() {
@@ -138,6 +157,406 @@ export class IronHillsCombatHudApp extends Application {
     }, 10);
   }
 
+  // Универсальный вызов атаки — работает для персонажей, NPC и монстров
+  async _callPerformAttack(actor, params) {
+    // Персонаж — есть _performAttack на sheet
+    if (typeof actor.sheet?._performAttack === "function") {
+      return actor.sheet._performAttack(params);
+    }
+    // NPC/монстр — используем упрощённую атаку через combat-flow-service
+    return this._performNpcAttack(actor, params);
+  }
+
+  async _performNpcAttack(actor, {
+    skillKey, label, damageType = "physical",
+    baseDamage = 1, energyCost = 5, weapon = null,
+    hitBonus = 0, ignoreArmor = 0, targetZone = null,
+    aimed = false, technique = null,
+  }) {
+    // Штраф прочности оружия (NPC-атака, упрощённая)
+    if (weapon) {
+      const cur  = Number(weapon.system?.durability?.value ?? 100);
+      const max  = Number(weapon.system?.durability?.max   ?? 100);
+      const pct  = max > 0 ? cur / max : 1;
+      if (pct <= 0) {
+        ui.notifications.warn(`${weapon.name} сломан — атака невозможна!`);
+        return;
+      }
+      const mult = pct <= 0.25 ? 0.70 : pct <= 0.50 ? 0.85 : pct <= 0.75 ? 0.95 : 1;
+      baseDamage = Math.max(1, Math.floor(baseDamage * mult));
+      // Износ оружия (20% шанс за атаку)
+      if (Math.random() < 0.2) {
+        import("../services/durability-service.mjs").then(({ wearItem }) => {
+          wearItem(weapon, 1, actor).catch(() => {});
+        });
+      }
+    }
+    // Проверяем энергию
+    const energy = actor.system?.resources?.energy;
+    const curEnergy = Number(energy?.value ?? 0);
+    if (curEnergy < energyCost) {
+      ui.notifications.warn(`${actor.name}: недостаточно энергии (${curEnergy}/${energyCost})`);
+      return;
+    }
+
+    // Цель: явный таргет → авто-поиск ближайшего НЕ-союзника по disposition
+    const targetTokenObj = [...(game.user.targets ?? [])].find(t => t.actor)
+                ?? [...(game.canvas?.tokens?.placeables ?? [])]
+                    .find(t => t.actor && t.actor.id !== actor.id
+                            && !actorsAreAllies(actor, t.actor));
+    const target = targetTokenObj?.actor;
+
+    // Проверка дальности атаки
+    if (target && weapon) {
+      const attackerToken = getActorToken(actor);
+      if (attackerToken && targetTokenObj && canvas?.scene) {
+        const dist = getTokenGridDistance(attackerToken, targetTokenObj);
+        const range = getWeaponRange(weapon);
+        if (dist > range) {
+          ui.notifications.warn(`${actor.name}: цель вне досягаемости (${Math.ceil(dist)}/${range} клеток)`);
+          return;
+        }
+      }
+    }
+
+    // Бросок атаки
+    const skillVal = Number(actor.system?.skills?.[skillKey]?.value
+                  ?? actor.system?.combat?.attackBonus ?? 3);
+    const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
+    const roll     = await new Roll(`1d${dieSize}`).evaluate();
+    const total    = roll.total + (hitBonus ?? 0);
+
+    // Снимаем энергию
+    await actor.update({ "system.resources.energy.value": Math.max(0, curEnergy - energyCost) });
+
+    // Строим сообщение в чат
+    let content = `<div style="font-family:var(--font-primary);padding:6px">
+      <b>${actor.name}</b> атакует: <b>${label}</b><br>
+      Бросок: <b>${total}</b> (d${dieSize}${hitBonus ? `${hitBonus >= 0 ? "+" : ""}${hitBonus}` : ""})
+      ${technique ? `<br>Приём: ${technique.icon ?? "⚔"} ${technique.label}` : ""}
+      ${aimed ? `<br>🎯 Прицел: ${targetZone}` : ""}`;
+
+    if (target) {
+      const locRoll = await new Roll("1d20").evaluate();
+      const locKey  = targetZone ?? getHitLocation(locRoll.total);
+      const reduction = getBestResistForZone(target, locKey, damageType);
+      const armorPen  = Math.round(reduction * (ignoreArmor ?? 0));
+      const effRed    = Math.max(0, reduction - armorPen);
+      const margin    = Math.max(0, total - 5);
+      const rawDmg    = Number(baseDamage) + margin;
+      const finalDmg  = Math.max(0, rawDmg - effRed);
+
+      // Наносим урон
+      if (target.system?.resources?.hp) {
+        if (target.type === "monster") {
+          const hp = Number(target.system.resources.hp.value ?? 0);
+          await target.update({ "system.resources.hp.value": Math.max(0, hp - finalDmg) });
+        } else {
+          const torsoHp = Number(target.system.resources.hp?.[locKey]?.value ?? target.system.resources.hp?.torso?.value ?? 0);
+          const hpPath  = target.system.resources.hp?.[locKey] ? `system.resources.hp.${locKey}.value` : "system.resources.hp.torso.value";
+          await target.update({ [hpPath]: Math.max(0, torsoHp - finalDmg) });
+        }
+      }
+
+      content += `<br>→ ${target.name}: урон <b>${finalDmg}</b>`;
+      if (effRed > 0) content += ` (броня −${effRed})`;
+    } else {
+      content += `<br><i>Нет цели</i>`;
+    }
+
+    content += `</div>`;
+    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
+  }
+
+  // ── Кастование заклинания ───────────────────────────────────
+  async _castSpell() {
+    const actor = getHudActor();
+    if (!actor) return;
+
+    const combatCheck = this._canActorUseCombatAction(actor);
+    if (!combatCheck.ok) {
+      ui.notifications.warn(combatCheck.reason);
+      return;
+    }
+
+    // Получаем цели
+    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
+
+    // Открываем диалог выбора заклинания
+    const choice = await IronHillsSpellCastApp.choose(actor, targets);
+    if (!choice) return;
+
+    const { spell } = choice;
+    const manaCur = Number(actor.system?.resources?.mana?.value ?? 0);
+
+    if (manaCur < spell.manaCost) {
+      ui.notifications.warn(`Недостаточно маны (${manaCur}/${spell.manaCost})`);
+      return;
+    }
+
+    // Тратим ману и время
+    await actor.update({ "system.resources.mana.value": Math.max(0, manaCur - spell.manaCost) });
+
+    spendActorSeconds(actor.id, spell.castTime, {
+      actionType: "spell", label: spell.label
+    });
+
+    // AoE заклинание
+    if (spell.aoe) {
+      const result = await placeAoeTemplate({
+        aoeType:      spell.aoe.shape,
+        distance:     spell.aoe.distance,
+        label:        spell.label,
+        color:        { fire:"#ff4400", ice:"#88ccff", lightning:"#ffee44",
+                        shadow:"#6600aa", light:"#ffee99", earth:"#886633",
+                        mind:"#cc88ff", summon:"#44aa88" }[spell.school] ?? "#8888ff",
+        attacker:     actor,
+        skillKey:     "magic",
+        friendlyFire: spell.friendlyFire ?? false,
+      });
+
+      if (!result) { this._refreshHud({ keepOnTop:true }); return; }
+
+      const { template, targets: zoneTargets } = result;
+
+      await applyAoeDamage({
+        attacker:     actor,
+        targets:      zoneTargets,
+        baseDamage:   spell.damage,
+        skillKey:     "magic",
+        damageType:   spell.damageType,
+        aoeType:      spell.aoe.type,
+        maxTargets:   spell.aoe.maxTargets ?? null,
+        chainDecay:   spell.aoe.chainDecay ?? 0.8,
+        label:        spell.label,
+        effect:       spell.effect,
+        friendlyFire: spell.friendlyFire ?? false,
+      });
+
+      await removeAoeTemplate(template, 3000);
+
+    } else if (spell.damage > 0) {
+      // Одиночное заклинание
+      const target = targets[0] ?? [...(game.user.targets??[])][0]?.actor;
+      if (!target) {
+        ui.notifications.warn("Нет цели — возьми цель в таргет (T)");
+        this._refreshHud({ keepOnTop:true });
+        return;
+      }
+
+      const skillVal = Number(actor.system?.skills?.magic?.value
+                            ?? actor.system?.skills?.sorcery?.value ?? 3);
+      const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
+      const roll     = await new Roll(`1d${dieSize}`).evaluate();
+      const defVal   = Number(target.system?.skills?.defense?.value ?? 0);
+      const hit      = roll.total >= 5 + defVal;
+
+      if (hit) {
+        const hp     = target.system?.resources?.hp?.torso?.value
+                    ?? target.system?.resources?.hp?.value ?? 0;
+        const hpPath = target.system?.resources?.hp?.torso !== undefined
+          ? "system.resources.hp.torso.value" : "system.resources.hp.value";
+        await target.update({ [hpPath]: Math.max(0, hp - spell.damage) });
+
+        if (spell.effect?.applyCondition &&
+            Math.random() < (spell.effect.conditionChance ?? 1)) {
+          await target.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
+        }
+      }
+
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div style="padding:6px">
+          ✨ <b>${actor.name}</b> → <b>${spell.label}</b> → ${target.name}<br>
+          Бросок: <b>${roll.total}</b> — ${hit ? `попал, урон <b>${spell.damage}</b>` : "промах"}
+          ${hit && spell.effect?.applyCondition ? ` · ${spell.effect.applyCondition}` : ""}
+        </div>`
+      });
+
+    } else if (spell.effect?.special === "buff" || spell.effect?.special === "debuff") {
+      // Бафф/дебафф
+      const tgt = targets[0] ?? actor;
+      if (spell.effect.applyCondition) {
+        await tgt.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
+      }
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div style="padding:6px">✨ <b>${spell.label}</b> → ${tgt.name}</div>`
+      });
+    }
+
+    this._refreshHud({ keepOnTop: true });
+  }
+
+  // ── Кастование заклинания ───────────────────────────────────
+  async _castSpell() {
+    const actor = getHudActor();
+    if (!actor) return;
+    const combatCheck = this._canActorUseCombatAction(actor);
+    if (!combatCheck.ok) { ui.notifications.warn(combatCheck.reason); return; }
+    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
+    const choice  = await IronHillsSpellCastApp.choose(actor, targets);
+    if (!choice) return;
+    const { spell } = choice;
+    const manaCur = Number(actor.system?.resources?.mana?.value ?? 0);
+    if (manaCur < spell.manaCost) {
+      ui.notifications.warn(`Недостаточно маны (${manaCur}/${spell.manaCost})`); return;
+    }
+    await actor.update({ "system.resources.mana.value": Math.max(0, manaCur - spell.manaCost) });
+    spendActorSeconds(actor.id, spell.castTime, { actionType:"spell", label:spell.label });
+
+    const SCHOOL_COLORS = {
+      fire:"#ff4400", ice:"#88ccff", lightning:"#ffee44",
+      shadow:"#6600aa", light:"#ffee99", earth:"#886633",
+      mind:"#cc88ff", summon:"#44aa88"
+    };
+
+    if (spell.aoe) {
+      const result = await placeAoeTemplate({
+        aoeType:      spell.aoe.shape,
+        distance:     spell.aoe.distance,
+        label:        spell.label,
+        color:        SCHOOL_COLORS[spell.school] ?? "#8888ff",
+        attacker:     actor,
+        skillKey:     "magic",
+        hitBonus:     0,
+        friendlyFire: spell.friendlyFire ?? false,
+      });
+      if (!result) { this._refreshHud({ keepOnTop:true }); return; }
+      const { template, targets: zoneTargets } = result;
+      await applyAoeDamage({
+        attacker: actor, targets: zoneTargets,
+        baseDamage: spell.damage, skillKey: "magic",
+        damageType: spell.damageType, aoeType: spell.aoe.type,
+        maxTargets: spell.aoe.maxTargets ?? null,
+        chainDecay: spell.aoe.chainDecay ?? 0.8,
+        label: spell.label, effect: spell.effect,
+        friendlyFire: spell.friendlyFire ?? false,
+      });
+      await removeAoeTemplate(template, 3000);
+    } else if (spell.damage > 0) {
+      const target = targets[0];
+      if (!target) { ui.notifications.warn("Возьми цель в таргет (T)"); this._refreshHud({ keepOnTop:true }); return; }
+      const skillVal = Number(actor.system?.skills?.magic?.value ?? actor.system?.skills?.sorcery?.value ?? 3);
+      const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
+      const roll     = await new Roll(`1d${dieSize}`).evaluate();
+      const defVal   = Number(target.system?.skills?.defense?.value ?? 0);
+      const hit      = roll.total >= 5 + defVal;
+      if (hit) {
+        const hpPath = target.system?.resources?.hp?.torso !== undefined ? "system.resources.hp.torso.value" : "system.resources.hp.value";
+        const hp     = target.system?.resources?.hp?.torso?.value ?? target.system?.resources?.hp?.value ?? 0;
+        await target.update({ [hpPath]: Math.max(0, hp - spell.damage) });
+        if (spell.effect?.applyCondition && Math.random() < (spell.effect.conditionChance ?? 1))
+          await target.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
+      }
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div style="padding:6px">✨ <b>${actor.name}</b> → <b>${spell.label}</b> → ${target.name}<br>Бросок: <b>${roll.total}</b> — ${hit ? `попал, урон <b>${spell.damage}</b>` : "промах"}${hit && spell.effect?.applyCondition ? ` · ${spell.effect.applyCondition}` : ""}</div>`
+      });
+    } else if (spell.effect?.applyCondition) {
+      const tgt = targets[0] ?? actor;
+      await tgt.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div style="padding:6px">✨ <b>${spell.label}</b> → ${tgt.name}</div>`
+      });
+    }
+    this._refreshHud({ keepOnTop: true });
+  }
+
+    // ── AoE Атака ──────────────────────────────────────────────
+  async _performAoeAttack(actor, { aoeType, distance, baseDamage, energyCost,
+      skillKey, label, damageType = "physical", ignoreArmor = 0 }) {
+
+    // Проверяем энергию
+    const curEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
+    if (curEnergy < energyCost) {
+      ui.notifications.warn(`Недостаточно энергии (${curEnergy}/${energyCost})`);
+      return;
+    }
+
+    // Уведомляем игроков
+    ui.notifications.info(`${actor.name}: ${label} — укажи зону на сцене`);
+
+    // Размещаем шаблон. Физика по умолчанию не задевает союзников.
+    const result = await placeAoeTemplate({
+      aoeType, distance, label,
+      color:        skillKey === "bow" || skillKey === "crossbow" ? "#4488ff" : "#ff4444",
+      attacker:     actor,
+      skillKey,
+      hitBonus:     0,
+      friendlyFire: false,
+    });
+
+    if (!result) {
+      ui.notifications.info("Атака отменена");
+      return;
+    }
+
+    const { template, targets } = result;
+
+    // Списываем энергию
+    await actor.update({ "system.resources.energy.value": Math.max(0, curEnergy - energyCost) });
+
+    // Бросок атаки (один для всего AoE)
+    const skillVal = Number(actor.system?.skills?.[skillKey]?.value ?? 3);
+    const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
+    const roll     = await new Roll(`1d${dieSize}`).evaluate();
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div style="padding:4px">💥 <b>${label}</b> — бросок: <b>${roll.total}</b> (d${dieSize})</div>`
+    });
+
+    // Применяем урон. Физический AoE (стрелы, удары) по умолчанию не задевает союзников.
+    await applyAoeDamage({
+      attacker: actor, targets, baseDamage, skillKey, damageType, ignoreArmor, label,
+      friendlyFire: false,
+    });
+
+    // Удаляем шаблон через 3 секунды
+    await removeAoeTemplate(template, 3000);
+
+    this._refreshHud({ keepOnTop: true });
+  }
+
+  // ── «Перевести дух» — тратит весь ход, восстанавливает энергию ─
+  async _breathe() {
+    const actor = getHudActor();
+    if (!actor) return;
+
+    const combatCheck = this._canActorUseCombatAction(actor);
+    if (!combatCheck.ok) {
+      ui.notifications.warn(combatCheck.reason || "Сейчас действие недоступно.");
+      return;
+    }
+
+    const energyMax = Number(actor.system?.resources?.energy?.max   ?? 10);
+    const baseMax   = Number(actor.system?.resources?.energy?.baseMax ?? energyMax);
+    const minMax    = Math.max(1, Math.floor(baseMax * 0.20));
+
+    // Восстанавливаем энергию до max, но max -1 (небольшая усталость от передышки в бою)
+    const newMax = Math.max(minMax, energyMax - 1);
+    await actor.update({
+      "system.resources.energy.value": newMax,
+      "system.resources.energy.max":   newMax,
+    });
+
+    // Тратим весь ход
+    spendActionSeconds(actor, 6, { actionType: "breathe", label: "Перевести дух" });
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div style="padding:6px">
+        💨 <b>${actor.name}</b> переводит дух.<br>
+        ⚡ Энергия: <b>${newMax}/${newMax}</b>
+        ${newMax < energyMax ? `<br><span style="color:#f87171">Макс. энергии −1 от усталости</span>` : ""}
+      </div>`
+    });
+
+    this._refreshHud({ keepOnTop: true });
+  }
+
   async _attack(hand) {
     const actor = getHudActor();
     if (!actor?.sheet) return;
@@ -149,35 +568,108 @@ export class IronHillsCombatHudApp extends Application {
     }
 
     const weaponId = actor.system?.equipment?.[hand];
-    if (!weaponId) {
-      await actor.sheet._performAttack({
-        hand,
-        skillKey: "unarmed",
-        label: "Кулаки",
-        damageType: "physical",
-        baseDamage: Number(actor.system?.combat?.unarmedDamage ?? 1),
-        energyCost: 5,
-        weapon: null
-      });
-      this._refreshHud({ keepOnTop: true });
-      return;
-    }
+    const weapon   = weaponId ? actor.items.get(weaponId) : null;
 
-    const weapon = actor.items.get(weaponId);
-    if (!weapon) {
-      ui.notifications.warn("Оружие не найдено.");
-      return;
-    }
+    // Базовые параметры атаки
+    // Для монстров — берём из combat профиля если нет экипированного оружия
+    const isMonster  = actor.type === "monster";
+    const npcAttack  = actor.system?.combat?.attacks?.[0]; // первая атака из профиля
 
-    await actor.sheet._performAttack({
+    const baseParams = weapon ? {
       hand,
-      skillKey: weapon.system.skill,
-      label: weapon.name,
+      skillKey:   weapon.system.skill,
+      label:      weapon.name,
       damageType: weapon.system.damageType,
       baseDamage: Number(weapon.system.damage ?? 1),
       energyCost: Number(weapon.system.energyCost ?? 10),
-      weapon
-    });
+      weapon,
+    } : isMonster && npcAttack ? {
+      hand,
+      skillKey:   npcAttack.skillKey ?? "unarmed",
+      label:      npcAttack.label    ?? actor.name,
+      damageType: npcAttack.damageType ?? "physical",
+      baseDamage: Number(npcAttack.damage ?? actor.system?.combat?.damage ?? 2),
+      energyCost: Number(npcAttack.energyCost ?? 3),
+      weapon:     null,
+    } : {
+      hand,
+      skillKey:   "unarmed",
+      label:      isMonster ? `Атака: ${actor.name}` : "Кулаки",
+      damageType: "physical",
+      baseDamage: Number(actor.system?.combat?.damage ?? actor.system?.combat?.unarmedDamage ?? 1),
+      energyCost: isMonster ? 3 : 2,
+      weapon:     null,
+    };
+
+    // Получаем цели из таргетов
+    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
+
+    // Есть ли доступные приёмы или прицельный удар?
+    const techniques = weapon ? getAvailableTechniques(actor, weapon) : [];
+    const skillVal   = Number(actor.system?.skills?.[baseParams.skillKey]?.value ?? 0);
+    const canAim     = skillVal >= 3;
+
+    if (techniques.length > 0 || canAim) {
+      // Показываем диалог выбора
+      const choice = await IronHillsCombatTechniqueApp.choose(actor, weapon, targets);
+      if (!choice) return; // отмена
+
+      if (choice.type === "basic") {
+        // Обычный удар
+        await this._callPerformAttack(actor, baseParams);
+
+      } else if (choice.type === "technique") {
+        const tech = choice.technique;
+
+        // AoE приём — используем MeasuredTemplate
+        if (tech.effect.special === "aoe" && tech.effect.aoe) {
+          const aoeStr  = tech.effect.aoe; // "melee_adjacent" | "ranged_3targets" | etc
+          const isRanged = aoeStr.startsWith("ranged");
+          const aoeType  = isRanged ? "circle" : "circle";
+          const dist     = isRanged ? 4 : 1; // клетки
+          await this._performAoeAttack(actor, {
+            aoeType,
+            distance:    dist,
+            baseDamage:  Math.round(baseParams.baseDamage * (tech.effect.damage ?? 1)),
+            energyCost:  baseParams.energyCost + (tech.energyCost ?? 0),
+            skillKey:    baseParams.skillKey,
+            label:       `${baseParams.label}: ${tech.label}`,
+            damageType:  baseParams.damageType,
+            ignoreArmor: tech.effect.ignoreArmor ?? 0,
+          });
+        } else {
+          // Обычный одиночный приём
+          await this._callPerformAttack(actor, {
+            ...baseParams,
+            label:       `${baseParams.label}: ${tech.label}`,
+            baseDamage:  Math.round(baseParams.baseDamage * (tech.effect.damage ?? 1)),
+            energyCost:  baseParams.energyCost + (tech.energyCost ?? 0),
+            ignoreArmor: tech.effect.ignoreArmor ?? 0,
+            technique:   tech,
+            applyCondition: tech.effect.applyCondition ?? null,
+            conditionDuration: tech.effect.conditionDuration ?? 0,
+            conditionChance: tech.effect.conditionChance ?? 1.0,
+          });
+        }
+
+      } else if (choice.type === "aimed") {
+        // Прицельный удар
+        const zone = choice.zone;
+        const extraEnergy = 4; // прицеливание стоит доп. энергии
+        await this._callPerformAttack(actor, {
+          ...baseParams,
+          label:       `${baseParams.label} → ${zone.label}`,
+          baseDamage:  Math.round(baseParams.baseDamage * zone.damageMult),
+          energyCost:  baseParams.energyCost + extraEnergy,
+          hitBonus:    zone.hitMod,
+          targetZone:  zone.key,
+          aimed:       true,
+        });
+      }
+    } else {
+      // Нет приёмов — сразу обычный удар
+      await this._callPerformAttack(actor, baseParams);
+    }
 
     this._refreshHud({ keepOnTop: true });
   }
@@ -321,7 +813,7 @@ const current =
 
     return {
       hasActor: true,
-      compactMode: this._compactMode,
+      compactMode: true,
       combatActive: isCombatActive(),
       actorName: actor.name,
       actorImg: actor.img,
@@ -415,6 +907,18 @@ canContinuePendingAction:
       canActFreely: !isCombatActive(),
       canAttack: isCombatActive(),
 
+      // Энергия — для кнопки «Перевести дух»
+      energyCur:  Number(actor.system?.resources?.energy?.value ?? 0),
+      energyMax:  Number(actor.system?.resources?.energy?.max   ?? 0),
+      canBreathe: isCombatActive() &&
+                  Number(actor.system?.resources?.energy?.value ?? 0) <
+                  Number(actor.system?.resources?.energy?.max   ?? 0),
+      manaCur:    Number(actor.system?.resources?.mana?.value ?? 0),
+      manaMax:    Number(actor.system?.resources?.mana?.max   ?? 0),
+      hasMana:    Number(actor.system?.resources?.mana?.max   ?? 0) > 0,
+      rightHandEquipped: !!actor.system?.equipment?.rightHand,
+      isSprinting: game.ironHills?._moveMode === "sprint",
+
       queue: (state.participants ?? []).map(participant => {
         const side = participant.side ?? "neutral";
         const isFriendly = actorSide !== "neutral" && isFriendlySide(actorSide, side);
@@ -447,6 +951,22 @@ canContinuePendingAction:
     html.find("[data-cancel-pending]").on("click", async event => {
       event.preventDefault();
       await this._cancelPendingAction();
+    });
+
+    html.find("[data-breathe]").on("click", async event => {
+      event.preventDefault();
+      await this._breathe();
+    });
+
+    html.find("[data-toggle-sprint]").on("click", () => {
+      const cur = game.ironHills?._moveMode ?? "walk";
+      game.ironHills?.setMoveMode?.(cur === "sprint" ? "walk" : "sprint");
+      this.render(false);
+    });
+
+    html.find("[data-cast-spell]").on("click", async event => {
+      event.preventDefault();
+      await this._castSpell();
     });
 
     html.find("[data-end-turn]").on("click", async event => {

@@ -19,29 +19,41 @@ function randomId(prefix = "combat") {
   return `${prefix}-${foundry.utils.randomID()}`;
 }
 
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const COMBAT_SETTING = "ironHillsCombatState";
+const DEFAULT_STATE  = () => ({
+  active: false, combatId: "", round: 0, turn: 0,
+  activeParticipantId: "", participants: [], log: [],
+  createdAt: "", updatedAt: "", revision: 0
+});
+
+// Кэш в памяти для скорости — синхронизируется с game.settings
+let _stateCache = null;
 
 function getCombatStore() {
   game.ironHills = game.ironHills || {};
 
-  if (!game.ironHills._combatState) {
-    game.ironHills._combatState = {
-      active: false,
-      combatId: "",
-      round: 0,
-      turn: 0,
-      activeParticipantId: "",
-      participants: [],
-      log: [],
-      createdAt: "",
-      updatedAt: "",
-      revision: 0
-    };
+  if (!_stateCache) {
+    // Пробуем загрузить из game.settings
+    try {
+      const saved = game.settings?.get("iron-hills-system", COMBAT_SETTING);
+      _stateCache = (saved && saved.revision > 0) ? saved : DEFAULT_STATE();
+    } catch {
+      _stateCache = DEFAULT_STATE();
+    }
+    game.ironHills._combatState = _stateCache;
   }
 
-  return game.ironHills._combatState;
+  return _stateCache;
+}
+
+// Сохраняем в game.settings (только GM, через socket для других)
+async function _persistCombatState(state) {
+  if (!game.user?.isGM) return;
+  try {
+    await game.settings?.set("iron-hills-system", COMBAT_SETTING, deepClone(state));
+  } catch (e) {
+    console.warn("Iron Hills | Failed to persist combat state:", e);
+  }
 }
 
 function getCombatStateInternal() {
@@ -127,6 +139,10 @@ function saveCombatState(nextState) {
 
   for (const key of Object.keys(store)) delete store[key];
   Object.assign(store, cloned);
+  _stateCache = store;
+
+  // Персистим в game.settings асинхронно
+  _persistCombatState(store);
 
   notifyCombatUi();
   return store;
@@ -280,25 +296,40 @@ function getTokenUuid(token) {
 }
 
 function getActorInitiativeBonus(actor) {
-  if (!actor) return 0;
-
-  const skills = actor.system?.skills ?? {};
-  const perception = Number(skills.perception?.value ?? 0);
-  const athletics = Number(skills.athletics?.value ?? 0);
-  const swords = Number(skills.swords?.value ?? skills.sword?.value ?? 0);
-  const daggers = Number(skills.daggers?.value ?? skills.knife?.value ?? 0);
-
-  return Math.max(perception, athletics, swords, daggers, 0);
+  // PATCH 5: инициатива теперь статичная.
+  // Функция сохранена для обратной совместимости.
+  return 0;
 }
 
 function rollInitiativeData(actor) {
-  const initiativeSkill = getActorInitiativeBonus(actor);
-  const initiativeRoll = randInt(1, 20);
-  const initiativeTotal = initiativeRoll + initiativeSkill;
+  // PATCH 5: инициатива теперь статичная, без броска.
+  // База 10, модифицируется снаряжением.
+  const BASE = 10;
+  let modifier = 0;
+
+  if (actor) {
+    // Тяжёлая броня снижает инициативу
+    const armorTorsoId = actor.system?.equipment?.armorTorso;
+    const armorTorso = armorTorsoId ? actor.items?.get(armorTorsoId) : null;
+    if (armorTorso) {
+      const tier = Number(armorTorso.system?.tier ?? 1);
+      modifier -= Math.ceil(tier / 2);
+    }
+
+    // Щит в левой руке
+    const leftHandId = actor.system?.equipment?.leftHand;
+    const leftItem = leftHandId ? actor.items?.get(leftHandId) : null;
+    if (leftItem?.system?.isShield) modifier -= 1;
+
+    // Без брони — небольшой бонус
+    if (!armorTorso) modifier += 1;
+  }
+
+  const initiativeTotal = Math.max(1, BASE + modifier);
 
   return {
-    initiativeSkill,
-    initiativeRoll,
+    initiativeSkill: 0,
+    initiativeRoll: initiativeTotal,
     initiativeTotal
   };
 }
@@ -762,6 +793,29 @@ async function applyConditionTurnStart(state, participant) {
     });
   }
 
+  // ── Энергия: НЕ восстанавливается автоматически ──────────
+  // Только в первый раунд все стартуют на полной энергии.
+  // Дальше — игрок сам решает тратить ли ход на «Перевести дух».
+  const energyCur    = Number(actor.system?.resources?.energy?.value ?? 0);
+  const energyMax    = Number(actor.system?.resources?.energy?.max   ?? 10);
+  const isFirstRound = (state.round ?? 1) <= 1;
+
+  if (isFirstRound && energyMax > 0) {
+    updates["system.resources.energy.value"] = energyMax;
+    logEntries.push({
+      id: randomId("log"), type: "condition-state",
+      text: `${actor.name}: вступает в бой (${energyMax}/${energyMax}).`,
+      timestamp: nowStamp()
+    });
+  } else if (energyCur < energyMax) {
+    // Подсказка в лог — не блокируем, просто информируем
+    logEntries.push({
+      id: randomId("log"), type: "condition-state",
+      text: `${actor.name}: ⚡ ${energyCur}/${energyMax} — можно «Перевести дух».`,
+      timestamp: nowStamp()
+    });
+  }
+
   if (Object.keys(updates).length) {
     await actor.update(updates);
   }
@@ -918,6 +972,16 @@ export function canActorActNow(actorOrId) {
     return { ok: false, reason: "Актёр не найден.", remainingSeconds: 0, participant: null };
   }
 
+  // Проверяем: без сознания — действия недоступны
+  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+    return { ok: false, reason: `${actor.name} без сознания — нужен отдых или помощь.`, remainingSeconds: 0, participant: null };
+  }
+  // Проверяем: макс. энергия = 0 — полное истощение
+  const energyMax = Number(actor.system?.resources?.energy?.max ?? 1);
+  if (energyMax <= 0) {
+    return { ok: false, reason: `${actor.name} полностью истощён — нужен отдых.`, remainingSeconds: 0, participant: null };
+  }
+
   const participant = findParticipantForActorInState(state, actor);
   if (!participant) {
     return { ok: false, reason: "Актёр не участвует в бою.", remainingSeconds: 0, participant: null };
@@ -967,6 +1031,24 @@ export function canActorCommitAction(actorOrId) {
   const actor = resolveActor(actorOrId);
   if (!actor) {
     return { ok: false, reason: "Актёр не найден.", remainingSeconds: 0, participant: null };
+  }
+
+  // Без сознания или полностью истощён — действия недоступны
+  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+    return { ok: false, reason: `${actor.name} без сознания.`, remainingSeconds: 0, participant: null };
+  }
+  if (Number(actor.system?.resources?.energy?.max ?? 1) <= 0) {
+    return { ok: false, reason: `${actor.name} истощён — нужен отдых.`, remainingSeconds: 0, participant: null };
+  }
+
+  // Проверяем: без сознания — действия недоступны
+  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+    return { ok: false, reason: `${actor.name} без сознания — нужен отдых или помощь.`, remainingSeconds: 0, participant: null };
+  }
+  // Проверяем: макс. энергия = 0 — полное истощение
+  const energyMax = Number(actor.system?.resources?.energy?.max ?? 1);
+  if (energyMax <= 0) {
+    return { ok: false, reason: `${actor.name} полностью истощён — нужен отдых.`, remainingSeconds: 0, participant: null };
   }
 
   const participant = findParticipantForActorInState(state, actor);
@@ -1624,6 +1706,37 @@ export async function advanceTurn() {
 
   saveCombatState(state);
 
+  // ── Звуковое уведомление о начале хода ──────────────────
+  // Определяем кому принадлежит следующий участник
+  const nextActor  = resolveParticipantActor(next);
+  const isPlayerActor = nextActor?.hasPlayerOwner ?? false;
+  const isMyTurn   = game.user?.character?.id === next.actorId
+                  || game.actors?.get(next.actorId)?.ownership?.[game.user?.id] >= 3;
+
+  // Звук слышит только тот кому ходить (игрок) или GM (для монстров/NPC)
+  if (isMyTurn || (game.user?.isGM && !isPlayerActor)) {
+    const soundPath = isPlayerActor
+      ? "systems/iron-hills-system/sounds/your-turn.ogg"   // ход игрока
+      : "systems/iron-hills-system/sounds/enemy-turn.ogg"; // ход монстра (GM)
+
+    // Используем встроенный звук Foundry если наш файл не существует
+    AudioHelper.play({
+      src: soundPath,
+      volume: 0.6,
+      autoplay: true,
+      loop: false,
+    }, false).catch(() => {
+      // Fallback — используем стандартный Foundry notification sound
+      game.audio?.interface?.play?.("notification") ??
+      new Audio("sounds/dice.wav").play().catch(()=>{});
+    });
+
+    // Также уведомление в интерфейсе
+    if (isMyTurn) {
+      ui.notifications?.info(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
+    }
+  }
+
   const activeParticipant =
     state.participants.find(participant => participant.id === state.activeParticipantId) ?? null;
 
@@ -1846,6 +1959,29 @@ export function forceSetActiveParticipant(participantId) {
   setActiveParticipantByIndex(state, index);
   resetParticipantTurnState(state.participants[index]);
   saveCombatState(state);
+
+  // ── Звуковое уведомление о начале хода ──────────────────
+  const nextActor     = resolveParticipantActor(next);
+  const isPlayerActor = nextActor?.hasPlayerOwner ?? false;
+  const isMyTurn      = game.user?.character?.id === next.actorId
+                     || Number(game.actors?.get(next.actorId)?.ownership?.[game.user?.id] ?? 0) >= 3;
+
+  if (isMyTurn || (game.user?.isGM && !isPlayerActor)) {
+    const soundSrc = isPlayerActor
+      ? "systems/iron-hills-system/sounds/your-turn.ogg"
+      : "systems/iron-hills-system/sounds/enemy-turn.ogg";
+
+    AudioHelper.play({ src: soundSrc, volume: 0.6, autoplay: true, loop: false }, false)
+      .catch(() => {
+        // fallback — тихий дефолтный звук интерфейса
+        foundry.audio?.AudioHelper?.play?.({ src: "sounds/notify.wav", volume: 0.5 }, false)
+          .catch(() => {});
+      });
+
+    if (isMyTurn) {
+      ui.notifications?.info(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
+    }
+  }
 
   const activeParticipant =
     state.participants.find(participant => participant.id === state.activeParticipantId) ?? null;

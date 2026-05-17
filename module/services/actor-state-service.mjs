@@ -12,26 +12,47 @@ import {
   getMerchantWealth,
   getMerchantMarkup
 } from "../utils/actor-utils.mjs";
+import { isItemGridPlaced } from "./inventory-service.mjs";
 
 export function getHitLocation(rollTotal) {
-  if (rollTotal <= 2)  return "head";
-  if (rollTotal <= 6)  return "torso";
-  if (rollTotal <= 10) return "abdomen";
-  if (rollTotal <= 13) return "leftArm";
-  if (rollTotal <= 16) return "rightArm";
-  if (rollTotal <= 18) return "leftLeg";
+  const r = Number(rollTotal);
+  // d20: шея ниже или равна по частоте голове (5% шея, 10% голова при броске 2–3)
+  if (r <= 1) return "neck";
+  if (r <= 3) return "head";
+  if (r <= 7) return "torso";
+  if (r <= 10) return "abdomen";
+  if (r <= 13) return "leftArm";
+  if (r <= 16) return "rightArm";
+  if (r <= 18) return "leftLeg";
   return "rightLeg";
+}
+
+/** Куда записывается урон при попадании в зону (шея без отдельного пула HP → торс). */
+export function resolveDamageHpKey(locationKey) {
+  if (locationKey === "neck") return "torso";
+  return locationKey ?? null;
+}
+
+/**
+ * Шанс «урон пришёлся в щит» после успешного попадания (0..1).
+ * Зависит от навыка «Щит» цели; верхний предел ~55%.
+ */
+export function getShieldInterceptChance(shieldSkillValue) {
+  const v = Math.max(0, Number(shieldSkillValue ?? 0));
+  return Math.min(0.55, 0.06 + v * 0.045);
 }
 
 export function getHitLabel(key) {
   const labels = {
     head: "Голова",
+    neck: "Шея",
     torso: "Торс",
     abdomen: "Живот",
     leftArm: "Левая рука",
     rightArm: "Правая рука",
     leftLeg: "Левая нога",
-    rightLeg: "Правая нога"
+    rightLeg: "Правая нога",
+    shield: "Щит"
   };
   return labels[key] ?? key;
 }
@@ -42,30 +63,54 @@ export function getTargetPartLabel(part) {
 
 export function getArmorSlotKey(slot) {
   const map = {
-    head: "armorHead",
-    torso: "armorTorso",
-    arms: "armorArms",
-    legs: "armorLegs"
+    head: "head",
+    neck: "neck",
+    torso: "torso",
+    abdomen: "torso",
+    leftArm: "leftArm",
+    rightArm: "rightArm",
+    arms: "leftArm",
+    legs: "legs",
+    leftLeg: "legs",
+    rightLeg: "legs",
+    shield: "leftHand"
   };
   return map[slot] ?? null;
 }
 
 export function getArmorSlotForLocation(locationKey) {
-  if (locationKey === "head") return "armorHead";
-  if (locationKey === "torso" || locationKey === "abdomen") return "armorTorso";
-  if (locationKey === "leftArm" || locationKey === "rightArm") return "armorArms";
-  if (locationKey === "leftLeg" || locationKey === "rightLeg") return "armorLegs";
+  if (locationKey === "head") return "head";
+  if (locationKey === "neck") return "neck";
+  if (locationKey === "torso" || locationKey === "abdomen") return "torso";
+  if (locationKey === "leftArm" || locationKey === "rightArm") return locationKey;
+  if (locationKey === "leftLeg" || locationKey === "rightLeg") return "legs";
   return null;
 }
 
-export function getEquippedArmorForLocation(actor, locationKey) {
-  const slotKey = getArmorSlotForLocation(locationKey);
-  if (!slotKey) return null;
+export function getEquippedArmorForLocation(actor, locationKey, damageType = "physical") {
+  if (!actor) return null;
 
-  const armorId = actor.system.equipment?.[slotKey];
-  if (!armorId) return null;
+  const zone = locationKey === "shield" ? "torso" : locationKey;
+  const equip = actor.system?.equipment ?? {};
+  let bestArmor = null;
+  let bestReduction = -1;
 
-  return actor.items.get(armorId) ?? null;
+  for (const [slot, itemId] of Object.entries(equip)) {
+    if (!itemId) continue;
+    const item = actor.items.get(itemId);
+    if (!item || item.type !== "armor") continue;
+
+    const covers = getArmorCovers(item, slot);
+    if (!covers.includes(zone)) continue;
+
+    const reduction = getDamageReduction(item, damageType);
+    if (reduction > bestReduction) {
+      bestArmor = item;
+      bestReduction = reduction;
+    }
+  }
+
+  return bestArmor;
 }
 
 export function getDamageReduction(armorItem, damageType) {
@@ -78,7 +123,8 @@ export function getDamageReduction(armorItem, damageType) {
 
   const base = Number(armorItem.system?.resist ?? armorItem.system?.protection?.physical ?? 0);
   const baseMag = Number(armorItem.system?.resistMag ?? armorItem.system?.protection?.magical ?? 0);
-  const val  = damageType === "magical" ? baseMag : base;
+  const defenseType = String(damageType ?? "physical").toLowerCase() === "physical" ? "physical" : "magical";
+  const val  = defenseType === "magical" ? baseMag : base;
   return Math.floor(val * scale);
 }
 
@@ -88,12 +134,23 @@ export function getDamageReduction(armorItem, damageType) {
  */
 export const DEFAULT_SLOT_COVERS = Object.freeze({
   head:       ["head"],
-  torso:      ["torso"],
+  neck:       ["neck"],
+  torso:      ["torso", "abdomen"],
   torsoUnder: ["torso", "abdomen"],
   leftArm:    ["leftArm"],
   rightArm:   ["rightArm"],
   legs:       ["leftLeg", "rightLeg"],
+  armorHead:  ["head"],
+  armorTorso: ["torso", "abdomen"],
+  armorArms:  ["leftArm", "rightArm"],
+  armorLegs:  ["leftLeg", "rightLeg"],
 });
+
+function getArmorCovers(item, slot) {
+  const explicit = item?.system?.covers;
+  if (Array.isArray(explicit) && explicit.length > 0) return explicit;
+  return DEFAULT_SLOT_COVERS[slot] ?? [];
+}
 
 /**
  * Возвращает лучший резист для зоны из всех слоёв брони.
@@ -107,7 +164,7 @@ export function getBestResistForZone(actor, zone, damageType = "physical") {
     if (!itemId) continue;
     const item = actor.items.get(itemId);
     if (!item || item.type !== "armor") continue;
-    const covers = item.system?.covers ?? DEFAULT_SLOT_COVERS[slot] ?? [];
+    const covers = getArmorCovers(item, slot);
     if (!covers.includes(zone)) continue;
     const r = getDamageReduction(item, damageType);
     if (r > best) best = r;
@@ -137,6 +194,7 @@ function getLimbStatusInfo(actor, partKey) {
   const tourniquet = Boolean(status.tourniquet);
   const minorBleeding = Math.max(0, Number(status.minorBleeding ?? 0));
   const majorBleeding = Math.max(0, Number(status.majorBleeding ?? 0));
+  const activeMajorBleeding = tourniquet ? 0 : majorBleeding;
 
   return {
     currentHp,
@@ -145,7 +203,8 @@ function getLimbStatusInfo(actor, partKey) {
     splinted,
     tourniquet,
     minorBleeding,
-    majorBleeding
+    majorBleeding,
+    activeMajorBleeding
   };
 }
 
@@ -165,6 +224,29 @@ function clampNonNegativeInt(value) {
   return Math.max(0, Math.floor(Number(value ?? 0)));
 }
 
+function getSynchronousDiseasePenalties(actor) {
+  const penalties = {
+    attackPenalty: 0,
+    castPenalty: 0,
+  };
+
+  const diseaseData = actor?.system?.diseases ?? {};
+  const diseaseCatalog = globalThis._IH_DISEASES ?? {};
+
+  for (const [key, data] of Object.entries(diseaseData)) {
+    if (!data || Number(data.stage ?? -1) < 0) continue;
+
+    const def = diseaseCatalog[key];
+    const stage = def?.stages?.[Number(data.stage ?? 0)];
+    for (const symptom of (stage?.symptoms ?? [])) {
+      if (symptom.type === "attackPenalty") penalties.attackPenalty += Number(symptom.value ?? 0);
+      if (symptom.type === "castPenalty") penalties.castPenalty += Number(symptom.value ?? 0);
+    }
+  }
+
+  return penalties;
+}
+
 export function getActorInjuryInfo(actor) {
   const conditions = actor.system.conditions ?? {};
 
@@ -172,6 +254,7 @@ export function getActorInjuryInfo(actor) {
   const rightArm = getLimbStatusInfo(actor, "rightArm");
   const leftLeg = getLimbStatusInfo(actor, "leftLeg");
   const rightLeg = getLimbStatusInfo(actor, "rightLeg");
+  const abdomen = getLimbStatusInfo(actor, "abdomen");
 
   const leftArmDisabled = Boolean(leftArm.destroyed);
   const rightArmDisabled = Boolean(rightArm.destroyed);
@@ -188,16 +271,30 @@ export function getActorInjuryInfo(actor) {
     Number(rightArm.minorBleeding) +
     Number(leftLeg.minorBleeding) +
     Number(rightLeg.minorBleeding) +
+    Number(abdomen.minorBleeding) +
     Math.max(0, Number(actor.system?.resources?.hp?.head?.status?.minorBleeding ?? 0)) +
     Math.max(0, Number(actor.system?.resources?.hp?.torso?.status?.minorBleeding ?? 0));
 
-  const majorBleedingTotal =
+  const head = getLimbStatusInfo(actor, "head");
+  const torso = getLimbStatusInfo(actor, "torso");
+
+  const majorBleedingRawTotal =
     Number(leftArm.majorBleeding) +
     Number(rightArm.majorBleeding) +
     Number(leftLeg.majorBleeding) +
     Number(rightLeg.majorBleeding) +
-    Math.max(0, Number(actor.system?.resources?.hp?.head?.status?.majorBleeding ?? 0)) +
-    Math.max(0, Number(actor.system?.resources?.hp?.torso?.status?.majorBleeding ?? 0));
+    Number(abdomen.majorBleeding) +
+    Number(head.majorBleeding) +
+    Number(torso.majorBleeding);
+
+  const majorBleedingTotal =
+    Number(leftArm.activeMajorBleeding) +
+    Number(rightArm.activeMajorBleeding) +
+    Number(leftLeg.activeMajorBleeding) +
+    Number(rightLeg.activeMajorBleeding) +
+    Number(abdomen.activeMajorBleeding) +
+    Number(head.activeMajorBleeding) +
+    Number(torso.activeMajorBleeding);
 
   const legacyBleeding = Math.max(0, Number(conditions.bleeding ?? 0));
   const derivedBleeding = minorBleedingTotal + (majorBleedingTotal * 2);
@@ -252,6 +349,10 @@ export function getActorInjuryInfo(actor) {
     armFracturePenalty +
     disabledArmCount;
 
+  const diseasePenalties = getSynchronousDiseasePenalties(actor);
+  const totalMeleePenalty = meleePenalty + diseasePenalties.attackPenalty;
+  const totalCastPenalty = castPenalty + diseasePenalties.castPenalty;
+
   return {
     leftArmDisabled,
     rightArmDisabled,
@@ -268,6 +369,8 @@ export function getActorInjuryInfo(actor) {
 
     minorBleedingTotal,
     majorBleedingTotal,
+    majorBleedingRawTotal,
+    suppressedMajorBleedingTotal: Math.max(0, majorBleedingRawTotal - majorBleedingTotal),
     bleeding,
     shock,
     poison,
@@ -277,40 +380,13 @@ export function getActorInjuryInfo(actor) {
     legFracturePenalty,
     disabledArmCount,
     disabledLegCount,
-  };
-
-  // Штрафы от болезней (синхронно через глобальный кэш)
-  let diseaseAttackPenalty = 0;
-  let diseaseCastPenalty   = 0;
-  const diseaseData = actor.system?.diseases ?? {};
-  const DCATALOG = globalThis._IH_DISEASES ?? {};
-  for (const [key, data] of Object.entries(diseaseData)) {
-    if (!data || data.stage < 0) continue;
-    const def   = DCATALOG[key];
-    if (!def) continue;
-    const stage = def.stages?.[data.stage];
-    for (const sym of (stage?.symptoms ?? [])) {
-      if (sym.type === "attackPenalty") diseaseAttackPenalty += sym.value;
-      if (sym.type === "castPenalty")   diseaseCastPenalty   += sym.value;
-    }
-  }
-
-  return {
-    attackPenalty: meleePenalty + diseaseAttackPenalty,
-    meleePenalty:  meleePenalty + diseaseAttackPenalty,
+    attackPenalty: totalMeleePenalty,
+    meleePenalty: totalMeleePenalty,
     throwPenalty,
-    castPenalty:   castPenalty  + diseaseCastPenalty,
+    castPenalty: totalCastPenalty,
     movementPenalty,
-    manipulationPenalty
+    manipulationPenalty,
   };
-}
-
-// Импортируем болезни лениво чтобы избежать циклических зависимостей
-async function _getDiseasePenalties(actor) {
-  try {
-    const { getDiseasesPenalties } = await import("../constants/diseases.mjs");
-    return getDiseasesPenalties(actor);
-  } catch { return {}; }
 }
 
 export function getDerivedConditionState(actor) {
@@ -336,13 +412,14 @@ export function getDerivedConditionState(actor) {
     clampNonNegativeInt(injury.minorBleedingTotal) +
     clampNonNegativeInt(injury.majorBleedingTotal) * 2;
 
-  const shock =
+  const traumaShock =
     clampNonNegativeInt(injury.majorBleedingTotal) +
     armFractures +
     legFractures +
     destroyedArms +
     destroyedLegs +
     (destroyedVital ? 100 : 0);
+  const shock = Math.max(clampNonNegativeInt(injury.shock), traumaShock);
 
   const movementBlocked =
     destroyedVital ||
@@ -866,11 +943,18 @@ export function buildGroupedItems(actor) {
 
   const equip  = actor.system?.equipment ?? {};
   const equippedIds = new Set(Object.values(equip).filter(Boolean));
+  const virtualInventoryTypes = new Set(["spell", "attachment"]);
 
   for (const item of items) {
+    const secKey = item.flags?.["iron-hills-system"]?.sectionKey ?? null;
+    const isEquipped = equippedIds.has(item.id);
+
+    if (!isEquipped && !virtualInventoryTypes.has(item.type) && !isItemGridPlaced(item)) {
+      continue;
+    }
+
     // Скрываем предметы внутри НЕнадетых контейнеров
     // (они там хранятся физически но не должны быть видны в листе)
-    const secKey = item.flags?.["iron-hills-system"]?.sectionKey ?? null;
     if (secKey) {
       const contType = secKey.startsWith("backpack_") ? "backpack"
                      : secKey.startsWith("belt_")     ? "belt"
@@ -969,43 +1053,63 @@ export function buildGroupedItems(actor) {
 export function buildEquipmentSummary(actor) {
   const eq = actor.system?.equipment || {};
 
-  const rightHandWeapon = eq.rightHand ? actor.items.get(eq.rightHand) : null;
-  const leftHandWeapon = eq.leftHand ? actor.items.get(eq.leftHand) : null;
-  const armorHead = eq.armorHead ? actor.items.get(eq.armorHead) : null;
-  const armorTorso = eq.armorTorso ? actor.items.get(eq.armorTorso) : null;
-  const armorArms = eq.armorArms ? actor.items.get(eq.armorArms) : null;
-  const armorLegs = eq.armorLegs ? actor.items.get(eq.armorLegs) : null;
+  const itemInSlot = (slotKey, legacyKey = null) => {
+    const itemId = eq[slotKey] || (legacyKey ? eq[legacyKey] : "");
+    return itemId ? actor.items.get(itemId) : null;
+  };
+
+  const formatItemName = item => item?.name || "—";
 
   return [
     {
       slot: "Правая рука",
       slotKey: "rightHand",
-      itemName: rightHandWeapon?.type === "weapon" ? rightHandWeapon.name : "—"
+      itemName: formatItemName(itemInSlot("rightHand"))
     },
     {
       slot: "Левая рука",
       slotKey: "leftHand",
-      itemName: leftHandWeapon?.type === "weapon" ? leftHandWeapon.name : "—"
+      itemName: formatItemName(itemInSlot("leftHand"))
     },
     {
       slot: "Голова",
-      slotKey: "armorHead",
-      itemName: armorHead?.type === "armor" ? armorHead.name : "—"
+      slotKey: "head",
+      itemName: formatItemName(itemInSlot("head", "armorHead"))
+    },
+    {
+      slot: "Шея",
+      slotKey: "neck",
+      itemName: formatItemName(itemInSlot("neck"))
     },
     {
       slot: "Торс",
-      slotKey: "armorTorso",
-      itemName: armorTorso?.type === "armor" ? armorTorso.name : "—"
+      slotKey: "torso",
+      itemName: formatItemName(itemInSlot("torso", "armorTorso"))
     },
     {
-      slot: "Руки",
-      slotKey: "armorArms",
-      itemName: armorArms?.type === "armor" ? armorArms.name : "—"
+      slot: "Л. наруч",
+      slotKey: "leftArm",
+      itemName: formatItemName(itemInSlot("leftArm", "armorArms"))
+    },
+    {
+      slot: "П. наруч",
+      slotKey: "rightArm",
+      itemName: formatItemName(itemInSlot("rightArm", "armorArms"))
     },
     {
       slot: "Ноги",
-      slotKey: "armorLegs",
-      itemName: armorLegs?.type === "armor" ? armorLegs.name : "—"
+      slotKey: "legs",
+      itemName: formatItemName(itemInSlot("legs", "armorLegs"))
+    },
+    {
+      slot: "Пояс",
+      slotKey: "belt",
+      itemName: formatItemName(itemInSlot("belt"))
+    },
+    {
+      slot: "Рюкзак",
+      slotKey: "backpack",
+      itemName: formatItemName(itemInSlot("backpack"))
     }
   ];
 }
@@ -1104,18 +1208,8 @@ export function buildDetailedCombatView(actor) {
   const rightWeaponRaw = eq.rightHand ? actor.items.get(eq.rightHand) : null;
   const leftWeaponRaw = eq.leftHand ? actor.items.get(eq.leftHand) : null;
 
-  const armorHeadRaw = eq.armorHead ? actor.items.get(eq.armorHead) : null;
-  const armorTorsoRaw = eq.armorTorso ? actor.items.get(eq.armorTorso) : null;
-  const armorArmsRaw = eq.armorArms ? actor.items.get(eq.armorArms) : null;
-  const armorLegsRaw = eq.armorLegs ? actor.items.get(eq.armorLegs) : null;
-
   const rightWeapon = rightWeaponRaw?.type === "weapon" ? rightWeaponRaw : null;
   const leftWeapon = leftWeaponRaw?.type === "weapon" ? leftWeaponRaw : null;
-
-  const armorHead = armorHeadRaw?.type === "armor" ? armorHeadRaw : null;
-  const armorTorso = armorTorsoRaw?.type === "armor" ? armorTorsoRaw : null;
-  const armorArms = armorArmsRaw?.type === "armor" ? armorArmsRaw : null;
-  const armorLegs = armorLegsRaw?.type === "armor" ? armorLegsRaw : null;
 
   const mapWeapon = item => ({
     name: item?.name || "Кулаки",
@@ -1126,19 +1220,30 @@ export function buildDetailedCombatView(actor) {
     damageType: item?.system?.damageType || "physical"
   });
 
-  const mapArmor = item => ({
-    name: item?.name || "—",
-    physical: num(item?.system?.protection?.physical, 0),
-    magical: num(item?.system?.protection?.magical, 0)
-  });
+  const uniqueItems = items => Array.from(new Map(
+    items.filter(Boolean).map(item => [item.id, item])
+  ).values());
+
+  const armorForZones = zones => uniqueItems(
+    zones.map(zone => getEquippedArmorForLocation(actor, zone))
+  );
+
+  const mapArmor = items => {
+    const layers = Array.isArray(items) ? uniqueItems(items) : uniqueItems([items]);
+    return {
+      name: layers.length ? layers.map(item => item.name).join(" / ") : "—",
+      physical: layers.reduce((best, item) => Math.max(best, getDamageReduction(item, "physical")), 0),
+      magical: layers.reduce((best, item) => Math.max(best, getDamageReduction(item, "magical")), 0)
+    };
+  };
 
   return {
     rightWeapon: mapWeapon(rightWeapon),
     leftWeapon: mapWeapon(leftWeapon),
-    armorHead: mapArmor(armorHead),
-    armorTorso: mapArmor(armorTorso),
-    armorArms: mapArmor(armorArms),
-    armorLegs: mapArmor(armorLegs)
+    armorHead: mapArmor(getEquippedArmorForLocation(actor, "head")),
+    armorTorso: mapArmor(armorForZones(["torso", "abdomen"])),
+    armorArms: mapArmor(armorForZones(["leftArm", "rightArm"])),
+    armorLegs: mapArmor(armorForZones(["leftLeg", "rightLeg"]))
   };
 }
 
@@ -1292,6 +1397,44 @@ export function buildSkillGroups(actor) {
 // ============================================================
 
 /**
+ * Начислить опыт навыку (бой, ремесло и т.д.). Без привязки к листу актёра.
+ */
+export async function grantSkillExp(actor, skillKey, label = skillKey, amount = 1) {
+  if (!actor || !skillKey) return;
+  const skill = actor.system?.skills?.[skillKey];
+  if (!skill) return;
+
+  const currentValue = Math.max(1, Number(skill.value ?? 1));
+  if (currentValue >= 10) return;
+
+  let newExp = (skill.exp ?? 0) + Math.max(1, Number(amount) || 1);
+  const expNext = getExpNextForSkill(currentValue);
+
+  if (newExp >= expNext) {
+    const overflow = newExp - expNext;
+    const newValue = Math.min(10, currentValue + 1);
+    const nextExpNext = getExpNextForSkill(newValue);
+
+    await actor.update({
+      [`system.skills.${skillKey}.exp`]: overflow,
+      [`system.skills.${skillKey}.value`]: newValue,
+      [`system.skills.${skillKey}.expNext`]: nextExpNext
+    });
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<b>${actor.name}</b> повышает навык <b>${label}</b> до ступени <b>${newValue}</b>! (куб: d${newValue * 2})`
+    });
+    return;
+  }
+
+  await actor.update({
+    [`system.skills.${skillKey}.exp`]: newExp,
+    [`system.skills.${skillKey}.expNext`]: expNext
+  });
+}
+
+/**
  * Экспоненциальная таблица опыта для навыков.
  * Ступень 1→2: ~25–50 использований
  * Ступень 9→10: тысячи использований
@@ -1312,15 +1455,18 @@ export function getExpNextForSkill(currentValue) {
  */
 export function getAttackThreshold(targetActor, modifiers = {}) {
   const BASE_THRESHOLD = 4;
+  const conditions = targetActor?.system?.conditions ?? {};
 
   // Броня цели — можно переопределить для монстров
   const armorTier = modifiers.armorTierOverride !== undefined
     ? Number(modifiers.armorTierOverride)
     : Number(targetActor?.system?.info?.armorTier ?? 0);
-  const armorBonus = Math.ceil(armorTier / 2);
+  const armorCrackedPenalty = Number(conditions.armor_cracked ?? 0) > 0 ? -2 : 0;
+  const armorBonus = Math.max(0, Math.ceil(armorTier / 2) + armorCrackedPenalty);
 
   // Щит
-  const shieldBonus = modifiers.hasShield ? 1 : 0;
+  const shieldDisabled = Number(conditions.shield_lost ?? 0) > 0;
+  const shieldBonus = modifiers.hasShield && !shieldDisabled ? 1 : 0;
 
   // Штрафы ситуации
   const lyingPenalty    = modifiers.isLying    ? -2 : 0;
@@ -1328,6 +1474,10 @@ export function getAttackThreshold(targetActor, modifiers = {}) {
     ? -(modifiers.surroundCount) : 0;
   const stunnedPenalty  = modifiers.isStunned  ? -3 : 0;
   const darknessMalus   = modifiers.inDarkness ?  2 : 0;
+  const exposedPenalty  = Number(conditions.exposed ?? 0) > 0 ? -2 : 0;
+  const slowedPenalty   = Number(conditions.slowed ?? 0) > 0 ? -1 : 0;
+  const formationBonus  = Number(conditions.formation_stance ?? 0) > 0 ? 3 : 0;
+  const shieldWallBonus = Number(conditions.shield_wall_formation ?? 0) > 0 ? 4 : 0;
 
   // Страх на цели снижает её защиту
   const targetFearPenalty = modifiers.targetFeared ? -3 : 0;
@@ -1339,7 +1489,11 @@ export function getAttackThreshold(targetActor, modifiers = {}) {
     + surroundPenalty
     + stunnedPenalty
     + darknessMalus
-    + targetFearPenalty;
+    + targetFearPenalty
+    + exposedPenalty
+    + slowedPenalty
+    + formationBonus
+    + shieldWallBonus;
 
   return Math.max(1, threshold);
 }
@@ -1358,8 +1512,7 @@ export function getInitiativeValue(actor) {
   let modifier = 0;
 
   // Броня снижает инициативу
-  const armorHead  = actor.system?.equipment?.armorHead  ? actor.items.get(actor.system.equipment.armorHead)  : null;
-  const armorTorso = actor.system?.equipment?.armorTorso ? actor.items.get(actor.system.equipment.armorTorso) : null;
+  const armorTorso = getEquippedArmorForLocation(actor, "torso");
 
   const getArmorWeight = (armorItem) => {
     if (!armorItem) return 0;
@@ -1372,8 +1525,10 @@ export function getInitiativeValue(actor) {
   modifier += getArmorWeight(armorTorso);
 
   // Щит снижает инициативу
-  const leftWeapon  = actor.system?.equipment?.leftHand  ? actor.items.get(actor.system.equipment.leftHand)  : null;
-  if (leftWeapon?.type === "armor" || leftWeapon?.system?.isShield) {
+  const hands = ["leftHand", "rightHand"]
+    .map(slot => actor.system?.equipment?.[slot] ? actor.items.get(actor.system.equipment[slot]) : null)
+    .filter(Boolean);
+  if (hands.some(item => item.type === "armor" || item.system?.isShield)) {
     modifier -= 1;
   }
 

@@ -47,7 +47,6 @@
       <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#cd7f32">Медь</span><input type="number" name="system.currency.copper" value="{{system.currency.copper}}" min="0" class="ih-cs-coin-input"></div>
       <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#a8b8d0">Серебро</span><input type="number" name="system.currency.silver" value="{{system.currency.silver}}" min="0" class="ih-cs-coin-input"></div>
       <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:var(--ih-hp-warn)">Золото</span><input type="number" name="system.currency.gold" value="{{system.currency.gold}}" min="0" class="ih-cs-coin-input"></div>
-      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:var(--ih-mana)">Платина</span><input type="number" name="system.currency.platinum" value="{{system.currency.platinum}}" min="0" class="ih-cs-coin-input"></div>
     </div>
   </div>
 
@@ -142,7 +141,7 @@
                 <div class="ih-cs-hp-bar-fill" style="width:{{pct}}%"></div>
               </div>
               <div class="ih-cs-zone-dots">
-                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="Сильн. кровь {{trauma.majorBleeding}}"></span>{{/if}}
+                {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="{{trauma.majorBleedingTitle}}"></span>{{/if}}
                 {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor" title="Кровь {{trauma.minorBleeding}}"></span>{{/if}}
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture" title="Перелом"></span>{{/if}}
                 {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet" title="Жгут"></span>{{/if}}

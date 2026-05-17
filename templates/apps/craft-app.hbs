@@ -47,6 +47,29 @@
 
     <div class="ih-craft-detail-title">{{selected.label}}</div>
 
+    {{!-- Характеристики создаваемого предмета --}}
+    <div class="ih-craft-item-preview">
+      <div class="ih-craft-ingr-title">Результат</div>
+      <div class="ih-craft-result-item-head">
+        <span class="ih-craft-result-item-name">{{selected.resultItemName}}</span>
+        {{#if selected.resultTier}}<span class="muted-text">ст.{{selected.resultTier}}</span>{{/if}}
+        {{#if selected.resultTypeLabel}}<span class="muted-text">· {{selected.resultTypeLabel}}</span>{{/if}}
+      </div>
+      {{#if selected.resultPreview.length}}
+      <div class="ih-craft-result-list ih-craft-item-preview-rows">
+        {{#each selected.resultPreview}}
+        <div class="ih-craft-result-row">
+          {{#if label}}<span class="ih-craft-result-label">{{label}}</span>{{/if}}
+          <div class="ih-craft-result-vals">
+            <span class="ih-craft-result-val-main">{{val}}</span>
+            {{#if quality}}<span class="ih-craft-quality-bonus" title="Бонус по качеству">{{quality}}</span>{{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+
     <div class="ih-craft-detail-stats">
       <div class="ih-craft-stat">
         <span class="ih-craft-stat-label">Навык</span>
@@ -91,17 +114,12 @@
       </div>
     </div>
 
-    <div class="ih-craft-actions">
+    <div class="ih-craft-actions ih-craft-knowledge-foot">
+      <p class="ih-craft-knowledge-hint">Создание предмета — в окне «Ремесло»: вкладка навыка и смесь ингредиентов.</p>
       {{#if selected.canCraft}}
-      <a class="ih-btn ih-btn-primary ih-btn-lg" data-do-craft="{{selected.id}}"
-         data-recipe-id="{{selected.id}}">
-        🔨 Создать
-      </a>
+      <span class="ih-craft-at-bench-ok">Сейчас в сумке есть всё для этой выкройки и подходящий инструмент.</span>
       {{else}}
-      <div class="ih-craft-blocked">
-        {{#unless selected.hasTool}}Нет инструмента · {{/unless}}
-        {{#unless selected.allIngr}}Не хватает материалов{{/unless}}
-      </div>
+      <span class="ih-craft-at-bench-warn">Проверь материалы и инструмент перед попыткой на верстаке.</span>
       {{/if}}
     </div>
 

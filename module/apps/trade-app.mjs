@@ -16,6 +16,10 @@ import {
 import {
   buildTradeSummary
 } from "../services/actor-state-service.mjs";
+import {
+  formatExplodingDiceRoll,
+  rollExplodingDice
+} from "../services/skill-roll-service.mjs";
 import { debugLog, debugError } from "../utils/debug-utils.mjs";
 
 // ─── Утилиты ────────────────────────────────────────────────
@@ -24,8 +28,7 @@ function getCoins(actor) {
   return {
     copper:   Number(actor?.system?.currency?.copper   ?? actor?.system?.coins?.copper   ?? 0),
     silver:   Number(actor?.system?.currency?.silver   ?? actor?.system?.coins?.silver   ?? 0),
-    gold:     Number(actor?.system?.currency?.gold     ?? actor?.system?.coins?.gold     ?? 0),
-    platinum: Number(actor?.system?.currency?.platinum ?? actor?.system?.coins?.platinum ?? 0)
+    gold:     Number(actor?.system?.currency?.gold     ?? actor?.system?.coins?.gold     ?? 0)
   };
 }
 
@@ -35,22 +38,20 @@ function getActorCurrencyCopper(actor) {
   if (cur) {
     return (Number(cur.copper   ?? 0))
          + (Number(cur.silver   ?? 0)) * 100
-         + (Number(cur.gold     ?? 0)) * 10000
-         + (Number(cur.platinum ?? 0)) * 1000000;
+         + (Number(cur.gold     ?? 0)) * 10000;
   }
   // Fallback: system.economy.coins (старый формат)
   return Number(actor.system?.economy?.coins ?? 0);
 }
 
 function coinsToCopper(coins) {
-  return coins.copper + coins.silver * 100 + coins.gold * 10000 + coins.platinum * 1000000;
+  return coins.copper + coins.silver * 100 + coins.gold * 10000;
 }
 
 function copperToCoins(copper) {
-  const platinum = Math.floor(copper / 1000000); copper %= 1000000;
   const gold     = Math.floor(copper / 10000);   copper %= 10000;
   const silver   = Math.floor(copper / 100);     copper %= 100;
-  return { platinum, gold, silver, copper };
+  return { gold, silver, copper };
 }
 
 function itemCategory(item) {
@@ -71,72 +72,27 @@ const CATEGORY_LABELS = {
   misc:       "Прочее"
 };
 
-const CURRENCY_ORDER = ["copper", "silver", "gold", "platinum"];
-const CURRENCY_LABELS = { copper: "Медь", silver: "Серебро", gold: "Золото", platinum: "Платина" };
+const CURRENCY_ORDER = ["copper", "silver", "gold"];
+const CURRENCY_LABELS = { copper: "Медь", silver: "Серебро", gold: "Золото" };
 
 // Форматирует цену в меди в читаемый вид (наибольшая валюта)
 function formatPrice(copper) {
   if (!copper || copper <= 0) return { val: "—", currency: "", cssClass: "" };
-  if (copper >= 1000000) return { val: (copper / 1000000).toFixed(copper % 1000000 === 0 ? 0 : 1), currency: "пл.", cssClass: "ih-trade-price-platinum" };
   if (copper >= 10000)   return { val: (copper / 10000).toFixed(copper % 10000 === 0 ? 0 : 1),   currency: "зол.", cssClass: "ih-trade-price-gold" };
   if (copper >= 100)     return { val: (copper / 100).toFixed(copper % 100 === 0 ? 0 : 1),       currency: "сер.", cssClass: "ih-trade-price-silver" };
   return { val: copper, currency: "мед.", cssClass: "ih-trade-price-copper" };
 }
 
-// Взрыв кубов для любого навыка — используется в торговле, атаке и т.д.
-async function explodingDiceRoll(skillValue) {
-  const rolls = [];
-  let total = 0;
-  let currentDie = Math.max(2, skillValue * 2);
-  let exploded = false;
-
-  while (true) {
-    const roll = await new Roll(`1d${currentDie}`).evaluate();
-    const result = roll.total;
-    rolls.push({ die: currentDie, result });
-    total = result; // берём результат последнего куба, не сумму
-
-    // d2 не взрывается — монетка есть монетка
-    if (currentDie === 2) break;
-
-    // Не максимум — стоп
-    if (result < currentDie) break;
-
-    // Максимум — предлагаем перейти на следующий куб
-    const nextDie = Math.min(currentDie + 2, 20);
-    if (nextDie === currentDie) break; // уже d20
-
-    const confirmed = await Dialog.confirm({
-      title: "💥 Взрыв куба!",
-      content: `
-        <div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;">
-          <p>Выпало <b style="color:#facc15;font-size:18px">${result}</b> на d${currentDie} — максимум!</p>
-          <p>Перейти на <b style="color:#5b9cf6">d${nextDie}</b>? Результат может быть и хуже.</p>
-          <p style="font-size:11px;color:#6a7d99;">Отмена — зафиксировать ${result}</p>
-        </div>
-      `
-    });
-
-    if (!confirmed) break;
-    exploded = true;
-    currentDie = nextDie;
-  }
-
-  return { total, rolls, exploded };
-}
-
-
-
 // ─── State ──────────────────────────────────────────────────
 // offer = { itemId, name, qty, icon, category }
-// coins = { copper, silver, gold, platinum }
+// coins = { copper, silver, gold }
 
 function makeTradeState() {
   return {
     leftOffer:       [],
     rightOffer:      [],
-    leftCoins:       { copper: 0, silver: 0, gold: 0, platinum: 0 },
-    rightCoins:      { copper: 0, silver: 0, gold: 0, platinum: 0 },
+    leftCoins:       { copper: 0, silver: 0, gold: 0 },
+    rightCoins:      { copper: 0, silver: 0, gold: 0 },
     leftReady:       false,
     rightReady:      false,
     bargainUsed:     false,
@@ -148,8 +104,8 @@ function makeTradeState() {
 function resetState(s) {
   s.leftOffer       = [];
   s.rightOffer      = [];
-  s.leftCoins       = { copper: 0, silver: 0, gold: 0, platinum: 0 };
-  s.rightCoins      = { copper: 0, silver: 0, gold: 0, platinum: 0 };
+  s.leftCoins       = { copper: 0, silver: 0, gold: 0 };
+  s.rightCoins      = { copper: 0, silver: 0, gold: 0 };
   s.leftReady       = false;
   s.rightReady      = false;
   s.bargainUsed     = false;
@@ -291,8 +247,8 @@ class IronHillsTradeApp extends Application {
     const s = this._tradeState;
     if (!Array.isArray(s.leftOffer))  s.leftOffer  = [];
     if (!Array.isArray(s.rightOffer)) s.rightOffer = [];
-    if (!s.leftCoins  || typeof s.leftCoins  !== "object") s.leftCoins  = { copper:0, silver:0, gold:0, platinum:0 };
-    if (!s.rightCoins || typeof s.rightCoins !== "object") s.rightCoins = { copper:0, silver:0, gold:0, platinum:0 };
+    if (!s.leftCoins  || typeof s.leftCoins  !== "object") s.leftCoins  = { copper:0, silver:0, gold:0 };
+    if (!s.rightCoins || typeof s.rightCoins !== "object") s.rightCoins = { copper:0, silver:0, gold:0 };
     if (!s.filter     || typeof s.filter     !== "object") s.filter     = { left:"all", right:"all", leftSearch:"", rightSearch:"" };
 
     const character = this._getCharacter();
@@ -855,17 +811,19 @@ class IronHillsTradeApp extends Application {
     const desiredDiscount = discountChoice;
     const threshold = getThreshold(desiredDiscount);
 
-    // Простой бросок навыка (взрыв кубов — отдельная система, добавим позже)
-    const roll = await new Roll(`1d${dieSize}`).evaluate();
-    const result = roll.total;
+    const rollResult = await rollExplodingDice(skillValue);
+    const result = rollResult.total;
+    const rollDisplay = formatExplodingDiceRoll(rollResult, dieSize);
+    const rolls = rollResult.rolls ?? [];
+    const finalRoll = rolls[rolls.length - 1];
     const isAnticrit = result === 1 && dieSize > 2;
-    const isCrit     = result === dieSize && dieSize > 2;
+    const isCrit     = finalRoll?.result === finalRoll?.die && Number(finalRoll?.die ?? 0) > 2;
     const success    = result >= threshold;
 
     this._tradeState.bargainUsed = true;
 
     let msg = `<b>${character.name}</b> пытается поторговаться `
-            + `(d${dieSize} = <b>${result}</b>, порог: <b>${threshold}</b>).<br>`;
+            + `(${rollDisplay}, порог: <b>${threshold}</b>).<br>`;
 
     if (isAnticrit) {
       msg += `<b style="color:#f87171">💀 Антикрит! Торговец обиделся — сессия торговли закрыта.</b>`;
@@ -963,6 +921,15 @@ class IronHillsTradeApp extends Application {
 
     if (!character || !merchant) {
       ui.notifications.error("Ошибка: не найден персонаж или торговец.");
+      this._busy = false;
+      return;
+    }
+
+    const { requireNoPendingInventory } = await import("./pending-items-app.mjs").catch(() => ({}));
+    const pendingCheck = requireNoPendingInventory
+      ? await requireNoPendingInventory(character, { actionLabel: "торговля" })
+      : { ok: true };
+    if (!pendingCheck.ok) {
       this._busy = false;
       return;
     }

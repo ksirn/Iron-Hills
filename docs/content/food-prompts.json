@@ -1,0 +1,489 @@
+{
+  "negative": "text, watermark, logo, signature, blurry, low quality, cluttered banquet hall wide shot, multiple unrelated plates, eating utensils alone without food, human face, nsfw",
+  "items": [
+    {
+      "id": "boiled_roots",
+      "name": "Отвар корней",
+      "tier": 1,
+      "satiety": 14,
+      "hydration": 8,
+      "value": 1,
+      "harvestPools": [],
+      "prompt": "Concept \"Отвар корней\", fantasy edible dish photograph —  balanced solids and hydration cues, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "bread",
+      "name": "Хлеб",
+      "tier": 1,
+      "satiety": 15,
+      "hydration": 5,
+      "value": 1,
+      "harvestPools": [],
+      "prompt": "Concept \"Хлеб\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "cheese",
+      "name": "Сыр",
+      "tier": 1,
+      "satiety": 12,
+      "hydration": 3,
+      "value": 2,
+      "harvestPools": [],
+      "prompt": "Concept \"Сыр\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "cooked_stew",
+      "name": "Тушёное мясо",
+      "tier": 1,
+      "satiety": 30,
+      "hydration": 10,
+      "value": 4,
+      "harvestPools": [],
+      "prompt": "Concept \"Тушёное мясо\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "dried_meat",
+      "name": "Вяленое мясо",
+      "tier": 1,
+      "satiety": 20,
+      "hydration": 0,
+      "value": 3,
+      "harvestPools": [],
+      "prompt": "Concept \"Вяленое мясо\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "dwarf_brew",
+      "name": "Гномье пиво",
+      "tier": 1,
+      "satiety": 8,
+      "hydration": 20,
+      "value": 4,
+      "harvestPools": [],
+      "prompt": "Concept \"Гномье пиво\", fantasy edible dish photograph —  emphasis on steam mug / jug / soup moisture shimmer, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "field_stew",
+      "name": "Полевое жаркое",
+      "tier": 1,
+      "satiety": 34,
+      "hydration": 12,
+      "value": 5,
+      "harvestPools": [],
+      "prompt": "Concept \"Полевое жаркое\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "fresh_meat",
+      "name": "Свежее мясо",
+      "tier": 1,
+      "satiety": 25,
+      "hydration": 5,
+      "value": 2,
+      "harvestPools": [],
+      "prompt": "Concept \"Свежее мясо\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "game_meat_raw",
+      "name": "Сырая дичь",
+      "tier": 1,
+      "satiety": 18,
+      "hydration": 3,
+      "value": 2,
+      "harvestPools": [
+        "predator_scrap_t1",
+        "vermin_bundle_t1"
+      ],
+      "prompt": "Concept \"Сырая дичь\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": "Concept \"Сырая дичь\", fantasy RPG monster harvest food icon — thick haunch marbling sinew ribbons coarse salt flake, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted tavern staples, hearth smoke undertone tier 1 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light warm amber candlelight --ar 1:1"
+    },
+    {
+      "id": "mushroom_soup",
+      "name": "Грибной суп",
+      "tier": 1,
+      "satiety": 25,
+      "hydration": 15,
+      "value": 3,
+      "harvestPools": [],
+      "prompt": "Concept \"Грибной суп\", fantasy edible dish photograph —  balanced solids and hydration cues, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "oat_kiss_kissel",
+      "name": "Овсяный поцелуй",
+      "tier": 1,
+      "satiety": 16,
+      "hydration": 14,
+      "value": 2,
+      "harvestPools": [],
+      "prompt": "Concept \"Овсяный поцелуй\", fantasy edible dish photograph —  balanced solids and hydration cues, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "pickled_veggies_jar",
+      "name": "Банка маринованных овощей",
+      "tier": 1,
+      "satiety": 18,
+      "hydration": 10,
+      "value": 3,
+      "harvestPools": [],
+      "prompt": "Concept \"Банка маринованных овощей\", fantasy edible dish photograph —  balanced solids and hydration cues, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "trail_rations",
+      "name": "Походный паёк",
+      "tier": 1,
+      "satiety": 20,
+      "hydration": 5,
+      "value": 5,
+      "harvestPools": [],
+      "prompt": "Concept \"Походный паёк\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "well_water_skin",
+      "name": "Родниковая вода (меха)",
+      "tier": 1,
+      "satiety": 5,
+      "hydration": 38,
+      "value": 2,
+      "harvestPools": [],
+      "prompt": "Concept \"Родниковая вода (меха)\", fantasy edible dish photograph —  emphasis on steam mug / jug / soup moisture shimmer, wooden trencher, coarse linen napkin, tavern staples, hearth smoke, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing warm amber candlelight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "berry_kvass_jug",
+      "name": "Кувшин ягодного кваса",
+      "tier": 2,
+      "satiety": 22,
+      "hydration": 28,
+      "value": 14,
+      "harvestPools": [],
+      "prompt": "Concept \"Кувшин ягодного кваса\", fantasy edible dish photograph —  emphasis on steam mug / jug / soup moisture shimmer, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "fine_meal",
+      "name": "Изысканное блюдо",
+      "tier": 2,
+      "satiety": 40,
+      "hydration": 15,
+      "value": 15,
+      "harvestPools": [],
+      "prompt": "Concept \"Изысканное блюдо\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "game_meat_rich",
+      "name": "Плотная дичь",
+      "tier": 2,
+      "satiety": 28,
+      "hydration": 4,
+      "value": 6,
+      "harvestPools": [
+        "alpine_harvest_t3",
+        "brute_carve_t2",
+        "pack_leader_t3",
+        "wetland_glean_t2"
+      ],
+      "prompt": "Concept \"Плотная дичь\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": "Concept \"Плотная дичь\", fantasy RPG monster harvest food icon — thick haunch marbling sinew ribbons coarse salt flake, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted guild-town merchant lunch undertone tier 3 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light neutral daylight window --ar 1:1"
+    },
+    {
+      "id": "meadow_honeycomb",
+      "name": "Луговые медовые соты",
+      "tier": 2,
+      "satiety": 26,
+      "hydration": 12,
+      "value": 18,
+      "harvestPools": [],
+      "prompt": "Concept \"Луговые медовые соты\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "salted_fish_board",
+      "name": "Дощечка солёной рыбы",
+      "tier": 2,
+      "satiety": 32,
+      "hydration": 6,
+      "value": 12,
+      "harvestPools": [],
+      "prompt": "Concept \"Дощечка солёной рыбы\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "serpent_fillet_raw",
+      "name": "Сырое филе змея",
+      "tier": 2,
+      "satiety": 22,
+      "hydration": 6,
+      "value": 8,
+      "harvestPools": [
+        "wetland_glean_t2"
+      ],
+      "prompt": "Concept \"Сырое филе змея\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": "Concept \"Сырое филе змея\", fantasy RPG monster harvest food icon — serpent fillet translucent jelly ichor sheen scale-side muscle striation, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted respectable inn fare undertone tier 2 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light cozy lantern glow --ar 1:1"
+    },
+    {
+      "id": "travelers_hardtack",
+      "name": "Сухари странника",
+      "tier": 2,
+      "satiety": 28,
+      "hydration": 4,
+      "value": 10,
+      "harvestPools": [],
+      "prompt": "Concept \"Сухари странника\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, simple glazed ceramic plate, respectable inn fare, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cozy lantern glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "cherry_brandy_snifter",
+      "name": "Бренди из вишни",
+      "tier": 3,
+      "satiety": 28,
+      "hydration": 18,
+      "value": 44,
+      "harvestPools": [],
+      "prompt": "Concept \"Бренди из вишни\", fantasy edible dish photograph —  balanced solids and hydration cues, white pottery dish with herb garnish, guild-town merchant lunch, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing neutral daylight window. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "highland_grub_haunch",
+      "name": "Окорок горного трутня",
+      "tier": 3,
+      "satiety": 36,
+      "hydration": 5,
+      "value": 14,
+      "harvestPools": [
+        "alpine_harvest_t3"
+      ],
+      "prompt": "Concept \"Окорок горного трутня\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, white pottery dish with herb garnish, guild-town merchant lunch, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing neutral daylight window. --ar 1:1",
+      "promptHarvest": "Concept \"Окорок горного трутня\", fantasy RPG monster harvest food icon — chitinous grub haunch segmented meat pale marrow seam fantasy insect quarry cut, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted guild-town merchant lunch undertone tier 3 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light neutral daylight window --ar 1:1"
+    },
+    {
+      "id": "miners_breakfast",
+      "name": "Завтрак шахтёра",
+      "tier": 3,
+      "satiety": 46,
+      "hydration": 12,
+      "value": 38,
+      "harvestPools": [],
+      "prompt": "Concept \"Завтрак шахтёра\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, white pottery dish with herb garnish, guild-town merchant lunch, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing neutral daylight window. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "mint_leaf_tea_pot",
+      "name": "Чайник мятного чая",
+      "tier": 3,
+      "satiety": 32,
+      "hydration": 36,
+      "value": 42,
+      "harvestPools": [],
+      "prompt": "Concept \"Чайник мятного чая\", fantasy edible dish photograph —  balanced solids and hydration cues, white pottery dish with herb garnish, guild-town merchant lunch, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing neutral daylight window. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "orchard_cider_jug",
+      "name": "Кувшин яблочного сидра",
+      "tier": 3,
+      "satiety": 18,
+      "hydration": 28,
+      "value": 35,
+      "harvestPools": [],
+      "prompt": "Concept \"Кувшин яблочного сидра\", fantasy edible dish photograph —  emphasis on steam mug / jug / soup moisture shimmer, white pottery dish with herb garnish, guild-town merchant lunch, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing neutral daylight window. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "caravan_roast",
+      "name": "Ужин караванщика",
+      "tier": 4,
+      "satiety": 58,
+      "hydration": 14,
+      "value": 110,
+      "harvestPools": [
+        "brute_prize_t5"
+      ],
+      "prompt": "Concept \"Ужин караванщика\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, bronze charger plate with carved rim, caravan feast seasoned by road spice, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing clean side light. --ar 1:1",
+      "promptHarvest": "Concept \"Ужин караванщика\", fantasy RPG monster harvest food icon — thick haunch marbling sinew ribbons coarse salt flake, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted manor hall banquet snippet undertone tier 5 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light soft rim highlights --ar 1:1"
+    },
+    {
+      "id": "smoked_trout_board",
+      "name": "Копчёная форель",
+      "tier": 4,
+      "satiety": 52,
+      "hydration": 18,
+      "value": 105,
+      "harvestPools": [],
+      "prompt": "Concept \"Копчёная форель\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, bronze charger plate with carved rim, caravan feast seasoned by road spice, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing clean side light. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "spiced_route_wine",
+      "name": "Приправленное дорожное вино",
+      "tier": 4,
+      "satiety": 38,
+      "hydration": 30,
+      "value": 118,
+      "harvestPools": [],
+      "prompt": "Concept \"Приправленное дорожное вино\", fantasy edible dish photograph —  balanced solids and hydration cues, bronze charger plate with carved rim, caravan feast seasoned by road spice, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing clean side light. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "wyvern_stringy_cut",
+      "name": "Нарезка с виверны",
+      "tier": 4,
+      "satiety": 44,
+      "hydration": 6,
+      "value": 35,
+      "harvestPools": [
+        "apex_slice_t4",
+        "beast_lord_t7",
+        "beast_lord_t8",
+        "beast_lord_t9",
+        "brute_prize_t5",
+        "kaiju_shard_t6",
+        "primordial_harvest_t10"
+      ],
+      "prompt": "Concept \"Нарезка с виверны\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, bronze charger plate with carved rim, caravan feast seasoned by road spice, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing clean side light. --ar 1:1",
+      "promptHarvest": "Concept \"Нарезка с виверны\", fantasy RPG monster harvest food icon — thick haunch marbling sinew ribbons coarse salt flake, butcher stone or stained board oiled rag NOT banquet china twine wrap, muted mythical feast worthy of gods undertone tier 10 quarry, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, gritty rim hunter camp light spark halo lens flare subtle aura distortion --ar 1:1"
+    },
+    {
+      "id": "amber_mead_horn",
+      "name": "Янтарный мёд в роге",
+      "tier": 5,
+      "satiety": 52,
+      "hydration": 30,
+      "value": 275,
+      "harvestPools": [],
+      "prompt": "Concept \"Янтарный мёд в роге\", fantasy edible dish photograph —  balanced solids and hydration cues, silver-plated platter, manor hall banquet snippet, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing soft rim highlights. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "lordly_vegetable_pie",
+      "name": "Пирог с овощами и ягодами",
+      "tier": 5,
+      "satiety": 72,
+      "hydration": 22,
+      "value": 260,
+      "harvestPools": [],
+      "prompt": "Concept \"Пирог с овощами и ягодами\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, silver-plated platter, manor hall banquet snippet, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing soft rim highlights. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "firebrand_brandy_snifter",
+      "name": "Бренди «Огненная метка»",
+      "tier": 6,
+      "satiety": 46,
+      "hydration": 38,
+      "value": 645,
+      "harvestPools": [],
+      "prompt": "Concept \"Бренди «Огненная метка»\", fantasy edible dish photograph —  balanced solids and hydration cues, cast iron skillet presentation still steaming, noble hunter lodge luxury, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing fire-kissed glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "volcanic_skillet",
+      "name": "Жаровня «Вулкан»",
+      "tier": 6,
+      "satiety": 82,
+      "hydration": 26,
+      "value": 620,
+      "harvestPools": [],
+      "prompt": "Concept \"Жаровня «Вулкан»\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, cast iron skillet presentation still steaming, noble hunter lodge luxury, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing fire-kissed glow. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "glacier_melt_skin",
+      "name": "Талая ледниковая вода",
+      "tier": 7,
+      "satiety": 38,
+      "hydration": 55,
+      "value": 1480,
+      "harvestPools": [],
+      "prompt": "Concept \"Талая ледниковая вода\", fantasy edible dish photograph —  emphasis on steam mug / jug / soup moisture shimmer, dark slate plate bioluminescent garnish accents, exotic imported rarity, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cool moonlit shimmer. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "moonfruit_tart",
+      "name": "Тарт из лунного фрукта",
+      "tier": 7,
+      "satiety": 94,
+      "hydration": 30,
+      "value": 1400,
+      "harvestPools": [],
+      "prompt": "Concept \"Тарт из лунного фрукта\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, dark slate plate bioluminescent garnish accents, exotic imported rarity, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing cool moonlit shimmer. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "aurora_glazed_roast",
+      "name": "Жаркое с глазурью Авроры",
+      "tier": 8,
+      "satiety": 108,
+      "hydration": 38,
+      "value": 4400,
+      "harvestPools": [],
+      "prompt": "Concept \"Жаркое с глазурью Авроры\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, pearlescent porcelain, master-chef artistry visible saucing, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing studio highlight gradient. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "aurora_sparkling_juice",
+      "name": "Игристый сок Авроры",
+      "tier": 8,
+      "satiety": 54,
+      "hydration": 50,
+      "value": 4580,
+      "harvestPools": [],
+      "prompt": "Concept \"Игристый сок Авроры\", fantasy edible dish photograph —  balanced solids and hydration cues, pearlescent porcelain, master-chef artistry visible saucing, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing studio highlight gradient. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "solar_buffet_course",
+      "name": "Блюдо солнечного буфета",
+      "tier": 9,
+      "satiety": 132,
+      "hydration": 42,
+      "value": 28000,
+      "harvestPools": [],
+      "prompt": "Concept \"Блюдо солнечного буфета\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, gold-leaf trimmed platter, legendary banquet centerpiece miniature, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing golden divine backlight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "solar_champagne_flute",
+      "name": "Солнечное шампанское",
+      "tier": 9,
+      "satiety": 72,
+      "hydration": 62,
+      "value": 29200,
+      "harvestPools": [],
+      "prompt": "Concept \"Солнечное шампанское\", fantasy edible dish photograph —  balanced solids and hydration cues, gold-leaf trimmed platter, legendary banquet centerpiece miniature, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing golden divine backlight. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "celestial_dew_flask",
+      "name": "Фляга небесной росы",
+      "tier": 10,
+      "satiety": 88,
+      "hydration": 78,
+      "value": 90500,
+      "harvestPools": [],
+      "prompt": "Concept \"Фляга небесной росы\", fantasy edible dish photograph —  balanced solids and hydration cues, floating crystalline dish barely touching surface, mythical feast worthy of gods, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing spark halo lens flare subtle aura distortion. --ar 1:1",
+      "promptHarvest": ""
+    },
+    {
+      "id": "genesis_supper",
+      "name": "Ужин генезиса",
+      "tier": 10,
+      "satiety": 190,
+      "hydration": 55,
+      "value": 92000,
+      "harvestPools": [],
+      "prompt": "Concept \"Ужин генезиса\", fantasy edible dish photograph —  emphasis on hearty solids roast carved portions, floating crystalline dish barely touching surface, mythical feast worthy of gods, single isolated fantasy RPG food shot, centered, transparent or plain dark background, square composition for inventory icon, no hands holding food in frame, sharp focus, painterly style, 1024x1024 inventory sprite framing spark halo lens flare subtle aura distortion. --ar 1:1",
+      "promptHarvest": ""
+    }
+  ]
+}

@@ -32,35 +32,35 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   fire_bolt: {
     id:"fire_bolt", label:"Огненный Bolt", school:"fire", rank:1,
-    manaCost:2, castTime:2, damage:4, damageType:"fire",
+    manaCost:2, castTime:2, damage:20, damageType:"fire",
     desc:"Сгусток огня в одну цель.",
     aoe: null,
     effect: null,
   },
   burning_hands: {
     id:"burning_hands", label:"Горящие руки", school:"fire", rank:2,
-    manaCost:4, castTime:3, damage:6, damageType:"fire",
+    manaCost:4, castTime:3, damage:30, damageType:"fire",
     desc:"Конус огня прямо перед кастером. Бросок на каждого в зоне.",
     aoe: { type:"blast", shape:"cone", distance:3, maxTargets:null },
     effect: { applyCondition:"burning", conditionDuration:12, conditionChance:0.5 },
   },
   fireball: {
     id:"fireball", label:"Огненный Шар", school:"fire", rank:4,
-    manaCost:8, castTime:4, damage:12, damageType:"fire",
+    manaCost:8, castTime:4, damage:60, damageType:"fire",
     desc:"Взрыв в точке. Все в радиусе 3 клеток — бросок на каждого.",
     aoe: { type:"blast", shape:"circle", distance:3, maxTargets:null },
     effect: { applyCondition:"burning", conditionDuration:6, conditionChance:0.4 },
   },
   fire_wall: {
     id:"fire_wall", label:"Стена Огня", school:"fire", rank:5,
-    manaCost:10, castTime:5, damage:8, damageType:"fire",
+    manaCost:10, castTime:5, damage:40, damageType:"fire",
     desc:"Линия огня. Каждый кто пройдёт — получает урон.",
     aoe: { type:"blast", shape:"ray", distance:5, maxTargets:null },
     effect: { applyCondition:"burning", conditionDuration:6, conditionChance:0.6 },
   },
   meteor: {
     id:"meteor", label:"Метеор", school:"fire", rank:8,
-    manaCost:20, castTime:8, damage:30, damageType:"fire",
+    manaCost:20, castTime:8, damage:150, damageType:"fire",
     desc:"Метеор падает в точку. Огромная зона, огромный урон.",
     aoe: { type:"blast", shape:"circle", distance:5, maxTargets:null },
     effect: { applyCondition:"burning", conditionDuration:30, conditionChance:0.8 },
@@ -71,28 +71,28 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   ice_shard: {
     id:"ice_shard", label:"Ледяной Осколок", school:"ice", rank:1,
-    manaCost:2, castTime:2, damage:5, damageType:"ice",
+    manaCost:2, castTime:2, damage:25, damageType:"ice",
     desc:"Осколок льда в одну цель. Шанс замедлить.",
     aoe: null,
     effect: { applyCondition:"slowed", conditionDuration:6, conditionChance:0.4 },
   },
   ice_shards: {
     id:"ice_shards", label:"Ледяные Осколки", school:"ice", rank:3,
-    manaCost:6, castTime:3, damage:7, damageType:"ice",
+    manaCost:6, castTime:3, damage:35, damageType:"ice",
     desc:"4 осколка летят в случайных врагов в зоне. Максимум 4 цели, бросок на каждую.",
     aoe: { type:"shards", shape:"circle", distance:4, maxTargets:4 },
     effect: { applyCondition:"slowed", conditionDuration:6, conditionChance:0.5 },
   },
   frost_nova: {
     id:"frost_nova", label:"Морозная Вспышка", school:"ice", rank:4,
-    manaCost:8, castTime:3, damage:6, damageType:"ice",
+    manaCost:8, castTime:3, damage:30, damageType:"ice",
     desc:"Взрыв льда вокруг кастера. Все в радиусе 2 клеток — заморожены.",
     aoe: { type:"nova", shape:"circle", distance:2, maxTargets:null },
     effect: { applyCondition:"stunned", conditionDuration:6, conditionChance:0.7 },
   },
   blizzard: {
     id:"blizzard", label:"Вьюга", school:"ice", rank:6,
-    manaCost:14, castTime:6, damage:8, damageType:"ice",
+    manaCost:14, castTime:6, damage:40, damageType:"ice",
     desc:"Буря в большой зоне. Бросок на каждого каждый раунд 3 раунда.",
     aoe: { type:"blast", shape:"circle", distance:5, maxTargets:null },
     effect: { applyCondition:"slowed", conditionDuration:18, conditionChance:0.8 },
@@ -103,21 +103,21 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   lightning_bolt_spell: {
     id:"lightning_bolt_spell", label:"Молния", school:"lightning", rank:2,
-    manaCost:4, castTime:2, damage:8, damageType:"lightning",
+    manaCost:4, castTime:2, damage:40, damageType:"lightning",
     desc:"Молния пробивает первого врага и летит дальше. Pierce — останавливается на первом.",
     aoe: { type:"pierce", shape:"ray", distance:8, maxTargets:1 },
     effect: { applyCondition:"stunned", conditionDuration:3, conditionChance:0.3 },
   },
   chain_lightning: {
     id:"chain_lightning", label:"Цепная Молния", school:"lightning", rank:5,
-    manaCost:10, castTime:4, damage:10, damageType:"lightning",
+    manaCost:10, castTime:4, damage:50, damageType:"lightning",
     desc:"Молния прыгает между 4 ближайшими врагами. Урон -20% каждый прыжок.",
     aoe: { type:"chain", shape:"circle", distance:4, maxTargets:4, chainDecay:0.8 },
     effect: { applyCondition:"stunned", conditionDuration:3, conditionChance:0.4 },
   },
   thunder_clap: {
     id:"thunder_clap", label:"Гром", school:"lightning", rank:3,
-    manaCost:6, castTime:3, damage:6, damageType:"lightning",
+    manaCost:6, castTime:3, damage:30, damageType:"lightning",
     desc:"Ударная волна. Sweep — задевает до 3 врагов слева направо.",
     aoe: { type:"sweep", shape:"cone", distance:3, maxTargets:3 },
     effect: { applyCondition:"pushed", conditionChance:0.6 },
@@ -128,21 +128,21 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   shadow_bolt: {
     id:"shadow_bolt", label:"Тёмный Заряд", school:"shadow", rank:1,
-    manaCost:2, castTime:2, damage:5, damageType:"shadow",
+    manaCost:2, castTime:2, damage:25, damageType:"shadow",
     desc:"Тёмная энергия в одну цель. Снижает защиту.",
     aoe: null,
     effect: { applyCondition:"exposed", conditionDuration:6 },
   },
   void_burst: {
     id:"void_burst", label:"Взрыв Пустоты", school:"shadow", rank:5,
-    manaCost:10, castTime:4, damage:14, damageType:"shadow",
+    manaCost:10, castTime:4, damage:70, damageType:"shadow",
     desc:"Взрыв тёмной энергии вокруг цели.",
     aoe: { type:"blast", shape:"circle", distance:3, maxTargets:null },
     effect: { applyCondition:"exposed", conditionDuration:12, conditionChance:0.6 },
   },
   drain_life: {
     id:"drain_life", label:"Высасывание Жизни", school:"shadow", rank:4,
-    manaCost:8, castTime:3, damage:10, damageType:"shadow",
+    manaCost:8, castTime:3, damage:50, damageType:"shadow",
     desc:"Похищает жизнь — кастер восстанавливает HP равное нанесённому урону.",
     aoe: null,
     effect: { special:"lifesteal" },
@@ -153,7 +153,7 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   holy_smite: {
     id:"holy_smite", label:"Праведный Удар", school:"light", rank:2,
-    manaCost:4, castTime:2, damage:8, damageType:"holy",
+    manaCost:4, castTime:2, damage:40, damageType:"holy",
     desc:"Световой удар. Двойной урон нежити.",
     aoe: null,
     effect: { special:"double_vs_undead" },
@@ -167,7 +167,7 @@ export const SPELLS = {
   },
   divine_wrath: {
     id:"divine_wrath", label:"Божественный Гнев", school:"light", rank:6,
-    manaCost:12, castTime:5, damage:18, damageType:"holy",
+    manaCost:12, castTime:5, damage:90, damageType:"holy",
     desc:"Луч света бьёт всех врагов в линии. Pierce — проходит насквозь.",
     aoe: { type:"blast", shape:"ray", distance:10, maxTargets:null },
     effect: { applyCondition:"stunned", conditionDuration:6, conditionChance:0.5 },
@@ -178,21 +178,21 @@ export const SPELLS = {
   // ══════════════════════════════════════════════════════════
   stone_throw: {
     id:"stone_throw", label:"Бросок Камня", school:"earth", rank:1,
-    manaCost:2, castTime:2, damage:6, damageType:"physical",
+    manaCost:2, castTime:2, damage:30, damageType:"physical",
     desc:"Магический камень в одну цель. Шанс оглушить.",
     aoe: null,
     effect: { applyCondition:"stunned", conditionDuration:3, conditionChance:0.3 },
   },
   earthquake: {
     id:"earthquake", label:"Землетрясение", school:"earth", rank:7,
-    manaCost:16, castTime:6, damage:12, damageType:"physical",
+    manaCost:16, castTime:6, damage:60, damageType:"physical",
     desc:"Земля трясётся в огромной зоне. Все падают.",
     aoe: { type:"blast", shape:"circle", distance:6, maxTargets:null },
     effect: { applyCondition:"prone", conditionDuration:6, conditionChance:0.9 },
   },
   rock_shards: {
     id:"rock_shards", label:"Каменные Осколки", school:"earth", rank:3,
-    manaCost:5, castTime:3, damage:8, damageType:"physical",
+    manaCost:5, castTime:3, damage:40, damageType:"physical",
     desc:"3 осколка в случайных врагов. Максимум 3 цели.",
     aoe: { type:"shards", shape:"circle", distance:4, maxTargets:3 },
     effect: null,

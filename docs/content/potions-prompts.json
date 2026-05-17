@@ -1,0 +1,261 @@
+{
+  "negative": "text, watermark, logo, signature, blurry, low quality, cluttered shelf of bottles, laboratory clutter, multiple unrelated potions, human face, nsfw",
+  "items": [
+    {
+      "id": "antidote_weak",
+      "name": "Слабое противоядие",
+      "tier": 1,
+      "effect": "curePoison",
+      "power": 1,
+      "prompt": "Concept \"Слабое противоядие\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: cleansing green shimmer neutralizing toxins, liquid appearance: murky russet suspension, sediment at bottom, vessel: cheap blown glass, none, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "minor_heal",
+      "name": "Малое зелье лечения",
+      "tier": 1,
+      "effect": "healHP",
+      "power": 3,
+      "prompt": "Concept \"Малое зелье лечения\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: murky russet suspension, sediment at bottom, vessel: cheap blown glass, none, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "minor_energy",
+      "name": "Малое зелье бодрости",
+      "tier": 1,
+      "effect": "restoreEnergy",
+      "power": 4,
+      "prompt": "Concept \"Малое зелье бодрости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: murky russet suspension, sediment at bottom, vessel: cheap blown glass, none, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "minor_energy_max",
+      "name": "Малый тоник бодрости",
+      "tier": 1,
+      "effect": "restoreEnergyMax",
+      "power": 2,
+      "prompt": "Concept \"Малый тоник бодрости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: expanded lung-heart endurance reservoir, liquid appearance: murky russet suspension, sediment at bottom, vessel: cheap blown glass, none, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "water_flask",
+      "name": "Фляга чистой воды",
+      "tier": 1,
+      "effect": "restoreHydration",
+      "power": 20,
+      "prompt": "Concept \"Фляга чистой воды\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: crisp mountain spring clarity, liquid appearance: murky russet suspension, sediment at bottom, vessel: cheap blown glass, none, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "heal_potion",
+      "name": "Зелье лечения",
+      "tier": 2,
+      "effect": "healHP",
+      "power": 8,
+      "prompt": "Concept \"Зелье лечения\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: clear amber serum, vessel: simple flask with cork, very faint inner shimmer, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "energy_potion",
+      "name": "Зелье бодрости",
+      "tier": 2,
+      "effect": "restoreEnergy",
+      "power": 10,
+      "prompt": "Concept \"Зелье бодрости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: clear amber serum, vessel: simple flask with cork, very faint inner shimmer, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "energy_potion_max",
+      "name": "Тоник выносливости",
+      "tier": 2,
+      "effect": "restoreEnergyMax",
+      "power": 5,
+      "prompt": "Concept \"Тоник выносливости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: expanded lung-heart endurance reservoir, liquid appearance: clear amber serum, vessel: simple flask with cork, very faint inner shimmer, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "mana_potion",
+      "name": "Зелье маны",
+      "tier": 2,
+      "effect": "restoreMana",
+      "power": 8,
+      "prompt": "Concept \"Зелье маны\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: arcane reservoir refill, whispering sparks, liquid appearance: clear amber serum, vessel: simple flask with cork, very faint inner shimmer, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "speed_potion",
+      "name": "Зелье скорости",
+      "tier": 2,
+      "effect": "speedBoost",
+      "power": 2,
+      "prompt": "Concept \"Зелье скорости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wind-cut streak motes, kinetic hurry readiness, liquid appearance: clear amber serum, vessel: simple flask with cork, very faint inner shimmer, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "antidote",
+      "name": "Противоядие",
+      "tier": 3,
+      "effect": "curePoison",
+      "power": 3,
+      "prompt": "Concept \"Противоядие\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: cleansing green shimmer neutralizing toxins, liquid appearance: ruby-red translucent liquid, vessel: faceted crystal vial, soft pulse every few seconds, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "greater_heal",
+      "name": "Большое зелье лечения",
+      "tier": 3,
+      "effect": "healHP",
+      "power": 20,
+      "prompt": "Concept \"Большое зелье лечения\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: ruby-red translucent liquid, vessel: faceted crystal vial, soft pulse every few seconds, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "elixir_vigor",
+      "name": "Эликсир бодрости",
+      "tier": 3,
+      "effect": "restoreEnergy",
+      "power": 25,
+      "prompt": "Concept \"Эликсир бодрости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: ruby-red translucent liquid, vessel: faceted crystal vial, soft pulse every few seconds, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "elixir_endurance",
+      "name": "Эликсир выносливости",
+      "tier": 3,
+      "effect": "restoreEnergyMax",
+      "power": 12,
+      "prompt": "Concept \"Эликсир выносливости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: expanded lung-heart endurance reservoir, liquid appearance: ruby-red translucent liquid, vessel: faceted crystal vial, soft pulse every few seconds, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "superior_antidote",
+      "name": "Сильное противоядие",
+      "tier": 4,
+      "effect": "curePoison",
+      "power": 4,
+      "prompt": "Concept \"Сильное противоядие\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: cleansing green shimmer neutralizing toxins, liquid appearance: deep sapphire swirl with metallic flakes, vessel: steel-capped alchemical bottle, steady faint aura, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "adept_heal",
+      "name": "Зелье адепта (лечение)",
+      "tier": 4,
+      "effect": "healHP",
+      "power": 28,
+      "prompt": "Concept \"Зелье адепта (лечение)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: deep sapphire swirl with metallic flakes, vessel: steel-capped alchemical bottle, steady faint aura, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "adept_energy",
+      "name": "Зелье адепта (бодрость)",
+      "tier": 4,
+      "effect": "restoreEnergy",
+      "power": 32,
+      "prompt": "Concept \"Зелье адепта (бодрость)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: deep sapphire swirl with metallic flakes, vessel: steel-capped alchemical bottle, steady faint aura, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "adept_endurance",
+      "name": "Тоник адепта (выносливость)",
+      "tier": 4,
+      "effect": "restoreEnergyMax",
+      "power": 18,
+      "prompt": "Concept \"Тоник адепта (выносливость)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: expanded lung-heart endurance reservoir, liquid appearance: deep sapphire swirl with metallic flakes, vessel: steel-capped alchemical bottle, steady faint aura, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "adept_mana",
+      "name": "Зелье адепта (мана)",
+      "tier": 4,
+      "effect": "restoreMana",
+      "power": 11,
+      "prompt": "Concept \"Зелье адепта (мана)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: arcane reservoir refill, whispering sparks, liquid appearance: deep sapphire swirl with metallic flakes, vessel: steel-capped alchemical bottle, steady faint aura, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "elixir_life",
+      "name": "Эликсир жизни",
+      "tier": 5,
+      "effect": "healAll",
+      "power": 50,
+      "prompt": "Concept \"Эликсир жизни\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: total bodily renewal, cathedral purity, liquid appearance: pearlescent gradient liquid, vessel: ornate flask with seal wax, warm halo, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "saint_draught",
+      "name": "Напиток святого",
+      "tier": 5,
+      "effect": "healHP",
+      "power": 34,
+      "prompt": "Concept \"Напиток святого\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: pearlescent gradient liquid, vessel: ornate flask with seal wax, warm halo, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "grand_elixir",
+      "name": "Великий эликсир",
+      "tier": 5,
+      "effect": "restoreEnergyMax",
+      "power": 30,
+      "prompt": "Concept \"Великий эликсир\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: expanded lung-heart endurance reservoir, liquid appearance: pearlescent gradient liquid, vessel: ornate flask with seal wax, warm halo, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "wyrmsblood_elixir",
+      "name": "Эликсир змеиной крови",
+      "tier": 6,
+      "effect": "healHP",
+      "power": 42,
+      "prompt": "Concept \"Эликсир змеиной крови\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: silver-threaded emerald liquor, vessel: mithril-trimmed phial, cold magical steam wisps, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "stormbrew_energy",
+      "name": "Штормовое зелье бодрости",
+      "tier": 6,
+      "effect": "restoreEnergy",
+      "power": 48,
+      "prompt": "Concept \"Штормовое зелье бодрости\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: silver-threaded emerald liquor, vessel: mithril-trimmed phial, cold magical steam wisps, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "sixth_circle_mana",
+      "name": "Зелье шестого круга",
+      "tier": 6,
+      "effect": "restoreMana",
+      "power": 17,
+      "prompt": "Concept \"Зелье шестого круга\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: arcane reservoir refill, whispering sparks, liquid appearance: silver-threaded emerald liquor, vessel: mithril-trimmed phial, cold magical steam wisps, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "astral_philter_heal",
+      "name": "Фильтр звёзд (лечение)",
+      "tier": 7,
+      "effect": "healHP",
+      "power": 52,
+      "prompt": "Concept \"Фильтр звёзд (лечение)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: star-speckled violet plasma, vessel: void-glass ampoule, orbiting dust motes of light, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "lunar_infusion_mana",
+      "name": "Лунный настой маны",
+      "tier": 7,
+      "effect": "restoreMana",
+      "power": 22,
+      "prompt": "Concept \"Лунный настой маны\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: arcane reservoir refill, whispering sparks, liquid appearance: star-speckled violet plasma, vessel: void-glass ampoule, orbiting dust motes of light, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "philosophers",
+      "name": "Философский эликсир",
+      "tier": 8,
+      "effect": "healAll",
+      "power": 100,
+      "prompt": "Concept \"Философский эликсир\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: total bodily renewal, cathedral purity, liquid appearance: radiant golden ichor, vessel: filigree celestial flask, sunbeam god-rays through liquid, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "eclipse_draught_energy",
+      "name": "Зелье затмения (бодрость)",
+      "tier": 8,
+      "effect": "restoreEnergy",
+      "power": 62,
+      "prompt": "Concept \"Зелье затмения (бодрость)\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: lightning stamina surge, brisk vitality, liquid appearance: radiant golden ichor, vessel: filigree celestial flask, sunbeam god-rays through liquid, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "solar_balm_heal",
+      "name": "Солнечный бальзам",
+      "tier": 9,
+      "effect": "healHP",
+      "power": 78,
+      "prompt": "Concept \"Солнечный бальзам\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: wounds knitting shut, restorative warmth, liquid appearance: molten sunrise-orange core fluid, vessel: orichalcum-stoppered relic bottle, voluntary sparks along rim, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "solar_balm_mana",
+      "name": "Солнечный эликсир маны",
+      "tier": 9,
+      "effect": "restoreMana",
+      "power": 34,
+      "prompt": "Concept \"Солнечный эликсир маны\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: arcane reservoir refill, whispering sparks, liquid appearance: molten sunrise-orange core fluid, vessel: orichalcum-stoppered relic bottle, voluntary sparks along rim, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    },
+    {
+      "id": "genesis_vitalis",
+      "name": "Флакон генезиса",
+      "tier": 10,
+      "effect": "healAll",
+      "power": 160,
+      "prompt": "Concept \"Флакон генезиса\", a single fantasy consumable potion bottle / sealed alchemical flask, concept: total bodily renewal, cathedral purity, liquid appearance: prismatic abyss-black mirror fluid, vessel: adamant seal amphora-miniature, reality ripple distortion around vessel, single isolated fantasy potion bottle or small flask, centered, transparent or plain dark background, vertical orientation, icon clarity, no human hands, sharp focus, painterly RPG inventory sprite, 1024x1024 composition suitable for square inventory slot --ar 1:1"
+    }
+  ]
+}

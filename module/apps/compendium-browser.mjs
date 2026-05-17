@@ -15,7 +15,7 @@ const PACK_CONFIGS = [
   { packName:"ih-attachments", label:"Крепления",    icon:"🔩",  type:"Item",  color:"#94a3b8" },
   { packName:"ih-backpacks", label:"Рюкзаки",      icon:"🎒",  type:"Item",  color:"#34d399" },
   { packName:"ih-spells",    label:"Заклинания",   icon:"✨",  type:"Item",  color:"#c084fc" },
-  { packName:"ih-npc",       label:"NPC",          icon:"👤",  type:"Actor", color:"#a8b8d0" },
+  { packName:"ih-monsters",  label:"Бестиарий",    icon:"🐉",  type:"Actor", color:"#7dd3fc" },
   { packName:"ih-gods",      label:"Пантеон",      icon:"✦",  type:"Actor", color:"#c4b5fd" },
 ];
 
@@ -213,9 +213,17 @@ class IronHillsCompendiumBrowser extends Application {
 
       const isActor = cfg?.type === "Actor";
       const cls     = pack.documentClass;
+      const actorPackType =
+        this._activePack === "ih-gods" ? "god"
+        : this._activePack === "ih-monsters" ? "monster"
+        : "npc";
+      const newDocName =
+        actorPackType === "god" ? "Новый предок"
+        : actorPackType === "monster" ? "Новый монстр"
+        : "Новый NPC";
       const newDoc  = await cls.create({
-        name:   isActor ? "Новый NPC"        : "Новый предмет",
-        type:   isActor ? (this._activePack === "ih-gods" ? "god" : "npc") : "material",
+        name:   isActor ? newDocName : "Новый предмет",
+        type:   isActor ? actorPackType : "material",
         system: { tier: 1 },
       }, { pack: `iron-hills-system.${this._activePack}` });
 
@@ -338,9 +346,13 @@ class IronHillsCompendiumBrowser extends Application {
         );
         doc?.sheet?.render(true);
       } else if (cfg.type === "Actor") {
-        const actorType = this._activePack === "ih-gods" ? "god" : "npc";
+        const actorType =
+          this._activePack === "ih-gods" ? "god"
+          : this._activePack === "ih-monsters" ? "monster"
+          : "npc";
+        const nm = actorType === "monster" ? "Новый монстр" : "Новый NPC";
         const doc = await Actor.create(
-          { name:"Новый NPC", type:actorType },
+          { name: nm, type: actorType },
           { pack:`iron-hills-system.${this._activePack}` }
         );
         doc?.sheet?.render(true);

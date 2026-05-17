@@ -12,6 +12,14 @@
  */
 
 import { debugLog } from "./utils/debug-utils.mjs";
+import { STARTER_RECIPE_IDS } from "./constants/craft-knowledge.mjs";
+import { MONSTER_BESTIARY } from "./constants/monster-bestiary.mjs";
+import { getMonsterHarvestDropLines } from "./constants/monster-loot-pools.mjs";
+import { syncNpcPackLootFromProfiles } from "./compendium-builder.mjs";
+import {
+  buildMonsterHarvestEmbeddedItemData,
+  monsterActorHasHarvestLootItems,
+} from "./utils/monster-harvest-items.mjs";
 
 const SETTING_KEY = "schemaState";
 const SETTING_NS  = "iron-hills-system";
@@ -67,7 +75,7 @@ async function migrateAbdomen() {
       const hp = actor.system?.resources?.hp;
       if (!hp || hp.abdomen !== undefined) continue;
       await actor.update({
-        "system.resources.hp.abdomen": { value: 25, max: 25 }
+        "system.resources.hp.abdomen": { value: 70, max: 70 }
       });
       debugLog("migrations:abdomen", { actor: actor.name });
     } catch (err) {
@@ -108,14 +116,19 @@ async function migrateNpcStructure() {
 
       if (hp && hp.value !== undefined && hp.torso === undefined) {
         const baseHp = Number(hp.value ?? 30);
+        const HP_UNIT = 440;
+        const cell = n => {
+          const mx = Math.max(1, Math.round((n / HP_UNIT) * baseHp));
+          return { value: mx, max: mx };
+        };
         updates["system.resources.hp"] = {
-          head:     { value: Math.ceil(baseHp * 0.25), max: Math.ceil(baseHp * 0.25) },
-          torso:    { value: Math.ceil(baseHp * 0.50), max: Math.ceil(baseHp * 0.50) },
-          abdomen:  { value: Math.ceil(baseHp * 0.40), max: Math.ceil(baseHp * 0.40) },
-          leftArm:  { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
-          rightArm: { value: Math.ceil(baseHp * 0.30), max: Math.ceil(baseHp * 0.30) },
-          leftLeg:  { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) },
-          rightLeg: { value: Math.ceil(baseHp * 0.35), max: Math.ceil(baseHp * 0.35) },
+          head:     cell(35),
+          torso:    cell(85),
+          abdomen:  cell(70),
+          leftArm:  cell(60),
+          rightArm: cell(60),
+          leftLeg:  cell(65),
+          rightLeg: cell(65),
         };
       }
 
@@ -125,7 +138,7 @@ async function migrateNpcStructure() {
 
       if (actor.system?.resources?.hp?.torso !== undefined &&
           actor.system?.resources?.hp?.abdomen === undefined) {
-        updates["system.resources.hp.abdomen"] = { value: 25, max: 25 };
+        updates["system.resources.hp.abdomen"] = { value: 70, max: 70 };
       }
 
       if (Object.keys(updates).length) {
@@ -163,8 +176,9 @@ async function migrateDurability() {
 
 /**
  * Унификация модели применения предметов (consumable/potion/spell/scroll).
- * Удаляет легаси-поля medicalAction/effectType/effectType2 и переносит их
+ * Переносит легаси-поля medicalAction/effectType/effectType2
  * в actionType/applicationScope/targetPart.
+ * effectType сохраняется как runtime fallback для заклинаний, свитков и старых предметов.
  */
 async function migrateUnifiedTargetingForItem(item) {
   if (!item) return;
@@ -205,7 +219,6 @@ async function migrateUnifiedTargetingForItem(item) {
   }
 
   if (system.medicalAction !== undefined) updates["system.-=medicalAction"] = null;
-  if (system.effectType !== undefined)    updates["system.-=effectType"]    = null;
   if (system.effectType2 !== undefined)   updates["system.-=effectType2"]   = null;
 
   if (Object.keys(updates).length) {
@@ -358,6 +371,174 @@ async function migrateSkillTaxonomy() {
   }
 }
 
+/** Старый шаблон HP (10/30/25/20×4) → распределение как в бою (35/85/70/60×2/65×2). */
+async function migrateBodyPartHpTarkov2026() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (actor.type !== "character" && actor.type !== "npc") continue;
+      if (actor.getFlag?.("iron-hills-system", "hpZonesTarkovApr2026")) continue;
+
+      const hp = actor.system?.resources?.hp;
+      if (!hp?.torso?.max || hp.head === undefined) continue;
+
+      const tMax = Number(hp.torso.max);
+      const hMax = Number(hp.head?.max ?? 0);
+      const aMax = Number(hp.abdomen?.max ?? NaN);
+      const isClassicTemplate = tMax === 30 && hMax === 10;
+      const isClassicWithAbdomen = tMax === 30 && Number.isFinite(aMax) && aMax === 25;
+      if (!isClassicTemplate && !isClassicWithAbdomen) continue;
+
+      const scalePart = (key, newMax) => {
+        const p = hp[key];
+        if (!p || p.max === undefined) return {};
+        const ratio = Number(p.value ?? p.max) / Math.max(1, Number(p.max));
+        const v = Math.min(newMax, Math.max(0, Math.round(newMax * ratio)));
+        return { [`system.resources.hp.${key}`]: { value: v, max: newMax } };
+      };
+
+      const merged = {
+        ...scalePart("head", 35),
+        ...scalePart("torso", 85),
+        ...scalePart("abdomen", 70),
+        ...scalePart("leftArm", 60),
+        ...scalePart("rightArm", 60),
+        ...scalePart("leftLeg", 65),
+        ...scalePart("rightLeg", 65),
+      };
+      if (hp.abdomen === undefined) {
+        merged["system.resources.hp.abdomen"] = { value: 70, max: 70 };
+      }
+
+      await actor.update(merged);
+      await actor.setFlag("iron-hills-system", "hpZonesTarkovApr2026", true);
+      debugLog("migrations:hp-tarkov", { actor: actor.name });
+    } catch (err) {
+      console.error("Iron Hills | migration:hp-tarkov", actor?.name, err);
+    }
+  }
+}
+
+/** Старый урон без оружия: 1 / 2 / 5 → ×5. */
+async function migrateUnarmedDamageScale2026() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (!["character", "npc", "monster"].includes(actor.type)) continue;
+      const u = Number(actor.system?.combat?.unarmedDamage);
+      let next = null;
+      if (actor.type === "character" && u === 1) next = 5;
+      else if (actor.type === "npc" && u === 2) next = 10;
+      else if (actor.type === "monster" && u === 5) next = 25;
+      if (next == null) continue;
+      await actor.update({ "system.combat.unarmedDamage": next });
+      debugLog("migrations:unarmed-scale", { actor: actor.name, next });
+    } catch (err) {
+      console.error("Iron Hills | migration:unarmed-scale", actor?.name, err);
+    }
+  }
+}
+
+/** Персонажи без system.craft.knownRecipeIds получают деревенский минимум (до обучения новым). */
+async function migrateCraftKnowledgeStarter() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (actor.type !== "character") continue;
+      const kr = actor.system?.craft?.knownRecipeIds;
+      if (Array.isArray(kr)) continue;
+      await actor.update({
+        "system.craft.knownRecipeIds": [...STARTER_RECIPE_IDS],
+      });
+      debugLog("migrations:craft-knowledge", { actor: actor.name });
+    } catch (err) {
+      console.error("Iron Hills | migration:craft-knowledge", actor?.name, err);
+    }
+  }
+}
+
+/** POI: источник воды; монстр: поля лута в system.info. */
+async function migrateWildernessSurvival2026() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (actor.type === "poi") {
+        const cur = actor.system?.info?.hasFreshWater;
+        if (cur !== undefined) continue;
+        await actor.update({ "system.info.hasFreshWater": false });
+        continue;
+      }
+      if (actor.type !== "monster") continue;
+      const info = actor.system?.info ?? {};
+      const patch = {};
+      if (info.desc === undefined) patch["system.info.desc"] = "";
+      if (info.lootPool === undefined) patch["system.info.lootPool"] = "";
+      if (info.lootTable === undefined) patch["system.info.lootTable"] = "";
+      if (info.bestiaryId === undefined) patch["system.info.bestiaryId"] = "";
+      if (Object.keys(patch).length) await actor.update(patch);
+    } catch (err) {
+      console.error("Iron Hills | migration:wilderness-survival", actor?.name, err);
+    }
+  }
+}
+
+/** NPC: поля лута / карманничества для «Обыск». */
+async function migrateNpcLootFields202604() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (actor.type !== "npc") continue;
+      const info = actor.system?.info ?? {};
+      const patch = {};
+      if (info.desc === undefined) patch["system.info.desc"] = "";
+      if (info.notes === undefined) patch["system.info.notes"] = "";
+      if (info.lootTable === undefined) patch["system.info.lootTable"] = "";
+      if (info.bestiaryId === undefined) patch["system.info.bestiaryId"] = "";
+      if (info.corpseLootMode === undefined) patch["system.info.corpseLootMode"] = "wild";
+      if (info.allowPickpocket === undefined) patch["system.info.allowPickpocket"] = true;
+      if (info.pickpocketTable === undefined) patch["system.info.pickpocketTable"] = "";
+      if (Object.keys(patch).length) await actor.update(patch);
+    } catch (err) {
+      console.error("Iron Hills | migration:npc-loot-fields", actor?.name, err);
+    }
+  }
+}
+
+/** Однократно: ih-npc — role/loot из профилей (волк и др. без lootTable после старых сборок). */
+async function migrateNpcCompendiumLootFromProfilesOnce() {
+  try {
+    const r = await syncNpcPackLootFromProfiles({});
+    debugLog("migrations:npc-compendium-loot-sync", r);
+  } catch (err) {
+    console.error("Iron Hills | migration:npc-compendium-loot-sync", err);
+  }
+}
+
+/** Листы монстра в мире: system.info.lootPool + встроенные слоты добычи, если их ещё нет. */
+async function migrateMonsterLootPoolEmbedded202604() {
+  for (const actor of game.actors ?? []) {
+    try {
+      if (actor.type !== "monster") continue;
+      const info = actor.system?.info ?? {};
+      let pool = String(info.lootPool ?? "").trim();
+      const lt = String(info.lootTable ?? "").trim();
+      const bid = String(info.bestiaryId ?? "").trim();
+      if (!pool && lt && getMonsterHarvestDropLines(lt).length) pool = lt;
+      if (!pool && bid && MONSTER_BESTIARY[bid]?.lootPool)
+        pool = String(MONSTER_BESTIARY[bid].lootPool).trim();
+
+      const patch = {};
+      if (pool && String(info.lootPool ?? "").trim() !== pool)
+        patch["system.info.lootPool"] = pool;
+      if (lt && pool) patch["system.info.lootTable"] = "";
+      if (Object.keys(patch).length) await actor.update(patch);
+
+      if (!pool) continue;
+      if (!monsterActorHasHarvestLootItems(actor)) {
+        const data = buildMonsterHarvestEmbeddedItemData(pool);
+        if (data.length) await actor.createEmbeddedDocuments("Item", data);
+      }
+    } catch (err) {
+      console.error("Iron Hills | migration:monster-loot-pool", err);
+    }
+  }
+}
+
 // ── Реестр миграций (порядок имеет значение) ──────────────
 
 const MIGRATIONS = [
@@ -368,6 +549,13 @@ const MIGRATIONS = [
   { id: "2026-01-unified-targeting",      run: migrateUnifiedTargeting,       label: "unified targeting" },
   { id: "2026-01-soul-reserve-max-sync",  run: migrateSoulReserveMaxSync,     label: "soulReserve max sync" },
   { id: "2026-04-skill-taxonomy",         run: migrateSkillTaxonomy,          label: "skill taxonomy unification" },
+  { id: "2026-04-body-hp-tarkov",         run: migrateBodyPartHpTarkov2026,   label: "character/NPC limb HP totals" },
+  { id: "2026-04-unarmed-scale",          run: migrateUnarmedDamageScale2026, label: "unarmedDamage legacy scale" },
+  { id: "2026-04-craft-knowledge-starter",  run: migrateCraftKnowledgeStarter,  label: "craft knownRecipeIds starter" },
+  { id: "2026-05-wilderness-survival-fields", run: migrateWildernessSurvival2026, label: "POI water / monster loot fields" },
+  { id: "2026-04-npc-loot-fields", run: migrateNpcLootFields202604, label: "NPC loot / pickpocket fields" },
+  { id: "2026-04-npc-pack-loot-sync", run: migrateNpcCompendiumLootFromProfilesOnce, label: "ih-npc loot+role из профилей" },
+  { id: "2026-04-monster-lootpool-embedded", run: migrateMonsterLootPoolEmbedded202604, label: "monster lootPool + встроенная добыча" },
 ];
 
 /**

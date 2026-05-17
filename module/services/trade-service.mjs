@@ -4,7 +4,8 @@ import {
   buildItemStackSignatureFromData,
   buildItemStackSignature,
   getItemQuickSlotIcon,
-  itemTypeLabel
+  itemTypeLabel,
+  isStackable
 } from "../utils/item-utils.mjs";
 import {
   getActorCurrency,
@@ -15,9 +16,15 @@ import {
   getPersistentItemFromActor,
   getLiveItemFromActor
 } from "../utils/actor-utils.mjs";
-import { recalculateActorWeight, removeQuantityFromItem } from "./inventory-service.mjs";
+import {
+  clearItemGridPlacement,
+  isItemGridPlaced,
+  recalculateActorWeight,
+  removeQuantityFromItem
+} from "./inventory-service.mjs";
 import { getSettlementActorByName, getSettlementTradeState } from "./actor-state-service.mjs";
-import { debugLog, debugWarn, debugError } from "../utils/debug-utils.mjs";
+import { debugLog, debugWarn } from "../utils/debug-utils.mjs";
+import { coinsToCopper, currencyUpdateData } from "../utils/currency.mjs";
 
 export function getRelationScoreForTarget(characterActor, targetType, targetName) {
   if (!characterActor?.name) return 0;
@@ -164,11 +171,33 @@ export function getSettlementEconomicModifier(item, merchantActor) {
   return Math.max(0.65, Math.min(1.6, modifier));
 }
 
+export function getMerchantMarketPriceFactor(characterActor, merchantActor) {
+  const marketFactor = Math.max(0, Number(merchantActor?.system?.market?.currentPriceFactor ?? 1));
+
+  if (!characterActor || !merchantActor) return marketFactor;
+
+  try {
+    const { getPriceMult } = game.ironHills?._factionService ?? {};
+    if (getPriceMult) {
+      const reputationFactor = Number(getPriceMult(characterActor, merchantActor));
+      if (reputationFactor === 0) return 0;
+      if (Number.isFinite(reputationFactor) && reputationFactor > 0) {
+        return Math.max(0, marketFactor * reputationFactor);
+      }
+    }
+  } catch {}
+
+  return marketFactor;
+}
+
 export function getMerchantBuyPriceForItem(item, merchantActor, characterActor = null) {
   const basePrice = getComputedItemUnitPrice(item);
   const markup = getMerchantMarkup(merchantActor);
   const specialtyModifier = getMerchantSpecialtyModifier(item, merchantActor);
   const settlementModifier = getSettlementEconomicModifier(item, merchantActor);
+  const marketFactor = getMerchantMarketPriceFactor(characterActor, merchantActor);
+
+  if (marketFactor <= 0) return Number.MAX_SAFE_INTEGER;
 
   let price = basePrice * markup * specialtyModifier * settlementModifier;
 
@@ -177,11 +206,16 @@ export function getMerchantBuyPriceForItem(item, merchantActor, characterActor =
     price *= tradeMods.buyModifier;
   }
 
+  price *= marketFactor;
+
   return Math.max(1, Math.round(price));
 }
 
 export function getMerchantSellPriceForItem(item, merchantActor, characterActor = null) {
   const basePrice = getComputedItemUnitPrice(item);
+  const marketFactor = getMerchantMarketPriceFactor(characterActor, merchantActor);
+
+  if (marketFactor <= 0) return 0;
 
   let price = basePrice * 0.45;
 
@@ -199,6 +233,8 @@ export function getMerchantSellPriceForItem(item, merchantActor, characterActor 
     const tradeMods = getTradePriceModifiers(characterActor, merchantActor);
     price *= tradeMods.sellModifier;
   }
+
+  price *= marketFactor;
 
   return Math.max(1, Math.round(price));
 }
@@ -249,20 +285,48 @@ export function getSellPriceState(unitBasePrice, tradePrice) {
   return { label: "дёшево", key: "bad" };
 }
 
-export async function addItemToActorOrStack(actor, itemData) {
+function clearItemDataGridPlacement(itemData) {
+  itemData.flags = foundry.utils.deepClone(itemData.flags ?? {});
+  itemData.flags["iron-hills-system"] = {
+    ...(itemData.flags["iron-hills-system"] ?? {}),
+    sectionKey: null,
+    gridPos: null,
+  };
+  return itemData;
+}
+
+function isAvailablePendingStack(actor, item) {
+  if (!item) return false;
+  if (isItemGridPlaced(item)) return false;
+  return !Object.values(actor?.system?.equipment ?? {}).includes(item.id);
+}
+
+export async function addItemToActorOrStack(actor, itemData, options = {}) {
   const quantity = Math.max(1, Number(itemData.system?.quantity ?? 1));
+  const {
+    stackIntoPlaced = false,
+    forcePending = true,
+  } = options;
+
+  if (forcePending) clearItemDataGridPlacement(itemData);
+
   const targetSignature = buildItemStackSignatureFromData(itemData);
 
-  const existing = actor.items.find(i => buildItemStackSignature(i) === targetSignature);
+  const existing = actor.items.find(i =>
+    buildItemStackSignature(i) === targetSignature &&
+    (stackIntoPlaced || isAvailablePendingStack(actor, i))
+  );
 
   if (existing) {
     const currentQty = Math.max(1, Number(existing.system?.quantity ?? 1));
     await existing.update({
       "system.quantity": currentQty + quantity
     });
+    if (forcePending) await clearItemGridPlacement(existing);
     return existing;
   }
 
+  if (forcePending) clearItemDataGridPlacement(itemData);
   const created = await actor.createEmbeddedDocuments("Item", [itemData]);
   return created?.[0] ?? null;
 }
@@ -303,8 +367,6 @@ debugLog("transferItemQuantityBetweenActors:start", {
     throw new Error("Недостаточно количества предмета для передачи");
   }
 
-  const { isStackable } = await import("../utils/item-utils.mjs");
-
   if (isStackable(liveItem.type)) {
     // Стакуемые (боеприпасы) — передаём одним предметом с qty
     const itemData = cloneItemDataForTransfer(liveItem, qty);
@@ -314,11 +376,7 @@ debugLog("transferItemQuantityBetweenActors:start", {
     for (let i = 0; i < qty; i++) {
       const itemData = cloneItemDataForTransfer(liveItem, 1);
       // Сбрасываем grid позицию → попадёт в pending
-      if (itemData.flags?.["iron-hills-system"]) {
-        itemData.flags["iron-hills-system"].gridPos   = null;
-        itemData.flags["iron-hills-system"].sectionKey = null;
-      }
-      await targetActor.createEmbeddedDocuments("Item", [itemData]);
+      await addItemToActorOrStack(targetActor, itemData);
     }
   }
   await removeQuantityFromItem(sourceActor, liveItem, qty);
@@ -340,12 +398,10 @@ debugLog("transferItemQuantityBetweenActors:completed", {
 
 export async function changeActorCoins(actor, delta) {
   const liveActor = getPersistentActor(actor) ?? getLiveActor(actor) ?? actor;
-  const current = Math.max(0, Number(liveActor.system?.economy?.coins ?? 0));
+  const current = getActorCurrency(liveActor);
   const next = Math.max(0, current + Number(delta ?? 0));
 
-  await liveActor.update({
-    "system.economy.coins": next
-  });
+  await liveActor.update(currencyUpdateData("system.currency", next));
 
   return next;
 }
@@ -360,6 +416,242 @@ export async function changeMerchantWealth(actor, delta) {
   });
 
   return next;
+}
+
+function normalizeTradeCoins(coins) {
+  if (typeof coins === "number") return Math.max(0, Math.floor(coins));
+  return Math.max(0, coinsToCopper(coins ?? 0));
+}
+
+function resolveTradeActor(actorRef) {
+  return getPersistentActor(actorRef) ?? getLiveActor(actorRef) ?? actorRef ?? null;
+}
+
+function normalizeTradeOffer(actor, entries) {
+  const result = [];
+
+  for (const entry of entries ?? []) {
+    const itemId = typeof entry === "string"
+      ? entry
+      : (entry.itemId ?? entry.id ?? entry.item?.id ?? "");
+    const qty = Math.max(1, Number(entry?.qty ?? entry?.quantity ?? 1));
+    const itemIds = Array.isArray(entry?.itemIds)
+      ? entry.itemIds.filter(Boolean)
+      : Array.isArray(entry?.ids)
+        ? entry.ids.filter(Boolean)
+        : itemId
+          ? [itemId]
+          : [];
+
+    const candidateItems = itemIds
+      .map(id => actor?.items?.get(id))
+      .filter(Boolean);
+
+    if (!candidateItems.length && entry?.item) {
+      const liveEntryItem = actor?.items?.get(entry.item.id) ?? entry.item;
+      if (liveEntryItem) candidateItems.push(liveEntryItem);
+    }
+
+    if (!candidateItems.length) {
+      throw new Error("Предмет из предложения не найден");
+    }
+
+    let remaining = qty;
+    for (const item of candidateItems) {
+      if (remaining <= 0) break;
+
+      const available = Math.max(1, Number(item.system?.quantity ?? 1));
+      const take = Math.min(available, remaining);
+      if (take <= 0) continue;
+
+      result.push({ item, itemId: item.id, qty: take, available, name: item.name });
+      remaining -= take;
+    }
+
+    if (remaining > 0) {
+      const label = candidateItems[0]?.name ?? "предмет";
+      const available = qty - remaining;
+      throw new Error(`Недостаточно предметов "${label}" (${available}/${qty})`);
+    }
+  }
+
+  return result;
+}
+
+function summarizeTradeItems(items) {
+  const grouped = new Map();
+  for (const { item, qty } of items) {
+    const key = `${item.type}:${item.name}`;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.qty += qty;
+      existing.itemIds.push(item.id);
+    } else {
+      grouped.set(key, {
+        itemId: item.id,
+        itemIds: [item.id],
+        name: item.name,
+        qty,
+        type: item.type
+      });
+    }
+  }
+  return Array.from(grouped.values());
+}
+
+export function buildTarkovTradeQuote({
+  buyer,
+  merchant,
+  merchantOffers = [],
+  playerOffers = [],
+  merchantCoins = 0,
+  playerCoins = 0
+} = {}) {
+  const liveBuyer = resolveTradeActor(buyer);
+  const liveMerchant = resolveTradeActor(merchant);
+
+  if (!liveBuyer || !liveMerchant) {
+    return { ok: false, canTrade: false, reason: "Не найден покупатель или торговец" };
+  }
+
+  const marketFactor = getMerchantMarketPriceFactor(liveBuyer, liveMerchant);
+  if (marketFactor <= 0) {
+    return {
+      ok: false,
+      canTrade: false,
+      reason: "Торговец отказывается торговать из-за репутации",
+      marketFactor
+    };
+  }
+
+  let merchantItems = [];
+  let playerItems = [];
+  try {
+    merchantItems = normalizeTradeOffer(liveMerchant, merchantOffers);
+    playerItems = normalizeTradeOffer(liveBuyer, playerOffers);
+  } catch (err) {
+    return {
+      ok: false,
+      canTrade: true,
+      reason: err?.message || "Предложение устарело",
+      marketFactor,
+      buyer: liveBuyer,
+      merchant: liveMerchant
+    };
+  }
+  const merchantCoinOffer = normalizeTradeCoins(merchantCoins);
+  const playerCoinOffer = normalizeTradeCoins(playerCoins);
+
+  const merchantItemsValue = merchantItems.reduce(
+    (sum, entry) => sum + getMerchantBuyPriceForItem(entry.item, liveMerchant, liveBuyer) * entry.qty,
+    0
+  );
+  const playerItemsValue = playerItems.reduce(
+    (sum, entry) => sum + getMerchantSellPriceForItem(entry.item, liveMerchant, liveBuyer) * entry.qty,
+    0
+  );
+
+  const merchantOfferValue = merchantItemsValue + merchantCoinOffer;
+  const playerOfferValue = playerItemsValue + playerCoinOffer;
+  const net = merchantOfferValue - playerOfferValue;
+  const buyerPays = playerCoinOffer + Math.max(0, net);
+  const merchantPays = merchantCoinOffer + Math.max(0, -net);
+  const buyerCoins = getActorCurrency(liveBuyer);
+  const merchantCoinsAvailable = getActorCurrency(liveMerchant);
+  const hasExchange =
+    merchantItems.length > 0 ||
+    playerItems.length > 0 ||
+    merchantCoinOffer > 0 ||
+    playerCoinOffer > 0;
+
+  return {
+    ok: true,
+    canTrade: true,
+    hasExchange,
+    reason: "",
+    marketFactor,
+    buyer: liveBuyer,
+    merchant: liveMerchant,
+    merchantItems,
+    playerItems,
+    merchantItemSummary: summarizeTradeItems(merchantItems),
+    playerItemSummary: summarizeTradeItems(playerItems),
+    merchantCoinOffer,
+    playerCoinOffer,
+    merchantItemsValue,
+    playerItemsValue,
+    merchantOfferValue,
+    playerOfferValue,
+    net,
+    buyerPays,
+    merchantPays,
+    buyerCoins,
+    merchantCoins: merchantCoinsAvailable,
+    buyerCanPay: buyerCoins >= buyerPays,
+    merchantCanPay: merchantCoinsAvailable >= merchantPays
+  };
+}
+
+export async function executeTarkovTrade({
+  buyer,
+  merchant,
+  merchantOffers = [],
+  playerOffers = [],
+  merchantCoins = 0,
+  playerCoins = 0,
+  gmForce = false
+} = {}) {
+  const quote = buildTarkovTradeQuote({
+    buyer,
+    merchant,
+    merchantOffers,
+    playerOffers,
+    merchantCoins,
+    playerCoins
+  });
+
+  if (!quote.ok || !quote.canTrade) {
+    return { ok: false, reason: quote.reason || "Сделка недоступна", quote };
+  }
+
+  if (!quote.hasExchange) {
+    return { ok: false, reason: "Пустая сделка", quote };
+  }
+
+  if (!gmForce) {
+    if (!quote.buyerCanPay) {
+      return { ok: false, reason: "У покупателя не хватает монет", quote };
+    }
+    if (!quote.merchantCanPay) {
+      return { ok: false, reason: "У торговца не хватает монет", quote };
+    }
+  }
+
+  for (const entry of quote.merchantItems) {
+    await transferItemQuantityBetweenActors(quote.merchant, quote.buyer, entry.item, entry.qty);
+  }
+
+  for (const entry of quote.playerItems) {
+    await transferItemQuantityBetweenActors(quote.buyer, quote.merchant, entry.item, entry.qty);
+  }
+
+  if (!gmForce) {
+    const buyerCoinDelta = -quote.buyerPays + quote.merchantPays;
+    const merchantCoinDelta = -quote.merchantPays + quote.buyerPays;
+    if (buyerCoinDelta !== 0) await changeActorCoins(quote.buyer, buyerCoinDelta);
+    if (merchantCoinDelta !== 0) await changeActorCoins(quote.merchant, merchantCoinDelta);
+  }
+
+  return {
+    ok: true,
+    reason: "",
+    quote,
+    buyer: quote.buyer,
+    merchant: quote.merchant,
+    merchantItems: quote.merchantItemSummary,
+    playerItems: quote.playerItemSummary,
+    gmForce
+  };
 }
 
 export function buildMerchantStockView(merchantActor, characterActor = null) {

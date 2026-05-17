@@ -1,7 +1,48 @@
 import { NAME_FIRST, NAME_LAST } from "../constants/names.mjs";
-import { NPC_ROLE_PROFILES } from "../constants/npc-profiles.mjs";
+import { NPC_SPECIALIZATIONS } from "../constants/npc-profiles.mjs";
+import { SKILLS_FLAT } from "../constants/skills.mjs";
 import { choice, randInt, clamp } from "../utils/math-utils.mjs";
-import { removeQuantityFromItem, recalculateActorWeight } from "./inventory-service.mjs";
+import { itemDataFromLootLine } from "../utils/loot-line-items.mjs";
+import {
+  consumeRecipeIngredients as consumeRecipeIngredientsImpl,
+  getAvailableIngredientQuantity,
+  getItemCatalogId as getItemCatalogIdFromCraftIngredients,
+} from "./craft-ingredients.mjs";
+
+export { getAvailableIngredientQuantity, getItemCatalogIdFromCraftIngredients as getItemCatalogId };
+
+/** Бонусы качества крафта: ~10% / 20% / 30% к урону и физ./маг. броне (мин. +1 где применимо). */
+export function applyCraftQualityBonuses(resultType, system, quality) {
+  if (!system) return system;
+  const pct = quality === "fine" ? 0.1 : quality === "masterwork" ? 0.2 : quality === "legendary" ? 0.3 : 0;
+  if (pct <= 0) return system;
+
+  if (resultType === "weapon") {
+    const d = Number(system.damage ?? 0);
+    system.damage = d + Math.max(1, Math.round(d * pct));
+    return system;
+  }
+
+  if (resultType === "armor") {
+    const raw = system.protection && typeof system.protection === "object"
+      ? system.protection
+      : null;
+    const bp = Number(raw?.physical ?? system.resist?.physical ?? system.protection?.physical ?? 0);
+    const bm = Number(raw?.magical ?? system.resist?.magical ?? system.protection?.magical ?? 0);
+    const addP = Math.max(1, Math.round(bp * pct));
+    const addM = bm > 0 ? Math.max(1, Math.round(bm * pct))
+      : (quality === "legendary" ? Math.max(1, Math.round(bp * 0.1)) : 0);
+    system.protection = {
+      ...(raw && typeof raw === "object" ? { ...raw } : {}),
+      physical: bp + addP,
+      magical: bm + addM,
+    };
+    if (system.resist !== undefined) delete system.resist;
+    return system;
+  }
+
+  return system;
+}
 
 export function makeName() {
   return `${choice(NAME_FIRST)} ${choice(NAME_LAST)}`;
@@ -144,7 +185,25 @@ export function buildFood(name, tier, satiety, hydration, weight = 1, quantity =
   };
 }
 
+function actionConfigFromEffect(effectType, targetPart = "torso") {
+  const map = {
+    healHP: ["heal-part", "targeted", "selected-or-self", targetPart],
+    heal: ["heal-part", "targeted", "selected-or-self", targetPart],
+    healAll: ["heal-body", "global", "self", ""],
+    restoreEnergy: ["restore-energy", "global", "self", ""],
+    restoreEnergyMax: ["restore-energy-max", "global", "self", ""],
+    restoreMana: ["restore-mana", "global", "self", ""],
+    restoreHydration: ["restore-hydration", "global", "self", ""],
+    restoreSatiety: ["restore-satiety", "global", "self", ""],
+    curePoison: ["cure-poison", "global", "selected-or-self", ""],
+    cureDisease: ["cure-disease", "global", "selected-or-self", ""],
+  };
+  const [actionType = "", applicationScope = "global", targetActorMode = "self", resolvedPart = ""] = map[effectType] ?? [];
+  return { actionType, applicationScope, targetActorMode, targetPart: resolvedPart };
+}
+
 export function buildPotion(name, tier, effectType, power, targetPart = "torso", quantity = 1) {
+  const action = actionConfigFromEffect(effectType, targetPart);
   return {
     name,
     type: "potion",
@@ -153,9 +212,13 @@ export function buildPotion(name, tier, effectType, power, targetPart = "torso",
       quality: "common",
       weight: 1,
       quantity,
+      effect: effectType,
       effectType,
+      actionType: action.actionType,
+      applicationScope: action.applicationScope,
+      targetActorMode: action.targetActorMode,
       power,
-      targetPart
+      targetPart: action.targetPart || targetPart
     }
   };
 }
@@ -193,6 +256,15 @@ export function buildThrowable(name, tier, power, damageType = "physical", poiso
       power,
       energyCost: 8 + tier,
       targetPart,
+      targetZone: "",
+      friendlyFire: false,
+      aoe: {
+        type: "blast",
+        shape: "circle",
+        distance: 0,
+        maxTargets: 0,
+        chainDecay: 1
+      },
       appliesPoison: poison,
       appliesBurning: burning
     }
@@ -200,6 +272,7 @@ export function buildThrowable(name, tier, power, damageType = "physical", poiso
 }
 
 export function buildConsumable(name, tier, effectType, power, quantity = 1) {
+  const action = actionConfigFromEffect(effectType);
   return {
     name,
     type: "consumable",
@@ -209,6 +282,10 @@ export function buildConsumable(name, tier, effectType, power, quantity = 1) {
       weight: 1,
       quantity,
       effectType,
+      actionType: action.actionType,
+      applicationScope: action.applicationScope,
+      targetActorMode: action.targetActorMode,
+      targetPart: action.targetPart,
       power
     }
   };
@@ -348,51 +425,114 @@ export function randomContainerLoot(theme, tier) {
   return loot.flat();
 }
 
-export function buildNpcSystem(role, tier, faction) {
-  const profile = NPC_ROLE_PROFILES[role] ?? NPC_ROLE_PROFILES.villager;
-
-  const skills = {
-    athletics: { value: 1, exp: 0, expNext: 25 },
-    endurance: { value: 1, exp: 0, expNext: 25 },
-    sword: { value: 1, exp: 0, expNext: 25 },
-    axe: { value: 1, exp: 0, expNext: 25 },
-    spear: { value: 1, exp: 0, expNext: 25 },
-    knife: { value: 1, exp: 0, expNext: 25 },
-    unarmed: { value: 1, exp: 0, expNext: 25 },
-    throwing: { value: 1, exp: 0, expNext: 25 },
-    perception: { value: 1, exp: 0, expNext: 25 },
-    crafting: { value: 1, exp: 0, expNext: 25 },
-    blacksmithing: { value: 1, exp: 0, expNext: 25 },
-    alchemy: { value: 1, exp: 0, expNext: 25 },
-    cooking: { value: 1, exp: 0, expNext: 25 },
-    survival: { value: 1, exp: 0, expNext: 25 },
-    fire: { value: 1, exp: 0, expNext: 25 },
-    water: { value: 1, exp: 0, expNext: 25 },
-    earth: { value: 1, exp: 0, expNext: 25 },
-    air: { value: 1, exp: 0, expNext: 25 },
-    life: { value: 1, exp: 0, expNext: 25 },
-    mind: { value: 1, exp: 0, expNext: 25 }
+/**
+ * Просные вещи в карманах / сумке случайного NPC (еда/материалы из каталога).
+ * Вызывается генератором мира после ролевых предметов.
+ */
+export function buildNpcCarryInventoryItems(roleKey, tier) {
+  const t = Math.max(1, Math.min(10, Number(tier) || 1));
+  const out = [];
+  const push = (type, catalogId, qty) => {
+    const q = Math.max(1, Number(qty) || 1);
+    const d = itemDataFromLootLine({ type, catalogId, qty: q });
+    if (d) out.push(d);
   };
 
-  for (const [key, value] of Object.entries(profile.skills)) {
-    if (skills[key]) skills[key].value = value + Math.max(0, tier - 1);
+  push("food", "bread", randInt(1, 2));
+  if (t >= 3) push("food", "trail_rations", 1);
+
+  switch (roleKey) {
+    case "villager":
+      push("material", "cloth", randInt(1, 2));
+      push("material", "herb_common", randInt(1, 2));
+      break;
+    case "guard":
+      push("material", "tin_ore", randInt(1, 2));
+      push("material", "tanned_leather", 1);
+      if (t >= 4) push("material", "iron_ore", 1);
+      break;
+    case "bandit":
+      push("food", "dried_meat", 1);
+      push("material", "rope", 1);
+      push("material", "copper_ore", randInt(1, 2));
+      break;
+    case "mage":
+      push("material", "herb_healing", randInt(1, 2));
+      if (t >= 5) push("material", "mana_stone", 1);
+      if (t >= 7) push("material", "quartz", randInt(1, 3));
+      break;
+    case "crafter":
+      push("material", "tanned_leather", randInt(1, 2));
+      push("material", "copper_ingot", 1);
+      break;
+    case "hunter":
+      push("food", "trail_rations", randInt(1, 2));
+      push("material", "rope", randInt(1, 2));
+      break;
+    case "noble":
+      push("material", "cloth", randInt(2, 4));
+      if (t >= 8) push("material", "mana_crystal", 1);
+      break;
+    case "priest":
+      push("material", "herb_healing", randInt(1, 3));
+      break;
+    default:
+      break;
   }
+
+  return out;
+}
+
+export function buildNpcSystem(roleKey, tier, faction) {
+  const profile = NPC_SPECIALIZATIONS[roleKey] ?? NPC_SPECIALIZATIONS.villager;
+  const t = Math.max(1, Math.min(10, Number(tier) || 1));
+
+  const skills = Object.fromEntries(
+    SKILLS_FLAT.map((s) => [s.key, { value: 1, exp: 0, expNext: 25 }])
+  );
+
+  for (const [sk, val] of Object.entries(profile.skills ?? {})) {
+    if (skills[sk]) skills[sk].value = val + Math.max(0, t - 1);
+  }
+
+  const hpScale = 1 + 0.09 * Math.max(0, t - 1);
+  const partStatus = () => ({
+    minorBleeding: 0,
+    majorBleeding: 0,
+    fracture: false,
+    destroyed: false,
+    splinted: false,
+    tourniquet: false
+  });
+  const part = (n) => ({
+    value: Math.round(n * hpScale),
+    max: Math.round(n * hpScale),
+    status: partStatus()
+  });
+
+  const eMax = Math.min(100, (profile.energy ?? 10) + t * 5);
+  const priestOrMage = roleKey === "mage" || roleKey === "priest";
+  const mMax = Math.min(
+    100,
+    (profile.mana ?? 2) + (priestOrMage ? t * 4 : Math.floor(t / 2))
+  );
 
   return {
     resources: {
       hp: {
-        head: { value: 10, max: 10 },
-        torso: { value: 30, max: 30 },
-        leftArm: { value: 20, max: 20 },
-        rightArm: { value: 20, max: 20 },
-        leftLeg: { value: 20, max: 20 },
-        rightLeg: { value: 20, max: 20 }
+        head: part(35),
+        torso: part(85),
+        abdomen: part(70),
+        leftArm: part(60),
+        rightArm: part(60),
+        leftLeg: part(65),
+        rightLeg: part(65),
       },
-      energy: { value: 100, max: 100 },
-      mana: { value: role === "mage" ? 50 : 10, max: role === "mage" ? 50 : 10 },
+      energy: { value: eMax, max: eMax },
+      mana: { value: mMax, max: mMax },
       satiety: { value: 100, max: 100 },
       hydration: { value: 100, max: 100 },
-      weight: { value: 0, max: 20 + tier * 2 }
+      weight: { value: 0, max: 20 + t * 2 }
     },
     conditions: {
       bleeding: 0,
@@ -407,8 +547,8 @@ export function buildNpcSystem(role, tier, faction) {
       }
     },
     combat: {
-      defense: profile.defense + Math.max(0, tier - 1),
-      unarmedDamage: 1 + Math.floor(tier / 3)
+      defense: (profile.defense ?? 0) + Math.max(0, t - 1),
+      unarmedDamage: 5 + 5 * Math.floor(t / 3),
     },
     equipment: {
       rightHand: "",
@@ -429,11 +569,17 @@ export function buildNpcSystem(role, tier, faction) {
     },
     info: {
       role: profile.label,
+      specialization: roleKey,
       faction: faction ?? "",
-      tier
+      tier: t,
+      desc: "",
+      lootTable: "",
+      allowPickpocket: true,
+      pickpocketTable: "",
+      bestiaryId: "",
     },
     economy: {
-      coins: 10 + tier * 5
+      coins: 10 + t * 25
     },
     skills
   };
@@ -515,33 +661,8 @@ export async function appendSettlementHistory(actor, field, text, limit = 10) {
   });
 }
 
-export async function consumeRecipeIngredients(actor, ingredients) {
-  const usedTiers = [];
-
-  for (const ingredient of ingredients) {
-    let remaining = Number(ingredient.quantity ?? 0);
-
-    const candidates = actor.items
-      .filter(item => item.type === ingredient.type && item.system.category === ingredient.category)
-      .sort((a, b) => Number(a.system.tier ?? 1) - Number(b.system.tier ?? 1));
-
-    for (const item of candidates) {
-      if (remaining <= 0) break;
-
-      const currentQuantity = Number(item.system.quantity ?? 1);
-      const take = Math.min(currentQuantity, remaining);
-
-      for (let i = 0; i < take; i++) {
-        usedTiers.push(Number(item.system.tier ?? 1));
-      }
-
-      await removeQuantityFromItem(actor, item, take);
-      remaining -= take;
-    }
-  }
-
-  await recalculateActorWeight(actor);
-  return usedTiers;
+export async function consumeRecipeIngredients(actor, ingredients, recipeResultTier = 1) {
+  return consumeRecipeIngredientsImpl(actor, ingredients, recipeResultTier);
 }
 // ─── Контекстные квесты из кризисов ─────────────────────
 
@@ -705,7 +826,7 @@ export function getContextualMerchantStock(settlement, specialty, tier = 1) {
 
   // При процветании — редкие товары
   if (prosperity >= 8) {
-    items.push(buildPotion("Зелье бодрости", tier, tier * 3, null, 0, "restoreEnergy", "single", "self", "torso"));
+    items.push(buildPotion("Зелье бодрости", tier, "restoreEnergy", tier * 3, "torso", 1));
   }
 
   return items;

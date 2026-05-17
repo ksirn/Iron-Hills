@@ -5,6 +5,44 @@
 import {
   SPELLS, SPELLS_BY_SCHOOL, SPELL_SCHOOLS, getAvailableSpells
 } from "../constants/spells-catalog.mjs";
+import { getTargetPartLabel } from "../services/actor-state-service.mjs";
+
+const BODY_ZONE_KEYS = Object.freeze(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
+const RANDOM_ZONE_OPTION = Object.freeze({ key: "", label: "Случайная зона" });
+const BODY_ZONE_OPTIONS = Object.freeze([
+  RANDOM_ZONE_OPTION,
+  ...BODY_ZONE_KEYS.map(key => ({ key, label: getTargetPartLabel(key) }))
+]);
+
+const AOE_LABELS = Object.freeze({
+  blast: "💥 Все в зоне",
+  pierce: "➡ Первый на пути",
+  sweep: "↔ Слева направо",
+  shards: "💎 Случайные N",
+  chain: "⛓ Цепочка",
+  nova: "🌟 Вокруг кастера"
+});
+
+function normalizeTargetZone(value) {
+  const zone = String(value ?? "").trim();
+  if (!zone || zone === "random" || zone === "auto" || zone === "none") return "";
+  return zone;
+}
+
+function getSpellTargetZone(spell) {
+  return normalizeTargetZone(spell?.targetZone)
+    || normalizeTargetZone(spell?.targetPart)
+    || normalizeTargetZone(spell?.effect?.targetZone)
+    || normalizeTargetZone(spell?.effect?.targetPart);
+}
+
+function getZoneOptions(selectedKey = "") {
+  const selectedZone = normalizeTargetZone(selectedKey);
+  return BODY_ZONE_OPTIONS.map(option => ({
+    ...option,
+    selected: option.key === selectedZone
+  }));
+}
 
 class IronHillsSpellCastApp extends Application {
 
@@ -60,7 +98,20 @@ class IronHillsSpellCastApp extends Application {
                        : !hasRank ? `Нужен навык ${spell.rank}`
                        : !hasMana ? `Нужно ${spell.manaCost} маны`
                        : null;
-        return { ...spell, locked, available: !locked };
+        const targetZone = getSpellTargetZone(spell);
+        const canChooseTargetZone = Number(spell.damage ?? 0) > 0;
+        const canToggleFriendlyFire = Boolean(spell.aoe);
+        return {
+          ...spell,
+          locked,
+          available: !locked,
+          targetZone,
+          friendlyFire: Boolean(spell.friendlyFire ?? false),
+          canChooseTargetZone,
+          canToggleFriendlyFire,
+          bodyZones: canChooseTargetZone ? getZoneOptions(targetZone) : [],
+          aoeLabel: spell.aoe ? (AOE_LABELS[spell.aoe.type] ?? spell.aoe.type) : "",
+        };
       });
       const hasAny = spells.some(s => s.available || s.locked !== "unknown");
       return { ...school, spells, hasAny };
@@ -78,11 +129,7 @@ class IronHillsSpellCastApp extends Application {
       allSchools: Object.values(SPELL_SCHOOLS),
       activeSchool: this._school,
       targets: this._targets.map(t => ({ id:t.id, name:t.name })),
-      AOE_LABELS: {
-        blast:"💥 Все в зоне", pierce:"➡ Первый на пути",
-        sweep:"↔ Слева направо", shards:"💎 Случайные N",
-        chain:"⛓ Цепочка", nova:"🌟 Вокруг кастера"
-      },
+      AOE_LABELS,
     };
   }
 
@@ -97,11 +144,43 @@ class IronHillsSpellCastApp extends Application {
     });
 
     // Выбор заклинания
+    html.find("[data-spell-option]").on("click change", e => e.stopPropagation());
+
     html.find("[data-cast-spell]").on("click", e => {
       const id = e.currentTarget.dataset.castSpell;
       const spell = SPELLS[id];
       if (!spell) return;
-      this._resolve?.({ spell });
+      if (e.currentTarget.classList.contains("is-locked")) return;
+
+      const chosen = foundry.utils.deepClone(spell);
+      const zoneInput = e.currentTarget.querySelector("[data-spell-target-zone]");
+      const friendlyFireInput = e.currentTarget.querySelector("[data-spell-friendly-fire]");
+      const targetZone = zoneInput
+        ? normalizeTargetZone(zoneInput.value)
+        : getSpellTargetZone(chosen);
+
+      if (targetZone) {
+        chosen.targetZone = targetZone;
+        chosen.targetPart = chosen.targetPart ?? targetZone;
+        if (chosen.effect && typeof chosen.effect === "object") {
+          chosen.effect = { ...chosen.effect, targetZone };
+        }
+      } else if (zoneInput) {
+        delete chosen.targetZone;
+        delete chosen.targetPart;
+        if (chosen.effect && typeof chosen.effect === "object") {
+          chosen.effect = { ...chosen.effect };
+          delete chosen.effect.targetZone;
+          delete chosen.effect.targetPart;
+        }
+      }
+      if (friendlyFireInput) {
+        chosen.friendlyFire = Boolean(friendlyFireInput.checked);
+      } else if (chosen.friendlyFire === undefined) {
+        chosen.friendlyFire = false;
+      }
+
+      this._resolve?.({ spell: chosen });
       this.close();
     });
 

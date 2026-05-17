@@ -137,6 +137,13 @@ function main() {
 
   writeFileSync(CATALOG, src, "utf8");
   console.log(`💾 Записано: ${CATALOG}`);
+  console.log("");
+  console.log("Дальше в Foundry (миру нужно подтянуть иконки в компендиум):");
+  console.log("  1. Полное обновление страницы (F5), чтобы система подхватила каталог.");
+  console.log("  2. Под GM открой консоль (F12) и выполни:");
+  console.log('     await game.ironHills.syncWeaponPackFromCatalog()');
+  console.log("  Предметы, уже лежащие на листах персонажей, могут хранить старую иконку —");
+  console.log("  перетащи их из компендиума заново или обнови поле img вручную.");
 }
 
 main();

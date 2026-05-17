@@ -1,6 +1,22 @@
-import { IronHillsCombatTechniqueApp } from "./combat-technique-app.mjs";
+import { IronHillsCombatTechniqueApp, AIM_ZONES } from "./combat-technique-app.mjs";
 import { IronHillsSpellCastApp } from "./spell-cast-app.mjs";
-import { placeAoeTemplate, applyAoeDamage, removeAoeTemplate, AOE_TYPES } from "../services/aoe-service.mjs";
+import { applyAoeDamageTemplate } from "../services/aoe-service.mjs";
+import { resolveSingleAttack, formatAttackChatHtml } from "../services/combat-attack-service.mjs";
+import { applyPreparedCombatReaction } from "../services/combat-reaction-service.mjs";
+import { applyHitEffects, buildHitEffect } from "../services/hit-effect-service.mjs";
+import {
+  applyAoeSpellEffect,
+  applySingleTargetSpellDamage,
+  applySingleTargetSpellUtilityEffect
+} from "../services/spell-effect-service.mjs";
+import {
+  applyTechniqueSupportEffect,
+  buildTechniqueAttackParams,
+  consumePreparedAttackBonus,
+  getTechniqueAoeConfig,
+  getTechniqueSupportEnergyCost,
+  isTechniqueSupportAction
+} from "../services/combat-technique-service.mjs";
 import { getAvailableTechniques } from "../constants/combat-techniques.mjs";
 import {
   getCombatUiState,
@@ -23,10 +39,7 @@ import {
   getPersistentActorUuid,
   resolvePersistentActorFromTokenOrUser
 } from "../utils/actor-utils.mjs";
-import {
-  getHitLocation,
-  getBestResistForZone
-} from "../services/actor-state-service.mjs";
+import { getHitLabel } from "../services/actor-state-service.mjs";
 import { actorsAreAllies } from "../services/disposition-service.mjs";
 import { num } from "../utils/math-utils.mjs";
 import { getWeaponRange, getTokenGridDistance, getActorToken } from "../utils/item-utils.mjs";
@@ -34,6 +47,41 @@ import { getWeaponRange, getTokenGridDistance, getActorToken } from "../utils/it
 function getRatio(value, max) {
   const safeMax = Math.max(1, num(max, 1));
   return Math.max(0, Math.min(1, num(value, 0) / safeMax));
+}
+
+function getSpellSkillKey(actor) {
+  if (actor?.system?.skills?.magic) return "magic";
+  if (actor?.system?.skills?.sorcery) return "sorcery";
+  return null;
+}
+
+function getSpellDefenseDamageType(spell) {
+  const type = String(spell?.damageType ?? "magical").toLowerCase();
+  return type === "physical" ? "physical" : "magical";
+}
+
+async function chooseTechniqueTargetZone(technique) {
+  return new Promise(resolve => {
+    const buttons = {};
+    for (const zone of AIM_ZONES) {
+      buttons[zone.key] = {
+        label: `${zone.icon ?? ""} ${zone.label}`,
+        callback: () => resolve(zone),
+      };
+    }
+    buttons.cancel = {
+      label: "Отмена",
+      callback: () => resolve(null),
+    };
+
+    new Dialog({
+      title: `${technique?.label ?? "Приём"}: зона попадания`,
+      content: `<p>Выберите зону для точного броска.</p>`,
+      buttons,
+      default: "torso",
+      close: () => resolve(null),
+    }).render(true);
+  });
 }
 
 function getZoneClass(value, max) {
@@ -62,13 +110,17 @@ function isFriendlySide(a, b) {
 
 function getPartTrauma(hpNode) {
   const status = hpNode?.status ?? {};
+  const majorBleeding = Number(status.majorBleeding ?? 0);
+  const tourniquet = Boolean(status.tourniquet);
   return {
     minorBleeding: Number(status.minorBleeding ?? 0),
-    majorBleeding: Number(status.majorBleeding ?? 0),
+    majorBleeding,
+    activeMajorBleeding: tourniquet ? 0 : majorBleeding,
+    suppressedMajorBleeding: tourniquet ? majorBleeding : 0,
     fracture: Boolean(status.fracture),
     destroyed: Boolean(status.destroyed),
     splinted: Boolean(status.splinted),
-    tourniquet: Boolean(status.tourniquet)
+    tourniquet
   };
 }
 
@@ -76,7 +128,11 @@ function getPartTrauma(hpNode) {
 function buildZoneTooltip(label, value, max, trauma) {
   const parts = [`${label}: ${value}/${max}`];
   if (trauma.destroyed)       parts.push("⚫ Разрушено");
-  if (trauma.majorBleeding)   parts.push(`🔴 Сильн. кровотечение: ${trauma.majorBleeding}`);
+  if (trauma.majorBleeding) {
+    parts.push(trauma.suppressedMajorBleeding
+      ? `🔴 Сильн. кровотечение пережато: ${trauma.majorBleeding}`
+      : `🔴 Сильн. кровотечение: ${trauma.majorBleeding}`);
+  }
   if (trauma.minorBleeding)   parts.push(`🟡 Мал. кровотечение: ${trauma.minorBleeding}`);
   if (trauma.fracture)        parts.push("🟣 Перелом");
   if (trauma.tourniquet)      parts.push("🔵 Жгут наложен");
@@ -145,6 +201,57 @@ export class IronHillsCombatHudApp extends Application {
     return canActorCommitAction(actor);
   }
 
+  async _spendHudSpellCost(actor, spell, { manaCur = null } = {}) {
+    const currentMana = manaCur ?? Number(actor?.system?.resources?.mana?.value ?? 0);
+    await actor.update({
+      "system.resources.mana.value": Math.max(0, currentMana - Number(spell?.manaCost ?? 0))
+    });
+    spendActorSeconds(actor.id, Number(spell?.castTime ?? 0), {
+      actionType: "spell",
+      label: spell?.label ?? "Заклинание"
+    });
+  }
+
+  _completeHudSpellCast() {
+    this._refreshHud({ keepOnTop: true });
+  }
+
+  async _requireSettledInventory(actor, actionLabel = "действие") {
+    const { requireNoPendingInventory } = await import("./pending-items-app.mjs").catch(() => ({}));
+    if (!requireNoPendingInventory) return true;
+    const result = await requireNoPendingInventory(actor, { actionLabel });
+    return Boolean(result?.ok);
+  }
+
+  async _performTechniqueSupportAction(actor, technique, { weapon = null } = {}) {
+    const energyCost = getTechniqueSupportEnergyCost(technique);
+    const currentEnergy = Number(actor?.system?.resources?.energy?.value ?? 0);
+    if (currentEnergy < energyCost) {
+      ui.notifications.warn(`${actor.name}: недостаточно энергии (${currentEnergy}/${energyCost})`);
+      return false;
+    }
+
+    if (energyCost > 0) {
+      await actor.update({
+        "system.resources.energy.value": Math.max(0, currentEnergy - energyCost),
+      });
+    }
+
+    const seconds = Number(actor.sheet?._getCombatActionSeconds?.("attack", weapon) ?? 6);
+    spendActorSeconds(actor.id, seconds, {
+      actionType: "technique",
+      label: technique?.label ?? "Боевой приём",
+    });
+
+    const result = await applyTechniqueSupportEffect({ actor, technique });
+    const lines = result.lines?.length ? result.lines.join("<br>") : "Эффект подготовлен.";
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div style="padding:6px"><b>${actor.name}</b>: ${technique?.icon ?? "⚔"} <b>${technique?.label ?? "Приём"}</b><br>${lines}</div>`,
+    });
+    return true;
+  }
+
   async _toggleCompactMode() {
     this._compactMode = !this._compactMode;
     this.render(true, { focus: false });
@@ -172,6 +279,9 @@ export class IronHillsCombatHudApp extends Application {
     baseDamage = 1, energyCost = 5, weapon = null,
     hitBonus = 0, ignoreArmor = 0, targetZone = null,
     aimed = false, technique = null,
+    applyCondition = null, conditionDuration = 0, conditionChance = 1,
+    effectNotes = [],
+    rangeOverride = null,
   }) {
     // Штраф прочности оружия (NPC-атака, упрощённая)
     if (weapon) {
@@ -184,12 +294,6 @@ export class IronHillsCombatHudApp extends Application {
       }
       const mult = pct <= 0.25 ? 0.70 : pct <= 0.50 ? 0.85 : pct <= 0.75 ? 0.95 : 1;
       baseDamage = Math.max(1, Math.floor(baseDamage * mult));
-      // Износ оружия (20% шанс за атаку)
-      if (Math.random() < 0.2) {
-        import("../services/durability-service.mjs").then(({ wearItem }) => {
-          wearItem(weapon, 1, actor).catch(() => {});
-        });
-      }
     }
     // Проверяем энергию
     const energy = actor.system?.resources?.energy;
@@ -205,13 +309,17 @@ export class IronHillsCombatHudApp extends Application {
                     .find(t => t.actor && t.actor.id !== actor.id
                             && !actorsAreAllies(actor, t.actor));
     const target = targetTokenObj?.actor;
+    if (!target) {
+      ui.notifications.warn(`${actor.name}: нет цели для атаки`);
+      return;
+    }
 
     // Проверка дальности атаки
     if (target && weapon) {
       const attackerToken = getActorToken(actor);
       if (attackerToken && targetTokenObj && canvas?.scene) {
         const dist = getTokenGridDistance(attackerToken, targetTokenObj);
-        const range = getWeaponRange(weapon);
+        const range = Number(rangeOverride ?? 0) > 0 ? Number(rangeOverride) : getWeaponRange(weapon);
         if (dist > range) {
           ui.notifications.warn(`${actor.name}: цель вне досягаемости (${Math.ceil(dist)}/${range} клеток)`);
           return;
@@ -219,179 +327,92 @@ export class IronHillsCombatHudApp extends Application {
       }
     }
 
-    // Бросок атаки
-    const skillVal = Number(actor.system?.skills?.[skillKey]?.value
-                  ?? actor.system?.combat?.attackBonus ?? 3);
-    const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
-    const roll     = await new Roll(`1d${dieSize}`).evaluate();
-    const total    = roll.total + (hitBonus ?? 0);
-
-    // Снимаем энергию
-    await actor.update({ "system.resources.energy.value": Math.max(0, curEnergy - energyCost) });
-
-    // Строим сообщение в чат
-    let content = `<div style="font-family:var(--font-primary);padding:6px">
-      <b>${actor.name}</b> атакует: <b>${label}</b><br>
-      Бросок: <b>${total}</b> (d${dieSize}${hitBonus ? `${hitBonus >= 0 ? "+" : ""}${hitBonus}` : ""})
-      ${technique ? `<br>Приём: ${technique.icon ?? "⚔"} ${technique.label}` : ""}
-      ${aimed ? `<br>🎯 Прицел: ${targetZone}` : ""}`;
-
-    if (target) {
-      const locRoll = await new Roll("1d20").evaluate();
-      const locKey  = targetZone ?? getHitLocation(locRoll.total);
-      const reduction = getBestResistForZone(target, locKey, damageType);
-      const armorPen  = Math.round(reduction * (ignoreArmor ?? 0));
-      const effRed    = Math.max(0, reduction - armorPen);
-      const margin    = Math.max(0, total - 5);
-      const rawDmg    = Number(baseDamage) + margin;
-      const finalDmg  = Math.max(0, rawDmg - effRed);
-
-      // Наносим урон
-      if (target.system?.resources?.hp) {
-        if (target.type === "monster") {
-          const hp = Number(target.system.resources.hp.value ?? 0);
-          await target.update({ "system.resources.hp.value": Math.max(0, hp - finalDmg) });
-        } else {
-          const torsoHp = Number(target.system.resources.hp?.[locKey]?.value ?? target.system.resources.hp?.torso?.value ?? 0);
-          const hpPath  = target.system.resources.hp?.[locKey] ? `system.resources.hp.${locKey}.value` : "system.resources.hp.torso.value";
-          await target.update({ [hpPath]: Math.max(0, torsoHp - finalDmg) });
-        }
-      }
-
-      content += `<br>→ ${target.name}: урон <b>${finalDmg}</b>`;
-      if (effRed > 0) content += ` (броня −${effRed})`;
-    } else {
-      content += `<br><i>Нет цели</i>`;
+    const preparedBonus = await consumePreparedAttackBonus(actor, { skillKey });
+    if (preparedBonus.hitBonus) {
+      hitBonus = Number(hitBonus ?? 0) + preparedBonus.hitBonus;
+      effectNotes = [
+        ...(Array.isArray(effectNotes) ? effectNotes : [effectNotes].filter(Boolean)),
+        ...preparedBonus.lines,
+      ];
     }
 
-    content += `</div>`;
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content });
-  }
-
-  // ── Кастование заклинания ───────────────────────────────────
-  async _castSpell() {
-    const actor = getHudActor();
-    if (!actor) return;
-
-    const combatCheck = this._canActorUseCombatAction(actor);
-    if (!combatCheck.ok) {
-      ui.notifications.warn(combatCheck.reason);
-      return;
-    }
-
-    // Получаем цели
-    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
-
-    // Открываем диалог выбора заклинания
-    const choice = await IronHillsSpellCastApp.choose(actor, targets);
-    if (!choice) return;
-
-    const { spell } = choice;
-    const manaCur = Number(actor.system?.resources?.mana?.value ?? 0);
-
-    if (manaCur < spell.manaCost) {
-      ui.notifications.warn(`Недостаточно маны (${manaCur}/${spell.manaCost})`);
-      return;
-    }
-
-    // Тратим ману и время
-    await actor.update({ "system.resources.mana.value": Math.max(0, manaCur - spell.manaCost) });
-
-    spendActorSeconds(actor.id, spell.castTime, {
-      actionType: "spell", label: spell.label
+    const skillValueFallback = Number(
+      actor.system?.combat?.attackSkill
+      ?? actor.system?.combat?.unarmedSkill
+      ?? actor.system?.combat?.attackBonus
+      ?? 1
+    );
+    const normalizedDamageType = String(damageType ?? "physical").toLowerCase() === "physical"
+      ? "physical"
+      : "magical";
+    const result = await resolveSingleAttack({
+      attacker: actor,
+      target,
+      skillKey,
+      skillValueFallback,
+      baseDamage,
+      damageType: normalizedDamageType,
+      energyCost,
+      weapon,
+      hitBonus,
+      ignoreArmor,
+      targetZone,
+      spendEnergy: true,
+      wearWeapon: Boolean(weapon),
+      wearArmor: true,
+      shieldIntercept: normalizedDamageType === "physical",
+      ignoreShield: technique?.effect?.special === "ignore_shield",
     });
-
-    // AoE заклинание
-    if (spell.aoe) {
-      const result = await placeAoeTemplate({
-        aoeType:      spell.aoe.shape,
-        distance:     spell.aoe.distance,
-        label:        spell.label,
-        color:        { fire:"#ff4400", ice:"#88ccff", lightning:"#ffee44",
-                        shadow:"#6600aa", light:"#ffee99", earth:"#886633",
-                        mind:"#cc88ff", summon:"#44aa88" }[spell.school] ?? "#8888ff",
-        attacker:     actor,
-        skillKey:     "magic",
-        friendlyFire: spell.friendlyFire ?? false,
-      });
-
-      if (!result) { this._refreshHud({ keepOnTop:true }); return; }
-
-      const { template, targets: zoneTargets } = result;
-
-      await applyAoeDamage({
-        attacker:     actor,
-        targets:      zoneTargets,
-        baseDamage:   spell.damage,
-        skillKey:     "magic",
-        damageType:   spell.damageType,
-        aoeType:      spell.aoe.type,
-        maxTargets:   spell.aoe.maxTargets ?? null,
-        chainDecay:   spell.aoe.chainDecay ?? 0.8,
-        label:        spell.label,
-        effect:       spell.effect,
-        friendlyFire: spell.friendlyFire ?? false,
-      });
-
-      await removeAoeTemplate(template, 3000);
-
-    } else if (spell.damage > 0) {
-      // Одиночное заклинание
-      const target = targets[0] ?? [...(game.user.targets??[])][0]?.actor;
-      if (!target) {
-        ui.notifications.warn("Нет цели — возьми цель в таргет (T)");
-        this._refreshHud({ keepOnTop:true });
-        return;
-      }
-
-      const skillVal = Number(actor.system?.skills?.magic?.value
-                            ?? actor.system?.skills?.sorcery?.value ?? 3);
-      const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
-      const roll     = await new Roll(`1d${dieSize}`).evaluate();
-      const defVal   = Number(target.system?.skills?.defense?.value ?? 0);
-      const hit      = roll.total >= 5 + defVal;
-
-      if (hit) {
-        const hp     = target.system?.resources?.hp?.torso?.value
-                    ?? target.system?.resources?.hp?.value ?? 0;
-        const hpPath = target.system?.resources?.hp?.torso !== undefined
-          ? "system.resources.hp.torso.value" : "system.resources.hp.value";
-        await target.update({ [hpPath]: Math.max(0, hp - spell.damage) });
-
-        if (spell.effect?.applyCondition &&
-            Math.random() < (spell.effect.conditionChance ?? 1)) {
-          await target.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
-        }
-      }
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div style="padding:6px">
-          ✨ <b>${actor.name}</b> → <b>${spell.label}</b> → ${target.name}<br>
-          Бросок: <b>${roll.total}</b> — ${hit ? `попал, урон <b>${spell.damage}</b>` : "промах"}
-          ${hit && spell.effect?.applyCondition ? ` · ${spell.effect.applyCondition}` : ""}
-        </div>`
-      });
-
-    } else if (spell.effect?.special === "buff" || spell.effect?.special === "debuff") {
-      // Бафф/дебафф
-      const tgt = targets[0] ?? actor;
-      if (spell.effect.applyCondition) {
-        await tgt.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
-      }
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div style="padding:6px">✨ <b>${spell.label}</b> → ${tgt.name}</div>`
-      });
+    if (!result) {
+      ui.notifications.warn(`${actor.name}: не удалось провести атаку (${skillKey})`);
+      return;
     }
 
-    this._refreshHud({ keepOnTop: true });
+    let extraHtml = "";
+    if (technique) {
+      extraHtml += `<p><b>Приём:</b> ${technique.icon ?? "⚔"} ${technique.label}</p>`;
+    }
+    if (aimed && targetZone) {
+      extraHtml += `<p><b>Прицел:</b> ${getHitLabel(targetZone)}</p>`;
+    }
+    const hitEffects = await applyHitEffects({
+      attacker: actor,
+      target,
+      result,
+      effect: buildHitEffect(technique?.effect, {
+        applyCondition,
+        conditionDuration,
+        conditionChance,
+        notes: effectNotes,
+      }),
+    });
+    extraHtml += hitEffects.html;
+
+    const content = await formatAttackChatHtml({
+      label,
+      skillKey,
+      attacker: actor,
+      target,
+      result,
+    });
+    const reaction = await applyPreparedCombatReaction({
+      attacker: actor,
+      defender: target,
+      result,
+      sourceSkillKey: skillKey,
+      sourceDamageType: normalizedDamageType,
+    });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: content + extraHtml + reaction.html,
+    });
   }
 
   // ── Кастование заклинания ───────────────────────────────────
   async _castSpell() {
     const actor = getHudActor();
     if (!actor) return;
+    if (!(await this._requireSettledInventory(actor, "заклинание"))) return;
     const combatCheck = this._canActorUseCombatAction(actor);
     if (!combatCheck.ok) { ui.notifications.warn(combatCheck.reason); return; }
     const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
@@ -402,8 +423,12 @@ export class IronHillsCombatHudApp extends Application {
     if (manaCur < spell.manaCost) {
       ui.notifications.warn(`Недостаточно маны (${manaCur}/${spell.manaCost})`); return;
     }
-    await actor.update({ "system.resources.mana.value": Math.max(0, manaCur - spell.manaCost) });
-    spendActorSeconds(actor.id, spell.castTime, { actionType:"spell", label:spell.label });
+    const spellSkillKey = getSpellSkillKey(actor);
+    if (!spellSkillKey) {
+      ui.notifications.warn(`${actor.name}: нет навыка магии для заклинания.`);
+      return;
+    }
+    const spellDamageType = getSpellDefenseDamageType(spell);
 
     const SCHOOL_COLORS = {
       fire:"#ff4400", ice:"#88ccff", lightning:"#ffee44",
@@ -412,110 +437,122 @@ export class IronHillsCombatHudApp extends Application {
     };
 
     if (spell.aoe) {
-      const result = await placeAoeTemplate({
-        aoeType:      spell.aoe.shape,
-        distance:     spell.aoe.distance,
-        label:        spell.label,
-        color:        SCHOOL_COLORS[spell.school] ?? "#8888ff",
-        attacker:     actor,
-        skillKey:     "magic",
-        hitBonus:     0,
+      const targetZone = spell.targetZone ?? spell.targetPart ?? spell.effect?.targetZone ?? spell.effect?.targetPart ?? null;
+      const aoeSpell = await applyAoeSpellEffect({
+        caster: actor,
+        aoe: spell.aoe,
+        label: spell.label,
+        color: SCHOOL_COLORS[spell.school] ?? "#8888ff",
+        skillKey: spellSkillKey,
         friendlyFire: spell.friendlyFire ?? false,
+        baseDamage: Number(spell.damage ?? 0),
+        damageType: spellDamageType,
+        effect: spell.effect,
+        power: spell.effect?.healAmount ?? spell.power ?? 0,
+        targetZone,
+        onTemplatePlaced: () => this._spendHudSpellCost(actor, spell, { manaCur }),
       });
-      if (!result) { this._refreshHud({ keepOnTop:true }); return; }
-      const { template, targets: zoneTargets } = result;
-      await applyAoeDamage({
-        attacker: actor, targets: zoneTargets,
-        baseDamage: spell.damage, skillKey: "magic",
-        damageType: spell.damageType, aoeType: spell.aoe.type,
-        maxTargets: spell.aoe.maxTargets ?? null,
-        chainDecay: spell.aoe.chainDecay ?? 0.8,
-        label: spell.label, effect: spell.effect,
-        friendlyFire: spell.friendlyFire ?? false,
-      });
-      await removeAoeTemplate(template, 3000);
+      if (!aoeSpell.ok) { this._completeHudSpellCast(); return; }
     } else if (spell.damage > 0) {
       const target = targets[0];
-      if (!target) { ui.notifications.warn("Возьми цель в таргет (T)"); this._refreshHud({ keepOnTop:true }); return; }
-      const skillVal = Number(actor.system?.skills?.magic?.value ?? actor.system?.skills?.sorcery?.value ?? 3);
-      const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
-      const roll     = await new Roll(`1d${dieSize}`).evaluate();
-      const defVal   = Number(target.system?.skills?.defense?.value ?? 0);
-      const hit      = roll.total >= 5 + defVal;
-      if (hit) {
-        const hpPath = target.system?.resources?.hp?.torso !== undefined ? "system.resources.hp.torso.value" : "system.resources.hp.value";
-        const hp     = target.system?.resources?.hp?.torso?.value ?? target.system?.resources?.hp?.value ?? 0;
-        await target.update({ [hpPath]: Math.max(0, hp - spell.damage) });
-        if (spell.effect?.applyCondition && Math.random() < (spell.effect.conditionChance ?? 1))
-          await target.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
-      }
+      if (!target) { ui.notifications.warn("Возьми цель в таргет (T)"); this._completeHudSpellCast(); return; }
+      await this._spendHudSpellCost(actor, spell, { manaCur });
+      const targetZone = spell.targetZone ?? spell.targetPart ?? spell.effect?.targetZone ?? spell.effect?.targetPart ?? null;
+      const spellAttack = await applySingleTargetSpellDamage({
+        caster: actor,
+        target,
+        skillKey: spellSkillKey,
+        baseDamage: spell.damage,
+        damageType: spellDamageType,
+        label: `✨ ${spell.label}`,
+        effect: spell.effect,
+        targetZone,
+      });
+      if (!spellAttack.ok) return;
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div style="padding:6px">✨ <b>${actor.name}</b> → <b>${spell.label}</b> → ${target.name}<br>Бросок: <b>${roll.total}</b> — ${hit ? `попал, урон <b>${spell.damage}</b>` : "промах"}${hit && spell.effect?.applyCondition ? ` · ${spell.effect.applyCondition}` : ""}</div>`
+        content: spellAttack.html,
       });
-    } else if (spell.effect?.applyCondition) {
+    } else if (spell.effect?.applyCondition || spell.effect?.special === "heal") {
       const tgt = targets[0] ?? actor;
-      await tgt.update({ [`system.conditions.${spell.effect.applyCondition}`]: 1 });
+      await this._spendHudSpellCost(actor, spell, { manaCur });
+      const utilityEffect = await applySingleTargetSpellUtilityEffect({
+        caster: actor,
+        target: tgt,
+        effectType: spell.effectType ?? "",
+        effect: spell.effect,
+        power: spell.effect?.healAmount ?? spell.power ?? 0,
+        targetPart: spell.targetZone ?? spell.targetPart ?? spell.effect?.targetZone ?? spell.effect?.targetPart ?? "torso",
+      });
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div style="padding:6px">✨ <b>${spell.label}</b> → ${tgt.name}</div>`
+        content: `<div style="padding:6px">✨ <b>${spell.label}</b> → ${tgt.name}${utilityEffect.html}</div>`
       });
+    } else {
+      ui.notifications.warn(`${spell.label}: эффект заклинания не настроен.`);
     }
-    this._refreshHud({ keepOnTop: true });
+    this._completeHudSpellCast();
   }
 
     // ── AoE Атака ──────────────────────────────────────────────
   async _performAoeAttack(actor, { aoeType, distance, baseDamage, energyCost,
-      skillKey, label, damageType = "physical", ignoreArmor = 0 }) {
+      skillKey, label, damageType = "physical", ignoreArmor = 0,
+      targetMode = "blast", maxTargets = null, chainDecay = 1,
+      hitBonus = 0, targetZone = null, applyCondition = null,
+      conditionDuration = 0, conditionChance = 1, effectNotes = [],
+      friendlyFire = false }) {
 
     // Проверяем энергию
+    if (!(await this._requireSettledInventory(actor, label || "AoE атака"))) return;
+
     const curEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
     if (curEnergy < energyCost) {
       ui.notifications.warn(`Недостаточно энергии (${curEnergy}/${energyCost})`);
       return;
     }
+    const skillValueFallback = Number(
+      actor.system?.combat?.attackSkill
+      ?? actor.system?.combat?.unarmedSkill
+      ?? actor.system?.combat?.attackBonus
+      ?? 1
+    );
 
     // Уведомляем игроков
     ui.notifications.info(`${actor.name}: ${label} — укажи зону на сцене`);
 
     // Размещаем шаблон. Физика по умолчанию не задевает союзников.
-    const result = await placeAoeTemplate({
-      aoeType, distance, label,
-      color:        skillKey === "bow" || skillKey === "crossbow" ? "#4488ff" : "#ff4444",
-      attacker:     actor,
+    const aoeResult = await applyAoeDamageTemplate({
+      shape: aoeType,
+      distance,
+      label,
+      color: skillKey === "bow" || skillKey === "crossbow" ? "#4488ff" : "#ff4444",
+      attacker: actor,
       skillKey,
-      hitBonus:     0,
-      friendlyFire: false,
+      hitBonus,
+      skillValueFallback,
+      friendlyFire,
+      baseDamage,
+      damageType,
+      ignoreArmor,
+      aoeType: targetMode,
+      maxTargets,
+      chainDecay,
+      targetZone,
+      effect: buildHitEffect(null, {
+        applyCondition,
+        conditionDuration,
+        conditionChance,
+        notes: effectNotes,
+      }),
+      onTemplatePlaced: async () => actor.update({
+        "system.resources.energy.value": Math.max(0, curEnergy - energyCost),
+      }),
     });
 
-    if (!result) {
+    if (!aoeResult.ok) {
       ui.notifications.info("Атака отменена");
       return;
     }
-
-    const { template, targets } = result;
-
-    // Списываем энергию
-    await actor.update({ "system.resources.energy.value": Math.max(0, curEnergy - energyCost) });
-
-    // Бросок атаки (один для всего AoE)
-    const skillVal = Number(actor.system?.skills?.[skillKey]?.value ?? 3);
-    const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
-    const roll     = await new Roll(`1d${dieSize}`).evaluate();
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div style="padding:4px">💥 <b>${label}</b> — бросок: <b>${roll.total}</b> (d${dieSize})</div>`
-    });
-
-    // Применяем урон. Физический AoE (стрелы, удары) по умолчанию не задевает союзников.
-    await applyAoeDamage({
-      attacker: actor, targets, baseDamage, skillKey, damageType, ignoreArmor, label,
-      friendlyFire: false,
-    });
-
-    // Удаляем шаблон через 3 секунды
-    await removeAoeTemplate(template, 3000);
 
     this._refreshHud({ keepOnTop: true });
   }
@@ -524,6 +561,7 @@ export class IronHillsCombatHudApp extends Application {
   async _breathe() {
     const actor = getHudActor();
     if (!actor) return;
+    if (!(await this._requireSettledInventory(actor, "перевести дух"))) return;
 
     const combatCheck = this._canActorUseCombatAction(actor);
     if (!combatCheck.ok) {
@@ -560,6 +598,7 @@ export class IronHillsCombatHudApp extends Application {
   async _attack(hand) {
     const actor = getHudActor();
     if (!actor?.sheet) return;
+    if (!(await this._requireSettledInventory(actor, "атака"))) return;
 
     const combatCheck = this._canActorUseCombatAction(actor);
     if (!combatCheck.ok) {
@@ -606,7 +645,12 @@ export class IronHillsCombatHudApp extends Application {
 
     // Есть ли доступные приёмы или прицельный удар?
     const techniques = weapon ? getAvailableTechniques(actor, weapon) : [];
-    const skillVal   = Number(actor.system?.skills?.[baseParams.skillKey]?.value ?? 0);
+    const skillVal   = Number(
+      actor.system?.skills?.[baseParams.skillKey]?.value
+      ?? actor.system?.combat?.attackSkill
+      ?? actor.system?.combat?.unarmedSkill
+      ?? 0
+    );
     const canAim     = skillVal >= 3;
 
     if (techniques.length > 0 || canAim) {
@@ -620,36 +664,52 @@ export class IronHillsCombatHudApp extends Application {
 
       } else if (choice.type === "technique") {
         const tech = choice.technique;
+        if (isTechniqueSupportAction(tech)) {
+          await this._performTechniqueSupportAction(actor, tech, { weapon });
+          this._refreshHud({ keepOnTop: true });
+          return;
+        }
+
+        const targetZoneChoice = tech.effect?.special === "choose_zone"
+          ? await chooseTechniqueTargetZone(tech)
+          : null;
+        if (tech.effect?.special === "choose_zone" && !targetZoneChoice) return;
+
+        const primaryTarget = targets[0] ?? null;
+        const techniqueParams = buildTechniqueAttackParams({
+          baseParams,
+          technique: tech,
+          attacker: actor,
+          target: primaryTarget,
+          targetZoneChoice,
+        });
 
         // AoE приём — используем MeasuredTemplate
         if (tech.effect.special === "aoe" && tech.effect.aoe) {
-          const aoeStr  = tech.effect.aoe; // "melee_adjacent" | "ranged_3targets" | etc
-          const isRanged = aoeStr.startsWith("ranged");
-          const aoeType  = isRanged ? "circle" : "circle";
-          const dist     = isRanged ? 4 : 1; // клетки
+          const aoe = getTechniqueAoeConfig(tech.effect);
           await this._performAoeAttack(actor, {
-            aoeType,
-            distance:    dist,
-            baseDamage:  Math.round(baseParams.baseDamage * (tech.effect.damage ?? 1)),
-            energyCost:  baseParams.energyCost + (tech.energyCost ?? 0),
-            skillKey:    baseParams.skillKey,
-            label:       `${baseParams.label}: ${tech.label}`,
-            damageType:  baseParams.damageType,
-            ignoreArmor: tech.effect.ignoreArmor ?? 0,
+            aoeType:     aoe.shape,
+            targetMode:  aoe.type,
+            distance:    aoe.distance,
+            maxTargets:  aoe.maxTargets,
+            chainDecay:  aoe.chainDecay,
+            baseDamage:  techniqueParams.baseDamage,
+            energyCost:  techniqueParams.energyCost,
+            skillKey:    techniqueParams.skillKey,
+            label:       techniqueParams.label,
+            damageType:  techniqueParams.damageType,
+            ignoreArmor: techniqueParams.ignoreArmor,
+            hitBonus:    techniqueParams.hitBonus,
+            targetZone:  techniqueParams.targetZone,
+            applyCondition: techniqueParams.applyCondition,
+            conditionDuration: techniqueParams.conditionDuration,
+            conditionChance: techniqueParams.conditionChance,
+            effectNotes: techniqueParams.effectNotes,
+            friendlyFire: Boolean(tech.effect.friendlyFire ?? false),
           });
         } else {
           // Обычный одиночный приём
-          await this._callPerformAttack(actor, {
-            ...baseParams,
-            label:       `${baseParams.label}: ${tech.label}`,
-            baseDamage:  Math.round(baseParams.baseDamage * (tech.effect.damage ?? 1)),
-            energyCost:  baseParams.energyCost + (tech.energyCost ?? 0),
-            ignoreArmor: tech.effect.ignoreArmor ?? 0,
-            technique:   tech,
-            applyCondition: tech.effect.applyCondition ?? null,
-            conditionDuration: tech.effect.conditionDuration ?? 0,
-            conditionChance: tech.effect.conditionChance ?? 1.0,
-          });
+          await this._callPerformAttack(actor, techniqueParams);
         }
 
       } else if (choice.type === "aimed") {
@@ -889,7 +949,12 @@ canContinuePendingAction:
         { key: "bleeding", label: "Кровотечение", icon: "fa-droplet",   color: "var(--ih-hp-crit)", active: num(actor.system?.conditions?.bleeding, 0) > 0,                                                                           value: num(actor.system?.conditions?.bleeding, 0) },
         { key: "silence",  label: "Безмолвие",   icon: "fa-volume-xmark", color: "#a78bfa",         active: num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),                                            value: "🔇" },
         { key: "slow",     label: "Замедление",  icon: "fa-person-walking", color: "#94a3b8",        active: num(actor.system?.conditions?.slowPenalty, 0) > 0,                                                                        value: num(actor.system?.conditions?.slowPenalty, 0) },
-        { key: "feared",   label: "Страх",       icon: "fa-ghost",     color: "#c084fc",           active: num(actor.system?.conditions?.feared, 0) > 0,                                                                              value: num(actor.system?.conditions?.feared, 0) }
+        { key: "feared",   label: "Страх",       icon: "fa-ghost",     color: "#c084fc",           active: num(actor.system?.conditions?.feared, 0) > 0,                                                                              value: num(actor.system?.conditions?.feared, 0) },
+        { key: "aim",      label: "Прицел",      icon: "fa-crosshairs", color: "#facc15",           active: num(actor.system?.conditions?.aimed_shot_bonus, 0) > 0,                                                                   value: `+${num(actor.system?.conditions?.aimed_shot_bonus, 0)}` },
+        { key: "formation",label: "Строй",       icon: "fa-people-arrows", color: "#60a5fa",        active: num(actor.system?.conditions?.formation_stance, 0) > 0,                                                                  value: num(actor.system?.conditions?.formation_stance, 0) },
+        { key: "wall",     label: "Стена",       icon: "fa-shield-halved", color: "#38bdf8",        active: num(actor.system?.conditions?.shield_wall_formation, 0) > 0,                                                            value: num(actor.system?.conditions?.shield_wall_formation, 0) },
+        { key: "counter",  label: "Контра",      icon: "fa-rotate",     color: "#fb923c",           active: num(actor.system?.conditions?.counter_ready, 0) > 0 || num(actor.system?.conditions?.riposte_ready, 0) > 0,               value: num(actor.system?.conditions?.counter_ready, 0) || num(actor.system?.conditions?.riposte_ready, 0) },
+        { key: "intercept",label: "Перехват",    icon: "fa-hand",       color: "#f472b6",           active: num(actor.system?.conditions?.intercept_ready, 0) > 0,                                                                   value: num(actor.system?.conditions?.intercept_ready, 0) }
       ],
       hasGlobalEffects: [
         num(actor.system?.conditions?.stunned, 0) > 0,
@@ -899,7 +964,13 @@ canContinuePendingAction:
         num(actor.system?.conditions?.bleeding, 0) > 0,
         num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),
         num(actor.system?.conditions?.slowPenalty, 0) > 0,
-        num(actor.system?.conditions?.feared, 0) > 0
+        num(actor.system?.conditions?.feared, 0) > 0,
+        num(actor.system?.conditions?.aimed_shot_bonus, 0) > 0,
+        num(actor.system?.conditions?.formation_stance, 0) > 0,
+        num(actor.system?.conditions?.shield_wall_formation, 0) > 0,
+        num(actor.system?.conditions?.counter_ready, 0) > 0,
+        num(actor.system?.conditions?.riposte_ready, 0) > 0,
+        num(actor.system?.conditions?.intercept_ready, 0) > 0
       ].some(Boolean),
 
       // Флаги для управления доступностью действий

@@ -36,6 +36,10 @@
       <label>Дистанция
         <input type="text" name="system.info.distance" value="{{system.info.distance}}">
       </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" name="system.info.hasFreshWater" {{checked system.info.hasFreshWater}}>
+        <span>Свежая вода (можно наполнять фляги)</span>
+      </label>
     </div>
 
     <h2>Состояние</h2>

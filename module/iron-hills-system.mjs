@@ -5,12 +5,11 @@
  */
 import { IronHillsActorSheet }   from "./apps/actor-sheet.mjs";
 import { IronHillsItemSheet }    from "./apps/item-sheet.mjs";
-import { IronHillsTradeApp }     from "./apps/trade-app.mjs";
 import { IronHillsGridInventoryApp, buildContainers as _buildContainers } from "./apps/grid-inventory-app.mjs";
 import { IronHillsTravelApp } from "./apps/travel-app.mjs";
 import { IronHillsPartyManagerApp, registerPartySettings } from "./services/party-manager.mjs";
 import { IronHillsCraftApp } from "./apps/craft-app.mjs";
-import { IronHillsAlchemyApp } from "./apps/alchemy-app.mjs";
+import { IronHillsCraftWorkbenchApp } from "./apps/craft-workbench-app.mjs";
 import { IronHillsWorldMapApp } from "./apps/world-map-app.mjs";
 import { EntityPickerDialog } from "./apps/entity-picker.mjs";
 import { IronHillsQuestBoardApp } from "./apps/quest-board-app.mjs";
@@ -34,9 +33,9 @@ import { TECHNIQUES, getAvailableTechniques } from "./constants/combat-technique
 import { IronHillsContainerSheet } from "./apps/container-sheet.mjs";
 import { IronHillsLootTransfer } from "./apps/loot-transfer-app.mjs";
 import { RACES } from "./constants/races.mjs";
-import { buildCompendiums, initCompendiums } from "./compendium-builder.mjs";
+import { buildCompendiums, initCompendiums, syncWeaponPackFromCatalog, syncArmorPackFromCatalog, syncPotionPackFromCatalog, syncFoodPackFromCatalog, syncNpcPackLootFromProfiles, syncMonsterPackToBestiary } from "./compendium-builder.mjs";
 import { IronHillsCompendiumBrowser } from "./apps/compendium-browser.mjs";
-import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS } from "./constants/items-catalog.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, DRINK_VESSELS } from "./constants/items-catalog.mjs";
 import { IRON_HILLS_POI } from "./constants/world-map.mjs";
 import { IronHillsLauncherApp } from "./apps/launcher-app.mjs";
 import { initToolbar } from "./apps/toolbar-app.mjs";
@@ -70,17 +69,42 @@ import {
   cancelPendingAction,
 } from "./services/combat-flow-service.mjs";
 import {
+  registerCombatMovementHooks,
+  getMoveMode,
+  setMoveMode,
+} from "./services/combat-movement-service.mjs";
+import {
   registerMigrationSettings,
   runWorldMigrations,
   runOneMigration,
   listMigrations
 } from "./migrations.mjs";
+import { teachCraftRecipe, forgetCraftRecipe as forgetCraftRecipeImpl } from "./constants/craft-knowledge.mjs";
+import { CRAFT_WORKBENCH_SKILLS } from "./constants/craft-workbench.mjs";
 import {
-  registerCombatMovementHooks,
-  setMoveMode as setCombatMoveMode,
-  getMoveMode as getCombatMoveMode
-} from "./services/combat-movement-service.mjs";
+  grantMonsterLootTo,
+  refillActorVessels,
+  lootTableKeys,
+  buildDrinkVesselItemData,
+  harvestMonsterCarcass,
+  pickpocketNpc,
+  butcherDifficultyForTier,
+  findHarvestToolOnActor,
+} from "./services/wilderness-service.mjs";
 
+async function syncDerivedConditionsCommand(actorRef) {
+  const actor =
+    typeof actorRef === "string"
+      ? (resolveActorFromUuid(actorRef) ?? game.actors.get(actorRef))
+      : getPersistentActor(actorRef);
+
+  if (!actor) {
+    ui.notifications.warn("Не удалось найти актёра для синхронизации derived conditions.");
+    return { ok: false };
+  }
+
+  return syncDerivedConditionsFromTrauma(actor, { render: true });
+}
 
 // Единый init: регистрация настроек, шитов, Handlebars-хелперов.
 Hooks.once("init", () => {
@@ -142,7 +166,7 @@ Hooks.once("init", () => {
   Actors.registerSheet("iron-hills-system", IronHillsNpcSheet, {
     types: ["npc", "monster"],
     makeDefault: true,
-    label: "Iron Hills — NPC"
+    label: "Iron Hills — Лист NPC / монстра"
   });
 
   Actors.registerSheet("iron-hills-system", IronHillsContainerSheet, {
@@ -169,19 +193,7 @@ Hooks.once("init", () => {
     // Потом можно будет отдельно доработать multi-user ownership.
     if (!game.user?.isGM && !actor.isOwner) return;
 
-    game.ironHills = game.ironHills || {syncDerivedConditions: async actorRef => {
-  const actor =
-    typeof actorRef === "string"
-      ? (resolveActorFromUuid(actorRef) ?? game.actors.get(actorRef))
-      : getPersistentActor(actorRef);
-
-  if (!actor) {
-    ui.notifications.warn("Не удалось найти актёра для синхронизации derived conditions.");
-    return { ok: false };
-  }
-
-  return syncDerivedConditionsFromTrauma(actor, { render: true });
-},};
+    game.ironHills = game.ironHills || {};
     game.ironHills._pendingActionPromptLocks = game.ironHills._pendingActionPromptLocks || {};
 
     const lockKey = `${participant.id}:${action.id}`;
@@ -231,6 +243,7 @@ Hooks.once("init", () => {
 Hooks.once("ready", async () => {
   game.ironHills = game.ironHills || {};
 
+  game.ironHills.syncDerivedConditions = syncDerivedConditionsCommand;
   game.ironHills.endTurnForActor = endTurnForActor;
   game.ironHills.isActorActiveTurn = isActorActiveTurn;
 
@@ -442,7 +455,7 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
 
   if (actor.type === "character" || actor.type === "merchant") {
     queueActorSheetRender(actor);
-    refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
+    refreshAllTradeUIs(IronHillsActorSheet, TarkovTradeApp);
   }
 
   // Обновляем HUD если актор является текущим участником боя
@@ -458,9 +471,25 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
   ensureDefaultPlayerHud();
   game.ironHills.pickEntity       = (options) => EntityPickerDialog.pick(options);
   game.ironHills.RACES            = RACES;
-  game.ironHills.ITEMS            = { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS };
+  game.ironHills.ITEMS            = { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, DRINK_VESSELS };
+  game.ironHills.grantMonsterLootTo = grantMonsterLootTo;
+  game.ironHills.refillDrinkVesselsFromWater = refillActorVessels;
+  /** @deprecated макросы: используйте listMonsterLootPoolKeys */
+  game.ironHills.listWildLootTableKeys = lootTableKeys;
+  game.ironHills.listMonsterLootPoolKeys = lootTableKeys;
+  game.ironHills.buildDrinkVesselItemData = buildDrinkVesselItemData;
+  game.ironHills.harvestMonsterCarcass = harvestMonsterCarcass;
+  game.ironHills.pickpocketNpc = pickpocketNpc;
+  game.ironHills.butcherDifficultyForTier = butcherDifficultyForTier;
+  game.ironHills.findHarvestToolOnActor = findHarvestToolOnActor;
   game.ironHills.MAP_POI          = IRON_HILLS_POI;
   game.ironHills.buildCompendiums = buildCompendiums;
+  game.ironHills.syncNpcPackLootFromProfiles = syncNpcPackLootFromProfiles;
+  game.ironHills.syncMonsterPackToBestiary = syncMonsterPackToBestiary;
+  game.ironHills.syncWeaponPackFromCatalog = syncWeaponPackFromCatalog;
+  game.ironHills.syncArmorPackFromCatalog = syncArmorPackFromCatalog;
+  game.ironHills.syncPotionPackFromCatalog = syncPotionPackFromCatalog;
+  game.ironHills.syncFoodPackFromCatalog = syncFoodPackFromCatalog;
   game.ironHills.openLootTransfer = (left, right) => IronHillsLootTransfer.open(left, right);
   game.ironHills.dropToGround = (items, actor) => IronHillsLootTransfer.dropToGround(items, actor);
   game.ironHills.TECHNIQUES           = TECHNIQUES;
@@ -598,15 +627,27 @@ game.ironHills.openWorldMap = () => {
   return new IronHillsWorldMapApp().render(true);
 };
 
-game.ironHills.openAlchemyWindow = (actor) => {
+game.ironHills.openCraftWorkbenchWindow = (actor, opts = {}) => {
   const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
   if (!target) { ui.notifications.warn("Выбери персонажа"); return; }
   const existing = Object.values(ui.windows).find(w =>
-    w instanceof IronHillsAlchemyApp && w.actor?.id === target.id
+    w instanceof IronHillsCraftWorkbenchApp && w.actor?.id === target.id
   );
-  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
-  return new IronHillsAlchemyApp(target).render(true);
+  if (existing?.rendered) {
+    const sk = opts?.initialSkillKey;
+    if (sk && CRAFT_WORKBENCH_SKILLS.includes(sk)) {
+      existing._skillKey = sk;
+      existing._bowl = [];
+      existing.render(false);
+    }
+    existing.bringToTop?.();
+    return existing;
+  }
+  return new IronHillsCraftWorkbenchApp(target, { initialSkillKey: opts?.initialSkillKey }).render(true);
 };
+
+game.ironHills.openAlchemyWindow = (actor) =>
+  game.ironHills.openCraftWorkbenchWindow(actor, { initialSkillKey: "alchemy" });
 
 game.ironHills.openCraftWindow = (actor) => {
   const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
@@ -616,6 +657,43 @@ game.ironHills.openCraftWindow = (actor) => {
   );
   if (existing?.rendered) { existing.bringToTop?.(); return existing; }
   return new IronHillsCraftApp(target).render(true);
+};
+
+/** Только GM: добавить рецепт в system.craft.knownRecipeIds (id как в CRAFT_RECIPES, см. модуль constants/recipes.mjs). */
+game.ironHills.teachCraftRecipe = async (actorRef, recipeId) => {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM может обучить рецепту.");
+    return null;
+  }
+  const actor = typeof actorRef === "string" ? game.actors.get(actorRef) : actorRef;
+  if (!actor) {
+    ui.notifications.warn("Актёр не найден.");
+    return null;
+  }
+  const result = await teachCraftRecipe(actor, recipeId);
+  if (result?.ok && !result?.already && result?.id) {
+    ui.notifications.info(`${actor.name} изучает рецепт: ${result.id}`);
+  } else if (result?.already) {
+    ui.notifications.info("Этот рецепт уже был известен.");
+  } else if (result?.reason === "unknown_recipe") {
+    ui.notifications.warn(`Неизвестный id рецепта: ${recipeId}`);
+  }
+  return result;
+};
+
+game.ironHills.forgetCraftRecipe = async (actorRef, recipeId) => {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM.");
+    return null;
+  }
+  const actor = typeof actorRef === "string" ? game.actors.get(actorRef) : actorRef;
+  if (!actor) {
+    ui.notifications.warn("Актёр не найден.");
+    return null;
+  }
+  const result = await forgetCraftRecipeImpl(actor, recipeId);
+  if (result?.ok) ui.notifications.info(`${actor.name} теряет знание рецепта: ${result.id}`);
+  return result;
 };
 
 game.ironHills.openPartyManager = () => {
@@ -633,11 +711,7 @@ game.ironHills.openTravelManager = () => {
 game.ironHills.openGridInventory = (actor) => {
   const target = actor ?? game.user?.character ?? canvas.tokens?.controlled?.[0]?.actor;
   if (!target) { ui.notifications.warn("Выбери персонажа или токен"); return; }
-  const existing = Object.values(ui.windows).find(w =>
-    w instanceof IronHillsGridInventoryApp && w.actor?.id === target.id
-  );
-  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
-  return new IronHillsGridInventoryApp(target).render(true);
+  return IronHillsGridInventoryApp.openForActor(target);
 };
 
 game.ironHills.openCombatManager = () => {
@@ -842,7 +916,7 @@ Hooks.on("createItem", async (item, options = {}) => {
 
     if (actor.type === "character" || actor.type === "merchant") {
       queueActorSheetRender(actor);
-      refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
+      refreshAllTradeUIs(IronHillsActorSheet, TarkovTradeApp);
     }
   }
 });
@@ -858,7 +932,7 @@ Hooks.on("updateItem", async (item, change, options = {}) => {
 
     if (actor.type === "character" || actor.type === "merchant") {
       queueActorSheetRender(actor);
-      refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
+      refreshAllTradeUIs(IronHillsActorSheet, TarkovTradeApp);
     }
   }
 });
@@ -874,7 +948,7 @@ Hooks.on("deleteItem", async (item, options = {}) => {
 
     if (actor.type === "character" || actor.type === "merchant") {
       queueActorSheetRender(actor);
-      refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
+      refreshAllTradeUIs(IronHillsActorSheet, TarkovTradeApp);
     }
   }
 });
@@ -918,7 +992,7 @@ function preserveInputFocus(app) {
 
 Hooks.on("renderApplication", (app) => {
   // Применяем только к нашим окнам
-  const ourClasses = ["trade-app","travel-app","craft-app","alchemy-app",
+  const ourClasses = ["trade-app","travel-app","craft-app","craft-workbench-app",
                       "grid-inventory","party-manager","world-map","world-journal",
                       "entity-picker","quest-board","world-tools"];
   if (ourClasses.some(c => app.options?.classes?.includes(c))) {
@@ -1249,9 +1323,9 @@ Hooks.once("ready", async () => {
   // Внешнее API сохранено: game.ironHills._moveMode (read) и setMoveMode(mode) (write).
   Object.defineProperty(game.ironHills, "_moveMode", {
     configurable: true,
-    get: () => getCombatMoveMode(),
+    get: () => getMoveMode(),
   });
-  game.ironHills.setMoveMode = (mode) => setCombatMoveMode(mode);
+  game.ironHills.setMoveMode = (mode) => setMoveMode(mode);
 
   game.ironHills.restShort = () => game.ironHills.rest("short");
   game.ironHills.restLong  = () => game.ironHills.rest("long");

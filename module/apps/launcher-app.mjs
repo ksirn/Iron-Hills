@@ -7,8 +7,8 @@
 const TOOLS = [
   { section:"Персонаж", key:"openCombatHud",     label:"HUD",       icon:"⚔",  gm:false },
   { section:"Персонаж", key:"openGridInventory", label:"Инвентарь", icon:"🎒",  gm:false },
-  { section:"Персонаж", key:"openCraftWindow",   label:"Крафт",     icon:"🔨",  gm:false },
-  { section:"Персонаж", key:"openAlchemyWindow", label:"Алхимия",   icon:"⚗",  gm:false },
+  { section:"Персонаж", key:"openCraftWindow",   label:"Рецепты",   icon:"📖",  gm:false },
+  { section:"Персонаж", key:"openCraftWorkbenchWindow", label:"Ремесло", icon:"⚒",  gm:false },
   { section:"Мир",      key:"openWorldMap",      label:"Карта",     icon:"🗺",  gm:false },
   { section:"Мир",      key:"openQuestBoard",    label:"Задания",   icon:"📋",  gm:false },
   { section:"Мир",      key:"openWorldJournal",  label:"Дневник",   icon:"📜",  gm:false },

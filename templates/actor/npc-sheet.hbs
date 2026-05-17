@@ -7,11 +7,16 @@
     <div class="ih-npc-v2-identity">
       <input class="ih-npc-v2-name" type="text" name="name" value="{{actor.name}}">
       <div class="ih-npc-v2-meta">
+        {{#unless isCreature}}
         <label>Роль
-          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Стражник...">
+          <input type="text" name="system.info.role" value="{{system.info.role}}" placeholder="Страж...">
         </label>
+        <label>Специализация
+          <input type="text" name="system.info.specialization" value="{{system.info.specialization}}" placeholder="guard">
+        </label>
+        {{/unless}}
         <label>Ступень
-          <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10">
+          <input type="number" name="system.info.tier" value="{{system.info.tier}}" min="1" max="10" placeholder="{{#if isCreature}}1–10{{else}}…{{/if}}">
         </label>
         <label>Фракция
           <input type="text" name="system.info.faction" value="{{system.info.faction}}" placeholder="—">
@@ -122,11 +127,56 @@
 
     {{!-- Вкладка: Информация --}}
     <div class="ih-npc-tab-panel" data-panel="info">
+      {{#if showMonsterLootUi}}
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Разделка (монстр)</div>
+        <p class="muted-text" style="font-size:11px;margin:0 0 6px 0">
+          Ключ пула из <code>monster-loot-pools.mjs</code>; по нему синхронизируются встроенные слоты добычи (шанс при разделке).
+          Если пусто — подставляется пул по <b>ID бестиария</b>.
+        </p>
+        {{#if monsterLootGmWarning}}
+        <p style="font-size:11px;color:#fca5a5;margin:0 0 8px;padding:8px;background:rgba(127,29,29,0.25);border-radius:6px">{{monsterLootGmWarning}}</p>
+        {{/if}}
+        <label style="display:block;margin-bottom:6px">Пул добычи разделки
+          <input type="text" name="system.info.lootPool" list="ih-monster-loot-pool-datalist"
+                 value="{{system.info.lootPool}}"
+                 placeholder="{{monsterBestiaryCanon}} или пусто = из бестиария"
+                 style="width:100%;box-sizing:border-box">
+        </label>
+        {{#if monsterLootPoolKeys.length}}
+        <datalist id="ih-monster-loot-pool-datalist">
+          {{#each monsterLootPoolKeys}}<option value="{{this}}"></option>{{/each}}
+        </datalist>
+        {{/if}}
+        <label style="display:block;margin-bottom:6px">ID бестиария <span class="muted-text">(ключ строки компендиума)</span>
+          <input type="text" name="system.info.bestiaryId" value="{{system.info.bestiaryId}}" placeholder="river_maw_spawn" style="width:100%;box-sizing:border-box">
+        </label>
+        <p class="muted-text" style="font-size:10px;margin:6px 0 0 0">
+          Живого монстра нельзя разделать или обыскать. Мёртвого — через «Обыск»: «Выживание», набор разделки и DC по ступени.
+        </p>
+      </div>
+      {{/if}}
+      {{#if showNpcObyskUi}}
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Обыск и карманничество (NPC)</div>
+        <p class="muted-text" style="font-size:11px;margin:0 0 8px 0">
+          Лут — только предметы на этом листе. С мёртвого тела игрок забирает всё без бросков (кнопка в «Обыск» или перетаскивание).
+          С живого — попытка карманничества по «Скрытности».
+        </p>
+        <label style="display:flex;align-items:center;gap:8px;margin:8px 0 6px;font-size:12px">
+          <input type="checkbox" name="system.info.allowPickpocket" {{checked allowPickpocketEnabled}} data-dtype="Boolean">
+          Разрешить карманничество у живой цели
+        </label>
+        <p class="muted-text" style="font-size:10px;margin:6px 0 0 0">
+          Поля <code>lootTable</code> / <code>pickpocketTable</code> для NPC не участвуют в механике; их можно не трогать.
+        </p>
+      </div>
+      {{/if}}
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Описание</div>
         <textarea name="system.info.desc"
                   style="width:100%;min-height:80px;box-sizing:border-box;resize:vertical"
-                  placeholder="Описание NPC...">{{system.info.desc}}</textarea>
+                  placeholder="{{#if isCreature}}Краткое описание твари…{{else}}Описание NPC...{{/if}}">{{system.info.desc}}</textarea>
       </div>
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Заметки GM</div>

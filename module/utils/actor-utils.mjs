@@ -1,3 +1,5 @@
+import { coinsToCopper } from "./currency.mjs";
+
 export function resolveActorFromUuid(actorUuid) {
   if (!actorUuid) return null;
 
@@ -129,7 +131,11 @@ export function getPersistentItemFromActor(actorOrUuid, itemOrId) {
 }
 
 export function getActorCurrency(actor) {
-  return Math.max(0, Number(actor.system?.economy?.coins ?? 0));
+  const currency = actor?.system?.currency;
+  if (currency && typeof currency === "object") return coinsToCopper(currency);
+  const legacyCoins = actor?.system?.coins;
+  if (legacyCoins && typeof legacyCoins === "object") return coinsToCopper(legacyCoins);
+  return Math.max(0, Number(actor?.system?.economy?.coins ?? legacyCoins ?? 0));
 }
 
 export function getMerchantWealth(actor) {

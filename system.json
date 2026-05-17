@@ -62,6 +62,15 @@
       },
       "monster": {
         "htmlFields": []
+      },
+      "party": {
+        "htmlFields": []
+      },
+      "group": {
+        "htmlFields": []
+      },
+      "god": {
+        "htmlFields": []
       }
     },
     "Item": {
@@ -97,6 +106,24 @@
       },
       "consumable": {
         "htmlFields": []
+      },
+      "quest": {
+        "htmlFields": []
+      },
+      "relation": {
+        "htmlFields": []
+      },
+      "jewelry": {
+        "htmlFields": []
+      },
+      "belt": {
+        "htmlFields": []
+      },
+      "backpack": {
+        "htmlFields": []
+      },
+      "attachment": {
+        "htmlFields": []
       }
     }
   },
@@ -112,84 +139,98 @@
     {
       "name": "ih-weapons",
       "label": "Iron Hills — Оружие",
-      "path": "packs/weapons.db",
+      "path": "packs/weapons",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-armor",
       "label": "Iron Hills — Броня",
-      "path": "packs/armor.db",
+      "path": "packs/armor",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-materials",
       "label": "Iron Hills — Материалы",
-      "path": "packs/materials.db",
+      "path": "packs/materials",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-potions",
       "label": "Iron Hills — Зелья",
-      "path": "packs/potions.db",
+      "path": "packs/potions",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-food",
       "label": "Iron Hills — Еда",
-      "path": "packs/food.db",
+      "path": "packs/food",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-tools",
       "label": "Iron Hills — Инструменты",
-      "path": "packs/tools.db",
+      "path": "packs/tools",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-npc",
-      "label": "Iron Hills — NPC",
-      "path": "packs/npc.db",
+      "label": "Iron Hills — NPC (пустой, генерировать вручную)",
+      "path": "packs/npc",
       "type": "Actor",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-gods",
       "label": "Iron Hills — Пантеон",
-      "path": "packs/gods.db",
+      "path": "packs/gods",
       "type": "Actor",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-belts",
       "label": "Iron Hills — Пояса",
-      "path": "packs/belts.db",
+      "path": "packs/belts",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-backpacks",
       "label": "Iron Hills — Рюкзаки",
-      "path": "packs/backpacks.db",
+      "path": "packs/backpacks",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-attachments",
       "label": "Iron Hills — Крепления",
-      "path": "packs/attachments.db",
+      "path": "packs/attachments",
       "type": "Item",
       "system": "iron-hills-system"
     },
     {
       "name": "ih-spells",
       "label": "Заклинания",
-      "path": "packs/ih-spells.db",
+      "path": "packs/ih-spells",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-monsters",
+      "label": "Iron Hills — Бестиарий",
+      "path": "packs/monsters",
+      "type": "Actor",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-consumables",
+      "label": "Iron Hills — Расходники (фляги)",
+      "path": "packs/consumables",
       "type": "Item",
       "system": "iron-hills-system"
     }

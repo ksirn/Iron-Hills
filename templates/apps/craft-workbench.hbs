@@ -1,0 +1,80 @@
+{{!-- Iron Hills — Craft workbench (all craft skills + ingredient mixing) --}}
+<div class="ih-wh-app">
+
+  <div class="ih-wh-tabs">
+    {{#each tabs}}
+    <a class="ih-wh-tab {{#if active}}is-active{{/if}}" data-wh-tab="{{key}}">{{label}}</a>
+    {{/each}}
+  </div>
+
+  <div class="ih-wh-body">
+    {{!-- Инвентарь: материалы и еда --}}
+    <div class="ih-wh-inv">
+      <div class="ih-wh-panel-title">Ингредиенты в инвентаре</div>
+      {{#if invRows.length}}
+      <div class="ih-wh-inv-list">
+        {{#each invRows}}
+        <div class="ih-wh-inv-row" title="{{name}}">
+          <img class="ih-wh-inv-img" src="{{img}}" alt="">
+          <div class="ih-wh-inv-info">
+            <span class="ih-wh-inv-name">{{name}}</span>
+            <span class="ih-wh-inv-meta">стр. {{tier}} ×{{qtyAvail}}</span>
+          </div>
+          <div class="ih-wh-inv-act">
+            <a class="ih-btn ih-btn-small" data-wh-add data-item-id="{{id}}">+1</a>
+            <a class="ih-btn ih-btn-small" data-wh-add-all data-item-id="{{id}}">все</a>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="ih-wh-empty">Нет материалов или еды</div>
+      {{/if}}
+    </div>
+
+    {{!-- Верстак / котёл --}}
+    <div class="ih-wh-mixer">
+
+      <div class="ih-wh-mix-head">
+        <span class="ih-wh-panel-title">Смесь (активное ремесло: {{skillLabel}})</span>
+        {{#if bowl.length}}<a class="ih-btn ih-btn-small" data-wh-clear>Очистить</a>{{/if}}
+      </div>
+
+      {{#if hintLine}}
+      <div class="ih-wh-hint {{hintClass}}">{{hintLine}}</div>
+      {{/if}}
+
+      <div class="ih-wh-pot">
+        {{#each bowl}}
+        <div class="ih-wh-pot-line">
+          <img class="ih-wh-pot-img" src="{{img}}" alt="">
+          <span class="ih-wh-pot-name">{{name}}</span>
+          <input class="ih-wh-pot-qty" type="number" min="1" max="{{maxQty}}" value="{{qty}}"
+                 data-wh-qty data-item-id="{{itemId}}" />
+          <a class="ih-icon-btn" data-wh-remove-line data-item-id="{{itemId}}">✕</a>
+        </div>
+        {{else}}
+        <div class="ih-wh-pot-empty">
+          Добавляй материалы слева. Если набор совпадает с реальным рецептом и проверка навыка удаётся — предмет создан и рецепт записан в знания.
+        </div>
+        {{/each}}
+      </div>
+
+      <div class="ih-wh-skill-note">
+        <span class="muted-text">{{skillLabel}} ст.{{skillValue}} (д{{dieSize}})
+        {{#if resolvedRecipe}} · порог {{resolvedRecipe.difficulty}} · шанс ~{{recipeChance}}%{{/if}}
+        {{#unless hasToolResolved}} · <span class="text-bad">нет инструмента</span>{{/unless}}
+        </span>
+      </div>
+
+      <div class="ih-wh-footer">
+        {{#if canAttempt}}
+        <a class="ih-btn ih-btn-primary ih-btn-lg" data-wh-attempt>⚒ Попробовать</a>
+        {{else}}
+        <div class="ih-wh-muted">{{blockedReason}}</div>
+        {{/if}}
+      </div>
+
+    </div>
+  </div>
+</div>

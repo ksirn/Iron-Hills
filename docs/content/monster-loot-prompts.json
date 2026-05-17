@@ -1,0 +1,863 @@
+{
+  "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+  "uniqueLoot": [
+    {
+      "type": "food",
+      "catalogId": "caravan_roast",
+      "name": "Ужин караванщика",
+      "tierHint": 5,
+      "prompt": "Concept \"Ужин караванщика\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood caravan-hunted prize cuts hardened scales hoard, tier 5 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "brute_prize_t5"
+      ]
+    },
+    {
+      "type": "food",
+      "catalogId": "game_meat_raw",
+      "name": "Сырая дичь",
+      "tierHint": 1,
+      "prompt": "Concept \"Сырая дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood vermin scrap ash-bog grit humble hunt yield, tier 1 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "predator_scrap_t1",
+        "vermin_bundle_t1"
+      ]
+    },
+    {
+      "type": "food",
+      "catalogId": "game_meat_rich",
+      "name": "Плотная дичь",
+      "tierHint": 3,
+      "prompt": "Concept \"Плотная дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood alpine pack-beast alpha musk trophy read, tier 3 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "alpine_harvest_t3",
+        "brute_carve_t2",
+        "pack_leader_t3",
+        "wetland_glean_t2"
+      ]
+    },
+    {
+      "type": "food",
+      "catalogId": "highland_grub_haunch",
+      "name": "Окорок горного трутня",
+      "tierHint": 3,
+      "prompt": "Concept \"Окорок горного трутня\", monster harvest butcher fantasy — chitinous grub haunch segmented meat pale marrow seam fantasy insect quarry cut, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood alpine pack-beast alpha musk trophy read, tier 3 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "alpine_harvest_t3"
+      ]
+    },
+    {
+      "type": "food",
+      "catalogId": "serpent_fillet_raw",
+      "name": "Сырое филе змея",
+      "tierHint": 2,
+      "prompt": "Concept \"Сырое филе змея\", monster harvest butcher fantasy — serpent fillet translucent jelly ichor sheen scale-side muscle striation, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood wetland predator trail dressing damp moss, tier 2 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "wetland_glean_t2"
+      ]
+    },
+    {
+      "type": "food",
+      "catalogId": "wyvern_stringy_cut",
+      "name": "Нарезка с виверны",
+      "tierHint": 10,
+      "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood primordial kaiju apex colossus reagent avalanche, tier 10 quarry read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "apex_slice_t4",
+        "beast_lord_t7",
+        "beast_lord_t8",
+        "beast_lord_t9",
+        "brute_prize_t5",
+        "kaiju_shard_t6",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "alpha_musk_gland",
+      "name": "Железа вожака",
+      "tierHint": 10,
+      "prompt": "Concept \"Железа вожака\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t9",
+        "pack_leader_t3",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "animal_hide",
+      "name": "Шкура зверя",
+      "tierHint": 1,
+      "prompt": "Concept \"Шкура зверя\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "predator_scrap_t1"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "avian_keel_bone",
+      "name": "Киль птицеящера",
+      "tierHint": 3,
+      "prompt": "Concept \"Киль птицеящера\", fantasy harvest material — lightweight beast bone keel ridge marrow hollow, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "alpine_harvest_t3"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "beast_sinew_spool",
+      "name": "Жильё зверя",
+      "tierHint": 1,
+      "prompt": "Concept \"Жильё зверя\", fantasy harvest material — fibrous tendon coil stripped sinew filament spool cue, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "predator_scrap_t1",
+        "vermin_bundle_t1"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "bristle_keg_rings",
+      "name": "Кольца из щетины кабана",
+      "tierHint": 2,
+      "prompt": "Concept \"Кольца из щетины кабана\", fantasy harvest material — bristle rings bundled hog trophy craft rings, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "brute_carve_t2"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "drake_scale",
+      "name": "Чешуя дрейка",
+      "tierHint": 10,
+      "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "apex_slice_t4",
+        "beast_lord_t7",
+        "beast_lord_t8",
+        "brute_prize_t5",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "fang_shard",
+      "name": "Осколок клыка",
+      "tierHint": 9,
+      "prompt": "Concept \"Осколок клыка\", fantasy harvest material — splintered enamel ivory shard trophy tip, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t9",
+        "brute_carve_t2",
+        "vermin_bundle_t1"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "herb_healing",
+      "name": "Целебный лист",
+      "tierHint": 3,
+      "prompt": "Concept \"Целебный лист\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "alpine_harvest_t3"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "monster_gland",
+      "name": "Железа монстра",
+      "tierHint": 10,
+      "prompt": "Concept \"Железа монстра\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t7",
+        "beast_lord_t9",
+        "pack_leader_t3",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "mushroom_bog",
+      "name": "Болотный гриб",
+      "tierHint": 2,
+      "prompt": "Concept \"Болотный гриб\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "wetland_glean_t2"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "predator_resin_mass",
+      "name": "Смоляная пробка хищника",
+      "tierHint": 10,
+      "prompt": "Concept \"Смоляная пробка хищника\", fantasy harvest material — dark amber resin plug predator gum cluster, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "apex_slice_t4",
+        "beast_lord_t8",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "scale_hide",
+      "name": "Чешуйчатая шкура",
+      "tierHint": 3,
+      "prompt": "Concept \"Чешуйчатая шкура\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "pack_leader_t3"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "serpent_sac_mild",
+      "name": "Слабая змеиная желчь",
+      "tierHint": 2,
+      "prompt": "Concept \"Слабая змеиная желчь\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "wetland_glean_t2"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "small_pelt_uncured",
+      "name": "Небольшая шкура (сырая)",
+      "tierHint": 1,
+      "prompt": "Concept \"Небольшая шкура (сырая)\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "predator_scrap_t1"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "thick_hide",
+      "name": "Толстая шкура",
+      "tierHint": 2,
+      "prompt": "Concept \"Толстая шкура\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "brute_carve_t2"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "venom_sac",
+      "name": "Мешок с ядом",
+      "tierHint": 8,
+      "prompt": "Concept \"Мешок с ядом\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord apex resin reservoirs armored slabs atmosphere, tier 8 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t7",
+        "beast_lord_t8",
+        "kaiju_shard_t6"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "warg_pelt",
+      "name": "Шкура варга",
+      "tierHint": 9,
+      "prompt": "Concept \"Шкура варга\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t9",
+        "kaiju_shard_t6"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "wisp_moth_powder",
+      "name": "Пыльца ночных мотыльков",
+      "tierHint": 1,
+      "prompt": "Concept \"Пыльца ночных мотыльков\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "vermin_bundle_t1"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "wyvern_hide",
+      "name": "Шкура виверны",
+      "tierHint": 10,
+      "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "beast_lord_t7",
+        "beast_lord_t8",
+        "beast_lord_t9",
+        "kaiju_shard_t6",
+        "primordial_harvest_t10"
+      ]
+    },
+    {
+      "type": "material",
+      "catalogId": "wyvern_sinew_filament",
+      "name": "Жилье виверны",
+      "tierHint": 4,
+      "prompt": "Concept \"Жилье виверны\", fantasy harvest material — fibrous tendon coil stripped sinew filament spool cue, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wyvern drake trophy scales sinew resin elite quarry atmosphere, tier 4 drop read --ar 1:1",
+      "negative": "text, watermark, logo, signature, blurry, low quality, cluttered wide shot, multiple objects collage, human face full portrait, nsfw",
+      "pools": [
+        "apex_slice_t4"
+      ]
+    }
+  ],
+  "byPool": {
+    "alpine_harvest_t3": [
+      {
+        "type": "food",
+        "catalogId": "highland_grub_haunch",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 73,
+        "name": "Окорок горного трутня",
+        "prompt": "Concept \"Окорок горного трутня\", monster harvest butcher fantasy — chitinous grub haunch segmented meat pale marrow seam fantasy insect quarry cut, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood alpine pack-beast alpha musk trophy read, tier 3 quarry read --ar 1:1"
+      },
+      {
+        "type": "food",
+        "catalogId": "game_meat_rich",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 58,
+        "name": "Плотная дичь",
+        "prompt": "Concept \"Плотная дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood alpine pack-beast alpha musk trophy read, tier 3 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "avian_keel_bone",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 53,
+        "name": "Киль птицеящера",
+        "prompt": "Concept \"Киль птицеящера\", fantasy harvest material — lightweight beast bone keel ridge marrow hollow, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "herb_healing",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 45,
+        "name": "Целебный лист",
+        "prompt": "Concept \"Целебный лист\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1"
+      }
+    ],
+    "apex_slice_t4": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 1,
+        "qtyMax": 3,
+        "chancePct": 80,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood wyvern drake trophy scales sinew resin elite quarry, tier 4 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_sinew_filament",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 58,
+        "name": "Жилье виверны",
+        "prompt": "Concept \"Жилье виверны\", fantasy harvest material — fibrous tendon coil stripped sinew filament spool cue, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wyvern drake trophy scales sinew resin elite quarry atmosphere, tier 4 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "predator_resin_mass",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 45,
+        "name": "Смоляная пробка хищника",
+        "prompt": "Concept \"Смоляная пробка хищника\", fantasy harvest material — dark amber resin plug predator gum cluster, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wyvern drake trophy scales sinew resin elite quarry atmosphere, tier 4 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "drake_scale",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 39,
+        "name": "Чешуя дрейка",
+        "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wyvern drake trophy scales sinew resin elite quarry atmosphere, tier 4 drop read --ar 1:1"
+      }
+    ],
+    "beast_lord_t7": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 4,
+        "qtyMax": 6,
+        "chancePct": 85,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood beast-lord mantle layered hides glands legendary, tier 7 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_hide",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 81,
+        "name": "Шкура виверны",
+        "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord mantle layered hides glands legendary atmosphere, tier 7 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "drake_scale",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 71,
+        "name": "Чешуя дрейка",
+        "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord mantle layered hides glands legendary atmosphere, tier 7 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "venom_sac",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 47,
+        "name": "Мешок с ядом",
+        "prompt": "Concept \"Мешок с ядом\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord mantle layered hides glands legendary atmosphere, tier 7 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "monster_gland",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 27,
+        "name": "Железа монстра",
+        "prompt": "Concept \"Железа монстра\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord mantle layered hides glands legendary atmosphere, tier 7 drop read --ar 1:1"
+      }
+    ],
+    "beast_lord_t8": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 5,
+        "qtyMax": 8,
+        "chancePct": 81,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood beast-lord apex resin reservoirs armored slabs, tier 8 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_hide",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 81,
+        "name": "Шкура виверны",
+        "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord apex resin reservoirs armored slabs atmosphere, tier 8 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "drake_scale",
+        "qtyMin": 3,
+        "qtyMax": 5,
+        "chancePct": 75,
+        "name": "Чешуя дрейка",
+        "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord apex resin reservoirs armored slabs atmosphere, tier 8 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "predator_resin_mass",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 53,
+        "name": "Смоляная пробка хищника",
+        "prompt": "Concept \"Смоляная пробка хищника\", fantasy harvest material — dark amber resin plug predator gum cluster, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord apex resin reservoirs armored slabs atmosphere, tier 8 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "venom_sac",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 27,
+        "name": "Мешок с ядом",
+        "prompt": "Concept \"Мешок с ядом\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord apex resin reservoirs armored slabs atmosphere, tier 8 drop read --ar 1:1"
+      }
+    ],
+    "beast_lord_t9": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 6,
+        "qtyMax": 10,
+        "chancePct": 84,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood beast-lord pinnacle trophy hoard dense scales, tier 9 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "warg_pelt",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 84,
+        "name": "Шкура варга",
+        "prompt": "Concept \"Шкура варга\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_hide",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 77,
+        "name": "Шкура виверны",
+        "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "monster_gland",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 60,
+        "name": "Железа монстра",
+        "prompt": "Concept \"Железа монстра\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "fang_shard",
+        "qtyMin": 6,
+        "qtyMax": 10,
+        "chancePct": 39,
+        "name": "Осколок клыка",
+        "prompt": "Concept \"Осколок клыка\", fantasy harvest material — splintered enamel ivory shard trophy tip, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "alpha_musk_gland",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 22,
+        "name": "Железа вожака",
+        "prompt": "Concept \"Железа вожака\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord pinnacle trophy hoard dense scales atmosphere, tier 9 drop read --ar 1:1"
+      }
+    ],
+    "brute_carve_t2": [
+      {
+        "type": "food",
+        "catalogId": "game_meat_rich",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 64,
+        "name": "Плотная дичь",
+        "prompt": "Concept \"Плотная дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood wetland predator trail dressing damp moss, tier 2 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "thick_hide",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 48,
+        "name": "Толстая шкура",
+        "prompt": "Concept \"Толстая шкура\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "bristle_keg_rings",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 39,
+        "name": "Кольца из щетины кабана",
+        "prompt": "Concept \"Кольца из щетины кабана\", fantasy harvest material — bristle rings bundled hog trophy craft rings, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "fang_shard",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 19,
+        "name": "Осколок клыка",
+        "prompt": "Concept \"Осколок клыка\", fantasy harvest material — splintered enamel ivory shard trophy tip, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1"
+      }
+    ],
+    "brute_prize_t5": [
+      {
+        "type": "food",
+        "catalogId": "caravan_roast",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 78,
+        "name": "Ужин караванщика",
+        "prompt": "Concept \"Ужин караванщика\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood caravan-hunted prize cuts hardened scales hoard, tier 5 quarry read --ar 1:1"
+      },
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 73,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood caravan-hunted prize cuts hardened scales hoard, tier 5 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "drake_scale",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 58,
+        "name": "Чешуя дрейка",
+        "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, caravan-hunted prize cuts hardened scales hoard atmosphere, tier 5 drop read --ar 1:1"
+      }
+    ],
+    "kaiju_shard_t6": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 3,
+        "qtyMax": 5,
+        "chancePct": 82,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood kaiju-class bulk hide venom reservoirs, tier 6 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "warg_pelt",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 76,
+        "name": "Шкура варга",
+        "prompt": "Concept \"Шкура варга\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, kaiju-class bulk hide venom reservoirs atmosphere, tier 6 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_hide",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 59,
+        "name": "Шкура виверны",
+        "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, beast-lord mantle layered hides glands legendary atmosphere, tier 7 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "venom_sac",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 48,
+        "name": "Мешок с ядом",
+        "prompt": "Concept \"Мешок с ядом\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, kaiju-class bulk hide venom reservoirs atmosphere, tier 6 drop read --ar 1:1"
+      }
+    ],
+    "pack_leader_t3": [
+      {
+        "type": "food",
+        "catalogId": "game_meat_rich",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 83,
+        "name": "Плотная дичь",
+        "prompt": "Concept \"Плотная дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood alpine pack-beast alpha musk trophy read, tier 3 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "alpha_musk_gland",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 66,
+        "name": "Железа вожака",
+        "prompt": "Concept \"Железа вожака\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "scale_hide",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 39,
+        "name": "Чешуйчатая шкура",
+        "prompt": "Concept \"Чешуйчатая шкура\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "monster_gland",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 27,
+        "name": "Железа монстра",
+        "prompt": "Concept \"Железа монстра\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, alpine pack-beast alpha musk trophy read atmosphere, tier 3 drop read --ar 1:1"
+      }
+    ],
+    "predator_scrap_t1": [
+      {
+        "type": "food",
+        "catalogId": "game_meat_raw",
+        "qtyMin": 1,
+        "qtyMax": 3,
+        "chancePct": 64,
+        "name": "Сырая дичь",
+        "prompt": "Concept \"Сырая дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood vermin scrap ash-bog grit humble hunt yield, tier 1 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "small_pelt_uncured",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 51,
+        "name": "Небольшая шкура (сырая)",
+        "prompt": "Concept \"Небольшая шкура (сырая)\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "animal_hide",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 36,
+        "name": "Шкура зверя",
+        "prompt": "Concept \"Шкура зверя\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "beast_sinew_spool",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 19,
+        "name": "Жильё зверя",
+        "prompt": "Concept \"Жильё зверя\", fantasy harvest material — fibrous tendon coil stripped sinew filament spool cue, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      }
+    ],
+    "primordial_harvest_t10": [
+      {
+        "type": "food",
+        "catalogId": "wyvern_stringy_cut",
+        "qtyMin": 8,
+        "qtyMax": 12,
+        "chancePct": 81,
+        "name": "Нарезка с виверны",
+        "prompt": "Concept \"Нарезка с виверны\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood primordial kaiju apex colossus reagent avalanche, tier 10 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wyvern_hide",
+        "qtyMin": 3,
+        "qtyMax": 4,
+        "chancePct": 77,
+        "name": "Шкура виверны",
+        "prompt": "Concept \"Шкура виверны\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "drake_scale",
+        "qtyMin": 4,
+        "qtyMax": 7,
+        "chancePct": 74,
+        "name": "Чешуя дрейка",
+        "prompt": "Concept \"Чешуя дрейка\", fantasy harvest material — folded uncured hide fur edge scale plates subtle salt cure beginning, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "predator_resin_mass",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 65,
+        "name": "Смоляная пробка хищника",
+        "prompt": "Concept \"Смоляная пробка хищника\", fantasy harvest material — dark amber resin plug predator gum cluster, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "monster_gland",
+        "qtyMin": 2,
+        "qtyMax": 4,
+        "chancePct": 60,
+        "name": "Железа монстра",
+        "prompt": "Concept \"Железа монстра\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "alpha_musk_gland",
+        "qtyMin": 2,
+        "qtyMax": 3,
+        "chancePct": 22,
+        "name": "Железа вожака",
+        "prompt": "Concept \"Железа вожака\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, primordial kaiju apex colossus reagent avalanche atmosphere, tier 10 drop read --ar 1:1"
+      }
+    ],
+    "vermin_bundle_t1": [
+      {
+        "type": "food",
+        "catalogId": "game_meat_raw",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 70,
+        "name": "Сырая дичь",
+        "prompt": "Concept \"Сырая дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood vermin scrap ash-bog grit humble hunt yield, tier 1 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "wisp_moth_powder",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 44,
+        "name": "Пыльца ночных мотыльков",
+        "prompt": "Concept \"Пыльца ночных мотыльков\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "fang_shard",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 36,
+        "name": "Осколок клыка",
+        "prompt": "Concept \"Осколок клыка\", fantasy harvest material — splintered enamel ivory shard trophy tip, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "beast_sinew_spool",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 19,
+        "name": "Жильё зверя",
+        "prompt": "Concept \"Жильё зверя\", fantasy harvest material — fibrous tendon coil stripped sinew filament spool cue, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, vermin scrap ash-bog grit humble hunt yield atmosphere, tier 1 drop read --ar 1:1"
+      }
+    ],
+    "wetland_glean_t2": [
+      {
+        "type": "food",
+        "catalogId": "serpent_fillet_raw",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 58,
+        "name": "Сырое филе змея",
+        "prompt": "Concept \"Сырое филе змея\", monster harvest butcher fantasy — serpent fillet translucent jelly ichor sheen scale-side muscle striation, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood wetland predator trail dressing damp moss, tier 2 quarry read --ar 1:1"
+      },
+      {
+        "type": "food",
+        "catalogId": "game_meat_rich",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 58,
+        "name": "Плотная дичь",
+        "prompt": "Concept \"Плотная дичь\", monster harvest butcher fantasy — dense haunch steak marbling sinew ribbons field salt, oiled cloth or rough wooden board NOT banquet china, coarse salt and twine, single isolated fantasy RPG food ingredient from monster carcass, centered, transparent or plain dark background, square inventory icon, no hands, sharp focus, painterly, controlled mild gore only if meat, mood wetland predator trail dressing damp moss, tier 2 quarry read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "serpent_sac_mild",
+        "qtyMin": 1,
+        "qtyMax": 1,
+        "chancePct": 33,
+        "name": "Слабая змеиная желчь",
+        "prompt": "Concept \"Слабая змеиная желчь\", fantasy harvest material — visceral sac bulb stoppered wax cord alchemical, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1"
+      },
+      {
+        "type": "material",
+        "catalogId": "mushroom_bog",
+        "qtyMin": 1,
+        "qtyMax": 2,
+        "chancePct": 23,
+        "name": "Болотный гриб",
+        "prompt": "Concept \"Болотный гриб\", fantasy harvest material — dried gland herb bundle resin flecks twine wrap, single isolated fantasy RPG harvest trophy reagent icon, centered, transparent or plain dark background, square 1024 composition, sharp focus, painterly detail, wetland predator trail dressing damp moss atmosphere, tier 2 drop read --ar 1:1"
+      }
+    ]
+  }
+}

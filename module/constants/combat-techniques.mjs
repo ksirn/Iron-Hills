@@ -348,4 +348,11 @@ export const CONDITION_LABELS = {
   shield_lost:  { label:"Без щита",      icon:"🔓", color:"#fb923c" },
   broken_limb:  { label:"Перелом",       icon:"🦴", color:"#a3a3a3" },
   armor_cracked:{ label:"Броня треснута",icon:"🪓", color:"#78716c" },
+  aimed_shot_bonus: { label:"Прицел",    icon:"🎯", color:"#facc15" },
+  formation_stance: { label:"Строй",     icon:"🛡", color:"#60a5fa" },
+  shield_wall_formation: { label:"Стена щитов", icon:"🏰", color:"#38bdf8" },
+  riposte_ready:{ label:"Рипост готов",  icon:"↩", color:"#fb923c" },
+  counter_ready:{ label:"Контрудар",     icon:"🔄", color:"#fb923c" },
+  intercept_ready:{ label:"Перехват",    icon:"✋", color:"#f472b6" },
+  rapid_reload: { label:"Быстрая перезарядка", icon:"⚡", color:"#facc15" },
 };

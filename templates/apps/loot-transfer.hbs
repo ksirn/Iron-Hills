@@ -8,13 +8,65 @@
       <span class="ih-lt2-actor-name">{{leftName}}</span>
     </div>
     <div class="ih-lt2-hint">
-      Перетащи предмет между панелями или на слот снаряжения
+      Правая сторона — чужой лист. Перетаскивай между панелями и слотами.<br>
+      Мёртвый <b>NPC</b> — кнопка «обыска» забирает весь инвентарь без проверок. Живой <b>NPC</b> — карманничество (Скрытность).<br>
+      <b>Монстр</b> живой обыскать нельзя; мёртвый — разделка туши («Выживание» и набор).
     </div>
     <div class="ih-lt2-actor">
       <img class="ih-lt2-portrait" src="{{rightImg}}" alt="{{rightName}}">
       <span class="ih-lt2-actor-name">{{rightName}}</span>
     </div>
   </div>
+
+  {{#if harvestUi.showHarvestPanel}}
+  <div class="ih-lt2-harvest">
+    {{#if harvestUi.harvestWildMode}}
+    <div class="ih-lt2-harvest-title">Разделка туши — «Выживание», DC {{harvestUi.harvestDc}}</div>
+    {{else}}
+      <div class="ih-lt2-harvest-title">Обыск тел — весь инвентарь без проверок</div>
+    {{/if}}
+    {{#if harvestUi.canAttemptHarvest}}
+    <div class="ih-lt2-harvest-actions">
+      {{#if harvestUi.harvestWildMode}}
+      <button type="button" class="button" data-ih-lt-harvest>Снять мясо и трофеи</button>
+      {{else}}
+      <button type="button" class="button" data-ih-lt-harvest>Забрать всё с тела</button>
+      {{/if}}
+      {{#if harvestUi.showHarvestGmBypass}}
+      <button type="button" class="button ih-lt2-harvest-gm" data-ih-lt-harvest-gm>GM: без проверки</button>
+      {{/if}}
+    </div>
+    {{else}}
+    <p class="ih-lt2-harvest-muted muted-text">{{harvestUi.harvestMutedHint}}</p>
+    {{#if harvestUi.showHarvestGmBypass}}
+    <div class="ih-lt2-harvest-actions">
+      <button type="button" class="button ih-lt2-harvest-gm" data-ih-lt-harvest-gm>GM: без проверки</button>
+    </div>
+    {{/if}}
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if pickpocketUi.showPickpocketPanel}}
+  <div class="ih-lt2-pickpocket">
+    <div class="ih-lt2-pickpocket-title">Карманничество — «Скрытность», DC {{pickpocketUi.pickpocketDc}}</div>
+    {{#if pickpocketUi.canAttemptPickpocket}}
+    <div class="ih-lt2-pickpocket-actions">
+      <button type="button" class="button" data-ih-lt-pickpocket>Обчистить карманы</button>
+      {{#if pickpocketUi.showPickpocketGmBypass}}
+      <button type="button" class="button ih-lt2-pickpocket-gm" data-ih-lt-pickpocket-gm>GM: без проверки</button>
+      {{/if}}
+    </div>
+    {{else}}
+    <p class="ih-lt2-pickpocket-muted muted-text">{{pickpocketUi.pickpocketMutedHint}}</p>
+    {{#if pickpocketUi.showPickpocketGmBypass}}
+    <div class="ih-lt2-pickpocket-actions">
+      <button type="button" class="button ih-lt2-pickpocket-gm" data-ih-lt-pickpocket-gm>GM: без проверки</button>
+    </div>
+    {{/if}}
+    {{/if}}
+  </div>
+  {{/if}}
 
   <div class="ih-lt2-panels">
 

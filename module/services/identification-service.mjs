@@ -1,3 +1,5 @@
+import { coinsToCopper, currencyUpdateData } from "../utils/currency.mjs";
+
 /**
  * Iron Hills — Identification Service (PATCH 30)
  * Частичная идентификация через навыки + полная через Оценку.
@@ -183,19 +185,12 @@ export async function revealAspect(item, aspect) {
  */
 export async function fullyIdentify(item, payer = null, cost = 0) {
   if (payer && cost > 0) {
-    const cur = payer.system?.currency ?? {};
-    const coins = (Number(cur.copper??0)) + (Number(cur.silver??0))*100
-                + (Number(cur.gold??0))*10000;
+    const coins = coinsToCopper(payer.system?.currency ?? {});
     if (coins < cost) {
       ui.notifications.error(`Не хватает монет: нужно ${cost} мед.`);
       return false;
     }
-    const remaining = coins - cost;
-    await payer.update({
-      "system.currency.gold":   Math.floor(remaining / 10000),
-      "system.currency.silver": Math.floor((remaining % 10000) / 100),
-      "system.currency.copper": remaining % 100,
-    });
+    await payer.update(currencyUpdateData("system.currency", coins - cost));
   }
 
   const allAspects = {};

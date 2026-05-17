@@ -29,9 +29,14 @@ import {
   getHitLabel,
   getEquippedArmorForLocation,
   getBestResistForZone,
+  getDamageReduction,
+  resolveDamageHpKey,
+  getShieldInterceptChance,
+  grantSkillExp,
 } from "./actor-state-service.mjs";
 
 import { getWeaponAffixes } from "../utils/item-utils.mjs";
+import { unequipActorSlot } from "./inventory-service.mjs";
 
 // ── Anatomy / overflow ────────────────────────────────────
 
@@ -40,6 +45,7 @@ import { getWeaponAffixes } from "../utils/item-utils.mjs";
  */
 const OVERFLOW_MAP = Object.freeze({
   head:     "torso",
+  neck:     "torso",
   torso:    "head",
   abdomen:  "torso",
   leftArm:  "torso",
@@ -48,8 +54,17 @@ const OVERFLOW_MAP = Object.freeze({
   rightLeg: "abdomen",
 });
 
+const BODY_PART_KEYS = Object.freeze(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
+const BODY_PART_KEY_SET = new Set(BODY_PART_KEYS);
+const LIMB_PART_KEY_SET = new Set(["leftArm", "rightArm", "leftLeg", "rightLeg"]);
+const SHOCK_LOCATION_KEY_SET = new Set(["head", "neck", "torso", "abdomen"]);
+
 export function getOverflowTarget(locationKey) {
   return OVERFLOW_MAP[locationKey] ?? null;
+}
+
+function getBodyStatusValue(actor, partKey, statusKey) {
+  return Math.max(0, Number(actor?.system?.resources?.hp?.[partKey]?.status?.[statusKey] ?? 0));
 }
 
 // ── Damage application ─────────────────────────────────────
@@ -122,23 +137,42 @@ export async function applyDamageToBodyPart(actor, locationKey, damage, opts = {
  * @param {number} [bleedingBonus] — доп. стаки кровотечения от affix'а оружия
  */
 export async function applyInjuryEffects(actor, locationKey, finalDamage, bleedingBonus = 0) {
-  const hpData = actor.system?.resources?.hp?.[locationKey];
+  const injuryPartKey = resolveDamageHpKey(locationKey) ?? locationKey;
+  const hpData = actor.system?.resources?.hp?.[injuryPartKey];
   if (!hpData) return;
 
   const maxHP = Number(hpData.max ?? 0);
   const halfThreshold = Math.ceil(maxHP / 2);
   if (finalDamage < halfThreshold) return;
 
+  const bleedingStacks = 1 + Math.max(0, Number(bleedingBonus) || 0);
+  const currentHp = Number(hpData.value ?? 0);
+  const isDestroyed = currentHp <= 0;
+  const isMajorTrauma = isDestroyed || finalDamage >= maxHP;
   const updates = {};
   updates["system.conditions.bleeding"] =
-    Number(actor.system?.conditions?.bleeding ?? 0) + 1 + Math.max(0, Number(bleedingBonus) || 0);
+    Number(actor.system?.conditions?.bleeding ?? 0) + bleedingStacks;
 
-  if (locationKey === "leftArm")  updates["system.conditions.fractures.leftArm"]  = true;
-  if (locationKey === "rightArm") updates["system.conditions.fractures.rightArm"] = true;
-  if (locationKey === "leftLeg")  updates["system.conditions.fractures.leftLeg"]  = true;
-  if (locationKey === "rightLeg") updates["system.conditions.fractures.rightLeg"] = true;
+  if (BODY_PART_KEY_SET.has(injuryPartKey)) {
+    updates[`system.resources.hp.${injuryPartKey}.status.minorBleeding`] =
+      getBodyStatusValue(actor, injuryPartKey, "minorBleeding") + bleedingStacks;
 
-  if (locationKey === "head" || locationKey === "torso" || locationKey === "abdomen") {
+    if (isMajorTrauma) {
+      updates[`system.resources.hp.${injuryPartKey}.status.majorBleeding`] =
+        getBodyStatusValue(actor, injuryPartKey, "majorBleeding") + 1;
+    }
+
+    if (isDestroyed) {
+      updates[`system.resources.hp.${injuryPartKey}.status.destroyed`] = true;
+    }
+  }
+
+  if (LIMB_PART_KEY_SET.has(injuryPartKey)) {
+    updates[`system.conditions.fractures.${injuryPartKey}`] = true;
+    updates[`system.resources.hp.${injuryPartKey}.status.fracture`] = true;
+  }
+
+  if (SHOCK_LOCATION_KEY_SET.has(locationKey) || SHOCK_LOCATION_KEY_SET.has(injuryPartKey)) {
     updates["system.conditions.shock"] =
       Number(actor.system?.conditions?.shock ?? 0) + 1;
   }
@@ -174,6 +208,7 @@ const ZONE_LABELS = Object.freeze({
   head: "Голова", neck: "Шея", torso: "Торс", abdomen: "Живот",
   leftArm: "Л.рука", rightArm: "П.рука",
   leftLeg: "Л.нога", rightLeg: "П.нога",
+  shield: "Щит",
 });
 
 function pickRandomLocationFromRoll(roll) {
@@ -208,6 +243,7 @@ function pickFixedLocation(targetZone) {
  * @param {Function|null} [args.onLethal]    — async (actor) => void, вызывается при летальном HP
  * @param {object|null}   [args.encumbrance] — переопределить рассчитанный encumbrance
  * @param {object|null}   [args.injuries]    — переопределить рассчитанные injuries
+ * @param {number|null}   [args.skillValueFallback] — значение навыка для NPC/монстров без system.skills[skillKey]
  *
  * @returns {Promise<AttackResult|null>} null если атаку нельзя провести (нет навыка/ресурсов).
  *
@@ -260,12 +296,16 @@ export async function resolveSingleAttack(args = {}) {
     onLethal        = null,
     encumbrance: encInput = null,
     injuries:    injInput = null,
+    shieldIntercept = true,
+    ignoreShield    = false,
+    skillValueFallback = null,
   } = args;
 
   if (!attacker || !target) return null;
 
   const skill = attacker.system?.skills?.[skillKey];
-  if (!skill) return null;
+  const skillValue = Number(skill?.value ?? skillValueFallback ?? 0);
+  if (!(skillValue > 0)) return null;
 
   const encumbrance = encInput ?? getEncumbranceInfo(attacker);
   const injuries    = injInput ?? getActorInjuryInfo(attacker);
@@ -278,8 +318,8 @@ export async function resolveSingleAttack(args = {}) {
 
   // Бросок навыка (может быть интерактивным)
   const { total: rollTotal, rolls: rollHistory, exploded } =
-    await dieRoller(skill.value);
-  const dieSize = Math.max(2, Number(skill.value) * 2);
+    await dieRoller(skillValue);
+  const dieSize = Math.max(2, skillValue * 2);
 
   // Порог цели
   const targetEquip = target.system?.equipment ?? {};
@@ -366,6 +406,9 @@ export async function resolveSingleAttack(args = {}) {
       stunnedExtra:    false,
       executed:        false,
     },
+    shieldBlock:      null,
+    injuryLocationKey: null,
+    damagePartKey:     null,
   };
 
   if (!hit) return result;
@@ -392,20 +435,128 @@ export async function resolveSingleAttack(args = {}) {
     location = pickRandomLocationFromRoll(r.total);
   }
 
-  const armorItem = targetIsMonster ? null : getEquippedArmorForLocation(target, location.key);
+  const anatomicalKey = location.key;
+
+  let shieldBlock = null;
+  let rawForReduction = rawDamage;
+
+  if (
+    !targetIsMonster &&
+    shieldIntercept &&
+    damageType === "physical" &&
+    !ignoreShield &&
+    !targetZone &&
+    targetHasShield &&
+    targetLeftHand &&
+    anatomicalKey !== "shield"
+  ) {
+    const shieldSkillVal = Math.max(0, Number(target.system?.skills?.shield?.value ?? 0));
+    const chance = getShieldInterceptChance(shieldSkillVal);
+    const pctR = await new Roll("1d100").evaluate();
+    const chancePct = Math.round(chance * 100);
+    if (pctR.total <= chancePct) {
+      const blk = await new Roll("1d10 + @shield", { shield: shieldSkillVal }).evaluate();
+      const br = blk.total;
+      const shieldRed = getDamageReduction(targetLeftHand, damageType);
+      const softened = Math.max(0, rawDamage - shieldRed);
+
+      if (br < 6) {
+        shieldBlock = {
+          triggered: true,
+          success: false,
+          chancePct,
+          shieldSkill: shieldSkillVal,
+          pctRoll: pctR.total,
+          blockRoll: br,
+          originalZone: anatomicalKey,
+          note: "Удар пробивает стойку — урон по изначальной зоне.",
+        };
+        await grantSkillExp(target, "shield", "Щит", 1).catch(() => {});
+      } else {
+        let passFactor;
+        let wear;
+        let tierLabel;
+        if (br >= 15) {
+          passFactor = 0;
+          wear = 1;
+          tierLabel = "Идеальный блок";
+        } else if (br >= 12) {
+          passFactor = 0.15;
+          wear = 1;
+          tierLabel = "Крепкий блок";
+        } else if (br >= 9) {
+          passFactor = 0.38;
+          wear = 2;
+          tierLabel = "Частичное парирование";
+        } else {
+          passFactor = 0.62;
+          wear = 2;
+          tierLabel = "Слабое укрытие";
+        }
+
+        const wearShield = wear + Math.max(0, Math.floor(rawDamage / 12));
+        rawForReduction = Math.floor(softened * passFactor);
+
+        shieldBlock = {
+          triggered: true,
+          success: true,
+          chancePct,
+          shieldSkill: shieldSkillVal,
+          pctRoll: pctR.total,
+          blockRoll: br,
+          tierLabel,
+          passFactor,
+          shieldReduction: shieldRed,
+          softenedRaw: softened,
+          shieldWear: wearShield,
+          rawLeakToBody: rawForReduction,
+          absorbed: Math.max(0, rawDamage - rawForReduction),
+          note: "",
+        };
+
+        location = pickFixedLocation("shield");
+
+        if (wearArmor && targetLeftHand) {
+          await wearItem(target, targetLeftHand, wearShield);
+        }
+
+        await grantSkillExp(target, "shield", "Щит", 2).catch(() => {});
+      }
+    }
+  }
+
+  const reductionZone =
+    location.key === "shield" ? "torso" : location.key;
+
+  let armorItem;
+  if (targetIsMonster) {
+    armorItem = null;
+  } else if (location.key === "shield") {
+    armorItem = targetLeftHand ?? null;
+  } else {
+    armorItem = getEquippedArmorForLocation(target, location.key);
+  }
+
   let reduction;
   if (targetIsMonster) {
     const monsterPhys = Number(target.system?.resources?.armor?.physical ?? 0);
     const monsterMag  = Number(target.system?.resources?.armor?.magical  ?? 0);
     reduction = damageType === "magical" ? monsterMag : monsterPhys;
   } else {
-    reduction = getBestResistForZone(target, location.key, damageType);
+    reduction = getBestResistForZone(target, reductionZone, damageType);
   }
 
   const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
   const techPenetration  = Math.round(reduction * totalIgnoreArmor);
   const effectiveReduction = Math.max(0, reduction - armorPenetration - techPenetration);
-  const finalDamage = Math.max(0, rawDamage - effectiveReduction);
+  const finalDamage = Math.max(0, rawForReduction - effectiveReduction);
+
+  const injuryFxKey =
+    shieldBlock?.success ? "torso" : anatomicalKey;
+  const damagePart =
+    shieldBlock?.success
+      ? "torso"
+      : (resolveDamageHpKey(anatomicalKey) ?? anatomicalKey);
 
   result.affixesApplied.criticalMult = criticalMultApplied;
 
@@ -419,6 +570,9 @@ export async function resolveSingleAttack(args = {}) {
     armorPenetration,
     techPenetration,
     finalDamage,
+    shieldBlock,
+    injuryLocationKey: injuryFxKey,
+    damagePartKey: damagePart,
   });
 
   // Affix: executeBelowHp — добивание ослабленной цели.
@@ -453,15 +607,15 @@ export async function resolveSingleAttack(args = {}) {
       catch (err) { console.warn("Iron Hills | onLethal callback failed", err); }
     }
   } else {
-    const dmg = await applyDamageToBodyPart(target, location.key, finalDamage, { onLethal });
+    const dmg = await applyDamageToBodyPart(target, damagePart, finalDamage, { onLethal });
     result.remainingHP    = dmg.newHP;
     result.overflowDamage = dmg.overflow;
     result.overflowTarget = dmg.overflowTarget;
     if (applyInjuries) {
-      await applyInjuryEffects(target, location.key, finalDamage, affixes.bleedingBonus);
+      await applyInjuryEffects(target, injuryFxKey, finalDamage, affixes.bleedingBonus);
       result.affixesApplied.bleedingBonus = affixes.bleedingBonus;
     }
-    if ((location.key === "head" || location.key === "torso") && dmg.newHP <= 0) {
+    if ((damagePart === "head" || damagePart === "torso") && dmg.newHP <= 0) {
       result.targetKilled = true;
     }
     if (executeTriggered && !result.targetKilled) {
@@ -473,8 +627,14 @@ export async function resolveSingleAttack(args = {}) {
   }
   result.affixesApplied.executed = executeTriggered;
 
-  // Износ брони цели
-  if (wearArmor && !targetIsMonster && armorItem && finalDamage > 0) {
+  // Износ брони слота (не щит — он уже при перехвате)
+  if (
+    wearArmor &&
+    !targetIsMonster &&
+    armorItem &&
+    finalDamage > 0 &&
+    !(shieldBlock?.success && location.key === "shield")
+  ) {
     await wearItem(target, armorItem, 1);
   }
 
@@ -495,18 +655,18 @@ export async function resolveSingleAttack(args = {}) {
     if (r.total <= Math.round(affixes.disarmChance * 100)) {
       const rightId = target.system?.equipment?.rightHand;
       if (rightId) {
-        await target.update({ "system.equipment.rightHand": "" });
+        await unequipActorSlot(target, "rightHand");
         result.affixesApplied.disarmed = true;
       }
     }
   }
 
-  // Affix: stunChance — после урона. Добавляет +1 stunned если ещё не есть.
+  // Affix: stunChance — после урона. Добавляет один боевой тик оглушения.
   if (finalDamage > 0 && affixes.stunChance > 0) {
     const r = await new Roll("1d100").evaluate();
     if (r.total <= Math.round(affixes.stunChance * 100)) {
       const cur = Number(target.system?.conditions?.stunned ?? 0);
-      await target.update({ "system.conditions.stunned": cur + 1 });
+      await target.update({ "system.conditions.stunned": cur + 6 });
       result.affixesApplied.stunnedExtra = true;
     }
   }
@@ -538,15 +698,34 @@ export async function formatAttackChatHtml({ label, skillKey, attacker, target, 
     ? getHitLabel(result.overflowTarget)
     : "";
 
-  // Прочность брони показываем только для не-монстров с реально сработавшим уроном
+  let shieldBlockHtml = "";
+  const sb = result?.shieldBlock;
+  if (sb?.triggered) {
+    if (sb.success) {
+      shieldBlockHtml =
+        `<p><b>Блок щитом</b> (${sb.tierLabel}): шанс перехвата ${sb.chancePct}% (d100: ${sb.pctRoll}), навык ${sb.shieldSkill}, ` +
+        `бросок блока d10+навык: <b>${sb.blockRoll}</b>. ` +
+        `Снято с сырого урона щитом ≈${sb.shieldReduction}; в тело просочилось (raw) ${sb.rawLeakToBody}. ` +
+        `Износ щита: <b>−${sb.shieldWear}</b></p>`;
+    } else {
+      shieldBlockHtml =
+        `<p><b>Щит:</b> попытка блока (шанс ${sb.chancePct}%, d100: ${sb.pctRoll}), d10+навык: ` +
+        `<b>${sb.blockRoll}</b> — ${sb.note ?? ""}</p>`;
+    }
+  }
+
+  // Прочность брони показываем для не-монстров с уроном или при удачном блоке щитом
   let armorDur = null;
-  if (result?.hit && !result?.targetIsMonster && result?.armorItem && result?.finalDamage > 0) {
-    const value = Number(result.armorItem.system?.durability?.value ?? 0);
-    if (value > 0) {
-      armorDur = {
-        value,
-        max: Number(result.armorItem.system?.durability?.max ?? 100),
-      };
+  if (result?.hit && !result?.targetIsMonster && result?.armorItem) {
+    const showDur = result.finalDamage > 0 || result?.shieldBlock?.success;
+    if (showDur) {
+      const value = Number(result.armorItem.system?.durability?.value ?? 0);
+      if (value >= 0) {
+        armorDur = {
+          value,
+          max: Number(result.armorItem.system?.durability?.max ?? 100),
+        };
+      }
     }
   }
 
@@ -559,5 +738,6 @@ export async function formatAttackChatHtml({ label, skillKey, attacker, target, 
     rollDesc,
     overflowLabel,
     armorDur,
+    shieldBlockHtml,
   });
 }

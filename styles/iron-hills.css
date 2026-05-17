@@ -2482,7 +2482,8 @@
 .ih-gi-silhouette {
   position: relative;
   width: 212px;
-  height: 316px;
+  /* высота задаётся из шаблона (динамический силуэт под высоту слотов рук) */
+  min-height: 280px;
 }
 
 .ih-gi-equip-slot {
@@ -2500,7 +2501,21 @@
 .ih-gi-equip-slot.has-item { border-color: var(--ih-border-2); background: var(--ih-bg-3); }
 .ih-gi-equip-slot.drag-over { border-color: var(--ih-accent); background: var(--ih-accent-dim); }
 
-.ih-gi-equip-img { width: 90%; height: 90%; object-fit: contain; }
+.ih-gi-equip-img {
+  width: 90%; height: 90%; object-fit: contain;
+  pointer-events: none; /* drag идёт с родительского слота (draggable), не с img */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Длинное оружие в руке: высота задаёт сам слот (динамический layout),
+ * изображение масштабируется целиком благодаря object-fit */
+.ih-gi-slot-handLeft .ih-gi-equip-img,
+.ih-gi-slot-handRight .ih-gi-equip-img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
 .ih-gi-slot-icon { font-size: 16px; opacity: 0.4; }
 .ih-gi-slot-label { font-size: 7px; color: var(--ih-text-3); text-align: center; margin-top: 1px; }
 
@@ -3106,6 +3121,33 @@
   padding-bottom: 8px;
 }
 
+/* Предпросмотр создаваемого предмета (окно изученных рецептов) */
+.ih-craft-item-preview {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ih-border-1);
+}
+.ih-craft-result-item-head {
+  display: flex; flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  margin: 6px 0 8px;
+}
+.ih-craft-result-item-name {
+  font-weight: 700;
+  color: var(--ih-text-0);
+  font-size: 13px;
+}
+.ih-craft-item-preview-rows .ih-craft-result-row {
+  align-items: flex-start;
+}
+.ih-craft-item-preview-rows .ih-craft-result-vals {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .ih-craft-detail-stats {
   display: flex; flex-direction: column; gap: 4px;
 }
@@ -3195,9 +3237,270 @@
   gap: 10px; color: var(--ih-text-2); font-size: 13px;
 }
 
+.ih-craft-knowledge-foot {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ih-craft-knowledge-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ih-text-2);
+}
+
+.ih-craft-at-bench-ok {
+  font-size: 11px;
+  color: var(--ih-hp-ok, #4ade80);
+}
+
+.ih-craft-at-bench-warn {
+  font-size: 11px;
+  color: var(--ih-hp-warn);
+}
+
 /* ============================================================
-   ALCHEMY APP
+   CRAFT WORKBENCH APP
    ============================================================ */
+
+.window-app.craft-workbench-app .window-content {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ih-wh-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ih-bg-0);
+  font-family: var(--ih-font-ui);
+  color: var(--ih-text-1);
+  overflow: hidden;
+}
+
+.ih-wh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1);
+  flex-shrink: 0;
+}
+
+.ih-wh-tab {
+  padding: 4px 10px;
+  border-radius: var(--ih-radius-xl);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+  color: var(--ih-text-2);
+  transition: var(--ih-transition);
+}
+.ih-wh-tab:hover {
+  color: var(--ih-text-1);
+  border-color: var(--ih-border-2);
+}
+.ih-wh-tab.is-active {
+  background: var(--ih-accent-dim);
+  border-color: var(--ih-accent);
+  color: var(--ih-accent);
+}
+
+.ih-wh-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.ih-wh-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ih-text-2);
+  margin-bottom: 8px;
+}
+
+.ih-wh-inv {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1);
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.ih-wh-inv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ih-wh-inv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: var(--ih-radius-sm);
+  border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-2);
+}
+
+.ih-wh-inv-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ih-wh-inv-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ih-wh-inv-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ih-text-0);
+}
+
+.ih-wh-inv-meta {
+  font-size: 10px;
+  color: var(--ih-text-2);
+}
+
+.ih-wh-inv-act {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ih-wh-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--ih-text-2);
+  font-size: 12px;
+}
+
+.ih-wh-mixer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ih-wh-mix-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ih-wh-hint {
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: var(--ih-radius-sm);
+  border: 1px solid var(--ih-border-1);
+  background: var(--ih-bg-1);
+}
+
+.ih-wh-hint.is-ok {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.ih-wh-hint.is-warn {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.ih-wh-hint.muted {
+  color: var(--ih-text-2);
+}
+
+.ih-wh-pot {
+  flex: 1;
+  border: 2px dashed var(--ih-border-1);
+  border-radius: var(--ih-radius-md);
+  background: var(--ih-bg-1);
+  padding: 8px;
+  overflow-y: auto;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ih-wh-pot-empty {
+  color: var(--ih-text-2);
+  font-size: 11px;
+  text-align: center;
+  align-self: center;
+  justify-self: center;
+  margin: auto 12px;
+  line-height: 1.55;
+}
+
+.ih-wh-pot-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: var(--ih-radius-sm);
+  background: var(--ih-bg-2);
+  border: 1px solid var(--ih-border-1);
+}
+
+.ih-wh-pot-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.ih-wh-pot-name {
+  flex: 1;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.ih-wh-pot-qty {
+  width: 48px;
+  background: var(--ih-bg-3);
+  border: 1px solid var(--ih-border-1);
+  border-radius: 4px;
+  color: var(--ih-text-1);
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.ih-wh-skill-note .muted-text {
+  font-size: 11px;
+  color: var(--ih-text-2);
+}
+
+.ih-wh-footer {
+  flex-shrink: 0;
+}
+
+.ih-wh-muted {
+  font-size: 12px;
+  color: var(--ih-text-2);
+  text-align: center;
+  padding: 8px;
+}
+
 
 .window-app.alchemy-app .window-content {
   padding: 0; overflow: hidden;
@@ -5060,6 +5363,30 @@
 .ih-lt2-actor-name { font-size:13px; font-weight:700; color:var(--ih-text-0); }
 .ih-lt2-hint { font-size:10px; color:var(--ih-text-3); text-align:center; }
 
+.ih-lt2-harvest {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: rgba(139, 92, 246, 0.07);
+  border-bottom: 1px solid var(--ih-border-1);
+  font-size: 11px;
+}
+.ih-lt2-harvest-title { font-weight: 700; margin-bottom: 6px; color: var(--ih-text-0); }
+.ih-lt2-harvest-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ih-lt2-harvest-muted { margin: 0 0 6px; font-size: 10px; line-height: 1.35; color: var(--ih-text-3); }
+.ih-lt2-harvest-gm { opacity: 0.88; }
+
+.ih-lt2-pickpocket {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: rgba(234, 179, 8, 0.08);
+  border-bottom: 1px solid var(--ih-border-1);
+  font-size: 11px;
+}
+.ih-lt2-pickpocket-title { font-weight: 700; margin-bottom: 6px; color: var(--ih-text-0); }
+.ih-lt2-pickpocket-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ih-lt2-pickpocket-muted { margin: 0 0 6px; font-size: 10px; line-height: 1.35; color: var(--ih-text-3); }
+.ih-lt2-pickpocket-gm { opacity: 0.88; }
+
 .ih-lt2-panels { display:flex; flex:1; overflow:visible; gap:0; }
 
 .ih-lt2-panel {
@@ -5219,24 +5546,47 @@
   outline: 2px solid var(--ih-accent);
 }
 
-/* ── Paper Doll слоты экипировки в loot transfer ── */
+/* Equip slot drag-over highlight */
+.ih-lt2-equip-slot.drag-over {
+  border-color: var(--ih-accent);
+  background: var(--ih-accent-dim);
+  outline: 2px solid var(--ih-accent);
+}
+
+/* ── Paper Doll — окно обыска / loot transfer ─────────────────
+   Раньше здесь было два блока .ih-lt2-* (flex-wrap + absolute), из‑за чего
+   слоты визуально и по hit‑area налезали. Родитель — только position:relative + фикс. размер.
+*/
 .ih-lt2-paper-doll {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  padding: 6px; margin-bottom: 8px;
+  position: relative;
+  display: block;
+  width: 268px;
+  min-height: 418px;
+  flex-shrink: 0;
+  margin: 0 auto 12px;
+  padding: 10px 8px 12px;
   background: var(--ih-bg-1);
   border: 1px solid var(--ih-border-1);
   border-radius: var(--ih-radius-md);
+  box-sizing: border-box;
 }
 
 .ih-lt2-pd-slot {
-  width: 48px; height: 48px;
-  position: relative;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  position: absolute;
+  z-index: 1;
+  width: 46px;
+  min-height: 50px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3px 2px 4px;
   border: 1px solid var(--ih-border-1);
   border-radius: var(--ih-radius-sm);
   background: var(--ih-bg-2);
-  cursor: default; overflow: hidden;
+  cursor: default;
+  overflow: hidden;
   transition: var(--ih-transition);
 }
 .ih-lt2-pd-slot.has-item {
@@ -5245,22 +5595,61 @@
 }
 .ih-lt2-pd-slot.has-item:hover { border-color: var(--ih-accent); }
 .ih-lt2-pd-slot.drag-over {
+  z-index: 8;
   border-color: var(--ih-accent);
   background: var(--ih-accent-dim);
   outline: 2px solid var(--ih-accent);
 }
 
 .ih-lt2-pd-slot img {
-  width: 32px; height: 32px; object-fit: contain; padding: 2px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
   cursor: grab;
 }
-.ih-lt2-pd-icon { font-size: 18px; opacity: 0.3; }
+.ih-lt2-pd-icon {
+  font-size: 18px;
+  opacity: 0.28;
+  line-height: 1;
+  flex-shrink: 0;
+}
 .ih-lt2-pd-label {
-  font-size: 7px; color: var(--ih-text-3);
-  text-align: center; position: absolute; bottom: 1px;
-  left: 0; right: 0; overflow: hidden; white-space: nowrap;
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 2px;
+  font-size: 6.5px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--ih-text-3);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Нижний ряд: пояс и рюкзак рядом */
+.ih-lt2-pd-belt,
+.ih-lt2-pd-backpack {
+  width: 72px;
+  min-height: 46px;
+}
+
+/* Позиции (центр колонки ~111px при ширине слота 46): голова→шея→торс,
+   по бокам наручи; ниже ноги; ещё ниже кисти (оружие/щит); кольца; пояс/рюкзак */
+.ih-lt2-pd-head       { top: 8px;   left: 111px; }
+.ih-lt2-pd-neck       { top: 62px;  left: 111px; }
+.ih-lt2-pd-torso      { top: 116px; left: 111px; }
+.ih-lt2-pd-leftArm    { top: 116px; left: 52px; }
+.ih-lt2-pd-rightArm   { top: 116px; left: 170px; }
+.ih-lt2-pd-legs       { top: 176px; left: 111px; }
+.ih-lt2-pd-leftHand   { top: 242px; left: 52px; }
+.ih-lt2-pd-rightHand  { top: 242px; left: 170px; }
+.ih-lt2-pd-ringLeft   { top: 302px; left: 52px; }
+.ih-lt2-pd-ringRight  { top: 302px; left: 170px; }
+.ih-lt2-pd-belt       { top: 362px; left: 62px; }
+.ih-lt2-pd-backpack   { top: 362px; left: 146px; }
 
 /* Grid drag-over */
 .ih-lt2-grid { position: relative; }
@@ -5277,49 +5666,6 @@
 /* Drag state */
 .ih-lt2-item.is-dragging { opacity: 0.4; cursor: grabbing; }
 .ih-lt2-pd-slot img.is-dragging { opacity: 0.4; }
-
-/* Paper doll — позиционированный силуэт */
-.ih-lt2-paper-doll {
-  position: relative;
-  width: 220px; height: 280px;
-  flex-shrink: 0;
-  margin: 0 auto 8px;
-  background: var(--ih-bg-1);
-  border: 1px solid var(--ih-border-1);
-  border-radius: var(--ih-radius-md);
-}
-
-/* Каждый слот — абсолютная позиция */
-.ih-lt2-pd-slot {
-  position: absolute;
-  width: 44px; height: 44px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  border: 1px solid var(--ih-border-1);
-  border-radius: var(--ih-radius-sm);
-  background: var(--ih-bg-2);
-  cursor: default; overflow: hidden;
-  transition: var(--ih-transition); box-sizing: border-box;
-}
-.ih-lt2-pd-slot.has-item  { border-color: var(--ih-accent-dim); }
-.ih-lt2-pd-slot.drag-over { border-color: var(--ih-accent); background: var(--ih-accent-dim); outline: 2px solid var(--ih-accent); }
-.ih-lt2-pd-slot img       { width: 36px; height: 36px; object-fit: contain; cursor: grab; }
-.ih-lt2-pd-icon  { font-size: 20px; opacity: 0.25; line-height: 1; }
-.ih-lt2-pd-label { font-size: 7px; color: var(--ih-text-3); text-align: center; white-space: nowrap; margin-top: 1px; }
-
-/* Позиции слотов (силуэт персонажа) */
-.ih-lt2-pd-head     { top:4px;   left:88px;  } /* голова по центру */
-.ih-lt2-pd-neck     { top:54px;  left:88px;  } /* шея */
-.ih-lt2-pd-torso    { top:100px; left:88px;  } /* торс */
-.ih-lt2-pd-leftArm  { top:100px; left:40px;  } /* левая рука */
-.ih-lt2-pd-rightArm { top:100px; left:136px; } /* правая рука */
-.ih-lt2-pd-legs     { top:150px; left:88px;  } /* ноги */
-.ih-lt2-pd-leftHand { top:150px; left:40px;  } /* левая кисть */
-.ih-lt2-pd-rightHand{ top:150px; left:136px; } /* правая кисть */
-.ih-lt2-pd-ringLeft { top:200px; left:40px;  } /* кольцо лев. */
-.ih-lt2-pd-ringRight{ top:200px; left:136px; } /* кольцо прав. */
-.ih-lt2-pd-belt     { top:230px; left:64px;  width:50px; } /* пояс */
-.ih-lt2-pd-backpack { top:230px; left:118px; width:50px; } /* рюкзак */
 
 /* ============================================================
    COMBAT TECHNIQUE DIALOG
@@ -5595,6 +5941,21 @@
 .ih-spell-aoe-tag {
   font-size:9px; padding:2px 6px; border-radius:var(--ih-radius-sm);
   background:rgba(91,156,246,0.15); color:#7dd3fc; display:inline-block;
+}
+.ih-spell-options {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;
+}
+.ih-spell-option {
+  display:flex; align-items:center; gap:5px;
+  font-size:10px; color:var(--ih-text-2); cursor:pointer;
+}
+.ih-spell-option select {
+  height:22px; min-width:96px; max-width:140px; padding:1px 6px;
+  border:1px solid var(--ih-border-1); border-radius:var(--ih-radius-sm);
+  background:var(--ih-bg-1); color:var(--ih-text-0); font-size:10px;
+}
+.ih-spell-option input[type="checkbox"] {
+  width:13px; height:13px; margin:0;
 }
 .ih-spell-lock-reason { font-size:9px; color:var(--ih-hp-crit); }
 
@@ -5872,9 +6233,15 @@
 
 /* ── Grid Inventory — Pending Zone ────────────────────────── */
 .ih-gi-pending-zone {
-  margin:8px 4px 4px; border:1px solid var(--ih-hp-warn);
-  border-radius:var(--ih-radius-md); background:rgba(251,191,36,0.05);
+  flex-shrink:0;
+  margin:0;
+  border-bottom:1px solid rgba(251,191,36,0.28);
+  background:rgba(251,191,36,0.05);
   overflow:hidden;
+}
+.ih-gi-pending-zone.drag-over {
+  background:rgba(91,156,246,0.12);
+  border-bottom-color:var(--ih-accent);
 }
 .ih-gi-pending-header {
   display:flex; align-items:center; gap:6px;
@@ -5887,23 +6254,43 @@
   border-radius:10px; padding:0 5px; font-size:10px;
 }
 .ih-gi-pending-list {
-  padding:4px 6px; display:flex; flex-direction:column; gap:3px;
-  max-height:200px; overflow-y:auto;
+  padding:5px 8px; display:flex; flex-wrap:wrap; gap:5px;
+  max-height:118px; overflow-y:auto;
 }
 .ih-gi-pending-item {
   display:flex; align-items:center; gap:6px;
   padding:4px 6px; border-radius:var(--ih-radius-sm);
   background:var(--ih-bg-2); border:1px solid var(--ih-border-1);
   cursor:grab;
+  width:220px; max-width:100%; min-width:0;
 }
+.ih-gi-pending-item.dragging { opacity:0.45; }
 .ih-gi-pending-item:hover { border-color:var(--ih-accent); }
-.ih-gi-pending-name { flex:1; font-size:11px; font-weight:600; color:var(--ih-text-0); }
+.ih-gi-pending-name {
+  flex:1; min-width:0; font-size:11px; font-weight:600; color:var(--ih-text-0);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 .ih-gi-pending-qty {
   font-size:10px; color:var(--ih-accent); font-weight:700;
   background:var(--ih-accent-dim); border-radius:4px; padding:1px 4px;
 }
+.ih-gi-pending-fit {
+  max-width:86px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:9px; font-weight:700; border-radius:4px; padding:1px 4px;
+  border:1px solid rgba(148,163,184,0.24); color:var(--ih-text-2);
+  background:rgba(148,163,184,0.08); flex-shrink:0;
+}
+.ih-gi-pending-fit.ok {
+  color:#a7f3d0; border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.12);
+}
+.ih-gi-pending-fit.warn {
+  color:#fde68a; border-color:rgba(251,191,36,0.35); background:rgba(251,191,36,0.12);
+}
+.ih-gi-pending-fit.bad {
+  color:#fecaca; border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.12);
+}
 .ih-gi-pending-actions {
-  padding:6px 8px; border-top:1px solid rgba(251,191,36,0.2);
+  padding:5px 8px; border-top:1px solid rgba(251,191,36,0.2);
 }
 .ih-gi-pending-actions .ih-btn { font-size:10px; }
 
@@ -6021,6 +6408,28 @@
   border: 1px solid rgba(91,156,246,0.5);
   background: rgba(91,156,246,0.08);
   border-radius: 3px;
+  /* Как .tt-item: колонка — иначе в узкой ячейке img + подпись в ряд сжимают картинку до нуля */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2px;
+  overflow: hidden;
+}
+.ih-pi-item .ih-gi-item-img {
+  width: 100%;
+  height: 55%;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.ih-pi-item .ih-gi-item-name {
+  font-size: 9px;
+  color: var(--ih-text-1);
+  text-align: center;
+  line-height: 1.15;
+  overflow: hidden;
+  width: 100%;
+  padding: 0 2px;
+  pointer-events: none;
 }
 .ih-pi-item:hover {
   border-color: var(--ih-accent);
@@ -6116,6 +6525,7 @@
 .tt-actions { display:flex; flex-direction:column; gap:4px; }
 .tt-balance { font-size:18px; font-weight:700; text-align:center; color:var(--ih-hp-low); }
 .tt-balance.balanced { color:#4ade80; }
+.tt-trade-blocked { color:var(--ih-hp-low); font-size:10px; line-height:1.25; text-align:center; }
 .tt-actions .ih-btn { font-size:11px; justify-content:center; }
 
 /* Tarkov Trade — search, filters, tooltip */

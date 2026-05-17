@@ -17,6 +17,7 @@ import {
   randomMerchantStock,
   randomContainerLoot,
   buildNpcSystem,
+  buildNpcCarryInventoryItems,
   makeSettlementEvent,
   makeSettlementRumor,
   appendSettlementHistory,
@@ -1371,6 +1372,41 @@ class IronHillsWorldToolsV5 extends Application {
       ]);
     }
 
+    if (role === "crafter") {
+      await actor.createEmbeddedDocuments("Item", [
+        buildWeapon("Рабочий молот", tier, { skill: "mace", damage: 2 + tier, weight: 4 }),
+      ]);
+    }
+
+    if (role === "hunter") {
+      await actor.createEmbeddedDocuments("Item", [
+        buildWeapon("Охотничий лук", tier, {
+          skill: "bow",
+          damage: 2 + tier,
+          weight: 2,
+          energyCost: 8 + tier,
+          range: 8,
+        }),
+        buildWeapon("Разделочный нож", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
+      ]);
+    }
+
+    if (role === "noble") {
+      await actor.createEmbeddedDocuments("Item", [
+        buildWeapon("Кортик чести", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
+      ]);
+    }
+
+    if (role === "priest") {
+      await actor.createEmbeddedDocuments("Item", [
+        buildPotion("Флакон благодати", tier, "healHP", 6 + tier * 2, "torso", 2),
+      ]);
+    }
+
+    const carryExtras = buildNpcCarryInventoryItems(role, tier);
+    if (carryExtras.length)
+      await actor.createEmbeddedDocuments("Item", carryExtras);
+
     ui.notifications.info(`Создан NPC: ${actor.name}`);
   }
 
@@ -1413,7 +1449,7 @@ class IronHillsWorldToolsV5 extends Application {
           currentPriceFactor: parseFloat((1 + (tier - 1) * 0.05).toFixed(2)),
           stockRating:        5,
         },
-        currency: { gold: goldCoins, silver: silverCoins, copper: copperCoins, platinum: 0 }
+        currency: { gold: goldCoins, silver: silverCoins, copper: copperCoins }
       }
     });
 

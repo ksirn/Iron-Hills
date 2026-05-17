@@ -6,11 +6,11 @@
 
 const TOOLS = [
   { key:"openGridInventory", label:"Инвентарь", icon:"🎒",  gm:false, sec:"char"  },
-  { key:"openCraftWindow",   label:"Крафт",     icon:"🔨",  gm:false, sec:"char"  },
+  { key:"openCraftWindow",   label:"Рецепты",   icon:"📖",  gm:false, sec:"char"  },
 
   { key:"openSearch",        label:"Обыск",     icon:"🔍",  gm:false, sec:"char"  },
   { key:"openTrade",         label:"Торговля",  icon:"🏪",  gm:false, sec:"char"  },
-  { key:"openAlchemyWindow", label:"Алхимия",   icon:"⚗",  gm:false, sec:"char"  },
+  { key:"openCraftWorkbenchWindow", label:"Ремесло", icon:"⚒",  gm:false, sec:"char"  },
   { key:"openWorldMap",      label:"Карта",     icon:"🗺",  gm:false, sec:"world" },
   { key:"openQuestBoard",    label:"Задания",   icon:"📋",  gm:false, sec:"world" },
   { key:"openWorldJournal",      label:"Дневник",    icon:"📜",  gm:false, sec:"world" },

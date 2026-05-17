@@ -1,8 +1,12 @@
 /**
- * Iron Hills — Craft App
- * Отдельное окно крафта: рецепты, фильтры, проверка ингредиентов, бросок.
+ * Iron Hills — Craft knowledge (readonly)
+ * Список изученных рецептов. Сборка выполняется в окне «Ремесло» (верстак).
  */
-import { CRAFT_RECIPES } from "../constants/recipes.mjs";
+import { uniqueCraftRecipes } from "../constants/recipes.mjs";
+import {
+  getAvailableIngredientQuantity,
+} from "../services/world-content-service.mjs";
+import { filterRecipesForActor } from "../constants/craft-knowledge.mjs";
 
 /**
  * Расчёт шанса успеха с учётом взрыва куба (exploding dice).
@@ -52,10 +56,23 @@ const ALL_CATALOG_ITEMS = [
   ...Object.values(TOOLS),
 ];
 
-// Найти конкретный предмет по категории и тиру
-function findCatalogItem(category, tier) {
-  return ALL_CATALOG_ITEMS.find(i => i.category === category && i.tier === tier)
-    ?? ALL_CATALOG_ITEMS.find(i => i.category === category && i.tier <= tier);
+// Найти запись каталога для подписи ингредиента (металл: слиток в приоритете; для плавки — preferOre)
+function findCatalogItem(category, tier, opts = {}) {
+  let matches = ALL_CATALOG_ITEMS.filter(i => i.category === category && i.tier === tier);
+  if (!matches.length) {
+    matches = ALL_CATALOG_ITEMS.filter(i => i.category === category && i.tier <= tier);
+    matches.sort((a, b) => b.tier - a.tier);
+  }
+  if (!matches.length) return null;
+  if (opts.preferOre && category === "metal") {
+    const ore = matches.find(i => String(i.id ?? "").includes("_ore"));
+    if (ore) return ore;
+  }
+  if (category === "metal") {
+    const ingot = matches.find(i => String(i.id ?? "").includes("_ingot"));
+    if (ingot) return ingot;
+  }
+  return matches[0];
 }
 
 const SKILL_LABELS = {
@@ -64,21 +81,18 @@ const SKILL_LABELS = {
   alchemy:   "Алхимия",
   cooking:   "Готовка",
   blacksmithing: "Кузнечное дело",
+  enchanting: "Зачарование",
+  jewelry: "Ювелирное дело",
 };
 
 const CATEGORY_LABELS = {
   metal:  "Металл",   wood:   "Дерево",
   hide:   "Шкура",    fiber:  "Волокно",
-  herbs:  "Травы",    water:  "Вода",
-  meat:   "Мясо",     stone:  "Камень",
+  herb:   "Травы",    herbs:  "Травы",
+  stone:  "Камень",   misc:   "Разное",
+  water:  "Вода",     meat:   "Мясо",
   bone:   "Кость",    ore:    "Руда",
 };
-
-function getAvailableQty(actor, type, category) {
-  return Array.from(actor.items ?? [])
-    .filter(i => i.type === type && i.system?.category === category)
-    .reduce((sum, i) => sum + Number(i.system?.quantity ?? 1), 0);
-}
 
 function findTool(actor, craftType, minTier) {
   return Array.from(actor.items ?? []).find(i =>
@@ -88,7 +102,7 @@ function findTool(actor, craftType, minTier) {
   );
 }
 
-class IronHillsCraftApp extends Application {
+class IronHillsCraftKnowledgeApp extends Application {
 
   constructor(actor, options = {}) {
     super(options);
@@ -104,7 +118,7 @@ class IronHillsCraftApp extends Application {
       width:     700,
       height:    560,
       resizable: true,
-      title:     "Крафт"
+      title:     "📖 Изученные рецепты"
     });
   }
 
@@ -112,26 +126,46 @@ class IronHillsCraftApp extends Application {
     return "systems/iron-hills-system/templates/apps/craft-app.hbs";
   }
 
+  /** Не сбрасывать прокрутку списка рецептов при выборе/поиске/фильтре. */
+  async _render(force = false, options = {}) {
+    const prev = this.element?.find?.(".ih-craft-recipes")?.[0]?.scrollTop ?? 0;
+    await super._render(force, options);
+    const next = this.element?.find?.(".ih-craft-recipes")?.[0];
+    if (next) {
+      queueMicrotask(() => { next.scrollTop = prev; });
+    }
+  }
+
   async getData() {
     const actor   = this.actor;
     const skills  = actor.system?.skills ?? {};
 
     // Все рецепты с расчётом доступности
-    const allRecipes = Object.values(CRAFT_RECIPES).map(recipe => {
+    const allRecipes = filterRecipesForActor(actor, uniqueCraftRecipes()).map(recipe => {
       const skill       = skills[recipe.skillKey];
       const skillValue  = Number(skill?.value ?? 0);
       const dieSize     = Math.max(2, skillValue * 2);
       const tool        = findTool(actor, recipe.tool?.craftType, recipe.tool?.tier ?? 1);
       const hasTool     = !!tool;
 
+      const rtier = recipe.result?.system?.tier ?? 1;
       const ingredients = recipe.ingredients.map(ing => {
-        const have = getAvailableQty(actor, ing.type, ing.category);
+        const tier = ing.catalogMaterialId
+          ? MATERIALS[ing.catalogMaterialId]?.tier
+          : ing.catalogFoodId
+            ? FOOD[ing.catalogFoodId]?.tier
+            : ing.tier ?? rtier;
+        const have = getAvailableIngredientQuantity(actor, ing, rtier);
         const enough = have >= ing.quantity;
-        // Ищем конкретный предмет из каталога по тиру рецепта
-        const tier = ing.tier ?? recipe.result?.system?.tier ?? 1;
-        const catalogItem = findCatalogItem(ing.category, tier);
+        const catalogItem = ing.catalogMaterialId
+          ? MATERIALS[ing.catalogMaterialId]
+          : ing.catalogFoodId
+            ? FOOD[ing.catalogFoodId]
+            : findCatalogItem(ing.category, tier, { preferOre: ing.preferOre === true });
         const label = catalogItem?.label
-          ?? (CATEGORY_LABELS[ing.category] ?? ing.category) + ` (ст.${tier})`;
+          ?? (ing.type && ing.category
+            ? `${CATEGORY_LABELS[ing.category] ?? ing.category} (ст.${tier})`
+            : "Ингредиент");
         return {
           type:     ing.type,
           category: ing.category,
@@ -164,53 +198,85 @@ class IronHillsCraftApp extends Application {
         allIngr,
         canCraft,
         resultType:    recipe.result?.type ?? "",
+        resultTypeLabel: ({
+          weapon:"Оружие", armor:"Доспех", potion:"Зелье",
+          consumable:"Расходник", food:"Еда", material:"Материал",
+        })[recipe.result?.type ?? ""] ?? "",
+        resultItemName: recipe.result?.name ?? "",
+        resultTier:    Number(recipe.result?.system?.tier ?? 0) || null,
         isSelected:    recipe.id === this._selected,
         // Характеристики результата для предпросмотра
         resultPreview: (() => {
           const rs  = recipe.result?.system ?? {};
           const rt  = recipe.result?.type   ?? "";
-          const tier = rs.tier ?? 1;
-          // Бонусы качества зависят от тира: каждый уровень качества = +tier*0.25
-          const fineBonus  = Math.round(tier * 0.25 * 10) / 10;
-          const mwBonus    = Math.round(tier * 0.5  * 10) / 10;
-          const legBonus   = Math.round(tier * 1.0  * 10) / 10;
           const out = [];
           if (rt === "weapon") {
             const dmg = rs.damage ?? 0;
-            out.push({ label:"Урон",     val:`${dmg}`, quality:`Хор: +${fineBonus} / Мас: +${mwBonus} / Лег: +${legBonus}` });
+            const fBonus = dmg ? Math.max(1, Math.round(dmg * 0.1)) : 0;
+            const mwBonus = dmg ? Math.max(1, Math.round(dmg * 0.2)) : 0;
+            const legBonus = dmg ? Math.max(1, Math.round(dmg * 0.3)) : 0;
+            out.push({ label:"Урон", val:`${dmg}`, quality:`Хор:+${fBonus} / Мас:+${mwBonus} / Лег:+${legBonus}` });
             out.push({ label:"Навык",    val:rs.skill ?? "—" });
             out.push({ label:"Энергия",  val:rs.energyCost ?? "—" });
             out.push({ label:"Тип",      val:rs.damageType === "magical" ? "✦ Магический" : "⚔ Физический" });
             if (rs.twoHanded) out.push({ label:"", val:"✋ Двуручное" });
           } else if (rt === "armor") {
             const phys = rs.protection?.physical ?? rs.resist?.physical ?? 0;
-            out.push({ label:"Физ. защита", val:`${phys}`, quality:`Хор: +${fineBonus} / Мас: +${mwBonus} / Лег: +${legBonus}` });
-            if (rs.protection?.magical || rs.resist?.magical) {
-              const mag = rs.protection?.magical ?? rs.resist?.magical ?? 0;
-              out.push({ label:"Маг. защита", val:`${mag}` });
+            const mag = rs.protection?.magical ?? rs.resist?.magical ?? 0;
+            const pf = phys ? Math.max(1, Math.round(phys * 0.1)) : 0;
+            const pmw = phys ? Math.max(1, Math.round(phys * 0.2)) : 0;
+            const ple = phys ? Math.max(1, Math.round(phys * 0.3)) : 0;
+            const mf = mag ? Math.max(1, Math.round(mag * 0.1)) : 0;
+            out.push({
+              label: "Физ. защита",
+              val: `${phys}`,
+              quality: `Хор:+${pf} физ ${mag ? `/+${mf} маг` : ""} · Мас:+${pmw} · Лег:+${ple}`,
+            });
+            if (mag) {
+              const magDisp = `${mag}`;
+              out.push({ label:"Маг. защита", val: magDisp });
             }
             out.push({ label:"Слот", val:rs.slot ?? "—" });
           } else if (rt === "potion" || rt === "consumable") {
-            const EFFECTS = {
-              healHP:"🩹 Лечение HP", healAll:"💚 Лечение тела",
-              restoreEnergy:"⚡ Восстановление энергии", restoreMana:"✦ Восстановление маны",
-              restoreHydration:"💧 Жажда", restoreSatiety:"🍖 Голод",
-              curePoison:"🟢 Противоядие", cureDisease:"🏥 Болезнь",
-              speedBoost:"⚡ Скорость", strengthBoost:"💪 Сила",
-              stun:"⚡ Оглушение", silence:"🔇 Безмолвие",
-              slow:"🐢 Замедление", fear:"😱 Страх", reserveDrain:"💀 Резерв",
-            };
-            out.push({ label:"Эффект", val:EFFECTS[rs.effect] ?? rs.effect ?? "—" });
-            out.push({ label:"Сила",   val:rs.power ?? "—" });
-            if (rs.scope)    out.push({ label:"Цель",    val:rs.scope });
-            if (rs.duration) out.push({ label:"Длит.",   val:`${rs.duration}с` });
+            if (rs.actionType === "drink-vessel") {
+              out.push({ label:"Тип", val:"🍶 Сосуд" });
+              const cur = Number(rs.vesselCurrent ?? 0);
+              const mx = Number(rs.vesselMax ?? 0);
+              if (mx) out.push({ label:"Объём", val:`${cur} / ${mx}` });
+              out.push({
+                label: "Заправка",
+                val: `${String(rs.vesselLiquidLabel ?? "—")} · жажда +${rs.vesselHydrationPerDrink ?? 0}/глоток`,
+              });
+              if (Number(rs.vesselSatietyPerDrink)) {
+                out.push({ label:"Сытность", val: `+${rs.vesselSatietyPerDrink}/глоток` });
+              }
+            } else {
+              const EFFECTS = {
+                healHP:"🩹 Лечение HP", healAll:"💚 Лечение тела",
+                restoreEnergy:"⚡ Восстановление энергии", restoreMana:"✦ Восстановление маны",
+                restoreEnergyMax:"🏃 Лимит выносливости",
+                restoreHydration:"💧 Жажда", restoreSatiety:"🍖 Голод",
+                curePoison:"🟢 Противоядие", cureDisease:"🏥 Болезнь",
+                speedBoost:"⚡ Скорость", strengthBoost:"💪 Сила",
+                stun:"⚡ Оглушение", silence:"🔇 Безмолвие",
+                slow:"🐢 Замедление", fear:"😱 Страх", reserveDrain:"💀 Резерв",
+              };
+              out.push({ label:"Эффект", val:EFFECTS[rs.effect] ?? rs.effect ?? "—" });
+              out.push({ label:"Сила",   val:rs.power ?? "—" });
+              if (rs.scope)    out.push({ label:"Цель",    val:rs.scope });
+              if (rs.duration) out.push({ label:"Длит.",   val:`${rs.duration}с` });
+            }
           } else if (rt === "food") {
             out.push({ label:"🍖 Сытость", val:`+${rs.satiety  ?? 0}` });
             out.push({ label:"💧 Жажда",   val:`+${rs.hydration ?? 0}` });
+          } else if (rt === "material") {
+            out.push({ label:"Категория", val: CATEGORY_LABELS[rs.category] ?? rs.category ?? "—" });
+            if (Number(rs.quantity) > 1) out.push({ label:"Кол-во", val: String(rs.quantity) });
+            out.push({ label:"Цена стопки", val: `${rs.value ?? "—"}` });
           }
           // Прочность по ступени
           const dur = {1:15,2:25,3:40,4:65,5:100}[recipe.result?.system?.tier ?? 1] ?? 15;
-          if (["weapon","armor","tool"].includes(rt)) out.push({ label:"Прочность", val:dur });
+          if (["weapon","armor","tool","belt","backpack","attachment"].includes(rt)) out.push({ label:"Прочность", val:dur });
           return out;
         })(),
         // Фильтрация
@@ -262,146 +328,7 @@ class IronHillsCraftApp extends Application {
       this._selected = this._selected === id ? null : id;
       this.render(false);
     });
-
-    // Крафт
-    html.find("[data-do-craft]").on("click", async e => {
-      const recipeId = e.currentTarget.dataset.recipeId;
-      await this._doCraft(recipeId);
-    });
-  }
-
-  async _doCraft(recipeId) {
-    const recipe = CRAFT_RECIPES[recipeId];
-    if (!recipe) return;
-
-    const actor      = this.actor;
-    const skill      = actor.system?.skills?.[recipe.skillKey];
-    const skillValue = Number(skill?.value ?? 0);
-    const dieSize    = Math.max(2, skillValue * 2);
-
-    if (!skillValue) { ui.notifications.warn("Нет нужного навыка."); return; }
-
-    const tool = findTool(actor, recipe.tool?.craftType, recipe.tool?.tier ?? 1);
-    if (!tool) { ui.notifications.warn(`Нужен инструмент: ${recipe.tool?.craftType}`); return; }
-
-    for (const ing of recipe.ingredients) {
-      const have = getAvailableQty(actor, ing.type, ing.category);
-      if (have < ing.quantity) {
-        ui.notifications.warn(`Не хватает: ${CATEGORY_LABELS[ing.category] ?? ing.category} (${have}/${ing.quantity})`);
-        return;
-      }
-    }
-
-    // Бросок с тремя стратегиями
-    const actorSheet = Object.values(ui.windows).find(w =>
-      w.actor?.id === actor.id && w._universalDiceRoll
-    );
-
-    let rollTotal, rollDisplay;
-    if (actorSheet?._universalDiceRoll) {
-      const result = await actorSheet._universalDiceRoll(
-        recipe.skillKey, `Крафт: ${recipe.label}`,
-        { threshold: recipe.difficulty }
-      );
-      if (!result) return;
-      rollTotal   = result.total;
-      rollDisplay = `d${dieSize} = ${rollTotal}`;
-    } else {
-      const roll  = await new Roll(`1d${dieSize}`).evaluate();
-      rollTotal   = roll.total;
-      rollDisplay = `d${dieSize} = ${rollTotal}`;
-    }
-
-    const success = rollTotal >= recipe.difficulty;
-    const margin  = rollTotal - recipe.difficulty;
-
-    // Качество по перевесу
-    const quality = margin >= 8 ? "legendary"
-      : margin >= 5 ? "masterwork"
-      : margin >= 2 ? "fine"
-      : "common";
-
-    const qualityLabel = {
-      common: "Обычное", fine: "Хорошее",
-      masterwork: "Мастерское", legendary: "Легендарное"
-    }[quality];
-
-    let chatContent = `
-      <div style="border:1px solid rgba(91,156,246,0.3);border-radius:8px;padding:10px;background:rgba(91,156,246,0.04);">
-        <b>🔨 Крафт: ${recipe.label}</b><br>
-        Навык: ${SKILL_LABELS[recipe.skillKey] ?? recipe.skillKey} д${dieSize} · Бросок: <b>${rollTotal}</b> · Порог: ${recipe.difficulty}
-    `;
-
-    if (!success) {
-      chatContent += `<br><span style="color:#f87171">✗ Провал — материалы не потрачены.</span></div>`;
-      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: chatContent });
-      return;
-    }
-
-    // Тратим ингредиенты
-    for (const ing of recipe.ingredients) {
-      let remaining = ing.quantity;
-      for (const item of Array.from(actor.items ?? [])) {
-        if (!remaining) break;
-        if (item.type !== ing.type || item.system?.category !== ing.category) continue;
-        const qty = Number(item.system?.quantity ?? 1);
-        if (qty <= remaining) {
-          remaining -= qty;
-          await item.delete();
-        } else {
-          await item.update({ "system.quantity": qty - remaining });
-          remaining = 0;
-        }
-      }
-    }
-
-    // Износ инструмента
-    if (tool.system?.durability) {
-      const newDur = Math.max(0, Number(tool.system.durability.value ?? 10) - 1);
-      await tool.update({ "system.durability.value": newDur });
-    }
-
-    // Создаём предмет
-    const sys = foundry.utils.deepClone(recipe.result.system ?? {});
-    sys.tier    = Number(tool.system?.tier ?? 1);
-    sys.quality = quality;
-    sys.quantity = 1;
-
-    // Бонусы качества
-    if (recipe.result.type === "weapon") {
-      sys.damage = (sys.damage ?? 2) + (quality === "fine" ? 1 : quality === "masterwork" ? 2 : quality === "legendary" ? 3 : 0);
-    }
-    if (recipe.result.type === "armor") {
-      const bonus = quality === "fine" ? 1 : quality === "masterwork" ? 2 : quality === "legendary" ? 3 : 0;
-      sys.resist = (sys.resist ?? sys.protection?.physical ?? 0) + bonus;
-    }
-
-    // Прочность по ступени
-    const durTable = {1:15,2:25,3:40,4:65,5:100,6:140,7:185,8:230,9:265,10:300};
-    const maxDur = durTable[sys.tier] ?? 100;
-    if (["weapon","armor","tool"].includes(recipe.result.type)) {
-      sys.durability = { value: maxDur, max: maxDur };
-    }
-
-    await Item.create({
-      name:   recipe.result.name,
-      type:   recipe.result.type,
-      img:    recipe.result.img ?? "icons/svg/item-bag.svg",
-      system: sys,
-    }, { parent: actor });
-
-    chatContent += `<br><span style="color:#4ade80">✓ Успех! Перевес: +${margin}</span>`;
-    chatContent += `<br>Качество: <b>${qualityLabel}</b>`;
-    chatContent += `</div>`;
-
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: chatContent });
-
-    // Опыт навыка
-    const actorSheetForExp = Object.values(ui.windows).find(w => w.actor?.id === actor.id && w._applySkillExp);
-    if (actorSheetForExp) await actorSheetForExp._applySkillExp(recipe.skillKey, recipe.label);
-
-    this.render(false);
   }
 }
 
-export { IronHillsCraftApp };
+export { IronHillsCraftKnowledgeApp, IronHillsCraftKnowledgeApp as IronHillsCraftApp };

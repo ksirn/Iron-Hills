@@ -1,8 +1,18 @@
 /**
  * Iron Hills — Alchemy App
- * Смешивание реагентов, расчёт результата, риск взрыва.
+ * Свободное смешивание реагентов из constants/alchemy.mjs (Живокост, селитра и т.д.),
+ * результат по правилам MIXING_RULES — экспериментальная алхимия без фиксированных рецептов.
+ *
+ * Фиксированные рецепты каталога и вкладка «Алхимия» — в общем окне игры «Ремесло»
+ * (game.ironHills.openCraftWorkbenchWindow / было openAlchemyWindow на вкладку алхимии).
  */
 import { REAGENTS, REAGENT_EFFECTS, calculateMixResult } from "../constants/alchemy.mjs";
+import { grantSkillExp } from "../services/actor-state-service.mjs";
+import {
+  formatExplodingDiceRoll,
+  rollExplodingDice
+} from "../services/skill-roll-service.mjs";
+import { addItemToActorOrStack } from "../services/trade-service.mjs";
 
 const MAX_REAGENTS = 4;
 
@@ -156,6 +166,12 @@ class IronHillsAlchemyApp extends Application {
 
   async _brew() {
     const actor      = this.actor;
+    const { requireNoPendingInventory } = await import("./pending-items-app.mjs").catch(() => ({}));
+    const pendingCheck = requireNoPendingInventory
+      ? await requireNoPendingInventory(actor, { actionLabel: "алхимия" })
+      : { ok: true };
+    if (!pendingCheck.ok) return;
+
     const alchSkill  = actor.system?.skills?.alchemy;
     const skillValue = Number(alchSkill?.value ?? 0);
     const dieSize    = Math.max(2, skillValue * 2);
@@ -197,10 +213,11 @@ class IronHillsAlchemyApp extends Application {
     }
 
     // Бросок
-    const roll = await new Roll(`1d${dieSize}`).evaluate();
+    const rollResult = await rollExplodingDice(skillValue);
+    const rollTotal = rollResult.total;
     const threshold = mixResult.rule.minPotency ?? 4;
-    const success   = roll.total >= threshold;
-    const margin    = roll.total - threshold;
+    const success   = rollTotal >= threshold;
+    const margin    = rollTotal - threshold;
 
     // Потребляем реагенты
     for (const key of this._selected) {
@@ -224,7 +241,7 @@ class IronHillsAlchemyApp extends Application {
     let chatContent = `<div style="border:1px solid rgba(167,139,250,0.3);border-radius:8px;
       padding:10px;background:rgba(167,139,250,0.04);">
       <b>⚗ Зельеварение</b><br>
-      Алхимия д${dieSize} · Бросок: <b>${roll.total}</b> · Порог: ${threshold}`;
+      Алхимия д${dieSize} · Бросок: <b>${formatExplodingDiceRoll(rollResult, dieSize)}</b> · Порог: ${threshold}`;
 
     if (!success) {
       chatContent += `<br><span style="color:#f87171">✗ Провал — реагенты потрачены впустую.</span></div>`;
@@ -255,11 +272,11 @@ class IronHillsAlchemyApp extends Application {
     if (mixResult.hydration) sys.hydration = Math.floor(mixResult.hydration + qBonus);
     if (mixResult.satiety)   sys.satiety   = Math.floor(mixResult.satiety + qBonus);
 
-    await Item.create({
+    await addItemToActorOrStack(actor, {
       name:   r.name, type: r.type,
       img:    "icons/svg/potion.svg",
       system: sys,
-    }, { parent: actor });
+    });
 
     chatContent += `<br><span style="color:#4ade80">✓ Успех! Получено: <b>${r.name}</b></span>`;
     chatContent += `<br>Качество: <b>${qLabel}</b> · Сила: ${sys.power}`;
@@ -268,9 +285,10 @@ class IronHillsAlchemyApp extends Application {
     await ChatMessage.create({ content: chatContent, speaker: ChatMessage.getSpeaker({ actor }) });
 
     // Опыт
-    const sheet = Object.values(ui.windows).find(w => w.actor?.id === actor.id && w._applySkillExp);
-    if (sheet) await sheet._applySkillExp("alchemy", r.name);
+    await grantSkillExp(actor, "alchemy", r.name);
 
+    const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
+    await PendingItemsApp?.openIfNeeded?.(actor);
     this._selected = [];
     this.render(false);
   }

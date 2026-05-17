@@ -4,14 +4,15 @@
   {{!-- ── ЛЕВАЯ: экипировка ── --}}
   <div class="ih-gi-equip-panel">
     <div class="ih-gi-equip-title">Экипировка</div>
-    <div class="ih-gi-silhouette">
+    <div class="ih-gi-silhouette" style="min-height:{{equipSilhouetteH}}px;height:{{equipSilhouetteH}}px;">
       {{#each equipSlots}}
-      <div class="ih-gi-equip-slot {{#if hasItem}}has-item ih-has-inv-tooltip{{/if}}"
+      <div class="ih-gi-equip-slot {{#if slotKind}}ih-gi-slot-{{slotKind}}{{/if}} {{#if hasItem}}has-item ih-has-inv-tooltip{{/if}}"
            data-slot="{{key}}"
            draggable="{{#if hasItem}}true{{else}}false{{/if}}"
            style="left:{{x}}px; top:{{y}}px; width:{{w}}px; height:{{h}}px;">
         {{#if hasItem}}
-          <img class="ih-gi-equip-img" src="{{itemImg}}" alt="{{itemName}}">
+          {{!-- draggable=false: иначе браузер начинает drag на <img>, dragstart не всплывает к слоту --}}
+          <img class="ih-gi-equip-img" src="{{itemImg}}" alt="{{itemName}}" draggable="false">
           {{#if durPct}}
           <div class="ih-gi-equip-dur">
             <div class="ih-gi-equip-dur-fill" style="width:{{durPct}}%"></div>
@@ -51,6 +52,38 @@
     <div class="ih-gi-hint">
     ПКМ → надеть / переложить / на землю &nbsp;·&nbsp; 2×клик → надеть автоматически &nbsp;·&nbsp; ПКМ на слот → снять
   </div>
+
+    {{!-- Нераспределённые предметы --}}
+    {{#if hasPending}}
+    <div class="ih-gi-pending-zone">
+      <div class="ih-gi-pending-header">
+        📥 К распределению <span class="ih-gi-pending-count">{{pendingItems.length}}</span>
+        <span class="muted-text" style="font-size:10px;font-weight:400">
+          — размести в слот/сетку или выброси, чтобы закрыть инвентарь
+        </span>
+      </div>
+      <div class="ih-gi-pending-list">
+        {{#each pendingItems}}
+        <div class="ih-gi-pending-item" draggable="true"
+             data-pending-item-id="{{itemId}}">
+          <img src="{{img}}" width="24" height="24"
+               style="border-radius:3px;object-fit:contain;background:#1a1f2e">
+          <span class="ih-gi-pending-name">{{name}}</span>
+          <span class="muted-text" style="font-size:10px">{{w}}×{{h}}</span>
+          {{#if qty}}<span class="ih-gi-pending-qty">×{{qty}}</span>{{/if}}
+          <span class="ih-gi-pending-fit {{placementClass}}" title="{{placementText}}">{{placementText}}</span>
+          <a class="ih-btn ih-btn-small" data-auto-place data-item-id="{{itemId}}"
+             title="Авторазместить">+</a>
+          <a class="ih-btn ih-btn-small ih-btn-danger" data-drop-to-ground
+             data-item-id="{{itemId}}" title="Выбросить">🪨</a>
+        </div>
+        {{/each}}
+      </div>
+      <div class="ih-gi-pending-actions">
+        <a class="ih-btn ih-btn-primary" data-auto-place-all>✨ Разместить всё</a>
+      </div>
+    </div>
+    {{/if}}
 
     <div class="ih-gi-all-sections">
       {{#each allSections}}
@@ -156,38 +189,6 @@
         <div class="muted-text">Надень ремень, рюкзак или броню с карманами</div>
       </div>
       {{/unless}}
-
-
-      {{!-- Нераспределённые предметы --}}
-      {{#if hasPending}}
-      <div class="ih-gi-pending-zone">
-        <div class="ih-gi-pending-header">
-          📥 К распределению <span class="ih-gi-pending-count">{{pendingItems.length}}</span>
-          <span class="muted-text" style="font-size:10px;font-weight:400">
-            — перетащи в слот или нажми + для авторазмещения
-          </span>
-        </div>
-        <div class="ih-gi-pending-list">
-          {{#each pendingItems}}
-          <div class="ih-gi-pending-item" draggable="true"
-               data-pending-item-id="{{itemId}}">
-            <img src="{{img}}" width="24" height="24"
-                 style="border-radius:3px;object-fit:contain;background:#1a1f2e">
-            <span class="ih-gi-pending-name">{{name}}</span>
-            <span class="muted-text" style="font-size:10px">{{w}}×{{h}}</span>
-            {{#if qty}}<span class="ih-gi-pending-qty">×{{qty}}</span>{{/if}}
-            <a class="ih-btn ih-btn-small" data-auto-place data-item-id="{{itemId}}"
-               title="Авторазместить">+</a>
-            <a class="ih-btn ih-btn-small ih-btn-danger" data-drop-to-ground
-               data-item-id="{{itemId}}" title="Выбросить">🪨</a>
-          </div>
-          {{/each}}
-        </div>
-        <div class="ih-gi-pending-actions">
-          <a class="ih-btn ih-btn-primary" data-auto-place-all>✨ Разместить всё</a>
-        </div>
-      </div>
-      {{/if}}
 
     </div>{{!-- .ih-gi-all-sections --}}
   </div>{{!-- .ih-gi-grid-panel --}}

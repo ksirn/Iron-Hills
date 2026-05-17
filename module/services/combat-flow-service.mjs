@@ -3,6 +3,15 @@ import {
   getPersistentActor,
   getPersistentActorUuid
 } from "../utils/actor-utils.mjs";
+import {
+  buildConditionUpdatePath,
+  ensureActorBodyTraumaStatusStructure,
+  getActorConditionValue,
+  hasActorBodyBleeding,
+  refreshActorBodyTraumaStatus,
+  tickActorBodyTrauma,
+  tickActorOngoingDamage
+} from "./condition-service.mjs";
 
 const DEFAULT_TURN_SECONDS = 6;
 const ALLOWED_SIDES = new Set(["ally", "enemy", "neutral"]);
@@ -476,223 +485,20 @@ function refreshDefeatedFlags(state) {
   return state;
 }
 
-const BODY_PART_KEYS = ["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-
-function getBodyPartHpNode(actor, partKey) {
-  return actor?.system?.resources?.hp?.[partKey] ?? null;
-}
-
-function getBodyPartStatus(actor, partKey) {
-  return getBodyPartHpNode(actor, partKey)?.status ?? null;
-}
-
-function getDefaultBodyPartStatus() {
-  return {
-    minorBleeding: 0,
-    majorBleeding: 0,
-    fracture: false,
-    destroyed: false,
-    splinted: false,
-    tourniquet: false
-  };
-}
-
-async function ensureActorBodyStatusStructure(actor) {
-  if (!actor) return;
-
-  const updates = {};
-
-  for (const partKey of BODY_PART_KEYS) {
-    const hpNode = getBodyPartHpNode(actor, partKey);
-    if (!hpNode) continue;
-
-    const status = hpNode.status ?? {};
-    const merged = {
-      ...getDefaultBodyPartStatus(),
-      ...status
-    };
-
-    const keys = Object.keys(getDefaultBodyPartStatus());
-    let changed = false;
-
-    for (const key of keys) {
-      if (status?.[key] === undefined) {
-        changed = true;
-        break;
-      }
-    }
-
-    if (changed || !hpNode.status) {
-      updates[`system.resources.hp.${partKey}.status`] = merged;
-    }
-  }
-
-  if (Object.keys(updates).length) {
-    await actor.update(updates);
-  }
-}
-
-function getBodyPartStatusValue(actor, partKey, key) {
-  const status = getBodyPartStatus(actor, partKey) ?? {};
-  const raw = status?.[key];
-
-  if (typeof raw === "number") return raw;
-  if (typeof raw === "boolean") return raw ? 1 : 0;
-  if (raw && typeof raw === "object") {
-    if (typeof raw.value === "number") return raw.value;
-    if (typeof raw.active === "boolean") return raw.active ? 1 : 0;
-  }
-
-  return 0;
-}
-
-function getBodyPartStatusBool(actor, partKey, key) {
-  return Boolean(getBodyPartStatusValue(actor, partKey, key));
-}
-
-function buildBodyPartStatusPath(partKey, key) {
-  return `system.resources.hp.${partKey}.status.${key}`;
-}
-
-async function refreshDestroyedBodyParts(actor) {
-  if (!actor) return;
-
-  const updates = {};
-
-  for (const partKey of BODY_PART_KEYS) {
-    const hpNode = getBodyPartHpNode(actor, partKey);
-    if (!hpNode) continue;
-
-    const currentHp = Number(hpNode.value ?? 0);
-    const isDestroyed = currentHp <= 0;
-    const currentFlag = Boolean(hpNode.status?.destroyed);
-
-    if (isDestroyed !== currentFlag) {
-      updates[buildBodyPartStatusPath(partKey, "destroyed")] = isDestroyed;
-    }
-  }
-
-  if (Object.keys(updates).length) {
-    await actor.update(updates);
-  }
-}
-
-function getBodyPartLabel(partKey) {
-  if (partKey === "head") return "Голова";
-  if (partKey === "torso") return "Торс";
-  if (partKey === "abdomen") return "Живот";
-  if (partKey === "leftArm") return "Левая рука";
-  if (partKey === "rightArm") return "Правая рука";
-  if (partKey === "leftLeg") return "Левая нога";
-  if (partKey === "rightLeg") return "Правая нога";
-  return partKey;
-}
-
-// Карта overflow для тика кровотечения — совпадает с логикой actor-sheet._applyDamage
-const LIMB_OVERFLOW_MAP = {
-  head:     "torso",
-  leftArm:  "torso",
-  rightArm: "torso",
-  leftLeg:  "abdomen",
-  rightLeg: "abdomen",
-  abdomen:  "torso",
-  torso:    "head"
-};
-
-// Применяет урон к конечности с overflow в соседнюю при уничтожении.
-// hpCache — изменяемый объект { partKey: currentHp } чтобы не читать устаревшие данные.
-async function applyLimbDamageWithOverflow(actor, partKey, damage, hpCache, logEntries, source, depth = 0) {
-  if (damage <= 0 || depth > 4) return;
-
-  let currentHp = hpCache[partKey] ?? Number(getBodyPartHpNode(actor, partKey)?.value ?? 0);
-
-  // Конечность уже уничтожена — overflow сразу
-  if (currentHp <= 0) {
-    const overflowTarget = LIMB_OVERFLOW_MAP[partKey];
-    if (overflowTarget) {
-      await applyLimbDamageWithOverflow(actor, overflowTarget, damage, hpCache, logEntries, source, depth + 1);
-    }
-    return;
-  }
-
-  const absorbed = Math.min(currentHp, damage);
-  const overflow = damage - absorbed;
-  const newHp = currentHp - absorbed;
-
-  hpCache[partKey] = newHp;
-  await actor.update({ [`system.resources.hp.${partKey}.value`]: newHp });
-
-  if (newHp <= 0) {
-    await actor.update({ [buildBodyPartStatusPath(partKey, "destroyed")]: true });
-    logEntries.push({
-      id: randomId("log"),
-      type: "condition-state",
-      text: `${actor.name}: ${getBodyPartLabel(partKey)} выведена из строя (${source}).`,
-      timestamp: nowStamp()
-    });
-
-    // Overflow в соседнюю конечность
-    if (overflow > 0) {
-      const overflowTarget = LIMB_OVERFLOW_MAP[partKey];
-      if (overflowTarget) {
-        logEntries.push({
-          id: randomId("log"),
-          type: "condition-tick",
-          text: `${actor.name}: ${overflow} HP переходит в ${getBodyPartLabel(overflowTarget)}.`,
-          timestamp: nowStamp()
-        });
-        await applyLimbDamageWithOverflow(actor, overflowTarget, overflow, hpCache, logEntries, source, depth + 1);
-      }
-    }
-  }
-}
-
 async function applyLocalLimbTurnStart(state, participant) {
   const actor = resolveActor(participant?.actorUuid || participant?.actorId);
   if (!actor) return;
 
-  await ensureActorBodyStatusStructure(actor);
+  await ensureActorBodyTraumaStatusStructure(actor);
 
-  const logEntries = [];
-  // Кэш текущих HP чтобы корректно считать overflow цепочки в одном тике
-  const hpCache = {};
-  for (const partKey of BODY_PART_KEYS) {
-    hpCache[partKey] = Number(getBodyPartHpNode(actor, partKey)?.value ?? 0);
-  }
+  const traumaTick = await tickActorBodyTrauma(actor);
 
-  for (const partKey of BODY_PART_KEYS) {
-    if (hpCache[partKey] <= 0) {
-      await actor.update({ [buildBodyPartStatusPath(partKey, "destroyed")]: true });
-      continue;
-    }
-
-    const minorBleeding = Number(getBodyPartStatusValue(actor, partKey, "minorBleeding") || 0);
-    const majorBleeding = Number(getBodyPartStatusValue(actor, partKey, "majorBleeding") || 0);
-    const hasTourniquet = getBodyPartStatusBool(actor, partKey, "tourniquet");
-
-    if (minorBleeding > 0) {
-      logEntries.push({
-        id: randomId("log"),
-        type: "condition-tick",
-        text: `${actor.name}: ${getBodyPartLabel(partKey)} теряет ${minorBleeding} HP от малого кровотечения.`,
-        timestamp: nowStamp()
-      });
-      await applyLimbDamageWithOverflow(actor, partKey, minorBleeding, hpCache, logEntries, "малое кровотечение");
-    }
-
-    if (majorBleeding > 0 && !hasTourniquet) {
-      const damage = majorBleeding * 2;
-      logEntries.push({
-        id: randomId("log"),
-        type: "condition-tick",
-        text: `${actor.name}: ${getBodyPartLabel(partKey)} теряет ${damage} HP от сильного кровотечения.`,
-        timestamp: nowStamp()
-      });
-      await applyLimbDamageWithOverflow(actor, partKey, damage, hpCache, logEntries, "сильное кровотечение");
-    }
-  }
-
-  await refreshDestroyedBodyParts(actor);
+  const logEntries = traumaTick.effects.map(effect => ({
+    id: randomId("log"),
+    type: effect.key === "destroyed" ? "condition-state" : "condition-tick",
+    text: effect.logText,
+    timestamp: nowStamp()
+  }));
 
   state.log = state.log ?? [];
   for (const entry of logEntries.reverse()) {
@@ -704,68 +510,29 @@ async function applyLocalLimbTurnStart(state, participant) {
 export async function ensureCombatActorBodyStatus(actorOrId) {
   const actor = resolveActor(actorOrId);
   if (!actor) return false;
-  await ensureActorBodyStatusStructure(actor);
-  await refreshDestroyedBodyParts(actor);
+  await ensureActorBodyTraumaStatusStructure(actor);
+  await refreshActorBodyTraumaStatus(actor);
   return true;
-}
-
-function getActorConditionValue(actor, key) {
-  const raw = actor?.system?.conditions?.[key];
-
-  if (typeof raw === "number") return raw;
-  if (typeof raw === "boolean") return raw ? 1 : 0;
-
-  if (raw && typeof raw === "object") {
-    if (typeof raw.value === "number") return raw.value;
-    if (typeof raw.active === "boolean") return raw.active ? 1 : 0;
-  }
-
-  return 0;
-}
-
-function buildConditionUpdatePath(key) {
-  return `system.conditions.${key}`;
 }
 
 async function applyConditionTurnStart(state, participant) {
   const actor = resolveActor(participant?.actorUuid || participant?.actorId);
   if (!actor) return;
 
-  const bleeding = Number(getActorConditionValue(actor, "bleeding") || 0);
-  const poison = Number(getActorConditionValue(actor, "poison") || 0);
   const stunned = Number(getActorConditionValue(actor, "stunned") || 0);
   const shock = Number(getActorConditionValue(actor, "shock") || 0);
 
   const updates = {};
   const logEntries = [];
 
-  let torsoValue = Number(actor.system?.resources?.hp?.torso?.value ?? 0);
-
-  if (bleeding > 0) {
-    const nextTorso = Math.max(0, torsoValue - bleeding);
-    updates["system.resources.hp.torso.value"] = nextTorso;
-    torsoValue = nextTorso;
-
+  const damageTick = await tickActorOngoingDamage(actor, {
+    bleeding: !hasActorBodyBleeding(actor)
+  });
+  for (const effect of damageTick.effects) {
     logEntries.push({
       id: randomId("log"),
       type: "condition-tick",
-      text: `${actor.name} теряет ${bleeding} HP от кровотечения.`,
-      timestamp: nowStamp()
-    });
-
-    const nextBleeding = Math.max(0, bleeding - 1);
-    updates[buildConditionUpdatePath("bleeding")] = nextBleeding;
-  }
-
-  if (poison > 0) {
-    const nextTorso = Math.max(0, torsoValue - poison);
-    updates["system.resources.hp.torso.value"] = nextTorso;
-    torsoValue = nextTorso;
-
-    logEntries.push({
-      id: randomId("log"),
-      type: "condition-tick",
-      text: `${actor.name} теряет ${poison} HP от яда.`,
+      text: effect.logText,
       timestamp: nowStamp()
     });
   }
@@ -781,7 +548,7 @@ async function applyConditionTurnStart(state, participant) {
       timestamp: nowStamp()
     });
 
-    updates[buildConditionUpdatePath("stunned")] = 0;
+    updates[buildConditionUpdatePath("stunned")] = Math.max(0, stunned - DEFAULT_TURN_SECONDS);
   }
 
   if (shock > 0) {
@@ -791,6 +558,30 @@ async function applyConditionTurnStart(state, participant) {
       text: `${actor.name} находится в шоке (${shock}).`,
       timestamp: nowStamp()
     });
+  }
+
+  for (const key of [
+    "hasted",
+    "slowed",
+    "feared",
+    "exposed",
+    "pushed",
+    "prone",
+    "shield_lost",
+    "armor_cracked",
+    "broken_limb",
+    "grappled",
+    "sleeping",
+    "disarmed",
+    "formation_stance",
+    "shield_wall_formation",
+    "riposte_ready",
+    "counter_ready",
+    "intercept_ready",
+    "aimed_shot_bonus",
+  ]) {
+    const value = Number(getActorConditionValue(actor, key) || 0);
+    if (value > 0) updates[buildConditionUpdatePath(key)] = Math.max(0, value - DEFAULT_TURN_SECONDS);
   }
 
   // ── Энергия: НЕ восстанавливается автоматически ──────────
@@ -2122,4 +1913,3 @@ export function getCombatUiState() {
 }
 
 export { DEFAULT_TURN_SECONDS };
-

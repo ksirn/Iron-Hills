@@ -4,10 +4,16 @@
  * В grid торговца предметы показываются с суммарным qty (стак для просмотра).
  * При добавлении в offer — разбиваются на отдельные предметы.
  */
-import { getLiveActor, getPersistentActor } from "../utils/actor-utils.mjs";
-import { getComputedItemUnitPrice } from "../utils/item-utils.mjs";
-import { formatCurrency } from "../utils/currency.mjs";
-import { changeActorCoins } from "../services/trade-service.mjs";
+import { getActorCurrency } from "../utils/actor-utils.mjs";
+import {
+  buildTarkovTradeQuote,
+  executeTarkovTrade,
+  getMerchantBuyPriceForItem,
+  getMerchantMarketPriceFactor,
+  getMerchantSellPriceForItem,
+} from "../services/trade-service.mjs";
+import { coinsToCopper, formatCurrency } from "../utils/currency.mjs";
+import { buildItemStackSignature, isStackable } from "../utils/item-utils.mjs";
 
 const CELL = 52; // меньше чем в инвентаре — больше помещается
 
@@ -54,19 +60,7 @@ export class TarkovTradeApp extends Application {
   }
 
   _priceFactor() {
-    const base = Number(this.merchant?.system?.market?.currentPriceFactor ?? 1);
-    // Модификатор репутации применяется если персонаж назначен
-    if (this._buyer && this.merchant) {
-      try {
-        const { getPriceMult } = game.ironHills?._factionService ?? {};
-        if (getPriceMult) {
-          const repMult = getPriceMult(this._buyer, this.merchant);
-          if (repMult === 0) return 0; // враждебный — не торгует
-          return Number((base * repMult).toFixed(2));
-        }
-      } catch {}
-    }
-    return base;
+    return getMerchantMarketPriceFactor(this._buyer, this.merchant);
   }
 
   _getRepInfo() {
@@ -80,14 +74,24 @@ export class TarkovTradeApp extends Application {
     } catch { return null; }
   }
 
-  _itemPrice(item) {
-    const base = Number(item.system?.price ?? item.system?.value ?? 0) || getComputedItemUnitPrice(item);
-    return Math.max(1, Math.ceil(base * this._priceFactor()));
+  _canTrade() {
+    return this._priceFactor() > 0;
   }
 
-  _buildGrid(items, cols = 5, search = "", filter = "all") {
-    const STACKABLE = new Set(["ammo","throwable"]);
-    // Группируем стакуемые предметы
+  _itemPrice(item, side = "merchant") {
+    if (!this._canTrade()) return 0;
+    return side === "player"
+      ? getMerchantSellPriceForItem(item, this.merchant, this._buyer)
+      : getMerchantBuyPriceForItem(item, this.merchant, this._buyer);
+  }
+
+  _itemPriceStr(item, qty = 1, side = "merchant") {
+    const price = this._itemPrice(item, side);
+    return price > 0 ? formatCurrency(price * Math.max(1, Number(qty ?? 1))) : "—";
+  }
+
+  _buildGrid(items, cols = 5, search = "", filter = "all", side = "merchant") {
+    // Группируем стакуемые предметы по фактической stack signature, а не только по имени.
     // Порядок типов для сортировки
     const TYPE_ORDER = {
       weapon:1, armor:2, ammo:3, tool:4,
@@ -113,10 +117,12 @@ export class TarkovTradeApp extends Application {
     const grouped = [];
     const seen = new Map();
     for (const item of filtered) {
-      if (STACKABLE.has(item.type)) {
-        const key = item.name + "_" + item.type;
+      if (isStackable(item.type)) {
+        const key = buildItemStackSignature(item);
         if (seen.has(key)) {
-          seen.get(key).qty += Number(item.system?.quantity ?? 1);
+          const existing = seen.get(key);
+          existing.qty += Number(item.system?.quantity ?? 1);
+          existing.ids.push(item.id);
         } else {
           const entry = { item, qty: Number(item.system?.quantity ?? 1), ids: [item.id] };
           seen.set(key, entry);
@@ -168,11 +174,12 @@ export class TarkovTradeApp extends Application {
             const desc = sys.description ?? sys.desc ?? "";
             const descShort = desc ? String(desc).replace(/<[^>]+>/g,"").slice(0,100) : "";
 
-            placed.push({ ...entry, col: c, row: r, w, h,
+            const unitPrice = this._itemPrice(entry.item, side);
+            placed.push({ ...entry, itemIds: entry.ids, maxQty: entry.qty, col: c, row: r, w, h,
               cssLeft: c*CELL, cssTop: r*CELL,
               cssW: w*CELL-2, cssH: h*CELL-2,
-              price: this._itemPrice(entry.item),
-              priceStr: formatCurrency(this._itemPrice(entry.item) * entry.qty),
+              price: unitPrice,
+              priceStr: unitPrice > 0 ? formatCurrency(unitPrice * entry.qty) : "—",
               tooltipStats: tips.join(" · "),
               tooltipDesc:  descShort,
               itemType:     entry.item.type,
@@ -190,42 +197,57 @@ export class TarkovTradeApp extends Application {
       for (let c = 0; c < cols; c++)
         cells.push({ col:c, row:r, x:c*CELL, y:r*CELL, size:CELL });
 
-    return { placed, cells, rows, cols, gridW: cols*CELL, gridH: rows*CELL };
+    const offerGroups = Object.fromEntries(
+      placed.map(entry => [
+        entry.item.id,
+        {
+          item: entry.item,
+          itemIds: entry.itemIds ?? entry.ids ?? [entry.item.id],
+          maxQty: Math.max(1, Number(entry.maxQty ?? entry.qty ?? 1))
+        }
+      ])
+    );
+
+    return { placed, cells, rows, cols, gridW: cols*CELL, gridH: rows*CELL, offerGroups };
   }
 
   _coinsToCopper(coins) {
-    return (Number(coins?.copper??0)) + (Number(coins?.silver??0))*100 + (Number(coins?.gold??0))*10000;
+    return coinsToCopper(coins);
+  }
+
+  _actorCoins(actor) {
+    return getActorCurrency(actor);
   }
 
   _buyerCoins() {
-    const cur = this._buyer?.system?.currency ?? {};
-    return (Number(cur.copper??0)) + (Number(cur.silver??0))*100
-         + (Number(cur.gold??0))*10000 + (Number(cur.platinum??0))*1000000;
+    return this._actorCoins(this._buyer);
   }
 
   _offerTotal() {
-    return this._offer.reduce((s, o) => s + this._itemPrice(o.item) * o.qty, 0);
+    return this._offer.reduce((s, o) => s + this._itemPrice(o.item, "merchant") * o.qty, 0);
   }
   _playerOfferTotal() {
-    return this._playerOffer.reduce((s, o) => s + this._itemPrice(o.item) * o.qty, 0);
+    return this._playerOffer.reduce((s, o) => s + this._itemPrice(o.item, "player") * o.qty, 0);
   }
 
   async getData() {
     const merchant = this.merchant;
     const buyer    = this._buyer;
     // ID предметов уже в предложениях — исключаем из grid
-    const mOfferedIds = new Set(this._offer.map(o => o.item.id));
-    const pOfferedIds = new Set(this._playerOffer.map(o => o.item.id));
+    const mOfferedIds = new Set(this._offer.flatMap(o => o.itemIds ?? [o.item.id]));
+    const pOfferedIds = new Set(this._playerOffer.flatMap(o => o.itemIds ?? [o.item.id]));
 
     const mGrid    = this._buildGrid(
       Array.from(merchant?.items ?? []).filter(i => !mOfferedIds.has(i.id)),
-      7, this._mSearch, this._mFilter
+      7, this._mSearch, this._mFilter, "merchant"
     );
     const pGrid    = this._buildGrid(
       Array.from(buyer?.items ?? [])
         .filter(i => !["spell","attachment"].includes(i.type) && !pOfferedIds.has(i.id)),
-      7, this._pSearch, this._pFilter
+      7, this._pSearch, this._pFilter, "player"
     );
+    this._mOfferGroups = mGrid.offerGroups ?? {};
+    this._pOfferGroups = pGrid.offerGroups ?? {};
 
     // Категории для фильтров
     const CATS = ["weapon","armor","potion","food","material","tool","spell","ammo"];
@@ -234,17 +256,21 @@ export class TarkovTradeApp extends Application {
     const CAT_LABELS = { all:"Все", weapon:"⚔", armor:"🛡", potion:"⚗",
                          food:"🍖", material:"📦", tool:"🔧", spell:"✨", ammo:"🏹" };
 
-    const offerTotal       = this._offerTotal() + this._coinsToCopper(this._mCoins);
-    const playerOfferTotal = this._playerOfferTotal() + this._coinsToCopper(this._pCoins);
-    const balance          = offerTotal - playerOfferTotal;
+    const quote = buildTarkovTradeQuote({
+      buyer,
+      merchant,
+      merchantOffers: this._offer,
+      playerOffers: this._playerOffer,
+      merchantCoins: this._mCoins,
+      playerCoins: this._pCoins,
+    });
+    const offerTotal       = quote.ok ? quote.merchantOfferValue : this._coinsToCopper(this._mCoins);
+    const playerOfferTotal = quote.ok ? quote.playerOfferValue : this._coinsToCopper(this._pCoins);
+    const balance          = quote.ok ? quote.net : 0;
     const buyerCoins       = this._buyerCoins();
 
     // Монеты торговца
-    const merchantCur = merchant?.system?.currency ?? {};
-    const merchantCoins = (Number(merchantCur.copper??0))
-      + (Number(merchantCur.silver??0))*100
-      + (Number(merchantCur.gold??0))*10000
-      + (Number(merchantCur.platinum??0))*1000000;
+    const merchantCoins = this._actorCoins(merchant);
 
     return {
       merchantName:  merchant?.name ?? "Торговец",
@@ -254,7 +280,8 @@ export class TarkovTradeApp extends Application {
       buyerImg:      buyer?.img     ?? "icons/svg/mystery-man.svg",
       buyerCoins:    formatCurrency(buyerCoins),
       buyerCoinsRaw: buyerCoins,
-      canAfford:     buyerCoins >= balance && balance > 0 || balance <= 0,
+      canAfford:     Boolean(quote.ok && quote.canTrade && quote.hasExchange && quote.buyerCanPay && quote.merchantCanPay),
+      tradeBlockedReason: quote.ok && quote.canTrade ? "" : (quote.reason ?? "Сделка недоступна"),
       isGM:          game.user?.isGM,
       // Монеты в предложениях
       mCopperOffer: this._mCoins.copper, mSilverOffer: this._mCoins.silver, mGoldOffer: this._mCoins.gold,
@@ -270,11 +297,11 @@ export class TarkovTradeApp extends Application {
       // Предложения
       offer:       this._offer.map(o => ({
         itemId: o.item.id, name: o.item.name, img: o.item.img,
-        qty: o.qty, priceStr: formatCurrency(this._itemPrice(o.item) * o.qty)
+        qty: o.qty, priceStr: this._itemPriceStr(o.item, o.qty, "merchant")
       })),
       playerOffer: this._playerOffer.map(o => ({
         itemId: o.item.id, name: o.item.name, img: o.item.img,
-        qty: o.qty, priceStr: formatCurrency(this._itemPrice(o.item) * o.qty)
+        qty: o.qty, priceStr: this._itemPriceStr(o.item, o.qty, "player")
       })),
 
       offerTotalStr:       formatCurrency(offerTotal),
@@ -282,7 +309,7 @@ export class TarkovTradeApp extends Application {
       balanceStr:          formatCurrency(Math.abs(balance)),
       balanceSign:         balance > 0 ? "+" : balance < 0 ? "−" : "=",
       balanced:            balance === 0,
-      priceFactor:         this._priceFactor().toFixed(2),
+      priceFactor:         Number(this._priceFactor()).toFixed(2),
       repInfo:             this._getRepInfo(),
       mSearch: this._mSearch, pSearch: this._pSearch,
       mFilter: this._mFilter, pFilter: this._pFilter,
@@ -350,6 +377,8 @@ export class TarkovTradeApp extends Application {
     // Сброс
     html.find("[data-reset]").on("click", () => {
       this._offer = []; this._playerOffer = [];
+      this._mCoins = { copper:0, silver:0, gold:0 };
+      this._pCoins = { copper:0, silver:0, gold:0 };
       this.render(false);
     });
 
@@ -408,7 +437,7 @@ export class TarkovTradeApp extends Application {
       const list   = side === "merchant" ? this._offer : this._playerOffer;
       const entry  = list.find(o => o.item.id === itemId);
       if (entry) {
-        const maxQty = Number(entry.item.system?.quantity ?? 1);
+        const maxQty = Math.max(1, Number(entry.maxQty ?? entry.item.system?.quantity ?? 1));
         entry.qty = Math.min(maxQty, entry.qty + 1);
         this.render(false);
       }
@@ -422,14 +451,23 @@ export class TarkovTradeApp extends Application {
 
   _addToOffer(itemId, side) {
     const actor = side === "merchant" ? this.merchant : this._buyer;
-    const item  = actor?.items?.get(itemId);
+    const group = side === "merchant"
+      ? this._mOfferGroups?.[itemId]
+      : this._pOfferGroups?.[itemId];
+    const item  = group?.item ?? actor?.items?.get(itemId);
     if (!item) return;
     const list  = side === "merchant" ? this._offer : this._playerOffer;
     const existing = list.find(o => o.item.id === itemId);
+    const maxQty = Math.max(1, Number(group?.maxQty ?? item.system?.quantity ?? 1));
     if (existing) {
-      existing.qty = Math.min(Number(item.system?.quantity ?? 1), existing.qty + 1);
+      existing.qty = Math.min(Number(existing.maxQty ?? maxQty), existing.qty + 1);
     } else {
-      list.push({ item, qty: 1 });
+      list.push({
+        item,
+        itemIds: group?.itemIds ?? [item.id],
+        maxQty,
+        qty: 1
+      });
     }
     this.render(false);
   }
@@ -449,97 +487,67 @@ export class TarkovTradeApp extends Application {
     const merchant = this.merchant;
     if (!buyer || !merchant) return;
 
-    const cost    = this._offerTotal();
-    const receive = this._playerOfferTotal();
-    const net     = cost - receive;
-
-    if (!gmForce && net > 0) {
-      const coins = this._buyerCoins();
-      if (coins < net) {
-        ui.notifications.error(`Не хватает монет: нужно ${formatCurrency(net)}, есть ${formatCurrency(coins)}`);
-        return;
-      }
-    }
-
-    // Переносим предметы торговца → покупателю
-    // Сначала снапшот offer чтобы не зависеть от реактивных обновлений
-    const offerSnapshot = this._offer.map(o => ({
-      itemId: o.item.id, qty: o.qty,
-      data: (() => { const d = o.item.toObject(); delete d._id; d.flags = {}; return d; })(),
-      type: o.item.type,
-      curQty: Number(o.item.system?.quantity ?? 1),
-    }));
-    this._offer = [];
-
-    const STACKABLE = new Set(["ammo","throwable"]);
-    for (const snap of offerSnapshot) {
-      // Сначала убираем у торговца
-      const liveItem = merchant.items.get(snap.itemId);
-      if (liveItem) {
-        if (snap.curQty <= snap.qty) await liveItem.delete();
-        else await liveItem.update({ "system.quantity": snap.curQty - snap.qty });
-      }
-      // Потом создаём у покупателя
-      if (STACKABLE.has(snap.type)) {
-        snap.data.system.quantity = snap.qty;
-        await buyer.createEmbeddedDocuments("Item", [snap.data],
-          { ironHillsSkipWorldMirror: true });
-      } else {
-        for (let i = 0; i < snap.qty; i++) {
-          const d = foundry.utils.deepClone(snap.data);
-          d.system.quantity = 1;
-          await buyer.createEmbeddedDocuments("Item", [d],
-            { ironHillsSkipWorldMirror: true });
-        }
-      }
-    }
-
-    // Переносим предметы игрока → торговцу
-    for (const entry of this._playerOffer) {
-      const data = entry.item.toObject();
-      delete data._id;
-      data.system.quantity = entry.qty;
-      data.flags = {};
-      await merchant.createEmbeddedDocuments("Item", [data],
-        { ironHillsSkipWorldMirror: true });
-      const cur = Number(entry.item.system?.quantity ?? 1);
-      if (cur <= entry.qty) await entry.item.delete();
-      else await entry.item.update({ "system.quantity": cur - entry.qty });
-    }
-
-    // Деньги
     if (!gmForce) {
-      const cur = this._buyerCoins();
-      const remaining = cur - net;
-      if (remaining !== cur) {
-        await buyer.update({
-          "system.currency.gold":   Math.floor(Math.max(0,remaining) / 10000),
-          "system.currency.silver": Math.floor((Math.max(0,remaining) % 10000) / 100),
-          "system.currency.copper": Math.max(0,remaining) % 100,
-        });
-      }
+      const { requireNoPendingInventory } = await import("./pending-items-app.mjs").catch(() => ({}));
+      const pendingCheck = requireNoPendingInventory
+        ? await requireNoPendingInventory(buyer, { actionLabel: "торговля" })
+        : { ok: true };
+      if (!pendingCheck.ok) return;
     }
-    // Сбрасываем монеты предложения
+
+    const result = await executeTarkovTrade({
+      buyer,
+      merchant,
+      merchantOffers: this._offer,
+      playerOffers: this._playerOffer,
+      merchantCoins: this._mCoins,
+      playerCoins: this._pCoins,
+      gmForce,
+    });
+
+    if (!result.ok) {
+      const quote = result.quote ?? {};
+      const suffix = quote.buyerPays && quote.buyerCoins !== undefined
+        ? ` Нужно ${formatCurrency(quote.buyerPays)}, есть ${formatCurrency(quote.buyerCoins)}.`
+        : "";
+      ui.notifications.error(`${result.reason}${suffix}`);
+      return;
+    }
+
+    const quote = result.quote;
+    const merchantItems = result.merchantItems.length
+      ? `Покупатель получает: ${result.merchantItems.map(o => `${o.name}×${o.qty}`).join(", ")}<br>`
+      : "";
+    const playerItems = result.playerItems.length
+      ? `Торговец получает: ${result.playerItems.map(o => `${o.name}×${o.qty}`).join(", ")}<br>`
+      : "";
+    const moneyLine = gmForce
+      ? "GM-сделка: монеты не двигались"
+      : quote.buyerPays > 0 && quote.merchantPays > 0
+        ? `Покупатель платит: ${formatCurrency(quote.buyerPays)} · Торговец платит: ${formatCurrency(quote.merchantPays)}`
+        : quote.buyerPays > 0
+          ? `Покупатель платит: ${formatCurrency(quote.buyerPays)}`
+          : quote.merchantPays > 0
+            ? `Торговец платит: ${formatCurrency(quote.merchantPays)}`
+            : "Бартер";
+
+    await ChatMessage.create({
+      content: `<div style="padding:6px">🏪 <b>${buyer.name}</b> ↔ <b>${merchant.name}</b><br>${merchantItems}${playerItems}${moneyLine}</div>`
+    });
+
+    this._offer = []; this._playerOffer = [];
     this._mCoins = { copper:0, silver:0, gold:0 };
     this._pCoins = { copper:0, silver:0, gold:0 };
 
-    const msg = `🏪 <b>${buyer.name}</b> ↔ <b>${merchant.name}</b><br>`
-      + (this._offer.length ? `Получено: ${this._offer.map(o=>`${o.item.name}×${o.qty}`).join(", ")}<br>` : "")
-      + (net > 0 ? `Заплачено: ${formatCurrency(net)}` : net < 0 ? `Получено сдачи: ${formatCurrency(-net)}` : "Бартер");
-
-    await ChatMessage.create({ content: `<div style="padding:6px">${msg}</div>` });
-
-    this._offer = []; this._playerOffer = [];
-
     // Открываем pending если нужно
     const { PendingItemsApp } = await import("./pending-items-app.mjs");
-    await PendingItemsApp.openIfNeeded(buyer);
+    await PendingItemsApp.openIfNeeded(result.buyer);
 
     // Обновляем все открытые окна инвентаря участников
     for (const app of Object.values(ui.windows ?? {})) {
       if (app.constructor?.name === "IronHillsGridInventoryApp") {
         const id = app.actor?.id;
-        if (id === buyer?.id || id === merchant?.id) app.render(false);
+        if (id === result.buyer?.id || id === result.merchant?.id) app.render(false);
       }
     }
 

@@ -3,6 +3,8 @@
  * Лист для NPC и монстров.
  */
 import { SKILL_GROUPS } from "../constants/skills.mjs";
+import { MONSTER_BESTIARY } from "../constants/monster-bestiary.mjs";
+import { lootTableKeys } from "../services/wilderness-service.mjs";
 
 class IronHillsNpcSheet extends ActorSheet {
 
@@ -54,6 +56,8 @@ class IronHillsNpcSheet extends ActorSheet {
     const s    = a.system;
 
     ctx.isCreature = a.type === "monster";
+    ctx.showMonsterLootUi = a.type === "monster";
+    ctx.showNpcObyskUi = a.type === "npc";
     ctx.activeTab  = this._activeTab ?? "stats";
 
     // Навыки с нулём не показываем — только заполненные
@@ -67,6 +71,9 @@ class IronHillsNpcSheet extends ActorSheet {
     })).filter(g => g.skills.length > 0);
 
     ctx.skillGroups = skillGroups;
+
+    ctx.isGM = !!game.user?.isGM;
+    ctx.monsterLootPoolKeys = ctx.showMonsterLootUi ? lootTableKeys().sort() : [];
 
     // HP части тела
     const hp = s.resources?.hp ?? {};
@@ -93,6 +100,27 @@ class IronHillsNpcSheet extends ActorSheet {
       img:   i.img,
       type:  i.type,
     }));
+
+    ctx.allowPickpocketEnabled = s.info?.allowPickpocket !== false;
+
+    ctx.monsterBestiaryCanon = "";
+    ctx.monsterLootGmWarning = "";
+    if (a.type === "monster") {
+      const bid = String(s.info?.bestiaryId ?? "").trim();
+      const canon = bid && MONSTER_BESTIARY[bid] ? MONSTER_BESTIARY[bid] : null;
+      if (canon?.lootPool) ctx.monsterBestiaryCanon = String(canon.lootPool);
+      const lp = String(s.info?.lootPool ?? "").trim();
+      if (
+        game.user?.isGM &&
+        canon?.lootPool &&
+        lp &&
+        lp !== canon.lootPool
+      ) {
+        ctx.monsterLootGmWarning =
+          `На листе пул «${lp}», в бестиарии для «${bid}» — «${canon.lootPool}». ` +
+          "При разделке используются встроенные предметы с шансом; они пересоздаются синхром компендиума.";
+      }
+    }
 
     return ctx;
   }

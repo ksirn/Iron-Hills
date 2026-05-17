@@ -114,6 +114,9 @@
         <div class="tt-balance {{#if balanced}}balanced{{/if}}">
           {{balanceSign}} {{balanceStr}}
         </div>
+        {{#if tradeBlockedReason}}
+        <div class="tt-trade-blocked">{{tradeBlockedReason}}</div>
+        {{/if}}
         <a class="ih-btn ih-btn-primary" data-accept>✓ Принять</a>
         {{#if isGM}}
         <a class="ih-btn" data-accept-gm>✓ GM (без денег)</a>

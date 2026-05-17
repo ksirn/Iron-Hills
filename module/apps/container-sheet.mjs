@@ -3,6 +3,7 @@
  * Контейнер: сундук, труп, мешок, тайник, куча на земле.
  * Поддерживает: замок, взятие предметов, drag&drop, взять всё.
  */
+import { addItemToActorOrStack } from "../services/trade-service.mjs";
 
 class IronHillsContainerSheet extends ActorSheet {
 
@@ -122,12 +123,14 @@ class IronHillsContainerSheet extends ActorSheet {
     // Создаём копию у персонажа
     const itemData = item.toObject();
     delete itemData._id;
-    await Item.create(itemData, { parent: target });
+    await addItemToActorOrStack(target, itemData);
 
     // Удаляем из контейнера
     await item.delete();
 
     ui.notifications.info(`${target.name} взял: ${item.name}`);
+    const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
+    await PendingItemsApp?.openIfNeeded?.(target);
     if (doRender) this.render(false);
   }
 
@@ -148,7 +151,7 @@ class IronHillsContainerSheet extends ActorSheet {
     // Перемещаем предмет в контейнер
     const itemData = item.toObject();
     delete itemData._id;
-    await Item.create(itemData, { parent: this.actor });
+    await addItemToActorOrStack(this.actor, itemData);
 
     // Удаляем из источника
     await item.delete();

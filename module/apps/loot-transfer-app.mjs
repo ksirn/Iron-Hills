@@ -5,22 +5,21 @@
  * Никакого "взять всё", никакого списка — только сетки инвентаря.
  */
 import { buildContainers } from "./grid-inventory-app.mjs";
-
-// Локальное определение слотов (не импортируем чтобы избежать circular/module issues)
-const EQUIP_SLOTS_LT = [
-  { key:"leftHand",  label:"Л. кисть",  accepts:["weapon","armor","attachment"] },
-  { key:"rightHand", label:"П. кисть",  accepts:["weapon","armor","attachment"] },
-  { key:"head",      label:"Голова",    accepts:["armor"] },
-  { key:"neck",      label:"Шея",       accepts:["jewelry","armor"] },
-  { key:"torso",     label:"Торс",      accepts:["armor"] },
-  { key:"leftArm",   label:"Л. рука",   accepts:["armor"] },
-  { key:"rightArm",  label:"П. рука",   accepts:["armor"] },
-  { key:"legs",      label:"Ноги",      accepts:["armor"] },
-  { key:"ringLeft",  label:"Кольцо Л",  accepts:["jewelry"] },
-  { key:"ringRight", label:"Кольцо П",  accepts:["jewelry"] },
-  { key:"belt",      label:"Пояс",      accepts:["belt"] },
-  { key:"backpack",  label:"Рюкзак",    accepts:["backpack"] },
-];
+import { getPersistentActor } from "../utils/actor-utils.mjs";
+import { addItemToActorOrStack } from "../services/trade-service.mjs";
+import {
+  canEquipItemInSlot,
+  EQUIPMENT_SLOT_DEFS,
+  equipActorItem,
+  moveItemToInventorySection,
+  unequipActorSlot
+} from "../services/inventory-service.mjs";
+import {
+  harvestMonsterCarcass,
+  buildLootTransferHarvestPresentation,
+  buildLootTransferPickpocketPresentation,
+  pickpocketNpc,
+} from "../services/wilderness-service.mjs";
 
 const CELL = 40; // чуть меньше чем в основном инвентаре
 
@@ -92,6 +91,9 @@ class IronHillsLootTransfer extends Application {
     const leftEquip  = this._buildEquipSlots(this._left);
     const rightEquip = rightIsActor ? this._buildEquipSlots(this._right) : [];
 
+    const harvestUi = buildLootTransferHarvestPresentation(this._left, this._right);
+    const pickpocketUi = buildLootTransferPickpocketPresentation(this._left, this._right);
+
     return {
       leftName:  this._left?.name  ?? "—",
       rightName: this._right?.name ?? "Земля",
@@ -106,6 +108,8 @@ class IronHillsLootTransfer extends Application {
       rightSections: rightIsActor ? this._buildSections(this._right) : [],
       stashGrid: rightIsContainer ? this._buildContainerList(this._right) : null,
       cellSize: CELL,
+      harvestUi,
+      pickpocketUi,
     };
   }
 
@@ -188,7 +192,7 @@ class IronHillsLootTransfer extends Application {
       legs:"👖", leftHand:"🗡", rightHand:"⚔", ringLeft:"💍", ringRight:"💍",
       belt:"🔗", backpack:"🎒",
     };
-    return EQUIP_SLOTS_LT.map(s => {
+    return EQUIPMENT_SLOT_DEFS.map(s => {
       const itemId = equip[s.key];
       const item   = itemId ? actor.items.get(itemId) : null;
       return {
@@ -345,6 +349,71 @@ class IronHillsLootTransfer extends Application {
       });
     }
 
+    const reloadActorsAndRender = async () => {
+      const lid = this._left?.id;
+      const rid = this._right?.id;
+      if (lid) {
+        const next = game.actors.get(lid);
+        if (next) this._left = getPersistentActor(next) ?? next;
+      }
+      if (rid) {
+        const nextR = game.actors.get(rid);
+        if (nextR) this._right = nextR;
+      }
+      this.render(false);
+    };
+
+    const openPendingIfNeeded = async (actor) => {
+      const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
+      if (PendingItemsApp) await PendingItemsApp.openIfNeeded(actor);
+    };
+
+    html.find("[data-ih-lt-harvest]").on("click", async (e) => {
+      e.preventDefault();
+      const leftRaw = game.actors.get(this._left?.id);
+      const rightRaw = game.actors.get(this._right?.id);
+      const left = getPersistentActor(leftRaw) ?? leftRaw;
+      if (!left?.id || !rightRaw?.id) return;
+      await harvestMonsterCarcass(left, rightRaw, {});
+      await reloadActorsAndRender();
+      await openPendingIfNeeded(left);
+    });
+
+    html.find("[data-ih-lt-harvest-gm]").on("click", async (e) => {
+      e.preventDefault();
+      if (!game.user?.isGM) return;
+      const leftRaw = game.actors.get(this._left?.id);
+      const rightRaw = game.actors.get(this._right?.id);
+      const left = getPersistentActor(leftRaw) ?? leftRaw;
+      if (!left?.id || !rightRaw?.id) return;
+      await harvestMonsterCarcass(left, rightRaw, { bypassHarvestCheck: true });
+      await reloadActorsAndRender();
+      await openPendingIfNeeded(left);
+    });
+
+    html.find("[data-ih-lt-pickpocket]").on("click", async (e) => {
+      e.preventDefault();
+      const leftRaw = game.actors.get(this._left?.id);
+      const rightRaw = game.actors.get(this._right?.id);
+      const left = getPersistentActor(leftRaw) ?? leftRaw;
+      if (!left?.id || !rightRaw?.id) return;
+      await pickpocketNpc(left, rightRaw, {});
+      await reloadActorsAndRender();
+      await openPendingIfNeeded(left);
+    });
+
+    html.find("[data-ih-lt-pickpocket-gm]").on("click", async (e) => {
+      e.preventDefault();
+      if (!game.user?.isGM) return;
+      const leftRaw = game.actors.get(this._left?.id);
+      const rightRaw = game.actors.get(this._right?.id);
+      const left = getPersistentActor(leftRaw) ?? leftRaw;
+      if (!left?.id || !rightRaw?.id) return;
+      await pickpocketNpc(left, rightRaw, { bypassPickpocketCheck: true });
+      await reloadActorsAndRender();
+      await openPendingIfNeeded(left);
+    });
+
     // Закрыть
     html.find("[data-close-done]").on("click", () => this._closeAndClean());
   }
@@ -352,27 +421,27 @@ class IronHillsLootTransfer extends Application {
   // ── Экипировка предмета в слот ───────────────────────────
   async _doEquip(slotKey, targetActorId) {
     if (!this._drag) return;
-    const { itemId, actorId: srcActorId } = this._drag;
+    const { itemId, actorId: srcActorId, fromEquip } = this._drag;
     this._drag = null;
 
-    const dstActor = game.actors.get(targetActorId);
-    const slotCfg  = EQUIP_SLOTS_LT.find(s => s.key === slotKey);
+    const dstActorRaw = game.actors.get(targetActorId);
+    const dstActor    = getPersistentActor(dstActorRaw) ?? dstActorRaw;
+    const slotCfg  = EQUIPMENT_SLOT_DEFS.find(s => s.key === slotKey);
     if (!dstActor || !slotCfg) {
       console.warn("Iron Hills | _doEquip failed:", { slotKey, targetActorId, dstActor: !!dstActor, slotCfg: !!slotCfg });
       return;
     }
 
-    // Ищем предмет — в world actors или компендиуме
-    const srcActor = game.actors.get(srcActorId);
-    let item = srcActor?.items.get(itemId);
+    let srcActorRaw = srcActorId ? game.actors.get(srcActorId) : null;
+    let srcActor    = srcActorRaw ? (getPersistentActor(srcActorRaw) ?? srcActorRaw) : null;
+    let item        = srcActor?.items?.get(itemId);
 
-    // Если не нашли — ищем по UUID (компендиум или другой источник)
     if (!item) {
       try {
-        const found = await fromUuid(`Actor.${srcActorId}.Item.${itemId}`) 
+        const found = await fromUuid(`Actor.${srcActorId}.Item.${itemId}`)
                    ?? await fromUuid(itemId);
         item = found;
-      } catch(e) { /* не найдено */ }
+      } catch (e) { /* не найдено */ }
     }
 
     if (!item) {
@@ -380,24 +449,30 @@ class IronHillsLootTransfer extends Application {
       return;
     }
 
-    // Проверяем тип
-    if (!slotCfg.accepts.includes(item.type)) {
+    // Родитель предмета — канонический актор (если game.actors.get(src) промахнулся)
+    const owner = item.actor ? (getPersistentActor(item.actor) ?? item.actor) : srcActor;
+    if (!srcActor && owner) srcActor = owner;
+
+    if (!canEquipItemInSlot(item, slotKey)) {
       ui.notifications.warn(`В слот "${slotCfg.label}" нельзя надеть предмет типа "${item.type}"`);
       return;
     }
 
-    // Если предмет у другого актора или из компендиума — переносим к dstActor
-    if (srcActorId !== targetActorId || item.pack) {
+    const needsClone = Boolean(item.pack || (owner?.id != null && owner.id !== dstActor.id));
+
+    if (needsClone) {
       const data = item.toObject();
       delete data._id;
       foundry.utils.setProperty(data, "flags.iron-hills-system", {});
-      const created = await Item.create(data, { parent: dstActor });
+      const shouldPlaceInGrid = Boolean(targetSecKey && targetSecKey !== "__stash__");
+      const created = shouldPlaceInGrid
+        ? await Item.create(data, { parent: dstActor })
+        : await addItemToActorOrStack(dstActor, data);
 
-      // Если надеваем рюкзак/пояс из контейнера — переносим его содержимое тоже
       const CONTAINER_TYPES = ["backpack", "belt"];
-      if (srcActor && CONTAINER_TYPES.includes(item.type)) {
+      if (owner && CONTAINER_TYPES.includes(item.type)) {
         const prefix = item.type + "_";
-        const contents = Array.from(srcActor.items ?? []).filter(ci => {
+        const contents = Array.from(owner.items ?? []).filter(ci => {
           const f = ci.flags?.["iron-hills-system"] ?? {};
           return f.sectionKey && f.sectionKey.startsWith(prefix);
         });
@@ -409,26 +484,19 @@ class IronHillsLootTransfer extends Application {
         }
       }
 
-      if (srcActor && !item.pack) await item.delete();
+      const removeFrom = owner ?? srcActor;
+      if (removeFrom && !item.pack && typeof item.delete === "function") await item.delete();
       item = created;
     }
 
-    // Снимаем предыдущее в слоте
-    const curId = dstActor.system?.equipment?.[slotKey];
-    if (curId && curId !== item.id) {
-      const old = dstActor.items.get(curId);
-      if (old) await old.update({
-        "flags.iron-hills-system.sectionKey": null,
-        "flags.iron-hills-system.gridPos": null
-      });
+    // Снимок экипировки до правок — для swap рук на одном актёре и для displaced
+    const equipped = await equipActorItem(dstActor, item, slotKey);
+    if (!equipped) {
+      ui.notifications.warn(`Cannot equip item type "${item.type}" to slot "${slotCfg.label}"`);
+      return;
     }
 
-    // Надеваем
-    await dstActor.update({ [`system.equipment.${slotKey}`]: item.id });
-    await item.update({
-      "flags.iron-hills-system.sectionKey": null,
-      "flags.iron-hills-system.gridPos": null
-    });
+    // Перекладка между слотами на том же актёре без клонирования — очистить старый слот
 
     this.render(false);
   }
@@ -436,11 +504,13 @@ class IronHillsLootTransfer extends Application {
     // ── Перенос предмета между секциями/акторами ──────────────
   async _doTransfer(targetActorId, targetSecKey, col, row) {
     if (!this._drag) return;
-    const { itemId, actorId: srcActorId } = this._drag;
+    const { itemId, actorId: srcActorId, fromEquip } = this._drag;
     this._drag = null;
 
-    const srcActor = game.actors.get(srcActorId);
-    const dstActor = game.actors.get(targetActorId);
+    const srcActorRaw = game.actors.get(srcActorId);
+    const dstActorRaw = game.actors.get(targetActorId);
+    const srcActor = getPersistentActor(srcActorRaw) ?? srcActorRaw;
+    const dstActor = getPersistentActor(dstActorRaw) ?? dstActorRaw;
     if (!dstActor) return;
 
     let item = srcActor?.items.get(itemId);
@@ -449,7 +519,11 @@ class IronHillsLootTransfer extends Application {
     }
     if (!item) return;
 
-    const isSameActor = srcActorId === targetActorId;
+    const isSameActor = srcActor?.id === dstActor?.id;
+    if (isSameActor && fromEquip) {
+      await unequipActorSlot(srcActor, fromEquip);
+      item = srcActor.items.get(itemId) ?? item;
+    }
 
     // Проверяем ограничения секции назначения
     if (targetSecKey && targetSecKey !== "__stash__") {
@@ -474,10 +548,11 @@ class IronHillsLootTransfer extends Application {
     }
 
     if (isSameActor && targetSecKey) {
-      await item.update({
-        "flags.iron-hills-system.sectionKey": targetSecKey,
-        "flags.iron-hills-system.gridPos":    { col, row },
-      });
+      await moveItemToInventorySection(
+        item,
+        targetSecKey,
+        targetSecKey === "__stash__" ? null : { col, row }
+      );
     } else if (!isSameActor) {
       const data = item.toObject();
       delete data._id;

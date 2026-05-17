@@ -1,0 +1,272 @@
+[
+  {
+    "id": "ash_rot_mites",
+    "name": "Гнильный рой‑клещ",
+    "tier": 1,
+    "lootPool": "vermin_bundle_t1",
+    "lootSummaryRu": "Сырая дичь ~70%; Пыльца ночных мотыльков ~44%; Осколок клыка ~36%; Жильё зверя ~19%",
+    "prompt": "Concept of \"Гнильный рой‑клещ\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Слизистый многоножковый рой из пепельных отвалов; мало мяса, годны для простых реагентов; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 1 encounter presence, grimy scavenger prey, soot and mud, campfire rim light, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "briar_rat_boss",
+    "name": "Крысиный вожак колючника",
+    "tier": 1,
+    "lootPool": "predator_scrap_t1",
+    "lootSummaryRu": "Сырая дичь ~64%; Небольшая шкура (сырая) ~51%; Шкура зверя ~36%; Жильё зверя ~19%",
+    "prompt": "Concept of \"Крысиный вожак колючника\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Стаейный падальщик дорогих кустарников; шкура в грязи, но узнаваема; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 1 encounter presence, grimy scavenger prey, soot and mud, campfire rim light, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "scrap_hound_runner",
+    "name": "Хламовый гончар",
+    "tier": 1,
+    "lootPool": "predator_scrap_t1",
+    "lootSummaryRu": "Сырая дичь ~64%; Небольшая шкура (сырая) ~51%; Шкура зверя ~36%; Жильё зверя ~19%",
+    "prompt": "Concept of \"Хламовый гончар\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Полудикая собака шахтёрских отвалов, чует руду по старому железу; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 1 encounter presence, grimy scavenger prey, soot and mud, campfire rim light, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "fen_slitherer",
+    "name": "Топкая змеень",
+    "tier": 2,
+    "lootPool": "wetland_glean_t2",
+    "lootSummaryRu": "Сырое филе змея ~58%; Плотная дичь ~58%; Слабая змеиная желчь ~33%; Болотный гриб ~23%",
+    "prompt": "Concept of \"Топкая змеень\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Низкая змея топей; желчь слабеет на солнце; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 2 encounter presence, dangerous predator, damp atmosphere, moss and grit, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "peat_adder_pair",
+    "name": "Торфяной гремучник",
+    "tier": 2,
+    "lootPool": "wetland_glean_t2",
+    "lootSummaryRu": "Сырое филе змея ~58%; Плотная дичь ~58%; Слабая змеиная желчь ~33%; Болотный гриб ~23%",
+    "prompt": "Concept of \"Торфяной гремучник\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Пара охотничьего размера с ядовитыми узорами между чешуйками; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 2 encounter presence, dangerous predator, damp atmosphere, moss and grit, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "tunnel_fung_batch",
+    "name": "Рой шахтёрской мерзости",
+    "tier": 2,
+    "lootPool": "vermin_bundle_t1",
+    "lootSummaryRu": "Сырая дичь ~70%; Пыльца ночных мотыльков ~44%; Осколок клыка ~36%; Жильё зверя ~19%",
+    "prompt": "Concept of \"Рой шахтёрской мерзости\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Сгусток гриба и камня живёт у малых узлов маны под шахтой; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 2 encounter presence, dangerous predator, damp atmosphere, moss and grit, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "root_gnaw_bear",
+    "name": "Корнеед‑медвежий",
+    "tier": 3,
+    "lootPool": "brute_carve_t2",
+    "lootSummaryRu": "Плотная дичь ~64%; Толстая шкура ~48%; Кольца из щетины кабана ~39%; Осколок клыка ~19%",
+    "prompt": "Concept of \"Корнеед‑медвежий\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Пухлый падальщик меж корней; шкуры грубы, но питательны; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 3 encounter presence, alpha beast, sharper details, dusk tension, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "marsh_beta_wolf",
+    "name": "Болотный вожак‑волк",
+    "tier": 3,
+    "lootPool": "pack_leader_t3",
+    "lootSummaryRu": "Плотная дичь ~83%; Железа вожака ~66%; Чешуйчатая шкура ~39%; Железа монстра ~27%",
+    "prompt": "Concept of \"Болотный вожак‑волк\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Вожак стаи; железы сильнее обычного дичка; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 3 encounter presence, alpha beast, sharper details, dusk tension, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "glade_longtooth",
+    "name": "Полевой длиннозуб",
+    "tier": 3,
+    "lootPool": "pack_leader_t3",
+    "lootSummaryRu": "Плотная дичь ~83%; Железа вожака ~66%; Чешуйчатая шкура ~39%; Железа монстра ~27%",
+    "prompt": "Concept of \"Полевой длиннозуб\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Прыгуны лесных полян; охотники ценят сухожилия; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 3 encounter presence, alpha beast, sharper details, dusk tension, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "wyvern_fledgling",
+    "name": "Виверн‑птенец",
+    "tier": 4,
+    "lootPool": "apex_slice_t4",
+    "lootSummaryRu": "Нарезка с виверны ~80%; Жилье виверны ~58%; Смоляная пробка хищника ~45%; Чешуя дрейка ~39%",
+    "prompt": "Concept of \"Виверн‑птенец\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Молодые крылатые падальщики; чешуя пока нежнее взрослой; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 4 encounter presence, monster trophy beast, heroic scale creep, colder highlights, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "rustfang_worg_band",
+    "name": "Стая ржавых клыков",
+    "tier": 4,
+    "lootPool": "apex_slice_t4",
+    "lootSummaryRu": "Нарезка с виверны ~80%; Жилье виверны ~58%; Смоляная пробка хищника ~45%; Чешуя дрейка ~39%",
+    "prompt": "Concept of \"Стая ржавых клыков\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Собачьи загоны рудников; шерсть густая, с железными вкраплениями; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 4 encounter presence, monster trophy beast, heroic scale creep, colder highlights, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "briar_troll_bud",
+    "name": "Поросль шипастого тролля",
+    "tier": 4,
+    "lootPool": "apex_slice_t4",
+    "lootSummaryRu": "Нарезка с виверны ~80%; Жилье виверны ~58%; Смоляная пробка хищника ~45%; Чешуя дрейка ~39%",
+    "prompt": "Concept of \"Поросль шипастого тролля\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Косолапый юнец большого рода троллей из колючих зарослей; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 4 encounter presence, monster trophy beast, heroic scale creep, colder highlights, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "elder_thorn_sentinel",
+    "name": "Старый браменный часовой",
+    "tier": 5,
+    "lootPool": "brute_prize_t5",
+    "lootSummaryRu": "Ужин караванщика ~78%; Нарезка с виверны ~73%; Чешуя дрейка ~58%",
+    "prompt": "Concept of \"Старый браменный часовой\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Полурастение‑хранитель торфов и грибных коридоров; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 5 encounter presence, eldritch predator, unnatural growths, ominous backlight, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "river_maw_spawn",
+    "name": "Порождение речной пасти",
+    "tier": 5,
+    "lootPool": "brute_prize_t5",
+    "lootSummaryRu": "Ужин караванщика ~78%; Нарезка с виверны ~73%; Чешуя дрейка ~58%",
+    "prompt": "Concept of \"Порождение речной пасти\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Слякотный хищник фарватеров и промоин; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 5 encounter presence, eldritch predator, unnatural growths, ominous backlight, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "gorge_stone_lurker",
+    "name": "Каменный подкрад ущелья",
+    "tier": 5,
+    "lootPool": "brute_prize_t5",
+    "lootSummaryRu": "Ужин караванщика ~78%; Нарезка с виверны ~73%; Чешуя дрейка ~58%",
+    "prompt": "Concept of \"Каменный подкрад ущелья\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Сшит из обломков и смолы русла — тяжёлый каменный хищник; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 5 encounter presence, eldritch predator, unnatural growths, ominous backlight, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "ridge_wyvern",
+    "name": "Гребнеспинная виверна",
+    "tier": 6,
+    "lootPool": "kaiju_shard_t6",
+    "lootSummaryRu": "Нарезка с виверны ~82%; Шкура варга ~76%; Шкура виверны ~59%; Мешок с ядом ~48%",
+    "prompt": "Concept of \"Гребнеспинная виверна\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Взрослая охотница среди кряжей и утёсов; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 6 encounter presence, apex kaiju-lite fantasy monster, heroic presence, cinematic contrast, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "ironhide_ram",
+    "name": "Железношёрстный таран",
+    "tier": 6,
+    "lootPool": "kaiju_shard_t6",
+    "lootSummaryRu": "Нарезка с виверны ~82%; Шкура варга ~76%; Шкура виверны ~59%; Мешок с ядом ~48%",
+    "prompt": "Concept of \"Железношёрстный таран\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Наросты руды по хребту — топор нужен основательнее; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 6 encounter presence, apex kaiju-lite fantasy monster, heroic presence, cinematic contrast, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "obsidian_skerry_swarm",
+    "name": "Обсидиановый шквал‑жук",
+    "tier": 6,
+    "lootPool": "kaiju_shard_t6",
+    "lootSummaryRu": "Нарезка с виверны ~82%; Шкура варга ~76%; Шкура виверны ~59%; Мешок с ядом ~48%",
+    "prompt": "Concept of \"Обсидиановый шквал‑жук\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Самосветящийся летающий рой — жало греется до раскала; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 6 encounter presence, apex kaiju-lite fantasy monster, heroic presence, cinematic contrast, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "cliffshade_griffon",
+    "name": "Тенегриф утёсов",
+    "tier": 7,
+    "lootPool": "beast_lord_t7",
+    "lootSummaryRu": "Нарезка с виверны ~85%; Шкура виверны ~81%; Чешуя дрейка ~71%; Мешок с ядом ~47%; Железа монстра ~27%",
+    "prompt": "Concept of \"Тенегриф утёсов\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Когти царапают камень; тень от крыла режет вертикаль скалы; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 7 encounter presence, ominous, brooding, menacing presence, evil-looking, deep purple rim light wisps, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "pitbone_horror",
+    "name": "Костяная тварь ямы",
+    "tier": 7,
+    "lootPool": "beast_lord_t7",
+    "lootSummaryRu": "Нарезка с виверны ~85%; Шкура виверны ~81%; Чешуя дрейка ~71%; Мешок с ядом ~47%; Железа монстра ~27%",
+    "prompt": "Concept of \"Костяная тварь ямы\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Скопище черепов и сухожилий, шевелящееся разом как одно; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 7 encounter presence, ominous, brooding, menacing presence, evil-looking, deep purple rim light wisps, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "ash_ember_larva_colossus",
+    "name": "Пепельный гигант‑личинка",
+    "tier": 7,
+    "lootPool": "beast_lord_t7",
+    "lootSummaryRu": "Нарезка с виверны ~85%; Шкура виверны ~81%; Чешуя дрейка ~71%; Мешок с ядом ~47%; Железа монстра ~27%",
+    "prompt": "Concept of \"Пепельный гигант‑личинка\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Ползущий жар между шлаковыми кучами; шкура курится сама собой; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 7 encounter presence, ominous, brooding, menacing presence, evil-looking, deep purple rim light wisps, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "frostgrave_direwolf",
+    "name": "Морозный великоволк",
+    "tier": 8,
+    "lootPool": "beast_lord_t8",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~81%; Чешуя дрейка ~75%; Смоляная пробка хищника ~53%; Мешок с ядом ~27%",
+    "prompt": "Concept of \"Морозный великоволк\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Низкий вой обмерзших туманностей по ночному полю; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 8 encounter presence, celestial aberration undertone, otherworldly predator, cosmic blue violet glow hints, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "ravine_basalt_walker",
+    "name": "Базальтовый странник ущелья",
+    "tier": 8,
+    "lootPool": "beast_lord_t8",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~81%; Чешуя дрейка ~75%; Смоляная пробка хищника ~53%; Мешок с ядом ~27%",
+    "prompt": "Concept of \"Базальтовый странник ущелья\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Ступени из плит, срастаются с утёсом при каждом шаге; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 8 encounter presence, celestial aberration undertone, otherworldly predator, cosmic blue violet glow hints, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "stormbreak_idol_golem",
+    "name": "Буреломный идол‑голем",
+    "tier": 8,
+    "lootPool": "beast_lord_t8",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~81%; Чешуя дрейка ~75%; Смоляная пробка хищника ~53%; Мешок с ядом ~27%",
+    "prompt": "Concept of \"Буреломный идол‑голем\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Статуя времен старых шахт‑святынь, пробуждена бурей; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 8 encounter presence, celestial aberration undertone, otherworldly predator, cosmic blue violet glow hints, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "starfur_ursine",
+    "name": "Звёздношёрстный медведь",
+    "tier": 9,
+    "lootPool": "beast_lord_t9",
+    "lootSummaryRu": "Нарезка с виверны ~84%; Шкура варга ~84%; Шкура виверны ~77%; Железа монстра ~60%; Осколок клыка ~39%; Железа вожака ~22%",
+    "prompt": "Concept of \"Звёздношёрстный медведь\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Свет точек на шкурном полотне кружится после заката; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 9 encounter presence, legendary apex beast, ornate trophy hunter quarry, golden rim accents, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "phantom_knight_mount",
+    "name": "Скверноконный рыцарь‑зрак",
+    "tier": 9,
+    "lootPool": "beast_lord_t9",
+    "lootSummaryRu": "Нарезка с виверны ~84%; Шкура варга ~84%; Шкура виверны ~77%; Железа монстра ~60%; Осколок клыка ~39%; Железа вожака ~22%",
+    "prompt": "Concept of \"Скверноконный рыцарь‑зрак\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Слипшийся образ коня и костей в дымчатой бронепластине; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 9 encounter presence, legendary apex beast, ornate trophy hunter quarry, golden rim accents, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "cauldr_edge_drakebond",
+    "name": "Краевой надсмотрщик‑змеедракон",
+    "tier": 9,
+    "lootPool": "beast_lord_t9",
+    "lootSummaryRu": "Нарезка с виверны ~84%; Шкура варга ~84%; Шкура виверны ~77%; Железа монстра ~60%; Осколок клыка ~39%; Железа вожака ~22%",
+    "prompt": "Concept of \"Краевой надсмотрщик‑змеедракон\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Хранит стык жаровни и рудного пласта; дыхание жжёт шлак; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 9 encounter presence, legendary apex beast, ornate trophy hunter quarry, golden rim accents, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "worldspine_serpent",
+    "name": "Змей мирового остова",
+    "tier": 10,
+    "lootPool": "primordial_harvest_t10",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~77%; Чешуя дрейка ~74%; Смоляная пробка хищника ~65%; Железа монстра ~60%; Железа вожака ~22%",
+    "prompt": "Concept of \"Змей мирового остова\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Длина затмевает хребет; чешуйка как кровати настила; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 10 encounter presence, primordial colossus, mythical kaiju silhouette, cracks of inner light leaking, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "ashridge_colossus",
+    "name": "Колосс Пепельного хребта",
+    "tier": 10,
+    "lootPool": "primordial_harvest_t10",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~77%; Чешуя дрейка ~74%; Смоляная пробка хищника ~65%; Железа монстра ~60%; Железа вожака ~22%",
+    "prompt": "Concept of \"Колосс Пепельного хребта\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Горячий титан между заводями шлака и старыми печами; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 10 encounter presence, primordial colossus, mythical kaiju silhouette, cracks of inner light leaking, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  },
+  {
+    "id": "vein_gullet_leviathan",
+    "name": "Пожиратель рудных жил",
+    "tier": 10,
+    "lootPool": "primordial_harvest_t10",
+    "lootSummaryRu": "Нарезка с виверны ~81%; Шкура виверны ~77%; Чешуя дрейка ~74%; Смоляная пробка хищника ~65%; Железа монстра ~60%; Железа вожака ~22%",
+    "prompt": "Concept of \"Пожиратель рудных жил\", one single fantasy monster token for tabletop RPG — Iron Hills: ash bogs, briar scrub, rusty mine runoff; Рот как штрек; глушит залежи голым жаром и голодом; isolated fantasy creature illustration, centered, full body readable, painterly RPG style, matte painting, coherent lighting, ambient occlusion, game token suitable, circular crop friendly, neutral ground shadow, sharp focus, tier 10 encounter presence, primordial colossus, mythical kaiju silhouette, cracks of inner light leaking, portrait-friendly framing, subtle breath fog, muted ochre rust evergreen brown palette, transparent or plain dark background, no UI frame, 1024x1024, soft rim light, slight specular highlights --ar 1:1",
+    "negative": "text, watermark, logo, signature, blurry, low quality, multiple objects, hands, swarm, collage, crowded scene, person, playable character, HUD, perspective distortion, cluttered background, horizontal layout, sideways, nsfw"
+  }
+]

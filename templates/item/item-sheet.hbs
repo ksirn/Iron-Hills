@@ -127,6 +127,85 @@
     </div>
     {{/if}}
 
+    {{!-- ── МЕТАТЕЛЬНОЕ ── --}}
+    {{#if isThrowable}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">🎯 Метание</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Тип урона</label>
+          <select name="system.damageType">
+            <option value="physical" {{#if (eq system.damageType 'physical')}}selected{{/if}}>⚔ Физический</option>
+            <option value="magical"  {{#if (eq system.damageType 'magical')}}selected{{/if}}>✦ Магический</option>
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Урон</label>
+          <input type="number" name="system.power" value="{{system.power}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Энергия</label>
+          <input type="number" name="system.energyCost" value="{{system.energyCost}}" min="0">
+        </div>
+        <div class="ih-is-field">
+          <label>Зона по умолчанию</label>
+          <select name="system.targetPart">
+            <option value="">— случайная —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.targetPart)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Яд</label>
+          <input type="number" name="system.appliesPoison" value="{{system.appliesPoison}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Горение</label>
+          <input type="number" name="system.appliesBurning" value="{{system.appliesBurning}}" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">💥 Область броска</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Форма</label>
+          <select name="system.aoe.shape">
+            {{#each aoeShapeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.shape)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Логика целей</label>
+          <select name="system.aoe.type">
+            {{#each aoeTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.type)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Дистанция</label>
+          <input type="number" name="system.aoe.distance" value="{{system.aoe.distance}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Макс. целей</label>
+          <input type="number" name="system.aoe.maxTargets" value="{{system.aoe.maxTargets}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Затухание</label>
+          <input type="number" name="system.aoe.chainDecay" value="{{system.aoe.chainDecay}}" min="0" max="1" step="0.05">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Friendly fire</label>
+          <input type="checkbox" name="system.friendlyFire" {{checked system.friendlyFire}}>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
     {{!-- ── ЗЕЛЬЕ / РАСХОДНИК ── --}}
     {{#if isPotion}}
     <div class="ih-is-section">
@@ -134,9 +213,10 @@
       <div class="ih-is-grid">
         <div class="ih-is-field wide">
           <label>Тип эффекта</label>
-          <select name="system.effect">
-            {{#each effectLabels}}
-            <option value="{{@key}}" {{#if (eq @key ../system.effect)}}selected{{/if}}>{{this}}</option>
+          <select name="system.actionType">
+            <option value="">— не настроено —</option>
+            {{#each actionTypeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.actionType)}}selected{{/if}}>{{this}}</option>
             {{/each}}
           </select>
         </div>
@@ -146,20 +226,27 @@
         </div>
         <div class="ih-is-field">
           <label>Область применения</label>
-          <select name="system.scope">
-            {{#each scopeLabels}}
-            <option value="{{@key}}" {{#if (eq @key ../system.scope)}}selected{{/if}}>{{this}}</option>
+          <select name="system.applicationScope">
+            {{#each applicationScopeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.applicationScope)}}selected{{/if}}>{{this}}</option>
             {{/each}}
           </select>
         </div>
-        {{!-- Зона тела — только для лечащих эффектов --}}
-        {{#if (eq system.scope 'targeted')}}
+        <div class="ih-is-field">
+          <label>Цель</label>
+          <select name="system.targetActorMode">
+            {{#each targetActorModeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.targetActorMode)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        {{#if (eq system.applicationScope 'targeted')}}
         <div class="ih-is-field">
           <label>Часть тела (по умолчанию)</label>
-          <select name="system.zone">
+          <select name="system.targetPart">
             <option value="">— на выбор —</option>
             {{#each zoneLabels}}
-            <option value="{{@key}}" {{#if (eq @key ../system.zone)}}selected{{/if}}>{{this}}</option>
+            <option value="{{@key}}" {{#if (eq @key ../system.targetPart)}}selected{{/if}}>{{this}}</option>
             {{/each}}
           </select>
         </div>

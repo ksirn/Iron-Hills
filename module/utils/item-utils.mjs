@@ -238,6 +238,11 @@ export function cloneItemDataForTransfer(item, quantity = 1) {
   const cloned = item.toObject();
   cloned.system = foundry.utils.deepClone(cloned.system ?? {});
   cloned.system.quantity = quantity;
+  cloned.flags = foundry.utils.deepClone(cloned.flags ?? {});
+  if (cloned.flags["iron-hills-system"]) {
+    cloned.flags["iron-hills-system"].gridPos = null;
+    cloned.flags["iron-hills-system"].sectionKey = null;
+  }
   delete cloned._id;
   return cloned;
 }

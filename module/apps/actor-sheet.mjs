@@ -1,32 +1,18 @@
-import { CRAFT_RECIPES } from "../constants/recipes.mjs";
-import { getWeatherSkillMod } from "../services/weather-service.mjs";
+import { CRAFT_RECIPES, uniqueCraftRecipes } from "../constants/recipes.mjs";
+import { filterRecipesForActor } from "../constants/craft-knowledge.mjs";
 import { EntityPickerDialog } from "./entity-picker.mjs";
-import { getExpNext, buildChatSectionRow } from "../utils/text-utils.mjs";
+import { getExpNext } from "../utils/text-utils.mjs";
 import {
   getLiveActor,
   getPersistentActor,
   isSyntheticActorDocument,
-  getActorCurrency,
-  getMerchantWealth,
-  getCharacterActorByUuid,
-  getTradeCharacterByUuidOrActive,
-  getTradeCharacterOptions
 } from "../utils/actor-utils.mjs";
 import {
-  getDerivedConditionState,
-  getHitLocation,
-  getHitLabel,
-  getTargetPartLabel,
-  getArmorSlotKey,
-  getEquippedArmorForLocation,
-  getDamageReduction, getBestResistForZone,
   getEncumbranceInfo,
   getActorInjuryInfo,
-  getSpellSchoolLabel,
   getQuickSlotBonusFromItems,
   getQuickSlotsUnlocked,
   buildQuickSlotCarrierItems,
-  isQuickSlotUnlocked,
   getSpellCastBlockReason,
   getActionBlockReason,
   buildActionState,
@@ -41,112 +27,87 @@ import {
   buildTradeSummary,
   buildOverviewSummary,
   buildSkillGroups,
-  getExpNextForSkill
+  grantSkillExp,
 } from "../services/actor-state-service.mjs";
 import {
-  getTradePriceModifiers,
-  getMerchantBuyPriceForItem,
-  getMerchantSellPriceForItem,
-  addItemToActorOrStack,
-  transferItemQuantityBetweenActors,
-  changeActorCoins,
-  changeMerchantWealth,
-  buildMerchantStockView,
-  buildCharacterSellView
-} from "../services/trade-service.mjs";
+  performUniversalSkillRoll,
+  rollExplodingDice
+} from "../services/skill-roll-service.mjs";
+import { addItemToActorOrStack } from "../services/trade-service.mjs";
 import {
   recalculateActorWeight,
-  findTool,
-  getAvailableCategoryQuantity,
-  clearActorItemReferences,
   cleanupInvalidActorReferences,
   ensureActorSkills,
-  removeQuantityFromItem
+  isItemGridPlaced
 } from "../services/inventory-service.mjs";
 import {
-  getRecipeQualityByMargin,
-  getQualityLabel,
+  assignActorQuickSlot,
+  clearActorQuickSlot,
+  deleteActorOwnedItem,
+  equipActorArmorFromSheet,
+  equipActorWeaponFromSheet,
+  unequipActorArmorFromSheet,
+  unequipActorHandFromSheet
+} from "../services/actor-equipment-service.mjs";
+import {
+  getPendingItemActionConfig,
+  resumePendingItemAction,
+  useConsumableItemFromSheet,
+  useFoodItemFromSheet,
+  useItemByType,
+  usePotionItemFromSheet
+} from "../services/actor-item-use-service.mjs";
+import { repairActorItem } from "../services/repair-service.mjs";
+import {
+  openPendingInventoryIfNeeded,
+  requireSettledInventoryForActor
+} from "../services/pending-inventory-service.mjs";
+import { requestGmHostileAction } from "../services/hostile-action-service.mjs";
+import {
+  advanceCombatTurnFromSheet,
+  cancelPendingCombatActionFromSheet,
+  commitTimedActionFromSheet,
+  continuePendingCombatActionFromSheet,
+  endCombatFromSheet,
+  endCombatTurnFromSheet,
+  handlePostActionSecondsState,
+  resolveCombatTimeCostForActor,
+  startCombatFromSheet
+} from "../services/actor-combat-sheet-service.mjs";
+import {
   buildRelationsSummary,
   splitRelationsSummary,
-  consumeRecipeIngredients
 } from "../services/world-content-service.mjs";
 import {
   queueActorSheetRender,
-  refreshMerchantTradeViews,
-  rerenderOpenTradeApps,
   refreshAllTradeUIs,
   rerenderOpenIronHillsActorSheets
 } from "../services/ui-refresh-service.mjs";
+import { performActorAttack } from "../services/attack-flow-service.mjs";
 import {
-  resolveSingleAttack,
-  formatAttackChatHtml,
-  applyDamageToBodyPart,
-  applyInjuryEffects
-} from "../services/combat-attack-service.mjs";
+  applyActorConditionTick,
+  applyActorFullRest,
+  applyActorShortRest,
+  cureActorDisease,
+  markActorDead,
+  reviveActor
+} from "../services/condition-service.mjs";
+import { applyActionTypeItemFromDialog } from "../services/item-action-dialog-service.mjs";
+import { useThrowableItem } from "../services/throwable-service.mjs";
+import {
+  castSpellLikeItem
+} from "../services/spell-casting-service.mjs";
 import {
   isCombatActive,
   getCombatSummary,
   getActorCombatUiState,
   getActiveParticipant,
-  canActorActNow,
-  getActorRemainingSeconds,
   getActorPendingAction,
-  spendActionSeconds,
-  requestActionTimeCommit,
-  canActorCommitAction,
-  continuePendingAction,
-  cancelPendingAction,
-  advanceTurn,
-  advanceTurnIfReady,
-  startCombat,
-  endCombat,
-  endTurnForActor,
   ensureCombatActorBodyStatus
 } from "../services/combat-flow-service.mjs";
-import { IronHillsTradeApp } from "./trade-app.mjs";
-import { debugLog, debugWarn, debugError } from "../utils/debug-utils.mjs";
-import { getWeaponRange, getTokenGridDistance, getActorToken } from "../utils/item-utils.mjs";
-
-const TRADE_LOCKS = new Set();
-
-function makeTradeLockKey({ merchantId = "", characterId = "", itemId = "", action = "" } = {}) {
-  return [merchantId, characterId, itemId, action].join("::");
-}
-
-async function runWithTradeLock(lockData, callback) {
-  const key = makeTradeLockKey(lockData);
-
-  debugLog("runWithTradeLock:start", { key, lockData });
-
-  if (TRADE_LOCKS.has(key)) {
-    debugWarn("runWithTradeLock:already-locked", { key, lockData });
-    ui.notifications.warn("Торговая операция уже выполняется.");
-    return false;
-  }
-
-  TRADE_LOCKS.add(key);
-  debugLog("runWithTradeLock:locked", { key });
-
-  try {
-    await callback();
-    debugLog("runWithTradeLock:success", { key });
-    return true;
-  } catch (err) {
-    debugError("runWithTradeLock:error", { key, message: err?.message, err });
-    throw err;
-  } finally {
-    TRADE_LOCKS.delete(key);
-    debugLog("runWithTradeLock:released", { key });
-  }
-}
+import { TarkovTradeApp } from "./tarkov-trade-app.mjs";
 
 class IronHillsActorSheet extends ActorSheet {
-  constructor(...args) {
-    super(...args);
-    this._tradeCharacterUuid = "";
-    this._tradeBusy = false;
-  }
-
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ["iron-hills", "sheet", "actor"],
@@ -158,16 +119,6 @@ class IronHillsActorSheet extends ActorSheet {
 
   get template() {
     return `systems/iron-hills-system/templates/actor/${this.actor.type}-sheet.hbs`;
-  }
-
-  _getSelectedTradeCharacter() {
-    return getTradeCharacterByUuidOrActive(this._tradeCharacterUuid);
-  }
-
-  async _setTradeCharacter(actorUuid) {
-    const actor = getCharacterActorByUuid(actorUuid);
-    this._tradeCharacterUuid = actor?.uuid || "";
-    this.render(true);
   }
 
   _getActorForState() {
@@ -219,213 +170,57 @@ class IronHillsActorSheet extends ActorSheet {
     await addItemToActorOrStack(actor, itemData);
     await recalculateActorWeight(actor);
     await cleanupInvalidActorReferences(actor);
+    await this._openPendingInventoryIfNeeded(actor);
 
     this.render(false);
     return true;
   }
-  _getCombatParticipantsFromTargets() {
-    const actor = this._getActorForState();
-    const result = [];
-    const added = new Set();
-
-    if (actor?.id) {
-      result.push(actor);
-      added.add(actor.id);
-    }
-
-    for (const token of [...(game.user.targets ?? [])]) {
-      const targetActor = token?.actor ?? null;
-      if (!targetActor?.id) continue;
-      if (added.has(targetActor.id)) continue;
-
-      result.push(getPersistentActor(targetActor) ?? targetActor);
-      added.add(targetActor.id);
-    }
-
-    return result;
-  }
-
   async _startCombatFromSheet() {
-    const participants = this._getCombatParticipantsFromTargets();
-
-    if (participants.length < 2) {
-      ui.notifications.warn("Для старта боя нужен как минимум актёр листа и одна выбранная цель.");
-      return;
-    }
-
-    const state = startCombat(participants);
-    if (!state) return;
-
-    const lines = state.participants.map((p, index) =>
-      `<p>${index + 1}. <b>${p.actorName}</b> — инициатива ${p.initiativeTotal} (бросок ${p.initiativeRoll} + навык ${p.initiativeSkill})</p>`
-    ).join("");
-
-    await ChatMessage.create({
-      content: `
-        <h3>Бой начат</h3>
-        <p><b>Раунд:</b> ${state.round}</p>
-        <p><b>Первый ход:</b> ${state.participants[0]?.actorName ?? "—"}</p>
-        ${lines}
-      `
+    return startCombatFromSheet(this._getActorForState(), {
+      render: (force) => this.render(force),
     });
-
-    this.render(true);
   }
 
   async _endCombatFromSheet() {
-    const summary = getCombatSummary();
-    endCombat();
-
-    await ChatMessage.create({
-      content: `
-        <h3>Бой завершён</h3>
-        <p><b>Раундов прошло:</b> ${summary.round ?? 0}</p>
-      `
+    return endCombatFromSheet({
+      render: (force) => this.render(force),
     });
-
-    this.render(true);
   }
 
   async _advanceCombatTurnFromSheet() {
-    const actor = this._getActorForState();
-    await this._handlePostActionSecondsState(actor);
-
-    const state = advanceTurn();
-    const current = state?.participants?.[state.turnIndex] ?? null;
-
-    await ChatMessage.create({
-      content: `
-        <h3>Следующий ход</h3>
-        <p><b>Раунд:</b> ${state.round}</p>
-        <p><b>Ходит:</b> ${current?.actorName ?? "—"}</p>
-        <p><b>Доступно секунд:</b> ${current?.remainingSeconds ?? 0}</p>
-      `
+    return advanceCombatTurnFromSheet(this._getActorForState(), {
+      render: (force) => this.render(force),
     });
-
-    this.render(true);
   }
 
   async _continuePendingCombatAction() {
-    const actor = this._getActorForState();
-    if (!actor) return;
-
-    const pending = getActorPendingAction(actor);
-    if (!pending) {
-      ui.notifications.info("У участника нет длительного действия.");
-      return;
-    }
-
-    const result = continuePendingAction(actor);
-    if (!result?.ok) {
-      ui.notifications.warn(result?.reason || "Не удалось продолжить действие.");
-      return;
-    }
-
-    if (!result.done) {
-      ui.notifications.info(
-        `${actor.name} продолжает действие. Осталось ${Number(result.action?.remainingSeconds ?? 0)} сек.`
-      );
-      this.render(false);
-      return;
-    }
-
-    await this._executePendingCombatAction(result.action);
-    this.render(false);
+    return continuePendingCombatActionFromSheet(this._getActorForState(), {
+      executePendingAction: (action) => this._executePendingCombatAction(action),
+      render: (force) => this.render(force),
+    });
   }
 
-async _endCombatTurn() {
-  const actor = this._getActorForState();
-  if (!actor) return;
-
-  if (!isCombatActive()) {
-    ui.notifications.warn("Активного боя нет.");
-    return;
+  async _endCombatTurn() {
+    return endCombatTurnFromSheet(this._getActorForState(), {
+      render: (force) => this.render(force),
+    });
   }
-
-  const result = endTurnForActor(actor);
-  if (!result?.ok) {
-    ui.notifications.warn(result?.reason || "Не удалось завершить ход.");
-    return;
-  }
-
-  const advanceResult = await advanceTurnIfReady();
-  if (!advanceResult?.ok) {
-    ui.notifications.warn(advanceResult?.reason || "Ход завершён, но передача следующему участнику не выполнена.");
-  }
-
-  this.render(false);
-}
 
   async _cancelPendingCombatAction() {
-    const actor = this._getActorForState();
-    const pending = getActorPendingAction(actor);
-
-    if (!pending) {
-      ui.notifications.warn("Нечего отменять.");
-      return;
-    }
-
-    cancelPendingAction(actor);
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `
-        <h3>Действие отменено</h3>
-        <p><b>${actor.name}</b> отменяет: <b>${pending.label}</b></p>
-      `
+    return cancelPendingCombatActionFromSheet(this._getActorForState(), {
+      render: (force) => this.render(force),
     });
-
-    this.render(true);
   }
 
   async _commitTimedAction({ actionType, label, timeCost, payload = {} }) {
-    const actor = this._getActorForState();
-
-    const turnCheck = canActorActNow(actor);
-    if (!turnCheck.ok) {
-      ui.notifications.warn(turnCheck.reason);
-      return { ok: false, reason: turnCheck.reason };
-    }
-
-    const timing = await requestActionTimeCommit(actor, {
+    return commitTimedActionFromSheet(this._getActorForState(), {
       actionType,
       label,
-      totalSeconds: timeCost,
+      timeCost,
       payload
+    }, {
+      render: (force) => this.render(force),
     });
-
-    if (!timing.ok) {
-      if (timing.reason) ui.notifications.warn(timing.reason);
-      return timing;
-    }
-
-    if (timing.committed) {
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `
-          <h3>Начато долгое действие</h3>
-          <p><b>${actor.name}</b> начинает: <b>${label}</b></p>
-          <p><b>Всего нужно:</b> ${timeCost} сек.</p>
-          <p><b>Осталось до завершения:</b> ${timing.pendingAction?.remainingSeconds ?? 0} сек.</p>
-        `
-      });
-
-      this.render(true);
-
-      return {
-        ok: true,
-        committed: true,
-        immediate: false
-      };
-    }
-
-    spendActionSeconds(actor, timeCost);
-
-    return {
-      ok: true,
-      committed: false,
-      immediate: true
-    };
   }
 
 async getData() {
@@ -445,8 +240,7 @@ async getData() {
     const equippedIds = new Set(Object.values(equip).filter(Boolean));
     const placedItems = actor.items.filter(i => {
       if (equippedIds.has(i.id)) return true;
-      const f = i.flags?.["iron-hills-system"] ?? {};
-      return !!f.sectionKey; // размещён в контейнере
+      return isItemGridPlaced(i);
     });
 
     const filterPlaced = (type) => placedItems.filter(i => i.type === type);
@@ -479,7 +273,7 @@ async getData() {
 
     context.encumbrance = getEncumbranceInfo(actor);
     context.injuries = getActorInjuryInfo(actor);
-    context.recipes = Object.values(CRAFT_RECIPES);
+    context.recipes = filterRecipesForActor(actor, uniqueCraftRecipes());
 
     // Прогресс раскачки резерва души (0–100%)
     const _soul = actor.system?.resources?.soul ?? {};
@@ -632,43 +426,6 @@ async getData() {
     context.canEndCombatTurn =
       Boolean(context.combatFlow?.active) && Boolean(context.isCombatTurn);
 
-        if (actor.type === "merchant") {
-      const playerCharacter = this._getSelectedTradeCharacter();
-
-      if (!this._tradeCharacterUuid && playerCharacter) {
-        this._tradeCharacterUuid = playerCharacter.uuid;
-      }
-
-      context.activeTradeCharacter = playerCharacter;
-      context.activeTradeCharacterUuid = playerCharacter?.uuid || "";
-      context.activeTradeCharacterName = playerCharacter?.name || "Не выбран";
-      context.hasActiveTradeCharacter = !!playerCharacter;
-
-      context.tradeCharacterOptions = getTradeCharacterOptions();
-      context.merchantStockView = buildMerchantStockView(actor, playerCharacter);
-      context.tradeModifiers = getTradePriceModifiers(playerCharacter, actor);
-      context.buyerCoins = playerCharacter ? getActorCurrency(playerCharacter) : 0;
-      context.merchantWealth = getMerchantWealth(actor);
-      context.playerSellToMerchantView = playerCharacter
-        ? buildCharacterSellView(playerCharacter, actor).map(item => ({
-            ...item,
-            sellerUuid: playerCharacter.uuid
-          }))
-        : [];
-    }
-
-if (actor.type === "character") {
-  const demoMerchant = {
-    type: "merchant",
-    system: {
-      economy: { wealth: 999999, markup: 1 },
-      info: { specialty: "general", settlement: "", faction: "" }
-    }
-  };
-
-  context.personalSellPreview = buildCharacterSellView(actor, demoMerchant);
-}
-
 // Character и NPC — части тела с cssClass, pct, trauma
 if (actor.type === "character" || actor.type === "npc") {
   const hp = actor.system?.resources?.hp ?? {};
@@ -682,22 +439,43 @@ if (actor.type === "character" || actor.type === "npc") {
     return "is-good";
   }
 
+  function zoneTooltip(label, value, max, trauma) {
+    const parts = [`${label}: ${value}/${max}`];
+    if (trauma.destroyed) parts.push("Разрушено");
+    if (trauma.majorBleeding) parts.push(trauma.majorBleedingSuppressed
+      ? `Сильное кровотечение пережато: ${trauma.majorBleeding}`
+      : `Сильное кровотечение: ${trauma.majorBleeding}`);
+    if (trauma.minorBleeding) parts.push(`Малое кровотечение: ${trauma.minorBleeding}`);
+    if (trauma.fracture) parts.push("Перелом");
+    if (trauma.tourniquet) parts.push("Жгут наложен");
+    if (trauma.splinted) parts.push("Шина наложена");
+    return parts.join(" | ");
+  }
+
   function zoneData(key, label, node) {
     const val = Number(node?.value ?? 0);
     const max = Number(node?.max ?? 0);
     const pct = max > 0 ? Math.round((val / max) * 100) : 0;
     const status = node?.status ?? {};
+    const majorBleeding = Number(status.majorBleeding ?? 0);
+    const tourniquet = Boolean(status.tourniquet);
+    const trauma = {
+      minorBleeding: Number(status.minorBleeding ?? 0),
+      majorBleeding,
+      majorBleedingSuppressed: tourniquet && majorBleeding > 0,
+      majorBleedingTitle: tourniquet && majorBleeding > 0
+        ? `Сильн. кровь пережата ${majorBleeding}`
+        : `Сильн. кровь ${majorBleeding}`,
+      fracture:   Boolean(status.fracture),
+      destroyed:  Boolean(status.destroyed),
+      splinted:   Boolean(status.splinted),
+      tourniquet
+    };
     return {
       key, label, value: val, max, pct,
       cssClass: zoneClass(val, max),
-      trauma: {
-        minorBleeding: Number(status.minorBleeding ?? 0),
-        majorBleeding: Number(status.majorBleeding ?? 0),
-        fracture:   Boolean(status.fracture),
-        destroyed:  Boolean(status.destroyed),
-        splinted:   Boolean(status.splinted),
-        tourniquet: Boolean(status.tourniquet)
-      }
+      tooltip: zoneTooltip(label, val, max, trauma),
+      trauma
     };
   }
 
@@ -736,211 +514,60 @@ if (actor.type === "monster") {
       context.factions = [];
     }
 
-    // Репутация у фракций
-    try {
-      const { getAllReputations } = await import("../services/faction-service.mjs");
-      context.factions = getAllReputations(this.actor);
-    } catch(e) {
-      context.factions = [];
-    }
-
-        return context;
-  }
-
-  _getCombatActionSeconds(actionType, item = null) {
-    if (actionType === "attack") {
-      // Используем timeCost из предмета если есть, иначе actionSeconds, иначе дефолт по типу
-      if (item?.system?.timeCost)      return Number(item.system.timeCost);
-      if (item?.system?.actionSeconds) return Number(item.system.actionSeconds);
-      // Дефолты по типу оружия (если нет timeCost в предмете)
-      const skillDefaults = {
-        knife:1.0, throwing:1.0, unarmed:1.0, crossbow:1.5,
-        mace:2.0, sword:2.0, bow:3.0, axe:2.5, spear:2.5, flail:2.5
-      };
-      const skill = item?.system?.skill;
-      if (skill && skillDefaults[skill]) {
-        return item?.system?.twoHanded
-          ? skillDefaults[skill] + 0.5
-          : skillDefaults[skill];
-      }
-      if (item?.system?.twoHanded) return 3.0;
-      return 2.0;
-    }
-
-    if (actionType === "spell") {
-      return Number(item?.system?.actionSeconds ?? 4);
-    }
-
-    if (actionType === "scroll") {
-      return Number(item?.system?.actionSeconds ?? 4);
-    }
-
-    if (actionType === "throwable") {
-      return Number(item?.system?.actionSeconds ?? 3);
-    }
-
-    if (actionType === "food") {
-      return Number(item?.system?.actionSeconds ?? 2);
-    }
-
-    if (actionType === "potion") {
-      return Number(item?.system?.actionSeconds ?? 2);
-    }
-
-    if (actionType === "consumable") {
-      return Number(item?.system?.actionSeconds ?? 2);
-    }
-
-    if (actionType === "equip") {
-      return Number(item?.system?.actionSeconds ?? 2);
-    }
-
-    return 2;
-  }
-
-  // Применяем модификаторы скорости из условий персонажа
-  _applySpeedModifier(actor, seconds) {
-    const conditions = actor.system?.conditions ?? {};
-    if (conditions.slowed  > 0) return seconds * 2.0;   // замедление удваивает время
-    if (conditions.hasted  > 0) return seconds * 0.5;   // ускорение уполовинивает
-    return seconds;
+    return context;
   }
 
   async _handlePostActionSecondsState(actor) {
-    if (!isCombatActive()) return;
-
-    const remainingSeconds = Number(getActorRemainingSeconds(actor) ?? 0);
-
-    if (remainingSeconds <= 0) {
-      ui.notifications.info("Секунды закончились. Завершите ход или начните длительное действие.");
-    }
-
-    this.render(false);
+    return handlePostActionSecondsState(actor, {
+      render: (force) => this.render(force),
+    });
   }
 
   async _resolveCombatTimeCost({ actionType, label, item = null, totalSeconds = 0, payload = {} } = {}) {
-    const actor = this._getActorForState();
-    if (!isCombatActive()) {
-      return {
-        ok: true,
-        queued: false,
-        immediate: true,
-        secondsCost: 0
-      };
-    }
-
-    const commitCheck = canActorCommitAction(actor);
-    if (!commitCheck.ok) {
-      ui.notifications.warn(commitCheck.reason || "Сейчас действие недоступно.");
-      return {
-        ok: false,
-        queued: false,
-        immediate: false,
-        reason: commitCheck.reason || "Сейчас действие недоступно."
-      };
-    }
-
-    const rawSeconds  = Number(totalSeconds || this._getCombatActionSeconds(actionType, item));
-    const secondsCost = Math.max(0.5, this._applySpeedModifier(actor, rawSeconds));
-    const remaining = Number(commitCheck.remainingSeconds ?? 0);
-
-    if (remaining >= secondsCost) {
-      const spendResult = spendActionSeconds(actor, secondsCost, {
-        label,
-        actionType,
-        data: {
-          itemId: item?.id ?? "",
-          ...payload
-        }
-      });
-
-      if (!spendResult?.ok) {
-        ui.notifications.warn(spendResult?.reason || "Не удалось списать секунды действия.");
-        return {
-          ok: false,
-          queued: false,
-          immediate: false,
-          reason: spendResult?.reason || "Не удалось списать секунды действия."
-        };
-      }
-
-      return {
-        ok: true,
-        queued: false,
-        immediate: true,
-        secondsCost,
-        remainingSeconds: Number(spendResult.remainingSeconds ?? 0)
-      };
-    }
-
-    const pending = getActorPendingAction(actor);
-    if (pending) {
-      ui.notifications.warn("У этого участника уже есть незавершённое длительное действие.");
-      return {
-        ok: false,
-        queued: false,
-        immediate: false,
-        reason: "Уже есть незавершённое длительное действие."
-      };
-    }
-
-    const confirmed = await Dialog.confirm({
-      title: "Действие займёт несколько ходов",
-      content: `
-        <p><b>${label}</b> требует <b>${secondsCost}</b> сек.</p>
-        <p>Сейчас осталось только <b>${remaining}</b> сек.</p>
-        <p>Перенести действие на следующие ходы?</p>
-      `
-    });
-
-    if (!confirmed) {
-      return {
-        ok: false,
-        queued: false,
-        immediate: false
-      };
-    }
-
-    const commitResult = requestActionTimeCommit(actor, {
+    return resolveCombatTimeCostForActor(this._getActorForState(), {
       actionType,
       label,
-      totalSeconds: secondsCost,
-      payload: {
-        itemId: item?.id ?? "",
-        ...payload
-      }
+      item,
+      totalSeconds,
+      payload,
+    }, {
+      requireSettledInventory: (actionLabel) => this._requireSettledInventory(actionLabel),
     });
-
-    if (!commitResult?.ok) {
-      ui.notifications.warn(commitResult?.reason || "Не удалось поставить действие в очередь.");
-      return {
-        ok: false,
-        queued: false,
-        immediate: false,
-        reason: commitResult?.reason || "Не удалось поставить действие в очередь."
-      };
-    }
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<b>${actor.name}</b> начинает действие <b>${label}</b>, которое потребует несколько ходов.`
-    });
-
-    return {
-      ok: false,
-      queued: true,
-      immediate: false,
-      secondsCost,
-      pendingAction: commitResult.pendingAction ?? null
-    };
   }
-  
+
+  async _useItemByType(itemOrId, {
+    skipTimeCost = false,
+    allowWeapon = false,
+    allowedTypes = null,
+    missingMessage = "Предмет не найден",
+    unsupportedMessage = "Этот тип предмета пока нельзя использовать",
+  } = {}) {
+    return useItemByType(this._getActorForState(), itemOrId, {
+      skipTimeCost,
+      allowWeapon,
+      allowedTypes,
+      missingMessage,
+      unsupportedMessage,
+      handlers: this._getItemUseHandlers(),
+    });
+  }
+
+  async _resumePendingItemAction(data, config) {
+    return resumePendingItemAction(
+      this._getActorForState(),
+      data,
+      config,
+      this._getItemUseHandlers()
+    );
+  }
+
   async _executePendingCombatAction(pendingAction) {
     const actor = this._getActorForState();
     if (!actor || !pendingAction) return;
 
     const data = pendingAction.data ?? {};
     const actionType = pendingAction.actionType || data.actionType || "generic";
+    if (!(await this._requireSettledInventory(pendingAction.label || "продолжение действия"))) return;
 
     if (actionType === "attack") {
       const weapon = data.weaponId ? actor.items.get(data.weaponId) : null;
@@ -962,6 +589,16 @@ if (actor.type === "monster") {
           5
         ),
         weapon,
+        hitBonus: Number(data.hitBonus ?? 0),
+        ignoreArmor: Number(data.ignoreArmor ?? 0),
+        targetZone: data.targetZone ?? null,
+        aimed: Boolean(data.aimed ?? false),
+        technique: data.technique ?? null,
+        applyCondition: data.applyCondition ?? null,
+        conditionDuration: Number(data.conditionDuration ?? 0),
+        conditionChance: Number(data.conditionChance ?? 1),
+        effectNotes: Array.isArray(data.effectNotes) ? data.effectNotes : [],
+        rangeOverride: Number(data.rangeOverride ?? 0) || null,
         skipTimeCost: true
       });
       return;
@@ -978,1479 +615,161 @@ if (actor.type === "monster") {
       return;
     }
 
-    if (actionType === "use-consumable") {
-      const item = data.itemId ? actor.items.get(data.itemId) : null;
-      if (!item) {
-        ui.notifications.warn("Предмет для продолжения действия не найден.");
-        return;
-      }
-
-      await this._useConsumable(item.id, { skipTimeCost: true });
-      return;
-    }
-
-    if (actionType === "food") {
-      const item = data.itemId ? actor.items.get(data.itemId) : null;
-      if (!item) {
-        ui.notifications.warn("Еда для продолжения действия не найдена.");
-        return;
-      }
-
-      await this._consumeFood(item.id, { skipTimeCost: true });
-      return;
-    }
-
-    if (actionType === "potion") {
-      const item = data.itemId ? actor.items.get(data.itemId) : null;
-      if (!item) {
-        ui.notifications.warn("Зелье для продолжения действия не найдено.");
-        return;
-      }
-
-      await this._usePotion(item.id, { skipTimeCost: true });
-      return;
-    }
-
-    if (actionType === "cast-spell" || actionType === "spell" || actionType === "scroll") {
-      const item = data.itemId ? actor.items.get(data.itemId) : null;
-      if (!item) {
-        ui.notifications.warn("Заклинание для продолжения действия не найдено.");
-        return;
-      }
-
-      await this._castSpellLike({
-        item,
-        isScroll: Boolean(data.isScroll || actionType === "scroll"),
-        skipTimeCost: true
-      });
-      return;
-    }
-
-    if (actionType === "throwable") {
-      const item = data.itemId ? actor.items.get(data.itemId) : null;
-      if (!item) {
-        ui.notifications.warn("Метательный предмет для продолжения действия не найден.");
-        return;
-      }
-
-      await this._useThrowable(item.id, { skipTimeCost: true });
+    const pendingItemConfig = getPendingItemActionConfig(actionType);
+    if (pendingItemConfig) {
+      await this._resumePendingItemAction(data, pendingItemConfig);
       return;
     }
 
     ui.notifications.info(`Действие "${pendingAction.label || "действие"}" завершено.`);
   }
 
+  _getItemUseHandlers() {
+    return {
+      useFood: (itemId, options) => this._consumeFood(itemId, options),
+      usePotion: (itemId, options) => this._usePotion(itemId, options),
+      useConsumable: (itemId, options) => this._useConsumable(itemId, options),
+      useThrowable: (itemId, options) => this._useThrowable(itemId, options),
+      castSpell: (options) => this._castSpellLike(options),
+      equipWeapon: (itemId, hand) => this._equipWeapon(itemId, hand),
+    };
+  }
+
   async _applySkillExp(skillKey, label, amount = 1) {
-    const actor = this._getActorForState();
-    const skill = actor.system.skills?.[skillKey];
-    if (!skill) return;
-
-    const currentValue = Math.max(1, Number(skill.value ?? 1));
-    if (currentValue >= 10) return; // потолок
-
-    let newExp = (skill.exp ?? 0) + amount;
-    // Экспоненциальная таблица: getExpNextForSkill(ступень)
-    const expNext = getExpNextForSkill(currentValue);
-
-    if (newExp >= expNext) {
-      const overflow = newExp - expNext;
-      const newValue = Math.min(10, currentValue + 1);
-      const nextExpNext = getExpNextForSkill(newValue);
-
-      await actor.update({
-        [`system.skills.${skillKey}.exp`]: overflow,
-        [`system.skills.${skillKey}.value`]: newValue,
-        [`system.skills.${skillKey}.expNext`]: nextExpNext
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> повышает навык <b>${label}</b> до ступени <b>${newValue}</b>! (куб: d${newValue * 2})`
-      });
-      return;
-    }
-
-    await actor.update({
-      [`system.skills.${skillKey}.exp`]: newExp,
-      [`system.skills.${skillKey}.expNext`]: expNext
-    });
+    await grantSkillExp(this._getActorForState(), skillKey, label, amount);
   }
 
-  async _applyDamage(targetActor, locationKey, damage) {
-    return applyDamageToBodyPart(targetActor, locationKey, damage, {
-      onLethal: (a) => this._markActorDead(a),
-    });
+  async _openPendingInventoryIfNeeded(actor = this._getActorForState()) {
+    return openPendingInventoryIfNeeded(actor);
   }
 
-  async _healTargetPart(targetActor, locationKey, amount) {
-    const valuePath = `system.resources.hp.${locationKey}.value`;
-    const maxPath = `system.resources.hp.${locationKey}.max`;
-
-    const currentHP = Number(foundry.utils.getProperty(targetActor, valuePath) ?? 0);
-    const maxHP = Number(foundry.utils.getProperty(targetActor, maxPath) ?? 0);
-    const newHP = Math.min(maxHP, currentHP + amount);
-
-    await targetActor.update({
-      [valuePath]: newHP
-    });
-
-    return newHP;
+  async _requireSettledInventory(actionLabel = "действие") {
+    return this._requireSettledInventoryForActor(this._getActorForState(), actionLabel);
   }
 
-  async _applyInjuryEffects(targetActor, locationKey, finalDamage) {
-    return applyInjuryEffects(targetActor, locationKey, finalDamage);
-  }
-
-  async _applyPoison(targetActor, amount) {
-    const current = Number(targetActor.system.conditions?.poison ?? 0);
-    await targetActor.update({
-      "system.conditions.poison": current + Number(amount)
-    });
-  }
-
-  async _applyBurning(targetActor, amount) {
-    const current = Number(targetActor.system.conditions?.burning ?? 0);
-    await targetActor.update({
-      "system.conditions.burning": current + Number(amount)
-    });
+  async _requireSettledInventoryForActor(actor, actionLabel = "действие") {
+    return requireSettledInventoryForActor(actor, actionLabel);
   }
 
   async _equipWeapon(itemId, hand) {
     const actor = this._getActorForState();
-    const weapon = actor.items.get(itemId);
-    if (!weapon || weapon.type !== "weapon") {
-      ui.notifications.warn("Предмет не найден или не является оружием");
-      return;
-    }
-
-    const currentRight = actor.system.equipment?.rightHand ?? "";
-    const currentLeft = actor.system.equipment?.leftHand ?? "";
-
-    if ((hand === "rightHand" && currentLeft === itemId) || (hand === "leftHand" && currentRight === itemId)) {
-      ui.notifications.warn("Нельзя экипировать один и тот же предмет в обе руки");
-      return;
-    }
-
-    const rightWeapon = currentRight ? actor.items.get(currentRight) : null;
-    const leftWeapon = currentLeft ? actor.items.get(currentLeft) : null;
-
-    if (hand === "rightHand" && leftWeapon?.system?.twoHanded) {
-      ui.notifications.warn("Другая рука уже занята двуручным оружием");
-      return;
-    }
-
-    if (hand === "leftHand" && rightWeapon?.system?.twoHanded) {
-      ui.notifications.warn("Другая рука уже занята двуручным оружием");
-      return;
-    }
-
-    const updateData = {};
-
-    if (weapon.system.twoHanded) {
-      if ((hand === "rightHand" && currentLeft) || (hand === "leftHand" && currentRight)) {
-        ui.notifications.warn("Для двуручного оружия обе руки должны быть свободны");
-        return;
-      }
-
-      updateData["system.equipment.rightHand"] = itemId;
-      updateData["system.equipment.leftHand"] = itemId;
-
-      await actor.update(updateData);
-      await recalculateActorWeight(actor);
-      ui.notifications.info("Двуручное оружие экипировано в обе руки");
-      return;
-    }
-
-    updateData[`system.equipment.${hand}`] = itemId;
-    await actor.update(updateData);
-    await recalculateActorWeight(actor);
-
-    ui.notifications.info(
-      hand === "rightHand" ? "Оружие экипировано в правую руку" : "Оружие экипировано в левую руку"
-    );
+    return equipActorWeaponFromSheet(actor, itemId, hand, {
+      requireSettledInventory: (actionLabel) => this._requireSettledInventory(actionLabel),
+      afterChange: () => this._openPendingInventoryIfNeeded(actor),
+    });
   }
 
   async _unequipHand(hand) {
     const actor = this._getActorForState();
-    const currentRight = actor.system.equipment?.rightHand ?? "";
-    const currentLeft = actor.system.equipment?.leftHand ?? "";
-    const currentItemId = actor.system.equipment?.[hand];
-
-    if (!currentItemId) {
-      ui.notifications.warn("В этой руке ничего нет");
-      return;
-    }
-
-    const currentItem = actor.items.get(currentItemId);
-    const updateData = {};
-
-    if (currentItem?.system?.twoHanded && currentRight === currentLeft && currentRight === currentItemId) {
-      updateData["system.equipment.rightHand"] = "";
-      updateData["system.equipment.leftHand"] = "";
-      await actor.update(updateData);
-      await recalculateActorWeight(actor);
-      ui.notifications.info("Двуручное оружие снято");
-      return;
-    }
-
-    updateData[`system.equipment.${hand}`] = "";
-    await actor.update(updateData);
-    await recalculateActorWeight(actor);
-
-    ui.notifications.info(
-      hand === "rightHand" ? "Оружие снято из правой руки" : "Оружие снято из левой руки"
-    );
+    return unequipActorHandFromSheet(actor, hand, {
+      afterChange: () => this._openPendingInventoryIfNeeded(actor),
+    });
   }
 
   async _equipArmor(itemId) {
     const actor = this._getActorForState();
-    const armor = actor.items.get(itemId);
-    if (!armor || armor.type !== "armor") {
-      ui.notifications.warn("Предмет не найден или не является бронёй");
-      return;
-    }
-
-    const slotKey = getArmorSlotKey(armor.system.slot);
-    if (!slotKey) {
-      ui.notifications.warn("У брони не задан корректный слот");
-      return;
-    }
-
-    await actor.update({
-      [`system.equipment.${slotKey}`]: itemId
+    return equipActorArmorFromSheet(actor, itemId, {
+      requireSettledInventory: (actionLabel) => this._requireSettledInventory(actionLabel),
+      afterChange: () => this._openPendingInventoryIfNeeded(actor),
     });
-
-    await recalculateActorWeight(actor);
-    ui.notifications.info(`Броня экипирована в слот: ${armor.system.slot}`);
   }
 
   async _unequipArmor(slotKey) {
     const actor = this._getActorForState();
-    const currentItemId = actor.system.equipment?.[slotKey];
-    if (!currentItemId) {
-      ui.notifications.warn("В этом слоте ничего нет");
-      return;
-    }
-
-    await actor.update({
-      [`system.equipment.${slotKey}`]: ""
+    return unequipActorArmorFromSheet(actor, slotKey, {
+      afterChange: () => this._openPendingInventoryIfNeeded(actor),
     });
-
-    await recalculateActorWeight(actor);
-    ui.notifications.info("Броня снята");
   }
 
   async _assignQuickSlot(itemId, slotKey) {
     const actor = this._getActorForState();
-    if (!isQuickSlotUnlocked(actor, slotKey)) {
-      ui.notifications.warn("Этот быстрый слот ещё заблокирован");
-      return;
-    }
-
-    const item = actor.items.get(itemId);
-    if (!item) {
-      ui.notifications.warn("Предмет не найден");
-      return;
-    }
-
-    await actor.update({
-      [`system.quickSlots.${slotKey}`]: itemId
-    });
-
-    ui.notifications.info(`Предмет "${item.name}" назначен в ${slotKey}`);
+    return assignActorQuickSlot(actor, itemId, slotKey);
   }
 
   async _clearQuickSlot(slotKey) {
     const actor = this._getActorForState();
-    if (!isQuickSlotUnlocked(actor, slotKey)) {
-      ui.notifications.warn("Этот быстрый слот ещё заблокирован");
-      return;
-    }
+    return clearActorQuickSlot(actor, slotKey);
+  }
 
-    await actor.update({
-      [`system.quickSlots.${slotKey}`]: ""
+  async _deleteOwnedItem(itemId) {
+    const actor = this._getActorForState();
+    return deleteActorOwnedItem(actor, itemId, {
+      afterDelete: () => {
+        this._refreshActorItemUseUis(actor);
+      },
     });
-
-    ui.notifications.info(`Быстрый слот ${slotKey} очищен`);
   }
 
-async _deleteOwnedItem(itemId) {
-  const actor = this._getActorForState();
-  const item = actor.items.get(itemId);
-  if (!item) {
-    ui.notifications.warn("Предмет не найден");
-    return;
+  _refreshActorItemUseUis(actor = this._getActorForState()) {
+    queueActorSheetRender(actor);
+    refreshAllTradeUIs(IronHillsActorSheet, TarkovTradeApp);
   }
-
-  await clearActorItemReferences(actor, itemId);
-  await item.delete();
-  await recalculateActorWeight(actor);
-
-  ui.notifications.info(`Предмет "${item.name}" удалён из инвентаря`);
-
-queueActorSheetRender(actor);
-refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
-}
 
   async _consumeFood(itemId, { skipTimeCost = false } = {}) {
     const actor = this._getActorForState();
-    const item = actor.items.get(itemId);
-    if (!item || item.type !== "food") {
-      ui.notifications.warn("Предмет не найден или не является едой");
-      return;
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: "food",
-        label: `Использование еды: ${item.name}`,
-        item,
-        payload: {
-          itemId
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok) return;
-    }
-
-    const satietyGain = Number(item.system.satiety ?? 0);
-    const hydrationGain = Number(item.system.hydration ?? 0);
-
-    const currentSatiety = Number(actor.system.resources.satiety.value ?? 0);
-    const maxSatiety = Number(actor.system.resources.satiety.max ?? 100);
-
-    const currentHydration = Number(actor.system.resources.hydration.value ?? 0);
-    const maxHydration = Number(actor.system.resources.hydration.max ?? 100);
-
-    const newSatiety = Math.min(maxSatiety, currentSatiety + satietyGain);
-    const newHydration = Math.min(maxHydration, currentHydration + hydrationGain);
-
-    await actor.update({
-      "system.resources.satiety.value": newSatiety,
-      "system.resources.hydration.value": newHydration
+    await useFoodItemFromSheet(actor, itemId, {
+      skipTimeCost,
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      afterRefresh: () => this._refreshActorItemUseUis(actor),
     });
-
-    await removeQuantityFromItem(actor, item, 1);
-    await recalculateActorWeight(actor);
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<b>${actor.name}</b> использует <b>${item.name}</b><br>Сытость: +${satietyGain}<br>Жажда: +${hydrationGain}`
-    });
-
-    queueActorSheetRender(actor);
-    refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
   }
 
   async _usePotion(itemId, { skipTimeCost = false } = {}) {
     const actor = this._getActorForState();
-    const item = actor.items.get(itemId);
-    if (!item || item.type !== "potion") {
-      ui.notifications.warn("Зелье не найдено");
-      return;
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: "potion",
-        label: `Использование зелья: ${item.name}`,
-        item,
-        payload: {
-          itemId
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok) return;
-    }
-
-    const power = Number(item.system.power ?? 0);
-    const effectType = item.system.effectType;
-    const targetPart = item.system.targetPart ?? "torso";
-
-    if (effectType === "healHP") {
-      const healedHp = await this._healTargetPart(actor, targetPart, power);
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>Лечение: ${power}<br>${getTargetPartLabel(targetPart)} теперь имеет HP: ${healedHp}`
-      });
-    }
-
-    if (effectType === "restoreEnergy") {
-      const current = Number(actor.system.resources.energy.value ?? 0);
-      const max     = Number(actor.system.resources.energy.max   ?? 100);
-      const next    = Math.min(max, current + power);
-      await actor.update({ "system.resources.energy.value": next });
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>⚡ Энергия: ${current} → ${next}/${max}`
-      });
-    }
-
-    if (effectType === "restoreEnergyMax") {
-      const baseMax = Number(actor.system.resources.energy.baseMax ?? actor.system.resources.energy.max ?? 10);
-      const curMax  = Number(actor.system.resources.energy.max   ?? 10);
-      const newMax  = Math.min(baseMax, curMax + power);
-      const newCur  = Math.min(newMax, Number(actor.system.resources.energy.value ?? 0) + power);
-      await actor.update({
-        "system.resources.energy.max":   newMax,
-        "system.resources.energy.value": newCur,
-      });
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>⚡ Макс. энергия: ${curMax} → ${newMax} (+${power})`
-      });
-    }
-
-    if (effectType === "restoreMana") {
-      const current = Number(actor.system.resources.mana.value ?? 0);
-      const max = Number(actor.system.resources.mana.max ?? 50);
-      const next = Math.min(max, current + power);
-
-      await actor.update({
-        "system.resources.mana.value": next
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<b>${actor.name}</b> выпивает <b>${item.name}</b><br>Мана: +${power}`
-      });
-    }
-
-    await removeQuantityFromItem(actor, item, 1);
-    await recalculateActorWeight(actor);
-
-    queueActorSheetRender(actor);
-    refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
-  }
-
-  _getMedicalPartOptions(actor) {
-    const hp = actor?.system?.resources?.hp ?? {};
-    const partKeys = ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-
-    return partKeys
-      .filter(partKey => hp?.[partKey])
-      .map(partKey => ({
-        key: partKey,
-        label: getTargetPartLabel(partKey)
-      }));
-  }
-
-  _getItemApplicationScope(item, fallback = "targeted") {
-    const raw = String(item?.system?.applicationScope ?? "").trim().toLowerCase();
-    if (raw === "targeted" || raw === "global" || raw === "auto" || raw === "area") return raw;
-    return fallback;
-  }
-
-  _getItemTargetActorMode(item, fallback = "self") {
-    const raw = String(item?.system?.targetActorMode ?? "").trim().toLowerCase();
-    if (raw === "self" || raw === "selected-or-self" || raw === "selected-only" || raw === "area") return raw;
-    return fallback;
-  }
-
-  _getSelectedActorTargets(sourceActor) {
-    const targets = Array.from(game.user?.targets ?? [])
-      .map(token => token?.actor ?? null)
-      .filter(Boolean)
-      .filter(actor => actor.id !== sourceActor?.id);
-
-    return targets;
-  }
-
-  async _resolveActionTargetActor(sourceActor, item, title = "Выбор цели") {
-    const targetActorMode = this._getItemTargetActorMode(item, "self");
-
-    if (targetActorMode === "self") {
-      return { ok: true, cancelled: false, targetActor: sourceActor };
-    }
-
-    const selectedActors = this._getSelectedActorTargets(sourceActor);
-
-    if (targetActorMode === "selected-only") {
-      if (selectedActors.length === 1) {
-        return { ok: true, cancelled: false, targetActor: selectedActors[0] };
-      }
-
-      if (selectedActors.length > 1) {
-        const choice = await this._promptTargetActorChoice(selectedActors, title);
-        if (!choice) return { ok: false, cancelled: true, targetActor: null };
-        return { ok: true, cancelled: false, targetActor: choice };
-      }
-
-      ui.notifications.warn("Выделите цель токеном.");
-      return { ok: false, cancelled: true, targetActor: null };
-    }
-
-    if (targetActorMode === "selected-or-self") {
-      if (selectedActors.length === 1) {
-        return { ok: true, cancelled: false, targetActor: selectedActors[0] };
-      }
-
-      if (selectedActors.length > 1) {
-        const options = [sourceActor, ...selectedActors];
-        const choice = await this._promptTargetActorChoice(options, title);
-        if (!choice) return { ok: false, cancelled: true, targetActor: null };
-        return { ok: true, cancelled: false, targetActor: choice };
-      }
-
-      return { ok: true, cancelled: false, targetActor: sourceActor };
-    }
-
-    return { ok: true, cancelled: false, targetActor: sourceActor };
-  }
-
-  async _promptTargetActorChoice(actorOptions, title = "Выбор цели") {
-    if (!actorOptions?.length) return null;
-
-    const optionsHtml = actorOptions
-      .map(actor => `<option value="${actor.uuid}">${actor.name}</option>`)
-      .join("");
-
-    return await new Promise(resolve => {
-      new Dialog({
-        title,
-        content: `
-          <form>
-            <div class="form-group">
-              <label>Цель</label>
-              <select name="targetActorUuid">
-                ${optionsHtml}
-              </select>
-            </div>
-          </form>
-        `,
-        buttons: {
-          ok: {
-            label: "Выбрать",
-            callback: html => {
-              const uuid = html.find("[name='targetActorUuid']").val();
-              resolve(uuid ? fromUuidSync(uuid) : null);
-            }
-          },
-          cancel: {
-            label: "Отмена",
-            callback: () => resolve(null)
-          }
-        },
-        default: "ok",
-        close: () => resolve(null)
-      }).render(true);
+    return usePotionItemFromSheet(actor, itemId, {
+      skipTimeCost,
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      applyActionTypeItem: (actor, item) => this._applyActionTypeItem(actor, item),
+      afterRefresh: () => this._refreshActorItemUseUis(actor),
     });
-  }
-
-  async _promptMedicalTargetPart(actor, title = "Выбор части тела") {
-    const parts = this._getMedicalPartOptions(actor);
-    if (!parts.length) return null;
-
-    const options = parts
-      .map(part => `<option value="${part.key}">${part.label}</option>`)
-      .join("");
-
-    return await new Promise(resolve => {
-      new Dialog({
-        title,
-        content: `
-          <form>
-            <div class="form-group">
-              <label>Часть тела</label>
-              <select name="targetPart">
-                ${options}
-              </select>
-            </div>
-          </form>
-        `,
-        buttons: {
-          ok: {
-            label: "Применить",
-            callback: html => resolve(html.find("[name='targetPart']").val())
-          },
-          cancel: {
-            label: "Отмена",
-            callback: () => resolve(null)
-          }
-        },
-        default: "ok",
-        close: () => resolve(null)
-      }).render(true);
-    });
-  }
-
-  async _resolveTargetPartByScope(targetActor, item, fallbackTitle = "Выбор части тела") {
-    const presetPart = String(item?.system?.targetPart ?? "").trim();
-    const scope = this._getItemApplicationScope(item, "targeted");
-
-    if (scope === "global") {
-      return { ok: true, cancelled: false, targetPart: null };
-    }
-
-    if (scope === "auto" || scope === "area") {
-      return { ok: true, cancelled: false, targetPart: presetPart || null };
-    }
-
-    if (presetPart) {
-      return { ok: true, cancelled: false, targetPart: presetPart };
-    }
-
-    const selectedPart = await this._promptMedicalTargetPart(targetActor, fallbackTitle);
-    if (!selectedPart) {
-      return { ok: false, cancelled: true, targetPart: null };
-    }
-
-    return { ok: true, cancelled: false, targetPart: selectedPart };
-  }
-
-  _getBodyPartStatusNode(actor, partKey) {
-    return actor?.system?.resources?.hp?.[partKey]?.status ?? {};
-  }
-
-    async _applyActionTypeToTargetPart(sourceActor, targetActor, item, actionType, targetPart, power = 1) {
-    const persistentTargetActor = getPersistentActor(targetActor);
-    if (!persistentTargetActor) {
-      ui.notifications.warn("Цель лечения не найдена.");
-      return { ok: false, handled: true, consumeItem: false };
-    }
-
-    targetActor = persistentTargetActor;
-    const status = this._getBodyPartStatusNode(targetActor, targetPart);
-
-    if (actionType === "bandage") {
-      const currentMinor = Number(status?.minorBleeding ?? 0);
-
-      if (currentMinor <= 0) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)}: нет малого кровотечения.`);
-        await ChatMessage.create({
-          speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-          content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Малое кровотечение отсутствует`
-        });
-
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      const nextMinor = Math.max(0, currentMinor - Math.max(1, Number(power || 1)));
-      await targetActor.update({
-        [`system.resources.hp.${targetPart}.status.minorBleeding`]: nextMinor
-      });
-
-      const reduced = currentMinor - nextMinor;
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Малое кровотечение уменьшено на ${reduced}`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "tourniquet") {
-      const currentMajor = Number(status?.majorBleeding ?? 0);
-
-      if (currentMajor <= 0) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)}: нет сильного кровотечения.`);
-        await ChatMessage.create({
-          speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-          content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Сильное кровотечение отсутствует`
-        });
-
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      const nextMajor = Math.max(0, currentMajor - Math.max(1, Number(power || 1)));
-
-      await targetActor.update({
-        [`system.resources.hp.${targetPart}.status.majorBleeding`]: nextMajor,
-        [`system.resources.hp.${targetPart}.status.tourniquet`]: true
-      });
-
-      const reduced = currentMajor - nextMajor;
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> накладывает <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Сильное кровотечение уменьшено на ${reduced}<br>Наложен жгут`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "splint") {
-      const hadFracture = Boolean(status?.fracture);
-      const alreadySplinted = Boolean(status?.splinted);
-
-      if (!hadFracture && alreadySplinted) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)} уже стабилизирована.`);
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      if (!hadFracture && !alreadySplinted) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)}: перелом отсутствует.`);
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      await targetActor.update({
-        [`system.resources.hp.${targetPart}.status.splinted`]: true,
-        [`system.resources.hp.${targetPart}.status.fracture`]: false
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Перелом стабилизирован`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "surgery") {
-      const hpNode = targetActor?.system?.resources?.hp?.[targetPart] ?? {};
-      const currentHp = Number(hpNode?.value ?? 0);
-      const maxHp = Number(hpNode?.max ?? 0);
-      const healAmount = Math.max(1, Number(power || 1));
-
-      const hasDestroyed = Boolean(status?.destroyed);
-      const hasFracture = Boolean(status?.fracture);
-      const hasMinor = Number(status?.minorBleeding ?? 0) > 0;
-      const hasMajor = Number(status?.majorBleeding ?? 0) > 0;
-
-      if (!hasDestroyed && !hasFracture && !hasMinor && !hasMajor && currentHp >= maxHp) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)}: тяжёлое лечение не требуется.`);
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      const updates = {
-        [`system.resources.hp.${targetPart}.status.destroyed`]: false,
-        [`system.resources.hp.${targetPart}.status.fracture`]: false,
-        [`system.resources.hp.${targetPart}.status.splinted`]: false,
-        [`system.resources.hp.${targetPart}.status.tourniquet`]: false,
-        [`system.resources.hp.${targetPart}.status.majorBleeding`]: 0,
-        [`system.resources.hp.${targetPart}.status.minorBleeding`]: 0
-      };
-
-      if (currentHp <= 0) {
-        updates[`system.resources.hp.${targetPart}.value`] = Math.min(maxHp, healAmount);
-      } else {
-        updates[`system.resources.hp.${targetPart}.value`] = Math.min(maxHp, currentHp + healAmount);
-      }
-
-      await targetActor.update(updates);
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> применяет <b>${item.name}</b> к <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Проведена тяжёлая медицинская обработка`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "heal-part") {
-      const hpNode = targetActor?.system?.resources?.hp?.[targetPart] ?? {};
-      const currentHp = Number(hpNode?.value ?? 0);
-      const maxHp = Number(hpNode?.max ?? 0);
-
-      if (currentHp >= maxHp) {
-        ui.notifications.warn(`${getTargetPartLabel(targetPart)} уже полностью восстановлена.`);
-        return { ok: true, handled: true, consumeItem: false };
-      }
-
-      const nextHp = Math.min(maxHp, currentHp + Math.max(1, Number(power || 1)));
-
-      await targetActor.update({
-        [`system.resources.hp.${targetPart}.value`]: nextHp
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>${getTargetPartLabel(targetPart)}<br>Восстановлено ${nextHp - currentHp} HP`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    return { ok: true, handled: false, consumeItem: false };
-  }
-
-  async _applyActionTypeGlobally(sourceActor, targetActor, item, actionType, power = 1) {
-    const persistentTargetActor = getPersistentActor(targetActor);
-    if (!persistentTargetActor) {
-      ui.notifications.warn("Цель лечения не найдена.");
-      return { ok: false, handled: true, consumeItem: false };
-    }
-
-    targetActor = persistentTargetActor;
-    const resources = targetActor.system?.resources ?? {};
-
-    if (actionType === "restore-energy") {
-      const current = Number(resources.energy?.value ?? 0);
-      const max = Number(resources.energy?.max ?? 0);
-      const next = Math.min(max, current + Math.max(1, Number(power || 1)));
-
-      await targetActor.update({
-        "system.resources.energy.value": next
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>Энергия восстановлена на ${next - current}`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "restore-mana") {
-      const current = Number(resources.mana?.value ?? 0);
-      const max = Number(resources.mana?.max ?? 0);
-      const next = Math.min(max, current + Math.max(1, Number(power || 1)));
-
-      await targetActor.update({
-        "system.resources.mana.value": next
-      });
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>Мана восстановлена на ${next - current}`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "heal-body") {
-      const hp = targetActor.system?.resources?.hp ?? {};
-      const parts = ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-      const updates = {};
-
-      for (const partKey of parts) {
-        const current = Number(hp?.[partKey]?.value ?? 0);
-        const max = Number(hp?.[partKey]?.max ?? 0);
-        updates[`system.resources.hp.${partKey}.value`] = Math.min(max, current + Math.max(1, Number(power || 1)));
-      }
-
-      await targetActor.update(updates);
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>Тело получает общее восстановление`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "stop-minor-bleeding-global") {
-      const hp = targetActor.system?.resources?.hp ?? {};
-      const parts = ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-      const updates = {};
-
-      for (const partKey of parts) {
-        if (!hp?.[partKey]) continue;
-        updates[`system.resources.hp.${partKey}.status.minorBleeding`] = 0;
-      }
-
-      await targetActor.update(updates);
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>Все малые кровотечения остановлены`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    if (actionType === "stabilize-body") {
-      const hp = targetActor.system?.resources?.hp ?? {};
-      const parts = ["head", "torso", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-      const updates = {};
-
-      for (const partKey of parts) {
-        if (!hp?.[partKey]) continue;
-        updates[`system.resources.hp.${partKey}.status.minorBleeding`] = 0;
-        updates[`system.resources.hp.${partKey}.status.majorBleeding`] = 0;
-      }
-
-      await targetActor.update(updates);
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-        content: `<b>${sourceActor.name}</b> использует <b>${item.name}</b> на <b>${targetActor.name}</b><br>Общее состояние тела стабилизировано`
-      });
-
-      return { ok: true, handled: true, consumeItem: true };
-    }
-
-    return { ok: true, handled: false, consumeItem: false };
   }
 
   async _applyActionTypeItem(sourceActor, item) {
-    const actionType = String(item.system?.actionType ?? "").trim();
-    if (!actionType) {
-      return { ok: true, handled: false, consumeItem: false, cancelled: false };
-    }
-
-    const targetActorInfo = await this._resolveActionTargetActor(
-      sourceActor,
-      item,
-      `Цель для: ${item.name}`
-    );
-
-    if (!targetActorInfo.ok && targetActorInfo.cancelled) {
-      return { ok: true, handled: true, consumeItem: false, cancelled: true };
-    }
-
-    const targetActor = targetActorInfo.targetActor || sourceActor;
-    const power = Number(item.system?.power ?? 1);
-    const scope = this._getItemApplicationScope(item, "targeted");
-
-    if (scope === "global") {
-      return await this._applyActionTypeGlobally(sourceActor, targetActor, item, actionType, power);
-    }
-
-    const targetInfo = await this._resolveTargetPartByScope(
-      targetActor,
-      item,
-      `Выбор части тела: ${targetActor.name}`
-    );
-
-    if (!targetInfo.ok && targetInfo.cancelled) {
-      return { ok: true, handled: true, consumeItem: false, cancelled: true };
-    }
-
-    const targetPart = targetInfo.targetPart;
-    if (!targetPart) {
-      return { ok: true, handled: true, consumeItem: false, cancelled: true };
-    }
-
-    return await this._applyActionTypeToTargetPart(sourceActor, targetActor, item, actionType, targetPart, power);
+    return applyActionTypeItemFromDialog(sourceActor, item);
   }
 
   async _useConsumable(itemId, { skipTimeCost = false } = {}) {
     const actor = this._getActorForState();
-    const item = actor.items.get(itemId);
-    if (!item || item.type !== "consumable") {
-      ui.notifications.warn("Расходник не найден");
-      return;
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: "use-consumable",
-        label: `Использование: ${item.name}`,
-        item,
-        payload: {
-          itemId
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok) return;
-    }
-
-    const actionResult = await this._applyActionTypeItem(actor, item);
-
-    if (actionResult?.cancelled) {
-      return;
-    }
-
-    if (actionResult?.handled) {
-      if (actionResult.consumeItem) {
-        await removeQuantityFromItem(actor, item, 1);
-        await recalculateActorWeight(actor);
-      }
-
-      queueActorSheetRender(actor);
-      refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
-      return;
-    }
-
-    ui.notifications.warn("У предмета не настроен actionType.");
+    return useConsumableItemFromSheet(actor, itemId, {
+      skipTimeCost,
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      applyActionTypeItem: (actor, item) => this._applyActionTypeItem(actor, item),
+      afterRefresh: () => this._refreshActorItemUseUis(actor),
+    });
   }
 
   async _castSpellLike({ item, isScroll = false, skipTimeCost = false }) {
     const actor = this._getActorForState();
-    if (!item) {
-      ui.notifications.warn("Заклинание не найдено");
-      return;
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: isScroll ? "scroll" : "cast-spell",
-        label: `${isScroll ? "Свиток" : "Заклинание"}: ${item.name}`,
-        item,
-        payload: {
-          itemId: item.id,
-          isScroll
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok) return;
-    }
-
-    const school = item.system.school;
-    const schoolSkill = actor.system.skills?.[school];
-    if (!schoolSkill) {
-      ui.notifications.warn(`У персонажа нет школы магии ${school}`);
-      return;
-    }
-
-    const manaCost = isScroll ? 0 : Number(item.system.manaCost ?? 0);
-    const energyCost = Number(item.system.energyCost ?? 0);
-    const currentMana = Number(actor.system.resources.mana.value ?? 0);
-    const currentEnergy = Number(actor.system.resources.energy.value ?? 0);
-    const blockReason = getActionBlockReason(actor, isScroll ? "scroll" : "spell", { item });
-    if (blockReason) {
-      ui.notifications.warn(blockReason);
-      return;
-    }
-
-    // Атакующее заклинание вне боя — запрашиваем GM
-    const isOffensiveSpell = item?.system?.effectType === "damage";
-    if (isOffensiveSpell && !isCombatActive() && !game.user?.isGM) {
-      const allowed = await this._requestGmHostileAction(`${isScroll ? "Свиток" : "Заклинание"}: ${item.name}`);
-      if (!allowed) return;
-    }
-
-    const targets = game.user.targets;
-    if (!targets.size) {
-      ui.notifications.warn("Выберите цель");
-      return;
-    }
-
-    const targetActor = [...targets][0].actor;
-    if (!targetActor) {
-      ui.notifications.warn("У цели нет актёра");
-      return;
-    }
-
-    const dieSize = Math.max(2, schoolSkill.value * 2);
-    const injuries = getActorInjuryInfo(actor);
-    const castPenalty = Number(injuries.castPenalty ?? 0);
-    const derivedConditions = getDerivedConditionState(actor);
-
-if (!derivedConditions.canCast) {
-  ui.notifications.warn("Персонаж не может колдовать из-за критических травм.");
-  return;
-}
-    const rollFormula = castPenalty > 0 ? `1d${dieSize} - ${castPenalty}` : `1d${dieSize}`;
-    const roll = await new Roll(rollFormula).evaluate();
-
-    await actor.update({
-      "system.resources.mana.value": Math.max(0, currentMana - manaCost),
-      "system.resources.energy.value": Math.max(0, currentEnergy - energyCost)
+    await castSpellLikeItem({
+      actor,
+      item,
+      isScroll,
+      skipTimeCost,
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      requestHostileAction: (label) => this._requestGmHostileAction(label),
+      applySkillExp: (skillKey, label) => this._applySkillExp(skillKey, label),
+      onLethal: (target) => this._markActorDead(target),
+      afterCast: () => this._refreshActorItemUseUis(actor),
     });
-
-    let content = `
-      <h3>${isScroll ? "Свиток" : "Заклинание"}: ${item.name}</h3>
-      ${buildChatSectionRow("Источник", actor.name)}
-      ${buildChatSectionRow("Цель", targetActor.name)}
-      ${buildChatSectionRow("Школа", getSpellSchoolLabel(school))}
-      ${buildChatSectionRow("Куб", `d${dieSize}`)}
-      ${buildChatSectionRow("Штраф от ранений", castPenalty > 0 ? `-${castPenalty}` : "0")}
-      ${buildChatSectionRow("Кровопотеря", Number(derivedConditions.bleeding ?? 0))}
-      ${buildChatSectionRow("Шок", Number(derivedConditions.shock ?? 0))}
-      ${buildChatSectionRow("Бросок", `${roll.total}`)}
-      ${buildChatSectionRow("Мана", `-${manaCost}`)}
-      ${buildChatSectionRow("Энергия", `-${energyCost}`)}
-    `;
-
-    const power = Number(item.system.power ?? 0);
-    const effectType = item.system.effectType;
-    const damageType = item.system.damageType ?? "magical";
-    const targetPart = item.system.targetPart ?? "torso";
-
-    if (effectType === "damage") {
-      const armorItem = getEquippedArmorForLocation(targetActor, targetPart);
-      const reduction = getDamageReduction(armorItem, damageType);
-      const finalDamage = Math.max(0, power + roll.total - reduction);
-      const { newHP: remainingHP, overflow: dmgOverflow, overflowTarget: dmgOverflowTarget } = await this._applyDamage(targetActor, targetPart, finalDamage);
-      await this._applyInjuryEffects(targetActor, targetPart, finalDamage);
-
-      content += `
-        ${buildChatSectionRow("Эффект", "Урон")}
-        ${buildChatSectionRow("Часть тела", getTargetPartLabel(targetPart))}
-        ${buildChatSectionRow("Сила", power)}
-        ${buildChatSectionRow("Броня", armorItem ? armorItem.name : "Нет")}
-        ${buildChatSectionRow("Поглощение", reduction)}
-        ${buildChatSectionRow("Итоговый урон", `<span style="font-size:1.1em;"><b>${finalDamage}</b></span>`)}
-        ${buildChatSectionRow("Осталось HP", remainingHP)}
-        ${dmgOverflow > 0 ? buildChatSectionRow("Переходящий урон", `${dmgOverflow} → ${getTargetPartLabel(dmgOverflowTarget)}`) : ""}
-      `;
-    }
-
-    if (effectType === "heal") {
-      const healed = power + Math.max(0, roll.total - 1);
-      const newHP = await this._healTargetPart(targetActor, targetPart, healed);
-
-      content += `
-        ${buildChatSectionRow("Эффект", "Лечение")}
-        ${buildChatSectionRow("Часть тела", getTargetPartLabel(targetPart))}
-        ${buildChatSectionRow("Восстановлено HP", healed)}
-        ${buildChatSectionRow("Текущее HP", newHP)}
-      `;
-    }
-
-    if (effectType === "restoreEnergy") {
-      const restored = power + Math.max(0, roll.total - 1);
-      const currentTargetEnergy = Number(targetActor.system.resources.energy.value ?? 0);
-      const maxTargetEnergy = Number(targetActor.system.resources.energy.max ?? 100);
-      const newEnergy = Math.min(maxTargetEnergy, currentTargetEnergy + restored);
-      await targetActor.update({ "system.resources.energy.value": newEnergy });
-      content += `
-        ${buildChatSectionRow("Эффект", "Восстановление энергии")}
-        ${buildChatSectionRow("Восстановлено", restored)}
-        ${buildChatSectionRow("Энергия цели", newEnergy)}
-      `;
-    }
-
-    if (effectType === "restoreMana") {
-      const restored = power + Math.max(0, roll.total - 1);
-      const curMana  = Number(targetActor.system.resources.mana.value ?? 0);
-      const maxMana  = Number(targetActor.system.resources.mana.max  ?? 50);
-      const newMana  = Math.min(maxMana, curMana + restored);
-      await targetActor.update({ "system.resources.mana.value": newMana });
-      content += `
-        ${buildChatSectionRow("Эффект", "Восстановление маны")}
-        ${buildChatSectionRow("Восстановлено", restored)}
-        ${buildChatSectionRow("Мана цели", newMana)}
-      `;
-    }
-
-    if (effectType === "curePoison") {
-      await targetActor.update({ "system.conditions.poison": 0 });
-      content += `${buildChatSectionRow("Эффект", "🛡 Нейтрализация яда")}`;
-    }
-
-    if (effectType === "cureDisease") {
-      // Снимает одну случайную болезнь
-      const diseases = foundry.utils.deepClone(targetActor.system?.diseases ?? {});
-      const active   = Object.entries(diseases).filter(([, d]) => d?.stage >= 0);
-      if (active.length) {
-        const [key] = active[Math.floor(Math.random() * active.length)];
-        diseases[key] = { ...diseases[key], stage: -1 };
-        await targetActor.update({ "system.diseases": diseases });
-        content += `${buildChatSectionRow("Эффект", "🌡 Болезнь снята")}`;
-      }
-    }
-
-    if (effectType === "stimulant") {
-      const boost = power + Math.max(0, roll.total - 4);
-      const curEn = Number(targetActor.system.resources.energy.value ?? 0);
-      const maxEn = Number(targetActor.system.resources.energy.max  ?? 100);
-      await targetActor.update({
-        "system.resources.energy.value": Math.min(maxEn, curEn + boost)
-      });
-      content += `
-        ${buildChatSectionRow("Эффект", "⚡ Стимулятор")}
-        ${buildChatSectionRow("Энергия", `+${boost}`)}
-      `;
-    }
-
-    // ── PATCH 9: Новые эффекты магии ─────────────────────────────
-
-    // Оглушение — цель пропускает ход(а)
-    if (effectType === "stun") {
-      const duration = power + Math.max(0, roll.total - 4);
-      const current  = Number(targetActor.system?.conditions?.stunned ?? 0);
-      await targetActor.update({
-        "system.conditions.stunned": current + Math.max(1, duration)
-      });
-      content += `
-        ${buildChatSectionRow("Эффект", "⚡ Оглушение")}
-        ${buildChatSectionRow("Длительность", `${Math.max(1, duration)} ход(а)`)}
-      `;
-    }
-
-    // Обезоруживание — оружие выбивается из рук
-    if (effectType === "disarm") {
-      const threshold = 6 + Number(targetActor.system?.info?.tier ?? 1);
-      if (roll.total >= threshold) {
-        const disarmHand = item.system.disarmHand ?? "rightHand";
-        const weaponId = targetActor.system?.equipment?.[disarmHand];
-        if (weaponId) {
-          await targetActor.update({ [`system.equipment.${disarmHand}`]: "" });
-          content += `
-            ${buildChatSectionRow("Эффект", "✋ Обезоруживание")}
-            ${buildChatSectionRow("Результат", "Оружие выбито!")}
-            ${buildChatSectionRow("Бросок / Порог", `${roll.total} / ${threshold}`)}
-          `;
-        } else {
-          content += `${buildChatSectionRow("Обезоруживание", "Цель безоружна")}`;
-        }
-      } else {
-        content += `
-          ${buildChatSectionRow("Эффект", "✋ Обезоруживание")}
-          ${buildChatSectionRow("Результат", `Провал (${roll.total} < ${threshold})`)}
-        `;
-      }
-    }
-
-    // Безмолвие — цель не может колдовать N секунд
-    if (effectType === "silence") {
-      const duration = power + Math.max(1, roll.total - 3);
-      const until = (game.time?.worldTime ?? 0) + duration;
-      await targetActor.update({ "system.conditions.silencedUntil": until });
-      content += `
-        ${buildChatSectionRow("Эффект", "🔇 Безмолвие")}
-        ${buildChatSectionRow("Длительность", `${duration} сек.`)}
-      `;
-    }
-
-    // Замедление — снижает инициативу
-    if (effectType === "slow") {
-      const penalty = power + Math.max(0, roll.total - 4);
-      const current = Number(targetActor.system?.conditions?.slowPenalty ?? 0);
-      await targetActor.update({
-        "system.conditions.slowPenalty": current + Math.max(1, penalty)
-      });
-      content += `
-        ${buildChatSectionRow("Эффект", "🐢 Замедление")}
-        ${buildChatSectionRow("Штраф инициативы", `-${Math.max(1, penalty)}`)}
-      `;
-    }
-
-    // Страх — штраф к атаке и защите
-    if (effectType === "fear") {
-      const duration = power + Math.max(1, roll.total - 4);
-      const current  = Number(targetActor.system?.conditions?.feared ?? 0);
-      await targetActor.update({
-        "system.conditions.feared": current + Math.max(1, duration)
-      });
-      content += `
-        ${buildChatSectionRow("Эффект", "😱 Страх")}
-        ${buildChatSectionRow("Длительность", `${Math.max(1, duration)} ход(а)`)}
-        ${buildChatSectionRow("Штрафы", "−3 атака, −3 защита")}
-      `;
-    }
-
-    // Урон по резерву — временный (средние ступени) или постоянный (высокие)
-    if (effectType === "reserveDrain") {
-      const isPermanent = (schoolSkill?.value ?? 1) >= 6;
-      const amount = power + Math.max(0, roll.total - 4);
-      const drainType = item.system.drainType ?? "mana"; // "mana" | "energy"
-
-      if (isPermanent) {
-        // Снижаем максимум
-        const maxPath  = `system.resources.${drainType}.max`;
-        const current  = Number(targetActor.system?.resources?.[drainType]?.max ?? 10);
-        const newMax   = Math.max(0, current - Math.max(1, amount));
-        const valPath  = `system.resources.${drainType}.value`;
-        const curVal   = Number(targetActor.system?.resources?.[drainType]?.value ?? 0);
-        await targetActor.update({
-          [maxPath]: newMax,
-          [valPath]: Math.min(curVal, newMax)
-        });
-        if (newMax <= 0) {
-          await this._markActorDead(targetActor);
-        }
-        content += `
-          ${buildChatSectionRow("Эффект", `☠ Истощение резерва (${drainType === "mana" ? "Мана" : "Энергия"})`)}
-          ${buildChatSectionRow("Тип", "Постоянное")}
-          ${buildChatSectionRow("Урон по максимуму", `-${Math.max(1, amount)}`)}
-          ${newMax <= 0 ? `<p><b style="color:#ef4444">☠ Резерв иссяк — необратимая смерть!</b></p>` : ""}
-        `;
-      } else {
-        // Снижаем текущее значение (временно)
-        const valPath = `system.resources.${drainType}.value`;
-        const current = Number(targetActor.system?.resources?.[drainType]?.value ?? 0);
-        const newVal  = Math.max(0, current - Math.max(1, amount));
-        await targetActor.update({ [valPath]: newVal });
-        content += `
-          ${buildChatSectionRow("Эффект", `⚡ Истощение (${drainType === "mana" ? "Мана" : "Энергия"})`)}
-          ${buildChatSectionRow("Тип", "Временное")}
-          ${buildChatSectionRow("Снято", `-${Math.max(1, amount)}`)}
-          ${buildChatSectionRow("Осталось", newVal)}
-        `;
-      }
-    }
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content
-    });
-
-    await this._applySkillExp(school, item.name);
-
-    if (isScroll) {
-      await removeQuantityFromItem(actor, item, 1);
-      await recalculateActorWeight(actor);
-    }
-
-    queueActorSheetRender(actor);
-    refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
   }
 
   async _useThrowable(itemId, { skipTimeCost = false } = {}) {
     const actor = this._getActorForState();
-    const item = actor.items.get(itemId);
-    if (!item || item.type !== "throwable") {
-      ui.notifications.warn("Метательный предмет не найден");
-      return;
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: "throwable",
-        label: `Метание: ${item.name}`,
-        item,
-        payload: {
-          itemId
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok) return;
-    }
-
-    const blockReason = getActionBlockReason(actor, "throwable", { item });
-    if (blockReason) {
-      ui.notifications.warn(blockReason);
-      return;
-    }
-
-    // Метание вне боя — запрашиваем GM
-    if (!isCombatActive() && !game.user?.isGM) {
-      const allowed = await this._requestGmHostileAction(`Метание: ${item.name}`);
-      if (!allowed) return;
-    }
-    const currentEnergy = Number(actor.system.resources.energy.value ?? 0);
-    const energyCost = Number(item.system.energyCost ?? 8);
-
-    const targets = game.user.targets;
-    if (!targets.size) {
-      ui.notifications.warn("Выберите цель");
-      return;
-    }
-
-    const targetActor = [...targets][0].actor;
-    if (!targetActor) {
-      ui.notifications.warn("У цели нет актёра");
-      return;
-    }
-
-    const skill = actor.system.skills?.throwing;
-    const dieSize = Math.max(2, Number(skill?.value ?? 1) * 2);
-    const difficulty = Number(targetActor.system.combat?.defense ?? 6);
-    const injuries = getActorInjuryInfo(actor);
-    const throwPenalty = Number(injuries.throwPenalty ?? injuries.attackPenalty ?? 0);
-    const derivedConditions = getDerivedConditionState(actor);
-
-if (!derivedConditions.canThrow) {
-  ui.notifications.warn("Персонаж не может метать предметы из-за критических травм.");
-  return;
-}
-    const rollFormula = throwPenalty > 0 ? `1d${dieSize} - ${throwPenalty}` : `1d${dieSize}`;
-    const roll = await new Roll(rollFormula).evaluate();
-
-    await actor.update({
-      "system.resources.energy.value": Math.max(0, currentEnergy - energyCost)
+    await useThrowableItem({
+      actor,
+      itemId,
+      skipTimeCost,
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      requestHostileAction: (label) => this._requestGmHostileAction(label),
+      applySkillExp: (skillKey, label) => this._applySkillExp(skillKey, label),
+      onLethal: (target) => this._markActorDead(target),
+      afterUse: () => this._refreshActorItemUseUis(actor),
     });
-
-    let content = `
-      <h3>Метание: ${item.name}</h3>
-      ${buildChatSectionRow("Метатель", actor.name)}
-      ${buildChatSectionRow("Цель", targetActor.name)}
-      ${buildChatSectionRow("Куб", `d${dieSize}`)}
-      ${buildChatSectionRow("Штраф от ранений", throwPenalty > 0 ? `-${throwPenalty}` : "0")}
-      ${buildChatSectionRow("Кровопотеря", Number(derivedConditions.bleeding ?? 0))}
-      ${buildChatSectionRow("Шок", Number(derivedConditions.shock ?? 0))}
-      ${buildChatSectionRow("Бросок", `${roll.total}`)}
-      ${buildChatSectionRow("Защита цели", difficulty)}
-      ${buildChatSectionRow("Энергия", `-${energyCost}`)}
-    `;
-
-    if (roll.total < difficulty) {
-      content += `<p><b>Результат:</b> Промах</p><p><i>Бросок оказался ниже защиты цели.</i></p>`;
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: actor }),
-        content
-      });
-
-      await this._applySkillExp("throwing", item.name);
-      await removeQuantityFromItem(actor, item, 1);
-      await recalculateActorWeight(actor);
-
-queueActorSheetRender(actor);
-refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
-      return;
-    }
-
-    const targetPart = item.system.targetPart ?? "torso";
-    const damageType = item.system.damageType ?? "physical";
-    const power = Number(item.system.power ?? 0);
-
-    const armorItem = getEquippedArmorForLocation(targetActor, targetPart);
-    const reduction = getDamageReduction(armorItem, damageType);
-    const finalDamage = Math.max(0, power + roll.total - difficulty - reduction);
-    const { newHP: remainingHP, overflow: dmgOverflow, overflowTarget: dmgOverflowTarget } = await this._applyDamage(targetActor, targetPart, finalDamage);
-    await this._applyInjuryEffects(targetActor, targetPart, finalDamage);
-
-    const poison = Number(item.system.appliesPoison ?? 0);
-    const burning = Number(item.system.appliesBurning ?? 0);
-
-    if (poison > 0) await this._applyPoison(targetActor, poison);
-    if (burning > 0) await this._applyBurning(targetActor, burning);
-
-    content += `
-      <p><b>Результат:</b> Попадание</p>
-      ${buildChatSectionRow("Часть тела", getTargetPartLabel(targetPart))}
-      ${buildChatSectionRow("Броня", armorItem ? armorItem.name : "Нет")}
-      ${buildChatSectionRow("Поглощение", reduction)}
-      ${buildChatSectionRow("Итоговый урон", `<span style="font-size:1.1em;"><b>${finalDamage}</b></span>`)}
-      ${buildChatSectionRow("Осталось HP", remainingHP)}
-      ${technique ? buildChatSectionRow("Приём", `${technique.icon ?? "⚔"} ${technique.label}`) : ""}
-      ${aimed ? buildChatSectionRow("Прицел", `🎯 ${locationLabel}`) : ""}
-      ${dmgOverflow > 0 ? buildChatSectionRow("Переходящий урон", `${dmgOverflow} → ${getTargetPartLabel(dmgOverflowTarget)}`) : ""}
-      ${buildChatSectionRow("Яд", poison)}
-      ${buildChatSectionRow("Горение", burning)}
-    `;
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: actor }),
-      content
-    });
-
-    await this._applySkillExp("throwing", item.name);
-    await removeQuantityFromItem(actor, item, 1);
-    await recalculateActorWeight(actor);
-
-    queueActorSheetRender(actor);
-    refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
   }
 
   async _updateActiveEffectsTick() {
-    const actor = this._getActorForState();
-    const poison = Number(actor.system.conditions?.poison ?? 0);
-    const burning = Number(actor.system.conditions?.burning ?? 0);
-
-    let content = `<h3>Эффекты: ${actor.name}</h3>`;
-    let changed = false;
-
-    if (poison > 0 && actor.system.resources?.hp?.torso) {
-      const { newHP: remaining } = await this._applyDamage(actor, "torso", poison);
-      await actor.update({
-        "system.conditions.poison": Math.max(0, poison - 1)
-      });
-      content += `<p><b>Яд:</b> ${poison} урона по торсу. Осталось HP торса: ${remaining}</p>`;
-      changed = true;
-    }
-
-    if (burning > 0 && actor.system.resources?.hp) {
-      const locationRoll = await new Roll("1d20").evaluate();
-      const locationKey = getHitLocation(locationRoll.total);
-      const { newHP: remaining } = await this._applyDamage(actor, locationKey, burning);
-      await actor.update({
-        "system.conditions.burning": Math.max(0, burning - 1)
-      });
-      content += `<p><b>Горение:</b> ${burning} урона в ${getHitLabel(locationKey)}. Осталось HP: ${remaining}</p>`;
-      changed = true;
-    }
-
-    if (!changed) {
-      ui.notifications.info("Активных эффектов нет");
-      return;
-    }
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content
+    await applyActorConditionTick(this._getActorForState(), {
+      onLethal: (actor) => this._markActorDead(actor)
     });
   }
 
@@ -2471,348 +790,50 @@ refreshAllTradeUIs(IronHillsActorSheet, IronHillsTradeApp);
       return;
     }
 
-    if (item.type === "food") return this._consumeFood(item.id, { skipTimeCost });
-    if (item.type === "spell") return this._castSpellLike({ item, isScroll: false, skipTimeCost });
-    if (item.type === "scroll") return this._castSpellLike({ item, isScroll: true, skipTimeCost });
-    if (item.type === "potion") return this._usePotion(item.id, { skipTimeCost });
-    if (item.type === "throwable") return this._useThrowable(item.id, { skipTimeCost });
-    if (item.type === "consumable") return this._useConsumable(item.id, { skipTimeCost });
-    if (item.type === "weapon") return this._equipWeapon(item.id, "rightHand");
-
-    ui.notifications.warn("Этот тип предмета пока нельзя использовать из быстрого слота");
+    await this._useItemByType(item, {
+      skipTimeCost,
+      allowWeapon: true,
+      unsupportedMessage: "Этот тип предмета пока нельзя использовать из быстрого слота",
+    });
   }
 
   async _shortRest() {
     const actor = this._getActorForState();
-    if (!actor.system.resources?.energy) return;
-
-    const endurance = Number(actor.system.skills?.endurance?.value ?? 1);
-    const bleeding = Number(actor.system.conditions?.bleeding ?? 0);
-    const currentEnergy = Number(actor.system.resources.energy.value ?? 0);
-    const maxEnergy = Number(actor.system.resources.energy.max ?? 100);
-    const currentMana = Number(actor.system.resources.mana?.value ?? 0);
-    const maxMana = Number(actor.system.resources.mana?.max ?? 50);
-
-    const restoredEnergy = Math.max(0, 20 + endurance * 2 - bleeding * 2);
-    const restoredMana = Math.max(0, 10 + Math.floor(endurance / 2));
-
-    const newEnergy = Math.min(maxEnergy, currentEnergy + restoredEnergy);
-    const newMana = Math.min(maxMana, currentMana + restoredMana);
-
-    await actor.update({
-      "system.resources.energy.value": newEnergy,
-      "system.resources.mana.value": newMana
-    });
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: actor }),
-      content: `<b>${actor.name}</b> делает короткий отдых.<br>Энергия: +${restoredEnergy}<br>Мана: +${restoredMana}`
-    });
+    if (!(await this._requireSettledInventory("короткий отдых"))) return;
+    await applyActorShortRest(actor);
   }
 
   async _fullRest() {
     const actor = this._getActorForState();
-    if (!actor.system.resources?.energy) return;
-
-    const maxEnergy = Number(actor.system.resources.energy.max ?? 100);
-    const maxMana = Number(actor.system.resources.mana?.max ?? 50);
-    const currentBleeding = Number(actor.system.conditions?.bleeding ?? 0);
-    const currentPoison = Number(actor.system.conditions?.poison ?? 0);
-    const currentBurning = Number(actor.system.conditions?.burning ?? 0);
-
-    await actor.update({
-      "system.resources.energy.value": maxEnergy,
-      "system.resources.mana.value": maxMana,
-      "system.conditions.shock": 0,
-      "system.conditions.bleeding": Math.max(0, currentBleeding - 1),
-      "system.conditions.poison": Math.max(0, currentPoison - 1),
-      "system.conditions.burning": Math.max(0, currentBurning - 1)
-    });
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: actor }),
-      content: `<b>${actor.name}</b> делает полный отдых.<br>Энергия и мана восстановлены, шок снят, негативные эффекты ослаблены.`
-    });
+    if (!(await this._requireSettledInventory("полный отдых"))) return;
+    await applyActorFullRest(actor);
   }
 
   async _craftRecipe(recipeId) {
     const actor = this._getActorForState();
+    if (!(await this._requireSettledInventory("ремесло"))) return;
     const recipe = CRAFT_RECIPES[recipeId];
     if (!recipe) {
       ui.notifications.warn("Рецепт не найден");
       return;
     }
-
-    const skill = actor.system.skills?.[recipe.skillKey];
-    if (!skill) {
-      ui.notifications.warn(`У персонажа нет навыка ${recipe.skillKey}`);
-      return;
-    }
-
-    const tool = findTool(actor, recipe.tool.craftType, recipe.tool.tier);
-    if (!tool) {
-      ui.notifications.warn(`Нужен инструмент типа "${recipe.tool.craftType}" тира ${recipe.tool.tier}+`);
-      return;
-    }
-
-    for (const ingredient of recipe.ingredients) {
-      const available = getAvailableCategoryQuantity(actor, ingredient.type, ingredient.category);
-      if (available < ingredient.quantity) {
-        ui.notifications.warn(`Недостаточно ресурса: ${ingredient.category} (${available}/${ingredient.quantity})`);
-        return;
-      }
-    }
-
-    const dieSize = Math.max(2, skill.value * 2);
-    const roll = await new Roll(`1d${dieSize}`).evaluate();
-    const success = roll.total >= recipe.difficulty;
-
-    let content = `
-      <h3>Крафт: ${recipe.label}</h3>
-      <p><b>Навык:</b> ${recipe.skillKey}</p>
-      <p><b>Бросок:</b> ${roll.total} (d${dieSize})</p>
-      <p><b>Сложность:</b> ${recipe.difficulty}</p>
-    `;
-
-    await this._applySkillExp(recipe.skillKey, recipe.label);
-
-    if (!success) {
-      content += `<p><b>Результат:</b> Неудача. Материалы не потрачены.</p>`;
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor: actor }),
-        content
-      });
-      return;
-    }
-
-    const usedTiers = await consumeRecipeIngredients(actor, recipe.ingredients);
-    const resultTier = usedTiers.length ? Math.min(...usedTiers) : 1;
-    const margin = roll.total - recipe.difficulty;
-    const quality = getRecipeQualityByMargin(margin);
-
-    const createdSystem = foundry.utils.deepClone(recipe.result.system ?? {});
-    createdSystem.tier = resultTier;
-    createdSystem.quality = quality;
-    createdSystem.quantity = 1;
-
-    if (recipe.result.type === "weapon") {
-      if (quality === "fine") createdSystem.damage += 1;
-      if (quality === "masterwork") createdSystem.damage += 2;
-      if (quality === "legendary") createdSystem.damage += 3;
-    }
-
-    if (recipe.result.type === "armor") {
-      if (quality === "fine") createdSystem.protection.physical += 1;
-      if (quality === "masterwork") createdSystem.protection.physical += 2;
-      if (quality === "legendary") {
-        createdSystem.protection.physical += 2;
-        createdSystem.protection.magical += 1;
-      }
-    }
-
-    if (recipe.result.type === "food") {
-      if (quality === "fine") createdSystem.satiety += 5;
-      if (quality === "masterwork") createdSystem.satiety += 10;
-      if (quality === "legendary") {
-        createdSystem.satiety += 10;
-        createdSystem.hydration += 5;
-      }
-    }
-
-    await actor.createEmbeddedDocuments("Item", [{
-      name: recipe.result.name,
-      type: recipe.result.type,
-      system: createdSystem
-    }]);
-
-    await recalculateActorWeight(actor);
-
-    content += `
-      <p><b>Результат:</b> Успех</p>
-      <p><b>Перевес:</b> ${margin}</p>
-      <p><b>Тир результата:</b> ${resultTier}</p>
-      <p><b>Качество:</b> ${getQualityLabel(quality)}</p>
-      <p><b>Создан предмет:</b> ${recipe.result.name}</p>
-    `;
-
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: actor }),
-      content
-    });
+    ui.notifications.info("Собери ингредиенты на верстаке: окно «Ремесло», вкладка нужного навыка.");
+    game.ironHills?.openCraftWorkbenchWindow?.(actor, { initialSkillKey: recipe.skillKey });
   }
 
-async _buyFromMerchant(itemId) {
-  if (this._tradeBusy) {
-    ui.notifications.warn("Дождись завершения текущей торговой операции.");
-    return;
-  }
-
-  const merchant = getLiveActor(this.actor);
-  if (!merchant || merchant.type !== "merchant") return;
-
-  const buyer = getPersistentActor(getTradeCharacterByUuidOrActive(this._tradeCharacterUuid));
-  if (!buyer) {
-    ui.notifications.warn("Не найден активный персонаж для торговли. Назначь User Character или выдели токен персонажа.");
-    return;
-  }
-
-  const lockData = {
-    merchantId: merchant.id,
-    characterId: buyer.id,
-    itemId,
-    action: "buy"
-  };
-
-  this._tradeBusy = true;
-
-  try {
-    await runWithTradeLock(lockData, async () => {
-      const liveMerchant = getLiveActor(merchant) ?? merchant;
-      const liveBuyer = getPersistentActor(buyer) ?? buyer;
-
-      const item = liveMerchant.items.get(itemId);
-      if (!item) {
-        ui.notifications.warn("Товар уже отсутствует у торговца.");
-        return;
-      }
-
-      const availableQty = Math.max(1, Number(item.system?.quantity ?? 1));
-      if (availableQty < 1) {
-        ui.notifications.warn("Товар закончился.");
-        return;
-      }
-
-      const price = getMerchantBuyPriceForItem(item, liveMerchant, liveBuyer);
-      const buyerCoins = getActorCurrency(liveBuyer);
-
-      if (buyerCoins < price) {
-        ui.notifications.warn("Недостаточно монет.");
-        return;
-      }
-
-      await changeActorCoins(liveBuyer, -price);
-      await changeMerchantWealth(liveMerchant, price);
-      await transferItemQuantityBetweenActors(liveMerchant, liveBuyer, item, 1);
-
-      await ChatMessage.create({
-        content: `<b>${liveBuyer.name}</b> покупает у <b>${liveMerchant.name}</b> предмет <b>${item.name}</b> за <b>${price}</b> монет.`
-      });
-
-      if (liveBuyer.sheet?.rendered) liveBuyer.sheet.render(false);
-      await refreshMerchantTradeViews(IronHillsActorSheet);
-      rerenderOpenTradeApps(IronHillsTradeApp);
-    });
-  } catch (err) {
-    console.error(err);
-    ui.notifications.error(`Ошибка покупки: ${err.message}`);
-  } finally {
-    this._tradeBusy = false;
-    if (this.rendered) this.render(true);
-  }
-}
-
-async _sellToMerchant(itemId, sellerUuid = "") {
-  if (this._tradeBusy) {
-    ui.notifications.warn("Дождись завершения текущей торговой операции.");
-    return;
-  }
-
-  const merchant = getLiveActor(this.actor);
-  if (!merchant || merchant.type !== "merchant") return;
-
-  const seller = getPersistentActor(getTradeCharacterByUuidOrActive(sellerUuid || this._tradeCharacterUuid));
-  if (!seller) {
-    ui.notifications.warn("Не найден активный персонаж для торговли. Назначь User Character или выдели токен персонажа.");
-    return;
-  }
-
-  const lockData = {
-    merchantId: merchant.id,
-    characterId: seller.id,
-    itemId,
-    action: "sell"
-  };
-
-  this._tradeBusy = true;
-
-  try {
-    await runWithTradeLock(lockData, async () => {
-      const liveMerchant = getLiveActor(merchant) ?? merchant;
-      const liveSeller = getPersistentActor(seller) ?? seller;
-
-      const item = liveSeller.items.get(itemId);
-      if (!item) {
-        ui.notifications.warn(`У персонажа "${liveSeller.name}" больше нет такого предмета.`);
-        return;
-      }
-
-      const availableQty = Math.max(1, Number(item.system?.quantity ?? 1));
-      if (availableQty < 1) {
-        ui.notifications.warn("Нечего продавать.");
-        return;
-      }
-
-      const price = getMerchantSellPriceForItem(item, liveMerchant, liveSeller);
-      const merchantWealth = getMerchantWealth(liveMerchant);
-
-      if (merchantWealth < price) {
-        ui.notifications.warn("У торговца недостаточно богатства для выкупа.");
-        return;
-      }
-
-      await changeMerchantWealth(liveMerchant, -price);
-      await changeActorCoins(liveSeller, price);
-      await transferItemQuantityBetweenActors(liveSeller, liveMerchant, item, 1);
-
-      await ChatMessage.create({
-        content: `<b>${liveSeller.name}</b> продаёт торговцу <b>${liveMerchant.name}</b> предмет <b>${item.name}</b> за <b>${price}</b> монет.`
-      });
-
-      if (liveSeller.sheet?.rendered) liveSeller.sheet.render(false);
-      await refreshMerchantTradeViews(IronHillsActorSheet);
-      rerenderOpenTradeApps(IronHillsTradeApp);
-    });
-  } catch (err) {
-    console.error(err);
-    ui.notifications.error(`Ошибка продажи: ${err.message}`);
-  } finally {
-    this._tradeBusy = false;
-    if (this.rendered) this.render(true);
-  }
-}
-
-  _openTradeWindow() {
+  async _openTradeWindow() {
     const merchant = getLiveActor(this.actor);
     if (!merchant || merchant.type !== "merchant") return;
 
-    const app = new IronHillsTradeApp(merchant);
-    app.render(true);
+    const buyer = game.user?.character ?? canvas?.tokens?.controlled?.find(t => t.actor?.type === "character")?.actor ?? null;
+    if (!(await this._requireSettledInventoryForActor(buyer, "торговля"))) return;
+    TarkovTradeApp.open(merchant, buyer);
   }
 
   // Запрашивает разрешение GM на враждебное действие вне боя.
   // Возвращает true если можно действовать, false — если нет.
   async _requestGmHostileAction(actionLabel) {
-    // В бою — всегда можно
-    if (isCombatActive()) return true;
-    // GM сам себе разрешает
-    if (game.user?.isGM) return true;
-
-    // Отправляем запрос GM через чат
-    const actor = this._getActorForState();
-
-    await ChatMessage.create({
-      content: `
-        <div style="border:1px solid rgba(248,113,113,0.4);border-radius:8px;padding:10px;background:rgba(248,113,113,0.06);">
-          <b>⚔ Запрос на враждебное действие</b><br>
-          <b>${actor.name}</b> хочет выполнить <b>${actionLabel}</b> вне боя.<br>
-          <small style="opacity:0.7">GM, используй команду <code>/ir approve</code> или начни бой.</small>
-        </div>
-      `,
-      whisper: ChatMessage.getWhisperRecipients("GM")
-    });
-
-    ui.notifications.info("Запрос отправлен GM. Ожидайте разрешения.");
-    return false;
+    return requestGmHostileAction(this._getActorForState(), actionLabel);
   }
 
 
@@ -2821,24 +842,7 @@ async _sellToMerchant(itemId, sellerUuid = "") {
    * Вызывается когда голова или торс достигают 0 HP.
    */
   async _markActorDead(actor) {
-    if (!actor || actor.type !== "character") return;
-    const sr = actor.system?.resources?.soulReserve;
-    if (sr?.isDead) return; // уже мёртв
-
-    await actor.update({
-      "system.resources.soulReserve.isDead": true,
-      "system.resources.soulReserve.daysSinceDeath": 1
-    });
-
-    await ChatMessage.create({
-      content: `
-        <div style="border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px;background:rgba(239,68,68,0.06);">
-          <b>☠ ${actor.name} погиб.</b><br>
-          Резерв души начинает угасать по 1 единице в день.<br>
-          <small>Воскресите персонажа пока резерв маны и энергии не иссяк.</small>
-        </div>
-      `
-    });
+    return markActorDead(actor);
   }
 
   /**
@@ -2846,120 +850,14 @@ async _sellToMerchant(itemId, sellerUuid = "") {
    * @param {number} quality — качество воскрешения 1-10 (ступень церкви/свитка)
    */
   async _reviveActor(actor, quality = 1) {
-    if (!actor || actor.type !== "character") return;
-
-    // Восстановление HP в зависимости от качества
-    const hpRestorePct = Math.min(1, quality / 10);
-    const updates = {
-      "system.resources.soulReserve.isDead": false,
-      "system.resources.soulReserve.daysSinceDeath": 0
-    };
-
-    // HP частей тела
-    const parts = ["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"];
-    for (const part of parts) {
-      const max = Number(actor.system?.resources?.hp?.[part]?.max ?? 0);
-      if (!max) continue;
-      const restored = Math.max(1, Math.floor(max * hpRestorePct));
-      updates[`system.resources.hp.${part}.value`] = restored;
-    }
-
-    // Сброс destroyed статусов
-    for (const part of parts) {
-      updates[`system.resources.hp.${part}.status.destroyed`] = false;
-    }
-
-    await actor.update(updates);
-
-    const qualityLabel = quality >= 8 ? "Отличное" : quality >= 5 ? "Хорошее" : "Слабое";
-    await ChatMessage.create({
-      content: `
-        <b>✦ ${actor.name} воскрешён.</b> Качество: ${qualityLabel} (ступень ${quality})<br>
-        HP восстановлено на ${Math.round(hpRestorePct * 100)}%.
-        ${quality <= 3 ? "<br><small>⚠ Персонаж ослаблен — могут быть дебафы.</small>" : ""}
-      `
-    });
+    return reviveActor(actor, quality);
   }
 
   /**
    * Вылечить болезнь
    */
   async _cureDisease(actor, diseaseKey) {
-    const diseases = foundry.utils.deepClone(actor.system?.diseases ?? {});
-    if (!diseases[diseaseKey]) return;
-    diseases[diseaseKey] = { stage: -1, progress: 0, duration: 0 };
-    await actor.update({ "system.diseases": diseases });
-
-    const { DISEASES } = await import("../constants/diseases.mjs");
-    const def = DISEASES[diseaseKey];
-    await ChatMessage.create({
-      content: `✅ <b>${actor.name}</b> вылечен от: <b>${def?.label ?? diseaseKey}</b>`,
-      speaker: ChatMessage.getSpeaker({ actor })
-    });
-  }
-
-  /**
-   * Определяет навык ремонта для предмета.
-   * Оружие/металлическая броня → кузнечное дело (smithing)
-   * Кожаная броня/инструменты → ремесло (crafting)
-   * Алхимическое снаряжение → алхимия (alchemy)
-   */
-  _getRepairSkill(actor, item) {
-    const skills = actor.system?.skills ?? {};
-    const type   = item.type;
-    const material = (item.system?.material ?? "").toLowerCase();
-    const subtype  = (item.system?.subtype  ?? "").toLowerCase();
-
-    // Оружие — всегда кузнечное дело
-    if (type === "weapon") {
-      return {
-        key:   "smithing",
-        label: "Кузнечное дело",
-        value: Number(skills.smithing?.value ?? 1)
-      };
-    }
-
-    // Броня — зависит от материала
-    if (type === "armor") {
-      const isLeather = material.includes("кожа") || material.includes("leather")
-        || subtype.includes("кожа") || subtype.includes("cloth");
-      if (isLeather) {
-        return {
-          key:   "crafting",
-          label: "Ремесло",
-          value: Number(skills.crafting?.value ?? skills.alchemy?.value ?? 1)
-        };
-      }
-      return {
-        key:   "smithing",
-        label: "Кузнечное дело",
-        value: Number(skills.smithing?.value ?? 1)
-      };
-    }
-
-    // Инструменты — ремесло
-    if (type === "tool") {
-      const isAlchemic = subtype.includes("алхим") || subtype.includes("alch");
-      if (isAlchemic) {
-        return {
-          key:   "alchemy",
-          label: "Алхимия",
-          value: Number(skills.alchemy?.value ?? 1)
-        };
-      }
-      return {
-        key:   "crafting",
-        label: "Ремесло",
-        value: Number(skills.crafting?.value ?? 1)
-      };
-    }
-
-    // По умолчанию — ремесло
-    return {
-      key:   "crafting",
-      label: "Ремесло",
-      value: Number(skills.crafting?.value ?? 1)
-    };
+    return cureActorDisease(actor, diseaseKey);
   }
 
   /**
@@ -2968,90 +866,21 @@ async _sellToMerchant(itemId, sellerUuid = "") {
    * Качество ремонта ограничено соотношением навык/ступень.
    */
   async _repairItem(actor, item) {
-    if (!item) return;
-
-    const repair   = this._getRepairSkill(actor, item);
-    const itemTier = Number(item.system?.tier ?? 1);
-    const durMax   = Number(item.system?.durability?.max ?? 100);
-    const current  = Number(item.system?.durability?.value ?? 0);
-
-    // Нельзя починить предмет выше своей ступени
-    if (itemTier > repair.value) {
-      ui.notifications.warn(
-        `Нужен навык "${repair.label}" ступени ${itemTier} для ремонта (у вас: ${repair.value})`
-      );
-      return;
-    }
-
-    // Качество: идеальный мастер = 90%, слабый мастер = 50%
-    // skillRatio = repair.value / itemTier (≥1 значит мастер выше ступени предмета)
-    const ratio    = Math.min(2, repair.value / Math.max(1, itemTier));
-    const repairCap = Math.floor(durMax * (0.5 + ratio * 0.2));
-    const restored  = repairCap - current;
-
-    if (restored <= 0) {
-      ui.notifications.info(`${item.name} уже в максимальном состоянии для вашего уровня.`);
-      return;
-    }
-
-    await item.update({ "system.durability.value": repairCap });
-
-    await ChatMessage.create({
-      content: `🔨 <b>${actor.name}</b> починил <b>${item.name}</b> (+${restored} прочности → ${repairCap}/${durMax})<br>
-        <small>Навык: ${repair.label} ст.${repair.value}</small>`,
-      speaker: ChatMessage.getSpeaker({ actor })
+    return repairActorItem(actor, item, {
+      applySkillExp: (skillKey, label) => this._applySkillExp(skillKey, label),
     });
-
-    await this._applySkillExp(repair.key, `Ремонт: ${item.name}`);
   }
 
   /**
    * Взрыв кубов (Exploding Dice).
    * Если выпал максимум — предлагаем перейти на следующий куб.
-   * d2 не взрывается (это монетка).
+   * Лист оставляет старый публичный метод для внешних окон, реализация живёт в сервисе.
    *
    * @param {number} skillValue — ступень навыка (1-10)
    * @returns {{ total: number, rolls: number[], exploded: boolean }}
    */
   async _explodingDiceRoll(skillValue) {
-    const rolls = [];
-    let total = 0;
-    let currentDie = Math.max(2, skillValue * 2);
-    let exploded = false;
-
-    while (true) {
-      const roll = await new Roll(`1d${currentDie}`).evaluate();
-      const result = roll.total;
-      rolls.push({ die: currentDie, result });
-      total = result; // берём последний результат (не сумму)
-
-      // Не максимум — стоп (d2 тоже взрывается при выпавшей 2)
-      if (result < currentDie) break;
-
-      // Максимум — предлагаем продолжить
-      const nextDie = Math.min(currentDie + 2, 20);
-      if (nextDie === currentDie) break; // уже d20, некуда расти
-
-      const confirmed = await Dialog.confirm({
-        title: "💥 Взрыв куба!",
-        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;text-align:center;">
-          <div style="margin-bottom:8px;">
-            <span style="font-size:32px;font-weight:700;color:#facc15;">${result}</span>
-            <span style="color:#6a7d99;font-size:13px;"> на d${currentDie}</span>
-          </div>
-          <p style="color:#4ade80;font-weight:600;margin:4px 0;">Максимум! Можно рискнуть.</p>
-          <p style="font-size:12px;margin:4px 0;">Перейти на <b style="color:#5b9cf6">d${nextDie}</b>?</p>
-          <p style="font-size:11px;color:#6a7d99;margin:4px 0;">Отмена — зафиксировать <b>${result}</b></p>
-        </div>`
-      });
-
-      if (!confirmed) break;
-
-      exploded = true;
-      currentDie = nextDie;
-    }
-
-    return { total, rolls, exploded };
+    return rollExplodingDice(skillValue);
   }
 
   /**
@@ -3066,181 +895,13 @@ async _sellToMerchant(itemId, sellerUuid = "") {
    * @param {object} options   — { threshold, energyCostPerReroll }
    */
   async _universalDiceRoll(skillKey, label, options = {}) {
-    const actor = this._getActorForState();
-    const skill = actor.system.skills?.[skillKey];
-    if (!skill) { ui.notifications.warn(`Навык ${skillKey} не найден`); return; }
-
-    const skillValue = Number(skill.value ?? 1);
-    const dieSize    = Math.max(2, skillValue * 2);
-    const threshold  = options.threshold ?? null;
-
-    // Диалог выбора стратегии
-    const strategy = await new Promise(resolve => {
-      const hasThreshold = threshold !== null;
-      const dlg = new Dialog({
-        title: `🎲 ${label}`,
-        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-            <span style="color:#6a7d99;font-size:12px;">Навык:</span>
-            <b style="color:#5b9cf6;font-size:18px;">d${dieSize}</b>
-          </div>
-          ${hasThreshold ? `<div style="margin-bottom:10px;padding:6px 10px;background:rgba(91,156,246,0.08);border:1px solid rgba(91,156,246,0.2);border-radius:6px;font-size:12px;">
-            Порог: <b style="color:#e8edf5">${threshold}</b>
-          </div>` : ''}
-          <p style="font-size:11px;color:#6a7d99;margin:0;">Выбери стратегию броска:</p>
-        </div>`,
-        buttons: {
-          simple: {
-            label: "🎲 Один бросок",
-            callback: () => resolve("simple")
-          },
-          reroll: {
-            label: "🔄 До победного",
-            callback: () => resolve("reroll")
-          },
-          ...(hasThreshold ? { target: {
-            label: "🎯 До порога",
-            callback: () => resolve("target")
-          }} : {})
-        },
-        default: "simple",
-        close: () => resolve(null)
-      });
-      dlg.render(true);
+    return performUniversalSkillRoll(this._getActorForState(), skillKey, label, options, {
+      applySkillExp: (skillKey, expLabel) => this._applySkillExp(skillKey, expLabel),
+      dieRoller: (skillValue) => this._explodingDiceRoll(skillValue),
     });
-
-    if (!strategy) return null;
-
-    // ── Стратегия 1: Простой бросок с взрывом куба ──
-    if (strategy === "simple") {
-      const { total, rolls, exploded } = await this._explodingDiceRoll(skillValue);
-      const rollDesc = rolls.map(r => `d${r.die}=${r.result}`).join(" → ");
-      const display  = exploded ? `💥 ${rollDesc}` : `d${dieSize} = ${total}`;
-      const isAnticrit = total === 1 && dieSize > 2;
-
-      let flavor = `<b>${label}</b> — ${display}`;
-      if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 АНТИКРИТ!</span>`;
-      if (threshold !== null) {
-        const hit = total >= threshold;
-        flavor += `<br>${hit
-          ? `<span style="color:#4ade80">✓ Успех (перевес: +${total - threshold})</span>`
-          : `<span style="color:#f87171">✗ Провал</span>`}`;
-      }
-
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: flavor
-      });
-      await this._applySkillExp(skillKey, label);
-      return { total, strategy, success: threshold !== null ? total >= threshold : null };
-    }
-
-    // ── Стратегия 2: До победного (тратит энергию) ──
-    if (strategy === "reroll") {
-      const energyCostPerRoll = options.energyCostPerReroll ?? 10;
-      let attempts = 0;
-      let finalTotal = 0;
-      let satisfied = false;
-      const maxAttempts = 10;
-
-      while (!satisfied && attempts < maxAttempts) {
-        attempts++;
-        const { total, rolls, exploded } = await this._explodingDiceRoll(skillValue);
-        finalTotal = total;
-
-        const rollDesc = rolls.map(r => `d${r.die}=${r.result}`).join(" → ");
-        const display  = exploded ? `💥 ${rollDesc}` : `d${dieSize} = ${total}`;
-        const energy   = Number(actor.system.resources?.energy?.value ?? 0);
-        const canAfford = energy >= energyCostPerRoll;
-
-        const choice = await new Promise(resolve => {
-          const dlg = new Dialog({
-            title: `🔄 ${label} — попытка ${attempts}`,
-            content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
-              <div style="font-size:20px;font-weight:700;color:#e8edf5;text-align:center;margin-bottom:8px;">${display}</div>
-              ${threshold !== null ? `<div style="text-align:center;margin-bottom:8px;color:${total >= threshold ? '#4ade80' : '#f87171'};">
-                ${total >= threshold ? '✓ Успех!' : '✗ Провал'}
-              </div>` : ''}
-              <div style="font-size:11px;color:#6a7d99;text-align:center;">
-                Перебросить: −${energyCostPerRoll} энергии (осталось: ${energy})
-              </div>
-            </div>`,
-            buttons: {
-              keep: { label: "✓ Оставить", callback: () => resolve("keep") },
-              reroll: {
-                label: canAfford ? `🔄 Перебросить (−${energyCostPerRoll}⚡)` : "⚡ Нет энергии",
-                callback: () => resolve(canAfford ? "reroll" : "keep")
-              }
-            },
-            default: "keep",
-            close: () => resolve("keep")
-          });
-          dlg.render(true);
-        });
-
-        if (choice === "keep" || choice === "broke") { satisfied = true; break; }
-
-        // Тратим ресурс
-        if (choice === "reroll_energy") {
-          const newEnergy = Math.max(0, Number(actor.system.resources?.energy?.value ?? 0) - energyCostPerRoll);
-          await actor.update({ "system.resources.energy.value": newEnergy });
-        } else if (choice === "reroll_mana") {
-          const newMana = Math.max(0, Number(actor.system.resources?.mana?.value ?? 0) - energyCostPerRoll);
-          await actor.update({ "system.resources.mana.value": newMana });
-        }
-      }
-
-      let flavor = `<b>${label}</b> — попыток: ${attempts}, итог: <b>${finalTotal}</b>`;
-      if (threshold !== null) {
-        flavor += `<br>${finalTotal >= threshold
-          ? `<span style="color:#4ade80">✓ Успех (перевес: +${finalTotal - threshold})</span>`
-          : `<span style="color:#f87171">✗ Провал</span>`}`;
-      }
-
-      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
-      await this._applySkillExp(skillKey, label);
-      return { total: finalTotal, strategy, success: threshold !== null ? finalTotal >= threshold : null };
-    }
-
-    // ── Стратегия 3: До порога (авто-бросок) ──
-    if (strategy === "target" && threshold !== null) {
-      let total = 0;
-      let attempts = 0;
-      let exploded = false;
-      const maxAttempts = 20;
-
-      // Бросаем автоматически до достижения порога или исчерпания попыток
-      while (total < threshold && attempts < maxAttempts) {
-        attempts++;
-        const result = await this._explodingDiceRoll(skillValue);
-        total = result.total;
-        if (result.exploded) exploded = true;
-        if (total >= threshold) break;
-
-        // Пауза между бросками для визуала
-        await new Promise(r => setTimeout(r, 100));
-      }
-
-      const success = total >= threshold;
-      const margin  = total - threshold;
-      const isAnticrit = total === 1 && dieSize > 2 && attempts === 1;
-
-      let flavor = `<b>${label}</b> — до порога ${threshold}`;
-      flavor += `<br>Попыток: ${attempts}${exploded ? " 💥" : ""}, итог: <b>${total}</b>`;
-      flavor += `<br>${success
-        ? `<span style="color:#4ade80">✓ Успех! Перевес: +${margin}</span>`
-        : `<span style="color:#f87171">✗ Провал после ${attempts} попыток</span>`}`;
-      if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 Антикрит на первом броске!</span>`;
-
-      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
-      await this._applySkillExp(skillKey, label);
-      return { total, strategy, success, margin };
-    }
-
-    return null;
   }
 
-async _performAttack({
+  async _performAttack({
   hand = null,
   skillKey,
   label,
@@ -3258,128 +919,37 @@ async _performAttack({
   applyCondition = null,
   conditionDuration = 0,
   conditionChance   = 1.0,
+  effectNotes = [],
+  rangeOverride = null,
 }) {
     const actor = this._getActorForState();
-    if (!actor.system.resources?.energy) return;
-
-    const currentEnergy = Number(actor.system.resources.energy.value ?? 0);
-    const encumbrance = getEncumbranceInfo(actor);
-    const injuries = getActorInjuryInfo(actor);
-    const derivedConditions = getDerivedConditionState(actor);
-
-if (!derivedConditions.canMeleeAttack) {
-  ui.notifications.warn("Персонаж не может выполнить ближнюю атаку из-за критических травм.");
-  return;
-}
-    // Враждебное действие вне боя — запрашиваем GM
-    if (!isCombatActive() && !game.user?.isGM) {
-      const allowed = await this._requestGmHostileAction(`Атака: ${label}`);
-      if (!allowed) return;
-    }
-    const finalEnergyCost = Math.ceil(Number(energyCost) * encumbrance.energyMultiplier);
-
-    // Модификатор от погоды (дождь штрафует луки, туман — всё)
-    const weatherMod = typeof getWeatherSkillMod === "function"
-      ? getWeatherSkillMod(skillKey)
-      : 0;
-    // Применяем к hitBonus
-    hitBonus = (hitBonus ?? 0) + weatherMod;
-
-    const blockReason = getActionBlockReason(actor, "attack", {
+    return performActorAttack({
+      actor,
       hand,
-      weapon,
-      energyCost
-    });
-
-    if (blockReason) {
-      ui.notifications.warn(blockReason);
-      return;
-    }
-
-    const targets = game.user.targets;
-    if (!targets.size) {
-      ui.notifications.warn("Выберите цель");
-      return;
-    }
-
-    const targetToken = [...targets][0];
-    const targetActor = targetToken?.actor;
-    if (!targetActor) {
-      ui.notifications.warn("У цели нет актёра");
-      return;
-    }
-
-    const skill = actor.system.skills?.[skillKey];
-    if (!skill) {
-      ui.notifications.warn(`У персонажа нет навыка ${skillKey}`);
-      return;
-    }
-
-    // Проверка дальности атаки (range оружия в клетках)
-    const attackerToken = getActorToken(actor);
-    if (attackerToken && targetToken && canvas?.scene) {
-      const dist = getTokenGridDistance(attackerToken, targetToken);
-      const range = weapon ? getWeaponRange(weapon) : (skillKey === "exotic" ? 1 : 1);
-      if (dist > range) {
-        ui.notifications.warn(`Цель вне досягаемости: расстояние ${Math.ceil(dist)} клеток, дальность оружия ${range}`);
-        return;
-      }
-    }
-
-    if (!skipTimeCost) {
-      const timeState = await this._resolveCombatTimeCost({
-        actionType: "attack",
-        label: `Атака: ${label}`,
-        item: weapon,
-        totalSeconds: this._getCombatActionSeconds("attack", weapon),
-        payload: {
-          hand,
-          skillKey,
-          damageType,
-          label,
-          baseDamage,
-          energyCost,
-          weaponId: weapon?.id ?? ""
-        }
-      });
-
-      if (timeState?.queued) return;
-      if (!timeState?.ok)    return;
-    }
-
-    // Окружение (сколько целей атакует игрок одновременно)
-    const targetsCount = [...(game.user?.targets ?? [])].length;
-    const surroundCount = targetsCount > 1 ? targetsCount - 1 : 0;
-
-    // Боевой пайплайн целиком — в сервисе.
-    const result = await resolveSingleAttack({
-      attacker:      actor,
-      target:        targetActor,
       skillKey,
-      baseDamage,
+      label,
       damageType,
+      baseDamage,
       energyCost,
       weapon,
       hitBonus,
       ignoreArmor,
       targetZone,
-      surroundCount,
-      encumbrance,
-      injuries,
-      dieRoller: (sv) => this._explodingDiceRoll(sv),
-      onLethal:  (a) => this._markActorDead(a),
+      aimed,
+      technique,
+      applyCondition,
+      conditionDuration,
+      conditionChance,
+      effectNotes,
+      rangeOverride,
+      requireSettledInventory: (actionLabel) => this._requireSettledInventory(actionLabel),
+      resolveCombatTimeCost: (args) => this._resolveCombatTimeCost(args),
+      requestHostileAction: (actionLabel) => this._requestGmHostileAction(actionLabel),
+      dieRoller: (skillValue) => this._explodingDiceRoll(skillValue),
+      onLethal: (target) => this._markActorDead(target),
+      applySkillExp: (skillKey, expLabel) => this._applySkillExp(skillKey, expLabel),
+      afterAttack: () => this.render(false),
     });
-    if (!result) return;
-
-    const content = await formatAttackChatHtml({
-      label, skillKey, attacker: actor, target: targetActor, result,
-    });
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content,
-    });
-    await this._applySkillExp(skillKey, label);
-    this.render(false);
   }
 
   activateListeners(html) {
@@ -3415,11 +985,6 @@ if (!derivedConditions.canMeleeAttack) {
       await this._endCombatTurn();
     });
 
-    html.find("[data-trade-character-select]").on("change", async event => {
-      event.preventDefault();
-      await this._setTradeCharacter(event.currentTarget.value);
-    });
-
         html.find("[data-start-combat]").on("click", async event => {
       event.preventDefault();
       await this._startCombatFromSheet();
@@ -3445,10 +1010,10 @@ if (!derivedConditions.canMeleeAttack) {
       await this._cancelPendingCombatAction();
     });
 
-    html.find("[data-open-trade-app]").on("click", event => {
+    html.find("[data-open-trade-app]").on("click", async event => {
       event.preventDefault();
       event.stopPropagation();
-      this._openTradeWindow();
+      await this._openTradeWindow();
     });
 
     html.find("[data-skill-roll]").on("click", async event => {
@@ -3513,22 +1078,38 @@ if (!derivedConditions.canMeleeAttack) {
 
     html.find("[data-consume-food]").on("click", async event => {
       event.preventDefault();
-      await this._consumeFood(event.currentTarget.dataset.itemId);
+      await this._useItemByType(event.currentTarget.dataset.itemId, {
+        allowedTypes: ["food"],
+        missingMessage: "Предмет не найден или не является едой",
+        unsupportedMessage: "Предмет не найден или не является едой",
+      });
     });
 
     html.find("[data-use-potion]").on("click", async event => {
       event.preventDefault();
-      await this._usePotion(event.currentTarget.dataset.itemId);
+      await this._useItemByType(event.currentTarget.dataset.itemId, {
+        allowedTypes: ["potion"],
+        missingMessage: "Зелье не найдено",
+        unsupportedMessage: "Зелье не найдено",
+      });
     });
 
     html.find("[data-use-consumable]").on("click", async event => {
       event.preventDefault();
-      await this._useConsumable(event.currentTarget.dataset.itemId);
+      await this._useItemByType(event.currentTarget.dataset.itemId, {
+        allowedTypes: ["consumable"],
+        missingMessage: "Расходник не найден",
+        unsupportedMessage: "Расходник не найден",
+      });
     });
 
     html.find("[data-use-throwable]").on("click", async event => {
       event.preventDefault();
-      await this._useThrowable(event.currentTarget.dataset.itemId);
+      await this._useItemByType(event.currentTarget.dataset.itemId, {
+        allowedTypes: ["throwable"],
+        missingMessage: "Метательный предмет не найден",
+        unsupportedMessage: "Метательный предмет не найден",
+      });
     });
 
     html.find("[data-short-rest]").on("click", async event => {

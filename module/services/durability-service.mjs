@@ -1,3 +1,5 @@
+import { coinsToCopper, currencyUpdateData } from "../utils/currency.mjs";
+
 /**
  * Iron Hills — Durability Service
  * Прочность предметов: снижение, штрафы, ремонт.
@@ -152,19 +154,12 @@ export async function repairItem(item, payer = null, free = false) {
   const max  = Number(item.system?.durability?.max ?? 100);
 
   if (!free && cost > 0 && payer) {
-    const cur = payer.system?.currency ?? {};
-    const coins = (Number(cur.copper??0)) + (Number(cur.silver??0))*100
-                + (Number(cur.gold??0))*10000 + (Number(cur.platinum??0))*1000000;
+    const coins = coinsToCopper(payer.system?.currency ?? {});
     if (coins < cost) {
       ui.notifications.error(`Не хватает монет: нужно ${cost} мед., есть ${coins} мед.`);
       return false;
     }
-    const remaining = coins - cost;
-    await payer.update({
-      "system.currency.gold":   Math.floor(remaining / 10000),
-      "system.currency.silver": Math.floor((remaining % 10000) / 100),
-      "system.currency.copper": remaining % 100,
-    });
+    await payer.update(currencyUpdateData("system.currency", coins - cost));
   }
 
   await item.update({ "system.durability.value": max });

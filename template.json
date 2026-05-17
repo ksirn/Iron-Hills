@@ -8,6 +8,8 @@
       "container",
       "settlement",
       "poi",
+      "quest",
+      "relation",
       "monster",
       "party",
       "group",
@@ -18,32 +20,88 @@
         "resources": {
           "hp": {
             "head": {
-              "value": 10,
-              "max": 10
+              "value": 35,
+              "max": 35,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "torso": {
-              "value": 30,
-              "max": 30
+              "value": 85,
+              "max": 85,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "abdomen": {
-              "value": 25,
-              "max": 25
+              "value": 70,
+              "max": 70,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "leftArm": {
-              "value": 20,
-              "max": 20
+              "value": 60,
+              "max": 60,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "rightArm": {
-              "value": 20,
-              "max": 20
+              "value": 60,
+              "max": 60,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "leftLeg": {
-              "value": 20,
-              "max": 20
+              "value": 65,
+              "max": 65,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             },
             "rightLeg": {
-              "value": 20,
-              "max": 20
+              "value": 65,
+              "max": 65,
+              "status": {
+                "minorBleeding": 0,
+                "majorBleeding": 0,
+                "fracture": false,
+                "destroyed": false,
+                "splinted": false,
+                "tourniquet": false
+              }
             }
           },
           "energy": {
@@ -111,7 +169,23 @@
           "feared": 0,
           "hasted": 0,
           "slowed": 0,
-          "unconscious": 0
+          "unconscious": 0,
+          "exposed": 0,
+          "pushed": 0,
+          "prone": 0,
+          "shield_lost": 0,
+          "armor_cracked": 0,
+          "broken_limb": 0,
+          "grappled": 0,
+          "sleeping": 0,
+          "disarmed": 0,
+          "aimed_shot_bonus": 0,
+          "formation_stance": 0,
+          "shield_wall_formation": 0,
+          "riposte_ready": 0,
+          "counter_ready": 0,
+          "intercept_ready": 0,
+          "rapid_reload": 0
         },
         "initiative": 10,
         "diseases": {}
@@ -162,13 +236,21 @@
         "slot5": "",
         "slot6": ""
       },
+      "currency": {
+        "copper": 0,
+        "silver": 0,
+        "gold": 0
+      },
       "info": {
         "race": "",
         "age": 0
       },
       "combat": {
         "defense": 6,
-        "unarmedDamage": 1
+        "unarmedDamage": 5
+      },
+      "craft": {
+        "knownRecipeIds": ["copper_knife", "cooked_stew", "cook_field_stew", "minor_heal_potion", "smelt_copper"]
       },
       "skills": {
         "athletics": {
@@ -438,7 +520,7 @@
       ],
       "combat": {
         "baseThreshold": 4,
-        "unarmedDamage": 2,
+        "unarmedDamage": 10,
         "unarmedSkill": 1,
         "shield": false
       },
@@ -454,7 +536,14 @@
         "role": "",
         "faction": "",
         "tier": 1,
-        "settlement": ""
+        "settlement": "",
+        "desc": "",
+        "notes": "",
+        "lootTable": "",
+        "bestiaryId": "",
+        "corpseLootMode": "wild",
+        "allowPickpocket": true,
+        "pickpocketTable": ""
       },
       "skills": {
         "athletics": {
@@ -491,7 +580,23 @@
         "stunned": 0,
         "hasted": 0,
         "slowed": 0,
-        "unconscious": 0
+        "unconscious": 0,
+        "exposed": 0,
+        "pushed": 0,
+        "prone": 0,
+        "shield_lost": 0,
+        "armor_cracked": 0,
+        "broken_limb": 0,
+        "grappled": 0,
+        "sleeping": 0,
+        "disarmed": 0,
+        "aimed_shot_bonus": 0,
+        "formation_stance": 0,
+        "shield_wall_formation": 0,
+        "riposte_ready": 0,
+        "counter_ready": 0,
+        "intercept_ready": 0,
+        "rapid_reload": 0
       },
       "initiative": 10,
       "personalRep": {}
@@ -516,8 +621,7 @@
       "currency": {
         "copper": 0,
         "silver": 0,
-        "gold": 0,
-        "platinum": 0
+        "gold": 0
       },
       "personalRep": {}
     },
@@ -581,7 +685,8 @@
         "faction": "",
         "theme": "bandit",
         "discoveryDC": 6,
-        "distance": "1 день"
+        "distance": "1 день",
+        "hasFreshWater": false
       },
       "state": {
         "lootRating": 3,
@@ -612,6 +717,19 @@
       "settlementRep": {},
       "log": []
     },
+    "quest": {},
+    "relation": {
+      "info": {
+        "characterName": "",
+        "targetType": "settlement",
+        "targetName": "",
+        "score": 0,
+        "tier": "neutral",
+        "notes": "",
+        "targetId": "",
+        "characterId": ""
+      }
+    },
     "monster": {
       "templates": [],
       "resources": {
@@ -636,14 +754,18 @@
       },
       "combat": {
         "baseThreshold": 4,
-        "unarmedDamage": 5,
+        "unarmedDamage": 25,
         "unarmedSkill": 3,
         "attackSkill": 3
       },
       "info": {
         "role": "",
         "tier": 1,
-        "faction": ""
+        "faction": "",
+        "desc": "",
+        "lootPool": "",
+        "lootTable": "",
+        "bestiaryId": ""
       },
       "conditions": {
         "stunned": 0,
@@ -651,7 +773,23 @@
         "burning": 0,
         "hasted": 0,
         "slowed": 0,
-        "unconscious": 0
+        "unconscious": 0,
+        "exposed": 0,
+        "pushed": 0,
+        "prone": 0,
+        "shield_lost": 0,
+        "armor_cracked": 0,
+        "broken_limb": 0,
+        "grappled": 0,
+        "sleeping": 0,
+        "disarmed": 0,
+        "aimed_shot_bonus": 0,
+        "formation_stance": 0,
+        "shield_wall_formation": 0,
+        "riposte_ready": 0,
+        "counter_ready": 0,
+        "intercept_ready": 0,
+        "rapid_reload": 0
       },
       "initiative": 10,
       "loot": []
@@ -666,6 +804,14 @@
       "dailyCostCopper": 0
     },
     "partyGroup": {
+      "label": "",
+      "color": "#5b9cf6",
+      "isActive": false,
+      "localTime": 0,
+      "location": "",
+      "status": "idle"
+    },
+    "group": {
       "label": "",
       "color": "#5b9cf6",
       "isActive": false,
@@ -921,10 +1067,13 @@
       "manaCost": 0,
       "energyCost": 0,
       "power": 1,
+      "effectType": "",
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
       "targetPart": "",
+      "targetZone": "",
+      "friendlyFire": false,
       "gridW": 1,
       "gridH": 1,
       "identified": true,
@@ -942,6 +1091,9 @@
       "weight": 1,
       "quantity": 1,
       "power": 1,
+      "value": 0,
+      "duration": 0,
+      "effectType": "",
       "actionType": "",
       "applicationScope": "global",
       "targetActorMode": "self",
@@ -962,10 +1114,13 @@
       "manaCost": 0,
       "energyCost": 0,
       "power": 1,
+      "effectType": "",
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
       "targetPart": "",
+      "targetZone": "",
+      "friendlyFire": false,
       "gridW": 1,
       "gridH": 2
     },
@@ -979,6 +1134,15 @@
       "power": 2,
       "energyCost": 8,
       "targetPart": "torso",
+      "targetZone": "",
+      "friendlyFire": false,
+      "aoe": {
+        "type": "blast",
+        "shape": "circle",
+        "distance": 0,
+        "maxTargets": 0,
+        "chainDecay": 1
+      },
       "appliesPoison": 0,
       "appliesBurning": 0,
       "gridW": 1,
@@ -994,6 +1158,11 @@
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
       "targetPart": "",
+      "vesselMax": 0,
+      "vesselCurrent": 0,
+      "vesselHydrationPerDrink": 0,
+      "vesselSatietyPerDrink": 0,
+      "vesselLiquidLabel": "",
       "gridW": 1,
       "gridH": 1
     },

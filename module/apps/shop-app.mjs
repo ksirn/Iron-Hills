@@ -6,7 +6,8 @@ import {
   generateMerchantStock, MERCHANT_TYPES, SETTLEMENT_TIERS, getMerchantsForTier,
   ECONOMY_STATES, getSettlementEconomy, setSettlementEconomy,
 } from "../services/merchant-service.mjs";
-import { formatCurrency } from "../utils/currency.mjs";
+import { addItemToActorOrStack } from "../services/trade-service.mjs";
+import { coinsToCopper, formatCurrency } from "../utils/currency.mjs";
 
 class IronHillsShopApp extends Application {
   constructor(options = {}) {
@@ -70,12 +71,7 @@ class IronHillsShopApp extends Application {
 
     // Монеты покупателя
     const buyer     = this._buyer;
-    const buyerCoins = buyer
-      ? (Number(buyer.system?.currency?.copper   ?? 0)
-       + Number(buyer.system?.currency?.silver   ?? 0) * 100
-       + Number(buyer.system?.currency?.gold     ?? 0) * 10000
-       + Number(buyer.system?.currency?.platinum ?? 0) * 1000000)
-      : 0;
+    const buyerCoins = buyer ? coinsToCopper(buyer.system?.currency ?? {}) : 0;
 
     // Уникальные тиры в ассортименте
     const tiers = [...new Set(this._stock.map(i => i.tier))].sort((a,b) => a-b);
@@ -157,6 +153,12 @@ class IronHillsShopApp extends Application {
       const buyer = this._buyer ?? game.user?.character;
       if (!buyer) { ui.notifications.warn("Нет персонажа для покупки"); return; }
 
+      const { requireNoPendingInventory } = await import("./pending-items-app.mjs").catch(() => ({}));
+      const pendingCheck = requireNoPendingInventory
+        ? await requireNoPendingInventory(buyer, { actionLabel: "покупка" })
+        : { ok: true };
+      if (!pendingCheck.ok) return;
+
       const coins = Number(buyer.system?.resources?.coins?.copper ?? 0)
                   + Number(buyer.system?.resources?.coins?.silver ?? 0) * 100
                   + Number(buyer.system?.resources?.coins?.gold   ?? 0) * 10000;
@@ -179,7 +181,7 @@ class IronHillsShopApp extends Application {
 
       // Добавляем предмет в инвентарь
       const itemData = _buildItemData(item);
-      await Item.create(itemData, { parent: buyer });
+      await addItemToActorOrStack(buyer, itemData);
 
       ui.notifications.info(`${buyer.name} купил ${item.label} за ${formatCurrency(item.shopPrice)}`);
 
@@ -187,6 +189,8 @@ class IronHillsShopApp extends Application {
         content: `<div style="padding:6px">🏪 <b>${buyer.name}</b> купил <b>${item.label}</b> за ${formatCurrency(item.shopPrice)}</div>`
       });
 
+      const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
+      await PendingItemsApp?.openIfNeeded?.(buyer);
       this.render(false);
     });
   }

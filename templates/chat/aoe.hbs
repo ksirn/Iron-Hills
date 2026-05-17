@@ -10,7 +10,7 @@
   <br>
   {{#each results}}
     {{#if this.hit}}
-      ✓ {{this.name}}: <b>{{this.damage}}</b> {{localize "IRONHILLS.Chat.Aoe.LineHit"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if (gt this.armor 0)}}, броня −{{this.armor}}{{/if}}{{#if this.condition}}, {{this.condition}}{{/if}})
+      ✓ {{this.name}}: <b>{{this.damage}}</b> {{localize "IRONHILLS.Chat.Aoe.LineHit"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}}{{#if (gt this.armor 0)}}, броня −{{this.armor}}{{/if}}{{#if this.condition}}, {{this.condition}}{{/if}})
     {{else}}
       ✗ {{this.name}}: {{localize "IRONHILLS.Chat.Aoe.LineMiss"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}})
     {{/if}}

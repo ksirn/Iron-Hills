@@ -1,0 +1,617 @@
+{
+  "negative": "text, watermark, logo, signature, blurry, low quality, cluttered warehouse wide shot, multiple objects collage, human face full portrait, holding hands visible, nsfw",
+  "items": [
+    {
+      "category": "attachments",
+      "id": "arrow_quiver",
+      "name": "Колчан (стрелы)",
+      "tier": 1,
+      "weight": 0.5,
+      "value": 10,
+      "prompt": "Concept \"Колчан (стрелы)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "axe_loop",
+      "name": "Петля (топор)",
+      "tier": 1,
+      "weight": 0.2,
+      "value": 8,
+      "prompt": "Concept \"Петля (топор)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "bolt_pouch",
+      "name": "Подсумок (болты)",
+      "tier": 1,
+      "weight": 0.3,
+      "value": 8,
+      "prompt": "Concept \"Подсумок (болты)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "bow_sling",
+      "name": "Перевязь (лук)",
+      "tier": 1,
+      "weight": 0.3,
+      "value": 12,
+      "prompt": "Concept \"Перевязь (лук)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "chest_pocket",
+      "name": "Нагрудный карман",
+      "tier": 1,
+      "weight": 0.1,
+      "value": 8,
+      "prompt": "Concept \"Нагрудный карман\", torso harness modular straps threaded clips climbing buckle tactical vest snippet; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "cooking_pot",
+      "name": "Котелок",
+      "tier": 1,
+      "weight": 2,
+      "value": 6,
+      "prompt": "Concept \"Котелок\", emphasis handheld toolkit readable silhouette compact bench fold hinges, iron grate kettle pans stacked crates skewers steam, modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "flint_tools",
+      "name": "Кремнёвые инструменты",
+      "tier": 1,
+      "weight": 1,
+      "value": 5,
+      "prompt": "Concept \"Кремнёвые инструменты\", emphasis handheld toolkit readable silhouette compact bench fold hinges, vise clamps rulers drawers pegboard folded bench legs sawdust, modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "hip_pouch",
+      "name": "Поясная сумка",
+      "tier": 1,
+      "weight": 0.3,
+      "value": 8,
+      "prompt": "Concept \"Поясная сумка\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "iron_hammer",
+      "name": "Железный молот",
+      "tier": 1,
+      "weight": 2,
+      "value": 10,
+      "prompt": "Concept \"Железный молот\", emphasis handheld toolkit readable silhouette compact bench fold hinges, forge tongs hammer anvil sparks soot, modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "knife_sheath",
+      "name": "Ножны (нож)",
+      "tier": 1,
+      "weight": 0.2,
+      "value": 5,
+      "prompt": "Concept \"Ножны (нож)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "leather_belt",
+      "name": "Кожаный пояс",
+      "tier": 1,
+      "weight": 0.5,
+      "value": 12,
+      "prompt": "Concept \"Кожаный пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 3 pouch slots narrative hint and 1 side mounts for weapon frogs quivers holsters; leather textile mixed metals; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "leather_satchel",
+      "name": "Кожаная сумка",
+      "tier": 1,
+      "weight": 0.8,
+      "value": 20,
+      "prompt": "Concept \"Кожаная сумка\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "mortar_pestle",
+      "name": "Ступка и пестик",
+      "tier": 1,
+      "weight": 1,
+      "value": 8,
+      "prompt": "Concept \"Ступка и пестик\", emphasis handheld toolkit readable silhouette compact bench fold hinges, glass retorts clamps burner coils bottles racks, modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "pickaxe_iron",
+      "name": "Железная кирка",
+      "tier": 1,
+      "weight": 3,
+      "value": 15,
+      "prompt": "Concept \"Железная кирка\", emphasis handheld toolkit readable silhouette compact bench fold hinges, pickaxe drill brace crank cables reinforcement plate, modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "potion_bandolier",
+      "name": "Бандольер (зелья)",
+      "tier": 1,
+      "weight": 0.4,
+      "value": 18,
+      "prompt": "Concept \"Бандольер (зелья)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "rope_belt",
+      "name": "Верёвочный пояс",
+      "tier": 1,
+      "weight": 0.3,
+      "value": 3,
+      "prompt": "Concept \"Верёвочный пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 2 pouch slots narrative hint and 0 side mounts for weapon frogs quivers holsters; leather textile mixed metals; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "side_pouch",
+      "name": "Боковой подсумок",
+      "tier": 1,
+      "weight": 0.3,
+      "value": 12,
+      "prompt": "Concept \"Боковой подсумок\", mount bracket modular pouch snaps clips backpack accessory riveted straps; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "small_sack",
+      "name": "Небольшой мешок",
+      "tier": 1,
+      "weight": 0.5,
+      "value": 5,
+      "prompt": "Concept \"Небольшой мешок\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "sword_scabbard",
+      "name": "Ножны (меч)",
+      "tier": 1,
+      "weight": 0.4,
+      "value": 15,
+      "prompt": "Concept \"Ножны (меч)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; modest worn traveler gear, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "alch_kit",
+      "name": "Алхимический набор",
+      "tier": 2,
+      "weight": 3,
+      "value": 60,
+      "prompt": "Concept \"Алхимический набор\", emphasis handheld toolkit readable silhouette compact bench fold hinges, glass retorts clamps burner coils bottles racks, reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "crossbow_hook",
+      "name": "Крюк (арбалет)",
+      "tier": 2,
+      "weight": 0.3,
+      "value": 25,
+      "prompt": "Concept \"Крюк (арбалет)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "greatsword_scabbard",
+      "name": "Ножны (двуруч.)",
+      "tier": 2,
+      "weight": 0.6,
+      "value": 30,
+      "prompt": "Concept \"Ножны (двуруч.)\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "hunters_bag",
+      "name": "Охотничья сума",
+      "tier": 2,
+      "weight": 1,
+      "value": 60,
+      "prompt": "Concept \"Охотничья сума\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "large_bandolier",
+      "name": "Бандольер большой",
+      "tier": 2,
+      "weight": 0.6,
+      "value": 35,
+      "prompt": "Concept \"Бандольер большой\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "master_tools",
+      "name": "Инструменты мастера",
+      "tier": 2,
+      "weight": 2,
+      "value": 50,
+      "prompt": "Concept \"Инструменты мастера\", emphasis handheld toolkit readable silhouette compact bench fold hinges, vise clamps rulers drawers pegboard folded bench legs sawdust, reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "pickaxe_steel",
+      "name": "Стальная кирка",
+      "tier": 2,
+      "weight": 3,
+      "value": 40,
+      "prompt": "Concept \"Стальная кирка\", emphasis handheld toolkit readable silhouette compact bench fold hinges, pickaxe drill brace crank cables reinforcement plate, reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "shield_hook",
+      "name": "Крюк для щита",
+      "tier": 2,
+      "weight": 0.35,
+      "value": 28,
+      "prompt": "Concept \"Крюк для щита\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "soldier_belt",
+      "name": "Солдатский пояс",
+      "tier": 2,
+      "weight": 0.8,
+      "value": 40,
+      "prompt": "Concept \"Солдатский пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 4 pouch slots narrative hint and 2 side mounts for weapon frogs quivers holsters; leather textile mixed metals; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "soldier_pack",
+      "name": "Солдатский ранец",
+      "tier": 2,
+      "weight": 1.5,
+      "value": 70,
+      "prompt": "Concept \"Солдатский ранец\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "spear_frog",
+      "name": "Чехол для копья",
+      "tier": 2,
+      "weight": 0.35,
+      "value": 22,
+      "prompt": "Concept \"Чехол для копья\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "steel_hammer",
+      "name": "Стальной молот",
+      "tier": 2,
+      "weight": 2,
+      "value": 40,
+      "prompt": "Concept \"Стальной молот\", emphasis handheld toolkit readable silhouette compact bench fold hinges, forge tongs hammer anvil sparks soot, reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "travelers_pack",
+      "name": "Дорожный ранец",
+      "tier": 2,
+      "weight": 1.2,
+      "value": 55,
+      "prompt": "Concept \"Дорожный ранец\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "utility_strap",
+      "name": "Разгрузочная стропа",
+      "tier": 2,
+      "weight": 0.3,
+      "value": 30,
+      "prompt": "Concept \"Разгрузочная стропа\", torso harness modular straps threaded clips climbing buckle tactical vest snippet; weapon accessory silhouette readable silhouette empty slots implied; reliable soldier surplus quality, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "bronze_brazier_set",
+      "name": "Бронзовый жаровенный набор",
+      "tier": 3,
+      "weight": 8,
+      "value": 280,
+      "prompt": "Concept \"Бронзовый жаровенный набор\", emphasis handheld toolkit readable silhouette compact bench fold hinges, iron grate kettle pans stacked crates skewers steam, guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Жаровня на треноге и котлы для полевых отрядов — база перед сборкой большой кухни на салазках.. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "dwarven_hammer",
+      "name": "Гномий молот",
+      "tier": 3,
+      "weight": 2,
+      "value": 150,
+      "prompt": "Concept \"Гномий молот\", emphasis handheld toolkit readable silhouette compact bench fold hinges, forge tongs hammer anvil sparks soot, guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "fold_sawhorse_pair",
+      "name": "Пара складных козёл",
+      "tier": 3,
+      "weight": 12,
+      "value": 90,
+      "prompt": "Concept \"Пара складных козёл\", emphasis handheld toolkit readable silhouette compact bench fold hinges, vise clamps rulers drawers pegboard folded bench legs sawdust, guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Для распила и сборки заготовок в полевых условиях.. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "frame_pack",
+      "name": "Рамный рюкзак",
+      "tier": 3,
+      "weight": 2.5,
+      "value": 200,
+      "prompt": "Concept \"Рамный рюкзак\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "grand_alch_kit",
+      "name": "Большая алхим. лаб.",
+      "tier": 3,
+      "weight": 5,
+      "value": 200,
+      "prompt": "Concept \"Большая алхим. лаб.\", emphasis handheld toolkit readable silhouette compact bench fold hinges, glass retorts clamps burner coils bottles racks, guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration.  --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "large_backpack",
+      "name": "Большой рюкзак",
+      "tier": 3,
+      "weight": 2,
+      "value": 150,
+      "prompt": "Concept \"Большой рюкзак\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "tactical_belt",
+      "name": "Тактический пояс",
+      "tier": 3,
+      "weight": 1,
+      "value": 120,
+      "prompt": "Concept \"Тактический пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 10 pouch slots narrative hint and 3 side mounts for weapon frogs quivers holsters; leather textile mixed metals; guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "travel_anvil_kit",
+      "name": "Дорожная наковальня в ящике",
+      "tier": 3,
+      "weight": 22,
+      "value": 280,
+      "prompt": "Concept \"Дорожная наковальня в ящике\", emphasis bulky wagon planks reinforced hinges straps draft-animal towing cues, forge tongs hammer anvil sparks soot, guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Складная наковальня и малый горн в деревянном коробе. Тянет упряжка или два крепких грузчика.. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "wand_loop",
+      "name": "Петля для жезла",
+      "tier": 3,
+      "weight": 0.15,
+      "value": 55,
+      "prompt": "Concept \"Петля для жезла\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; guild craftsman upgraded fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "alchemist_satchel",
+      "name": "Сумка алхимика",
+      "tier": 4,
+      "weight": 1.5,
+      "value": 300,
+      "prompt": "Concept \"Сумка алхимика\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "deep_drill_brace",
+      "name": "Шахтёрский бурильный станок",
+      "tier": 4,
+      "weight": 28,
+      "value": 520,
+      "prompt": "Concept \"Шахтёрский бурильный станок\", emphasis bulky wagon planks reinforced hinges straps draft-animal towing cues, pickaxe drill brace crank cables reinforcement plate, merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Ручная дрель на станине для узких штолен.. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "explorer_girdle",
+      "name": "Пояс следопыта",
+      "tier": 4,
+      "weight": 1.1,
+      "value": 210,
+      "prompt": "Concept \"Пояс следопыта\", fantasy waist belt pouches straps buckle studs utility loops; roughly 10 pouch slots narrative hint and 4 side mounts for weapon frogs quivers holsters; leather textile mixed metals; merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "field_kitchen_cart",
+      "name": "Полевая кухня на салазках",
+      "tier": 4,
+      "weight": 38,
+      "value": 660,
+      "prompt": "Concept \"Полевая кухня на салазках\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, iron grate kettle pans stacked crates skewers steam, merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Плита, жаровня и ящик для продуктов. Нужна лошадь или несколько грузоносцев.. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "folding_alchemy_bench",
+      "name": "Складной алхимический стол",
+      "tier": 4,
+      "weight": 18,
+      "value": 740,
+      "prompt": "Concept \"Складной алхимический стол\", emphasis bulky wagon planks reinforced hinges straps draft-animal towing cues, glass retorts clamps burner coils bottles racks, merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Стойки, зажимы и подставки под колбы складываются в один ящик.. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "grenade_loop",
+      "name": "Кольца под метательное",
+      "tier": 4,
+      "weight": 0.25,
+      "value": 95,
+      "prompt": "Concept \"Кольца под метательное\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "portable_smith_kit",
+      "name": "Переносная кузница",
+      "tier": 4,
+      "weight": 48,
+      "value": 920,
+      "prompt": "Concept \"Переносная кузница\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, forge tongs hammer anvil sparks soot, merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Горн, малая наковальня и салазки. Выставляется за час; перевозится на телеге или двух быках.. --ar 1:1"
+    },
+    {
+      "category": "attachments",
+      "id": "telescoping_quiver",
+      "name": "Телескопический колчан",
+      "tier": 4,
+      "weight": 0.65,
+      "value": 140,
+      "prompt": "Concept \"Телескопический колчан\", belt-mounted frog strap buckle swivel clips hanger bracket fantasy utility; weapon accessory silhouette readable silhouette empty slots implied; merchant caravan rugged prestige, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "master_artisans_cart",
+      "name": "Стол ремесленника на колёсах",
+      "tier": 5,
+      "weight": 42,
+      "value": 1550,
+      "prompt": "Concept \"Стол ремесленника на колёсах\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, vise clamps rulers drawers pegboard folded bench legs sawdust, noble artisan embossed fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Ящики с оснасткой для столярки, кожи и мелкой ковки в одном фургончике.. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "mithril_belt",
+      "name": "Митрильный пояс",
+      "tier": 5,
+      "weight": 0.5,
+      "value": 800,
+      "prompt": "Concept \"Митрильный пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 12 pouch slots narrative hint and 4 side mounts for weapon frogs quivers holsters; leather textile mixed metals; noble artisan embossed fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "mithril_pack",
+      "name": "Митрильный рюкзак",
+      "tier": 5,
+      "weight": 1,
+      "value": 1200,
+      "prompt": "Concept \"Митрильный рюкзак\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; noble artisan embossed fittings, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "caravan_master_pack",
+      "name": "Рюкзак караванного бариши",
+      "tier": 6,
+      "weight": 2.2,
+      "value": 2150,
+      "prompt": "Concept \"Рюкзак караванного бариши\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; elite siege train officer workshop, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "siege_belt",
+      "name": "Осадный пояс",
+      "tier": 6,
+      "weight": 1.8,
+      "value": 2200,
+      "prompt": "Concept \"Осадный пояс\", fantasy waist belt pouches straps buckle studs utility loops; roughly 12 pouch slots narrative hint and 5 side mounts for weapon frogs quivers holsters; leather textile mixed metals; elite siege train officer workshop, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "steam_evaporator_kit",
+      "name": "Паровая перегонная установка",
+      "tier": 6,
+      "weight": 58,
+      "value": 3950,
+      "prompt": "Concept \"Паровая перегонная установка\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, glass retorts clamps burner coils bottles racks, elite siege train officer workshop, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Медные змеевики и котёл; тяжёл, зато чистые фракции.. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "tunnel_jack_system",
+      "name": "Комплект туннельных лесов",
+      "tier": 6,
+      "weight": 52,
+      "value": 3400,
+      "prompt": "Concept \"Комплект туннельных лесов\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, pickaxe drill brace crank cables reinforcement plate, elite siege train officer workshop, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Распорки и лебёдка для укрепления забоя.. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "wagon_forge",
+      "name": "Кузница на колёсах",
+      "tier": 6,
+      "weight": 118,
+      "value": 4800,
+      "prompt": "Concept \"Кузница на колёсах\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, forge tongs hammer anvil sparks soot, elite siege train officer workshop, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Полноценный горн и средняя наковальня на двухосяном тележном ходу. Обычно тянет пара мулов или один упряжный зверь.. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "alchemical_caravan_lab",
+      "name": "Караванная алхимлаборатория",
+      "tier": 7,
+      "weight": 98,
+      "value": 11200,
+      "prompt": "Concept \"Караванная алхимлаборатория\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, glass retorts clamps burner coils bottles racks, rare siege caravan engineered spectacle, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Два стола, витражи с реагентами и фиксация колб — груз на фургон.. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "beast_load_frame",
+      "name": "Вьючная рама для зверя",
+      "tier": 7,
+      "weight": 8,
+      "value": 4200,
+      "prompt": "Concept \"Вьючная рама для зверя\", emphasis saddle straps beast harness mount frames oversized haul bag meant for draft animal NOT worn by human silhouette alonefantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; rare siege caravan engineered spectacle, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "runners_light_harness",
+      "name": "Облегчённая портупея бегуна",
+      "tier": 7,
+      "weight": 0.85,
+      "value": 2450,
+      "prompt": "Concept \"Облегчённая портупея бегуна\", fantasy waist belt pouches straps buckle studs utility loops; roughly 15 pouch slots narrative hint and 4 side mounts for weapon frogs quivers holsters; leather textile mixed metals; rare siege caravan engineered spectacle, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "siege_anvil_cart",
+      "name": "Осадная переносная кузница",
+      "tier": 7,
+      "weight": 195,
+      "value": 14500,
+      "prompt": "Concept \"Осадная переносная кузница\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, forge tongs hammer anvil sparks soot, rare siege caravan engineered spectacle, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Массивная наковальня и усиленный горн на четырёх колёсах. Тянет упряж четырёх волов или один крупный гуманоид.. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "darkiron_chain_belt",
+      "name": "Цепной пояс из тёмного железа",
+      "tier": 8,
+      "weight": 2.4,
+      "value": 6800,
+      "prompt": "Concept \"Цепной пояс из тёмного железа\", fantasy waist belt pouches straps buckle studs utility loops; roughly 14 pouch slots narrative hint and 6 side mounts for weapon frogs quivers holsters; leather textile mixed metals; starmetal accents artifact hints, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "runic_fold_forge",
+      "name": "Руническая складная горн-тень",
+      "tier": 8,
+      "weight": 72,
+      "value": 32000,
+      "prompt": "Concept \"Руническая складная горн-тень\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, forge tongs hammer anvil sparks soot, starmetal accents artifact hints, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Магически облегчённая рама: вес меньше обычного, но всё ещё не для рюкзака одного человека.. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "void_satchel",
+      "name": "Сумка Пустоты",
+      "tier": 8,
+      "weight": 0.5,
+      "value": 8000,
+      "prompt": "Concept \"Сумка Пустоты\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; starmetal accents artifact hints, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "belts",
+      "id": "orichalcum_girdle",
+      "name": "Пояс Орихалка",
+      "tier": 9,
+      "weight": 1.15,
+      "value": 28500,
+      "prompt": "Concept \"Пояс Орихалка\", fantasy waist belt pouches straps buckle studs utility loops; roughly 16 pouch slots narrative hint and 7 side mounts for weapon frogs quivers holsters; leather textile mixed metals; legendary planar shimmer restrained, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "backpacks",
+      "id": "planar_satchel",
+      "name": "Планарная сумка",
+      "tier": 9,
+      "weight": 3.8,
+      "value": 54000,
+      "prompt": "Concept \"Планарная сумка\", fantasy backpack satchel straps buckles rolled blanket bedroll cues; arcane stitching subtle if high tier; legendary planar shimmer restrained, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. --ar 1:1"
+    },
+    {
+      "category": "tools",
+      "id": "starforge_manifest",
+      "name": "Проявитель звёздной кузницы",
+      "tier": 9,
+      "weight": 88,
+      "value": 88000,
+      "prompt": "Concept \"Проявитель звёздной кузницы\", emphasis massive ox-cart wheels timber beams ropes sweat gloss metal enormous portable forge silhouette, forge tongs hammer anvil sparks soot, legendary planar shimmer restrained, single isolated fantasy RPG inventory icon, centered, transparent or plain dark background, square composition, sharp focus, painterly detailed illustration. Кристаллы-якоря разворачивают временный горн из сгустка тепла и света.. --ar 1:1"
+    }
+  ]
+}

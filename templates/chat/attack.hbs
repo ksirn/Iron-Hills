@@ -26,13 +26,14 @@
   {{/if}}
 {{else}}
   <p><b>{{localize "IRONHILLS.Chat.Attack.Result"}}:</b> {{localize "IRONHILLS.Chat.Attack.ResultHit"}}{{#if (gte result.margin 8)}} ({{localize "IRONHILLS.Chat.Attack.Penetration"}}){{/if}}</p>
-  {{#unless result.targetIsMonster}}
+    {{#unless result.targetIsMonster}}
     {{#if result.locationRoll}}
       <p><b>{{localize "IRONHILLS.Chat.Attack.HitLocation"}}:</b> {{result.locationLabel}} (d20: {{result.locationRoll}})</p>
     {{else}}
       <p><b>{{localize "IRONHILLS.Chat.Attack.HitLocation"}}:</b> {{result.locationLabel}} ({{localize "IRONHILLS.Chat.Attack.Aimed"}})</p>
     {{/if}}
-  {{/unless}}
+    {{#if shieldBlockHtml}}{{{shieldBlockHtml}}}{{/if}}
+    {{/unless}}
   <p><b>{{localize "IRONHILLS.Chat.Attack.Margin"}}:</b> {{result.margin}}</p>
   <p><b>{{localize "IRONHILLS.Chat.Attack.BaseDamage"}}:</b> {{result.baseDamage}}</p>
   <p><b>{{localize "IRONHILLS.Chat.Attack.RawDamage"}}:</b> {{result.rawDamage}}</p>

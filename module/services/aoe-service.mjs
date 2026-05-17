@@ -4,8 +4,10 @@
  */
 import {
   getAttackThreshold,
+  getTargetPartLabel,
 } from "./actor-state-service.mjs";
 import { resolveSingleAttack } from "./combat-attack-service.mjs";
+import { applyHitEffects, healActorBodyPart } from "./hit-effect-service.mjs";
 import { actorsAreAllies } from "./disposition-service.mjs";
 
 // Конфигурация AoE типов
@@ -38,8 +40,8 @@ export const AOE_TYPES = {
  * Использует канонический getAttackThreshold (тот же путь, что и _performAttack).
  * @returns {{ pct:number, color:string, threshold:number, dieSize:number }}
  */
-export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus = 0) {
-  const skillVal = Number(attacker?.system?.skills?.[skillKey]?.value ?? 3);
+export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus = 0, skillValueFallback = null) {
+  const skillVal = Number(attacker?.system?.skills?.[skillKey]?.value ?? skillValueFallback ?? 3);
   const dieSize  = Math.min(20, Math.max(2, skillVal * 2));
 
   const cond = target?.system?.conditions ?? {};
@@ -79,7 +81,7 @@ export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus =
 /**
  * Показать плашки шанса попадания над токенами в зоне
  */
-export function showHitChanceOverlays(tokens, attacker, skillKey, hitBonus = 0, { friendlyFire = false } = {}) {
+export function showHitChanceOverlays(tokens, attacker, skillKey, hitBonus = 0, { friendlyFire = false, skillValueFallback = null } = {}) {
   removeHitChanceOverlays();
 
   for (const token of tokens) {
@@ -103,7 +105,7 @@ export function showHitChanceOverlays(tokens, attacker, skillKey, hitBonus = 0, 
       label     = `🛡 союзник`;
       fillColor = "#7d9aff";
     } else {
-      const chance = calcHitChance(attacker, actor, skillKey, hitBonus);
+      const chance = calcHitChance(attacker, actor, skillKey, hitBonus, skillValueFallback);
       label     = `🎯 ${chance.pct}%`;
       fillColor = chance.color;
     }
@@ -146,7 +148,7 @@ export function removeHitChanceOverlays() {
  * Разместить MeasuredTemplate на сцене и вернуть список попавших токенов.
  * GM кликает куда поставить, игрок видит зону.
  */
-export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4444", attacker = null, skillKey = "unarmed", hitBonus = 0, friendlyFire = false }) {
+export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4444", attacker = null, skillKey = "unarmed", hitBonus = 0, skillValueFallback = null, friendlyFire = false }) {
   if (!canvas?.scene) return null;
 
   const gridSize = canvas.grid?.size ?? 100;
@@ -183,7 +185,7 @@ export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4
         lastX = pos.x; lastY = pos.y;
         const inZone = getTokensInPreviewTemplate(template);
         if (attacker && inZone.length) {
-          showHitChanceOverlays(inZone, attacker, skillKey, hitBonus, { friendlyFire });
+          showHitChanceOverlays(inZone, attacker, skillKey, hitBonus, { friendlyFire, skillValueFallback });
         } else {
           removeHitChanceOverlays();
         }
@@ -194,7 +196,7 @@ export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4
       clearInterval(overlayInterval);
       removeHitChanceOverlays();
       await new Promise(r => setTimeout(r, 100));
-      const targets = getTokensInTemplate(doc);
+      const targets = getTargetEntriesInTemplate(doc);
       resolve({ template: doc, targets });
     });
 
@@ -213,6 +215,89 @@ export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4
 /**
  * Получить токены в preview шаблоне (до его размещения)
  */
+function degreesToRadians(degrees) {
+  return Number(degrees ?? 0) * (Math.PI / 180);
+}
+
+function getTokenCenter(token) {
+  if (!token) return { x: 0, y: 0 };
+  const gridSize = canvas?.grid?.size ?? 100;
+  const width = Number(token.w ?? gridSize);
+  const height = Number(token.h ?? gridSize);
+  return {
+    x: Number(token.x ?? 0) + width / 2,
+    y: Number(token.y ?? 0) + height / 2,
+  };
+}
+
+function findActorToken(actor) {
+  if (!actor?.id || !canvas?.tokens?.placeables) return null;
+  return canvas.tokens.placeables.find(t => t.actor?.id === actor.id) ?? null;
+}
+
+function getAoeTargetActor(target) {
+  if (!target) return null;
+  return target.actor ?? target.document?.actor ?? target;
+}
+
+function getAoeTargetToken(target) {
+  if (!target) return null;
+  if (target.token) return target.token;
+  if (target.document?.actor) return target;
+  return findActorToken(getAoeTargetActor(target));
+}
+
+function getTemplateOrigin(templateDoc, template) {
+  return {
+    x: Number(templateDoc?.x ?? template?.document?.x ?? template?.x ?? 0),
+    y: Number(templateDoc?.y ?? template?.document?.y ?? template?.y ?? 0),
+  };
+}
+
+function getTemplateDirectionVector(templateDoc, template) {
+  const direction = Number(templateDoc?.direction ?? template?.document?.direction ?? template?.direction ?? 0);
+  const radians = degreesToRadians(direction);
+  return {
+    x: Math.cos(radians),
+    y: Math.sin(radians),
+  };
+}
+
+function buildAoeTargetEntry(token, templateDoc, template) {
+  const actor = token?.actor ?? null;
+  const center = getTokenCenter(token);
+  const origin = getTemplateOrigin(templateDoc, template);
+  const direction = getTemplateDirectionVector(templateDoc, template);
+  const dx = center.x - origin.x;
+  const dy = center.y - origin.y;
+
+  return {
+    actor,
+    token,
+    _ihAoe: {
+      centerX: center.x,
+      centerY: center.y,
+      distanceFromOrigin: Math.hypot(dx, dy),
+      projectionFromOrigin: dx * direction.x + dy * direction.y,
+      sideFromOrigin: dx * -direction.y + dy * direction.x,
+    },
+  };
+}
+
+function getAoeMetric(target, key, fallback = 0) {
+  const value = Number(target?._ihAoe?.[key]);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function getTargetDistanceToActor(target, actor) {
+  const token = getAoeTargetToken(target);
+  const actorToken = findActorToken(actor);
+  if (!token || !actorToken) return 0;
+  const a = getTokenCenter(token);
+  const b = getTokenCenter(actorToken);
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
 function getTokensInPreviewTemplate(templateObj) {
   if (!canvas?.tokens?.placeables) return [];
   try {
@@ -227,7 +312,7 @@ function getTokensInPreviewTemplate(templateObj) {
 /**
  * Найти все токены внутри MeasuredTemplate
  */
-export function getTokensInTemplate(templateDoc) {
+function getTargetEntriesInTemplate(templateDoc) {
   if (!canvas?.tokens?.placeables) return [];
 
   const template = canvas.templates?.placeables?.find(t => t.id === templateDoc.id);
@@ -241,7 +326,11 @@ export function getTokensInTemplate(templateDoc) {
       cx - template.x,
       cy - template.y
     ) ?? false;
-  }).map(t => t.actor).filter(Boolean);
+  }).map(token => buildAoeTargetEntry(token, templateDoc, template)).filter(entry => entry.actor);
+}
+
+export function getTokensInTemplate(templateDoc) {
+  return getTargetEntriesInTemplate(templateDoc).map(entry => entry.actor).filter(Boolean);
 }
 
 /**
@@ -254,12 +343,79 @@ export async function removeAoeTemplate(templateDoc, delayMs = 3000) {
   }, delayMs);
 }
 
+export async function applyAoeDamageTemplate({
+  attacker = null,
+  shape = "circle",
+  distance = 1,
+  label = "AoE атака",
+  color = "#ff4444",
+  skillKey = "unarmed",
+  hitBonus = 0,
+  skillValueFallback = null,
+  friendlyFire = false,
+  baseDamage = 0,
+  damageType = "physical",
+  ignoreArmor = 0,
+  aoeType = "blast",
+  maxTargets = null,
+  chainDecay = 1,
+  targetZone = null,
+  effect = null,
+  onTemplatePlaced = null,
+  cleanupDelay = 3000,
+} = {}) {
+  const templateResult = await placeAoeTemplate({
+    aoeType: shape,
+    distance,
+    label,
+    color,
+    attacker,
+    skillKey,
+    hitBonus,
+    skillValueFallback,
+    friendlyFire,
+  });
+
+  if (!templateResult) {
+    return { ok: false, cancelled: true, template: null, targets: [], results: [] };
+  }
+
+  const { template, targets } = templateResult;
+
+  try {
+    await onTemplatePlaced?.(templateResult);
+    const results = await applyAoeDamage({
+      attacker,
+      targets,
+      baseDamage,
+      skillKey,
+      damageType,
+      ignoreArmor,
+      label,
+      aoeType,
+      maxTargets,
+      chainDecay,
+      hitBonus,
+      skillValueFallback,
+      targetZone,
+      effect,
+      friendlyFire,
+    });
+    return { ok: true, cancelled: false, template, targets, results };
+  } finally {
+    await removeAoeTemplate(template, cleanupDelay);
+  }
+}
+
 /**
  * Отфильтровать цели по типу AoE
  */
-export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker) {
+export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker, { excludeAttacker = true } = {}) {
   // Убираем самого атакующего (для nova)
-  let filtered = targets.filter(t => t && t.id !== attacker?.id);
+  let filtered = targets.filter(t => {
+    const actor = getAoeTargetActor(t);
+    return actor && (!excludeAttacker || actor.id !== attacker?.id);
+  });
 
   switch (aoeType) {
     case "blast":
@@ -268,20 +424,23 @@ export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker) {
       break;
     case "pierce":
       // Только первая цель — ближайшая к атакующему
+      filtered.sort((a, b) => {
+        const ap = getAoeMetric(a, "projectionFromOrigin", getTargetDistanceToActor(a, attacker));
+        const bp = getAoeMetric(b, "projectionFromOrigin", getTargetDistanceToActor(b, attacker));
+        if (ap !== bp) return ap - bp;
+        return getAoeMetric(a, "distanceFromOrigin", 0) - getAoeMetric(b, "distanceFromOrigin", 0);
+      });
       filtered = filtered.slice(0, maxTargets ?? 1);
       break;
     case "sweep":
       // Слева направо — сортируем по X, берём maxTargets
-      if (attacker) {
-        const token = canvas?.tokens?.placeables?.find(t => t.actor?.id === attacker.id);
-        if (token) {
-          filtered.sort((a, b) => {
-            const ta = canvas?.tokens?.placeables?.find(t => t.actor?.id === a.id);
-            const tb = canvas?.tokens?.placeables?.find(t => t.actor?.id === b.id);
-            return (ta?.x ?? 0) - (tb?.x ?? 0);
-          });
-        }
-      }
+      filtered.sort((a, b) => {
+        const as = getAoeMetric(a, "sideFromOrigin", getTokenCenter(getAoeTargetToken(a)).x);
+        const bs = getAoeMetric(b, "sideFromOrigin", getTokenCenter(getAoeTargetToken(b)).x);
+        if (as !== bs) return as - bs;
+        return getAoeMetric(a, "distanceFromOrigin", getTargetDistanceToActor(a, attacker))
+          - getAoeMetric(b, "distanceFromOrigin", getTargetDistanceToActor(b, attacker));
+      });
       break;
     case "shards":
       // Случайные N из зоны — тасуем
@@ -289,22 +448,11 @@ export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker) {
       break;
     case "chain":
       // Ближайшие N к атакующему по цепочке
-      if (attacker) {
-        const attackerToken = canvas?.tokens?.placeables?.find(t => t.actor?.id === attacker.id);
-        if (attackerToken) {
-          filtered.sort((a, b) => {
-            const ta = canvas?.tokens?.placeables?.find(t => t.actor?.id === a.id);
-            const tb = canvas?.tokens?.placeables?.find(t => t.actor?.id === b.id);
-            const da = Math.hypot((ta?.x??0) - attackerToken.x, (ta?.y??0) - attackerToken.y);
-            const db = Math.hypot((tb?.x??0) - attackerToken.x, (tb?.y??0) - attackerToken.y);
-            return da - db;
-          });
-        }
-      }
+      filtered.sort((a, b) => getTargetDistanceToActor(a, attacker) - getTargetDistanceToActor(b, attacker));
       break;
   }
 
-  if (maxTargets) filtered = filtered.slice(0, maxTargets);
+  if (Number(maxTargets) > 0) filtered = filtered.slice(0, Number(maxTargets));
   return filtered;
 }
 
@@ -323,14 +471,28 @@ export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker) {
  * @param {number|null} [args.maxTargets]
  * @param {number}  [args.chainDecay]
  * @param {number}  [args.hitBonus]
+ * @param {number|null} [args.skillValueFallback]
  * @param {object|null} [args.effect]
  * @param {boolean} [args.friendlyFire=false] — если false, союзники атакующего
  *   (по token disposition) исключаются из списка целей. Если true — задеваются все.
  */
+function normalizeAoeTargetZone(value) {
+  const zone = String(value ?? "").trim();
+  if (!zone || zone === "random" || zone === "auto" || zone === "none") return null;
+  return zone;
+}
+
+function resolveAoeTargetZone(targetZone, effect) {
+  return normalizeAoeTargetZone(targetZone)
+    ?? normalizeAoeTargetZone(effect?.targetZone)
+    ?? normalizeAoeTargetZone(effect?.targetPart);
+}
+
 export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
     damageType = "physical", ignoreArmor = 0, label = "AoE атака",
     aoeType = "blast", maxTargets = null, chainDecay = 1.0,
-    hitBonus = 0, effect = null, friendlyFire = false }) {
+    hitBonus = 0, skillValueFallback = null, targetZone = null,
+    effect = null, friendlyFire = false }) {
 
   if (!targets?.length) {
     ui.notifications.info("Никто не попал в зону атаки");
@@ -342,8 +504,9 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
   let alliesSpared = 0;
   if (!friendlyFire && attacker) {
     candidates = targets.filter(t => {
-      if (!t) return false;
-      const isAlly = actorsAreAllies(attacker, t);
+      const actor = getAoeTargetActor(t);
+      if (!actor) return false;
+      const isAlly = actorsAreAllies(attacker, actor);
       if (isAlly) alliesSpared++;
       return !isAlly;
     });
@@ -363,7 +526,10 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
   const results = [];
   let curDmg    = baseDamage;
 
-  for (const target of filtered) {
+  const resolvedTargetZone = resolveAoeTargetZone(targetZone, effect);
+
+  for (const targetRef of filtered) {
+    const target = getAoeTargetActor(targetRef);
     if (!target) continue;
 
     // Каждая цель — отдельный single-attack без интерактивного взрыва кубов.
@@ -372,7 +538,7 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
     //   - wearWeapon:    false  → AoE-источник (заклинание/осколок) не имеет прочности
     //   - wearArmor:     false  → защита цели не изнашивается каждой каплей AoE
     //   - spendEnergy:   false  → энергия списывается caster'ом до этого
-    //   - targetZone:    "torso"→ AoE бьёт по торсу, как и раньше
+    //   - targetZone: null → каждая цель получает отдельную случайную зону
     const result = await resolveSingleAttack({
       attacker,
       target,
@@ -383,38 +549,36 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
       weapon:        null,
       hitBonus,
       ignoreArmor,
-      targetZone:    "torso",
+      skillValueFallback,
+      targetZone:    resolvedTargetZone,
       surroundCount: 0,
       spendEnergy:   false,
       wearWeapon:    false,
       wearArmor:     false,
       applyInjuries: false,
+      shieldIntercept: false,
     });
     if (!result) continue;
 
-    let condition = null;
-    if (result.hit && effect?.applyCondition && Math.random() < (effect.conditionChance ?? 1)) {
-      await target.update({ [`system.conditions.${effect.applyCondition}`]: 1 });
-      condition = effect.applyCondition;
-    }
-
-    if (result.hit && effect?.special === "lifesteal" && attacker) {
-      const atkHp = attacker.system?.resources?.hp?.torso?.value
-                 ?? attacker.system?.resources?.hp?.value ?? 0;
-      const hpPath = attacker.system?.resources?.hp?.torso !== undefined
-        ? "system.resources.hp.torso.value"
-        : "system.resources.hp.value";
-      await attacker.update({ [hpPath]: atkHp + result.finalDamage });
-    }
+    const hitEffects = await applyHitEffects({
+      attacker,
+      target,
+      result,
+      effect,
+    });
 
     results.push({
+      actorId:   target.id,
+      actorUuid: target.uuid,
       name:      target.name,
       hit:       result.hit,
       roll:      result.effectiveRoll,
       threshold: result.threshold,
+      zone:      result.locationLabel,
+      zoneKey:   result.locationKey,
       damage:    result.finalDamage,
       armor:     result.reduction,
-      condition,
+      condition:  hitEffects.condition,
     });
 
     if (aoeType === "chain") curDmg *= (chainDecay ?? 0.8);
@@ -435,6 +599,117 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
       results,
     },
   );
+
+  await ChatMessage.create({
+    speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,
+    content,
+  });
+
+  return results;
+}
+
+function wantsAlliedAoeTargets(effect) {
+  const special = String(effect?.special ?? "").trim();
+  return special === "heal" || special === "buff";
+}
+
+function getAoeUtilityAmount(effect, power) {
+  return Number(effect?.healAmount ?? effect?.power ?? power ?? 0);
+}
+
+export async function applyAoeUtilityEffect({
+  attacker,
+  targets,
+  effect = null,
+  power = 0,
+  label = "AoE эффект",
+  aoeType = "blast",
+  maxTargets = null,
+  chainDecay = 1.0,
+  targetZone = null,
+  friendlyFire = false,
+} = {}) {
+  if (!targets?.length) {
+    ui.notifications.info("Никто не попал в зону эффекта");
+    return [];
+  }
+
+  const wantsAllies = wantsAlliedAoeTargets(effect);
+  let candidates = targets;
+  let spared = 0;
+
+  if (!friendlyFire && attacker) {
+    candidates = targets.filter(t => {
+      const actor = getAoeTargetActor(t);
+      if (!actor) return false;
+      const isAlly = actorsAreAllies(attacker, actor);
+      const keep = wantsAllies ? isAlly : !isAlly;
+      if (!keep) spared++;
+      return keep;
+    });
+  }
+
+  const filtered = filterTargetsByAoeType(candidates, aoeType, maxTargets, attacker, {
+    excludeAttacker: !wantsAllies,
+  });
+
+  if (!filtered.length) {
+    ui.notifications.info("Цели не попали под эффект");
+    return [];
+  }
+
+  const resolvedTargetZone = resolveAoeTargetZone(targetZone, effect) ?? "torso";
+  const baseAmount = getAoeUtilityAmount(effect, power);
+  const results = [];
+  let currentAmount = baseAmount;
+
+  for (const targetRef of filtered) {
+    const target = getAoeTargetActor(targetRef);
+    if (!target) continue;
+
+    let line = "";
+    let amount = Math.max(0, Math.round(currentAmount));
+    let condition = null;
+    let healed = 0;
+
+    if (effect?.special === "heal") {
+      const healResult = await healActorBodyPart(target, resolvedTargetZone, amount);
+      healed = healResult.healed;
+      line = `лечение +${healed} HP (${getTargetPartLabel(healResult.locationKey)})`;
+    } else if (effect?.applyCondition) {
+      const hitEffects = await applyHitEffects({
+        attacker,
+        target,
+        result: { hit: true, finalDamage: 0 },
+        effect,
+      });
+      condition = hitEffects.condition;
+      line = condition ? condition : "эффект не сработал";
+    } else {
+      line = "нет настроенного эффекта";
+    }
+
+    results.push({
+      actorId: target.id,
+      actorUuid: target.uuid,
+      name: target.name,
+      amount,
+      healed,
+      condition,
+      line,
+    });
+
+    if (aoeType === "chain") currentAmount *= (chainDecay ?? 1);
+  }
+
+  const content = `
+    <div style="padding:6px;font-family:var(--font-primary)">
+      ✨ <b>${label}</b><br>
+      Целей: <b>${filtered.length}</b>${spared > 0 ? ` · пропущено: ${spared}` : ""}
+      <br>
+      ${results.map(r => `✓ ${r.name}: ${r.line}`).join("<br>")}
+    </div>
+  `;
 
   await ChatMessage.create({
     speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,

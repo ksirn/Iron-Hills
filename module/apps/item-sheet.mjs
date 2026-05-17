@@ -39,6 +39,52 @@ const SCOPE_LABELS = {
   targeted: "Выбор части тела",
 };
 
+const ACTION_TYPE_LABELS = {
+  "heal-part": "Лечение части тела",
+  "heal-body": "Лечение всего тела",
+  "restore-energy": "Восстановление энергии",
+  "restore-energy-max": "Восстановление максимума энергии",
+  "restore-mana": "Восстановление маны",
+  "restore-hydration": "Восстановление жажды",
+  "restore-satiety": "Восстановление сытости",
+  "cure-poison": "Нейтрализация яда",
+  "cure-disease": "Лечение болезни",
+  "bandage": "Перевязка малого кровотечения",
+  "tourniquet": "Жгут для сильного кровотечения",
+  "splint": "Шина для перелома",
+  "surgery": "Тяжелая медицинская обработка",
+};
+
+const APPLICATION_SCOPE_LABELS = {
+  targeted: "Часть тела",
+  global: "Вся цель",
+  auto: "Автоматически",
+  area: "Область",
+};
+
+const AOE_SHAPE_OPTIONS = [
+  { key:"circle", label:"Круг" },
+  { key:"cone",   label:"Конус" },
+  { key:"ray",    label:"Луч" },
+  { key:"rect",   label:"Прямоугольник" },
+];
+
+const AOE_TYPE_OPTIONS = [
+  { key:"blast",  label:"Все цели" },
+  { key:"pierce", label:"Первая на пути" },
+  { key:"sweep",  label:"Слева направо" },
+  { key:"shards", label:"Случайные цели" },
+  { key:"chain",  label:"Цепь" },
+  { key:"nova",   label:"Вокруг точки" },
+];
+
+const TARGET_ACTOR_MODE_LABELS = {
+  self: "На себя",
+  "selected-or-self": "Выбранная цель или себя",
+  "selected-only": "Только выбранная цель",
+  area: "Цели в области",
+};
+
 const ZONE_LABELS = {
   head:     "Голова",
   torso:    "Торс",
@@ -208,7 +254,12 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.qualityOpts   = Object.entries(QUALITY_CFG).map(([k,v]) => ({ key:k, label:v.label, color:v.color }));
     ctx.effectLabels  = EFFECT_LABELS;
     ctx.scopeLabels   = SCOPE_LABELS;
+    ctx.actionTypeLabels = ACTION_TYPE_LABELS;
+    ctx.applicationScopeLabels = APPLICATION_SCOPE_LABELS;
+    ctx.targetActorModeLabels = TARGET_ACTOR_MODE_LABELS;
     ctx.zoneLabels    = ZONE_LABELS;
+    ctx.aoeShapeOptions = AOE_SHAPE_OPTIONS;
+    ctx.aoeTypeOptions  = AOE_TYPE_OPTIONS;
     ctx.skillOptions  = SKILL_OPTIONS;
     ctx.craftTypes    = CRAFT_TYPES;
     ctx.matCategories = MATERIAL_CATEGORIES;
@@ -225,8 +276,8 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.isThrowable = type === "throwable";
 
     // Описание эффекта зелья
-    if (ctx.isPotion && s.effect) {
-      ctx.effectLabel = EFFECT_LABELS[s.effect] ?? s.effect;
+    if (ctx.isPotion && (s.actionType || s.effect)) {
+      ctx.effectLabel = ACTION_TYPE_LABELS[s.actionType] ?? EFFECT_LABELS[s.effect] ?? s.actionType ?? s.effect;
     }
 
     // Качество — бонус к параметрам

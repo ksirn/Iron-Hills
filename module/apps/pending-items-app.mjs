@@ -4,15 +4,51 @@
  * Предметы отображаются в grid, можно перетащить в инвентарь.
  * Нельзя закрыть пока все не распределены или не выброшены.
  */
-import { IronHillsGridInventoryApp, buildContainers } from "./grid-inventory-app.mjs";
+import { IronHillsGridInventoryApp, getPendingItemsForActor } from "./grid-inventory-app.mjs";
+import { isStackable } from "../utils/item-utils.mjs";
 
 const CELL = 46;
 const STASH_COLS = 10;
 
+function resolveActor(actor) {
+  return game.actors?.get(actor?.id) ?? actor ?? null;
+}
+
+export function getPendingInventoryItems(actor) {
+  const liveActor = resolveActor(actor);
+  if (!liveActor || liveActor.type !== "character") return [];
+  return getPendingItemsForActor(liveActor);
+}
+
+export async function requireNoPendingInventory(actor, {
+  actionLabel = "это действие",
+  notify = true,
+  openInventory = true,
+} = {}) {
+  const liveActor = resolveActor(actor);
+  const pending = getPendingInventoryItems(liveActor);
+
+  if (!pending.length) {
+    return { ok: true, count: 0, actor: liveActor, items: [] };
+  }
+
+  if (notify) {
+    ui.notifications.warn(
+      `Сначала размести или выброси предметы к распределению (${pending.length}), затем можно выполнить: ${actionLabel}.`
+    );
+  }
+
+  if (openInventory) {
+    IronHillsGridInventoryApp.openForActor(liveActor);
+  }
+
+  return { ok: false, count: pending.length, actor: liveActor, items: pending };
+}
+
 export class PendingItemsApp extends Application {
   constructor(actor, options = {}) {
     super(options);
-    this._actor = actor;
+    this._actor = resolveActor(actor);
   }
 
   static get defaultOptions() {
@@ -41,20 +77,8 @@ export class PendingItemsApp extends Application {
 
   _getPendingItems() {
     // Берём актуального актора (может обновиться после экипировки)
-    const actor  = game.actors?.get(this._actor.id) ?? this._actor;
-    this._actor  = actor; // обновляем ссылку
-    const conts  = buildContainers(actor);
-    const assigned = new Set();
-    for (const c of conts)
-      for (const s of c.sections ?? [])
-        for (const p of s.placed ?? [])
-          assigned.add(p.item?.id);
-    const equip = actor.system?.equipment ?? {};
-    return actor.items.filter(i =>
-      !assigned.has(i.id) &&
-      !Object.values(equip).includes(i.id) &&
-      !["spell","attachment"].includes(i.type)
-    );
+    this._actor = resolveActor(this._actor);
+    return getPendingItemsForActor(this._actor);
   }
 
   /** Строим grid схрона из нераспределённых предметов */
@@ -99,14 +123,13 @@ export class PendingItemsApp extends Application {
       for (let c = 0; c < STASH_COLS; c++)
         cells.push({ col: c, row: r, x: c*CELL, y: r*CELL, size: CELL });
 
-    const STACKABLE = new Set(["ammo","throwable"]);
     const placedData = placed.map(p => ({
       itemId:  p.item.id,
       name:    p.item.name,
       img:     p.item.img ?? "icons/svg/item-bag.svg",
       type:    p.item.type,
       // qty показываем только для стакуемых
-      qty:     STACKABLE.has(p.item.type) ? (p.item.system?.quantity ?? 1) : null,
+      qty:     isStackable(p.item.type) ? (p.item.system?.quantity ?? 1) : null,
       w: p.w, h: p.h, col: p.col, row: p.row,
       cssLeft: p.col * CELL,
       cssTop:  p.row * CELL,
@@ -164,7 +187,7 @@ export class PendingItemsApp extends Application {
 
     // Открыть инвентарь персонажа рядом
     html.find("[data-open-inventory]").on("click", () => {
-      new IronHillsGridInventoryApp(this._actor).render(true);
+      IronHillsGridInventoryApp.openForActor(this._actor);
     });
 
     // Авторазместить всё
@@ -185,25 +208,28 @@ export class PendingItemsApp extends Application {
   }
 
   static async openIfNeeded(actor) {
-    // Авторазмещение без экипировки (только в контейнеры)
-    const conts = buildContainers(actor);
-    const assigned = new Set();
-    for (const c of conts)
-      for (const s of c.sections ?? [])
-        for (const p of s.placed ?? [])
-          assigned.add(p.item?.id);
+    const liveActor = resolveActor(actor);
+    if (!liveActor) return null;
 
-    const equip   = actor.system?.equipment ?? {};
-    const unplaced = actor.items.filter(i =>
-      !assigned.has(i.id) &&
-      !Object.values(equip).includes(i.id) &&
-      !["spell","attachment"].includes(i.type)
-    );
+    const existing = PendingItemsApp.findOpenForActor(liveActor);
+    const unplaced = getPendingItemsForActor(liveActor);
 
-    if (unplaced.length === 0) return;
+    if (unplaced.length === 0) {
+      if (existing) await existing.close({ force: true });
+      IronHillsGridInventoryApp.findOpenForActor(liveActor)?.render(false);
+      return null;
+    }
 
-    // Открываем схрон
-    const app = new PendingItemsApp(actor);
-    app.render(true);
+    if (existing) await existing.close({ force: true });
+    return IronHillsGridInventoryApp.openForActor(liveActor);
+  }
+
+  static findOpenForActor(actor) {
+    const actorId = actor?.id;
+    if (!actorId) return null;
+    return Object.values(ui.windows ?? {}).find(app =>
+      app.constructor?.name === "PendingItemsApp" &&
+      app._actor?.id === actorId
+    ) ?? null;
   }
 }

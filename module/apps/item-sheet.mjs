@@ -78,6 +78,18 @@ const AOE_TYPE_OPTIONS = [
   { key:"nova",   label:"Вокруг точки" },
 ];
 
+const AOE_ZONE_MODE_OPTIONS = [
+  { key:"random", label:"Случайная зона у каждой цели" },
+  { key:"fixed",  label:"Одна заданная зона" },
+  { key:"aimed",  label:"Прицельная зона" },
+];
+
+const AOE_FRIENDLY_FIRE_OPTIONS = [
+  { key:"off",  label:"Не задевать союзников" },
+  { key:"on",   label:"Задевать всех" },
+  { key:"auto", label:"По типу атаки" },
+];
+
 const TARGET_ACTOR_MODE_LABELS = {
   self: "На себя",
   "selected-or-self": "Выбранная цель или себя",
@@ -260,6 +272,8 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.zoneLabels    = ZONE_LABELS;
     ctx.aoeShapeOptions = AOE_SHAPE_OPTIONS;
     ctx.aoeTypeOptions  = AOE_TYPE_OPTIONS;
+    ctx.aoeZoneModeOptions = AOE_ZONE_MODE_OPTIONS;
+    ctx.aoeFriendlyFireOptions = AOE_FRIENDLY_FIRE_OPTIONS;
     ctx.skillOptions  = SKILL_OPTIONS;
     ctx.craftTypes    = CRAFT_TYPES;
     ctx.matCategories = MATERIAL_CATEGORIES;

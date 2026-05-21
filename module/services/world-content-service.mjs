@@ -242,7 +242,20 @@ export function buildScroll(name, tier, school, effectType, power, targetPart = 
   };
 }
 
-export function buildThrowable(name, tier, power, damageType = "physical", poison = 0, burning = 0, targetPart = "torso", quantity = 1) {
+export function buildThrowable(name, tier, power, damageType = "physical", poison = 0, burning = 0, targetPart = "torso", quantity = 1, options = {}) {
+  const hasAreaPayload = Boolean(options.aoe) || Number(burning ?? 0) > 0;
+  const aoe = {
+    type: "blast",
+    shape: "circle",
+    distance: hasAreaPayload ? Math.max(1, Number(options.aoe?.distance ?? 2)) : 0,
+    maxTargets: hasAreaPayload ? null : 0,
+    chainDecay: 1,
+    targetZoneMode: "random",
+    friendlyFireMode: hasAreaPayload ? "auto" : "off",
+    ...(options.aoe ?? {}),
+  };
+  const friendlyFireMode = options.friendlyFireMode ?? aoe.friendlyFireMode ?? (hasAreaPayload ? "auto" : "off");
+
   return {
     name,
     type: "throwable",
@@ -258,13 +271,8 @@ export function buildThrowable(name, tier, power, damageType = "physical", poiso
       targetPart,
       targetZone: "",
       friendlyFire: false,
-      aoe: {
-        type: "blast",
-        shape: "circle",
-        distance: 0,
-        maxTargets: 0,
-        chainDecay: 1
-      },
+      friendlyFireMode,
+      aoe,
       appliesPoison: poison,
       appliesBurning: burning
     }

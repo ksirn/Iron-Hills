@@ -38,7 +38,7 @@ export const TECHNIQUES = {
     skill: "sword", reqSkill: 6, reqWeaponTier: 3,
     desc: "Круговой удар по всем врагам в ближнем бою.",
     energyCost: 7,
-    effect: { damage: 0.8, aoe: "melee_adjacent", special: "aoe" },
+    effect: { damage: 0.8, aoe: "melee_adjacent", special: "aoe", friendlyFireMode: "auto", targetZoneMode: "random" },
   },
   sword_riposte: {
     id: "sword_riposte", label: "Рипост", icon: "🛡",
@@ -202,21 +202,21 @@ export const TECHNIQUES = {
     skill: "bow", reqSkill: 4, reqWeaponTier: 2,
     desc: "Прицельный выстрел в ногу. Замедляет цель вдвое.",
     energyCost: 4,
-    effect: { damage: 0.7, targetZone: "leftLeg", applyCondition: "slowed", conditionDuration: 30 },
+    effect: { damage: 0.7, targetZone: "leftLeg", targetZoneMode: "fixed", applyCondition: "slowed", conditionDuration: 30 },
   },
   bow_volley: {
     id: "bow_volley", label: "Залп", icon: "🏹",
     skill: "bow", reqSkill: 6, reqWeaponTier: 3,
     desc: "Три быстрых стрелы по разным целям в зоне досягаемости.",
     energyCost: 9,
-    effect: { damage: 0.7, aoe: "ranged_3targets", special: "aoe" },
+    effect: { damage: 0.7, aoe: "ranged_3targets", special: "aoe", friendlyFireMode: "off", targetZoneMode: "random" },
   },
   bow_headshot: {
     id: "bow_headshot", label: "Выстрел в голову", icon: "💀",
     skill: "bow", reqSkill: 8, reqWeaponTier: 4,
     desc: "Крайне сложный выстрел. -20% попасть. При попадании — оглушение и ×2 урон.",
     energyCost: 6,
-    effect: { damage: 2.0, targetZone: "head", hitPenalty: -4, applyCondition: "stunned", conditionDuration: 6 },
+    effect: { damage: 2.0, targetZone: "head", targetZoneMode: "fixed", hitPenalty: -4, applyCondition: "stunned", conditionDuration: 6 },
   },
 
   // ══════════════════════════════════════════════════════════
@@ -302,14 +302,14 @@ export const TECHNIQUES = {
     skill: "throwing", reqSkill: 3, reqWeaponTier: 1,
     desc: "Выбор зоны тела. +2 к броску, можно выбрать голову.",
     energyCost: 3,
-    effect: { damage: 1.0, special: "choose_zone" },
+    effect: { damage: 1.0, special: "choose_zone", targetZoneMode: "aimed" },
   },
   throwing_multicast: {
     id: "throwing_multicast", label: "Веер", icon: "🌟",
     skill: "throwing", reqSkill: 6, reqWeaponTier: 2,
     desc: "Три метательных снаряда по трём разным целям.",
     energyCost: 7,
-    effect: { damage: 0.6, aoe: "ranged_3targets", special: "aoe" },
+    effect: { damage: 0.6, aoe: "ranged_3targets", special: "aoe", friendlyFireMode: "off", targetZoneMode: "random" },
   },
 };
 

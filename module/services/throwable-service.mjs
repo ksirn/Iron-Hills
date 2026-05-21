@@ -21,8 +21,13 @@ import {
 import {
   buildThrowableConditionStacks,
   getThrowableAoeConfig,
-  normalizeTargetZone,
 } from "./item-effect-service.mjs";
+import {
+  buildCombatTargetPayload,
+  getPrimaryCombatTargetActor,
+  resolveCombatActionTargets,
+} from "./combat-action-target-service.mjs";
+import { resolveAoeTargetZone } from "./aoe-policy-service.mjs";
 
 function throwableResult({
   ok = true,
@@ -39,10 +44,6 @@ function getThrowableItem(actor, itemOrId) {
   if (!actor) return null;
   if (typeof itemOrId === "string") return actor.items?.get(itemOrId) ?? null;
   return itemOrId ?? null;
-}
-
-function getSelectedTargets(targets = globalThis.game?.user?.targets ?? []) {
-  return targets instanceof Set ? targets : new Set(targets ?? []);
 }
 
 async function consumeThrowable(actor, item, applySkillExp = null, afterUse = null) {
@@ -71,18 +72,7 @@ export async function useThrowableItem({
   }
 
   const label = `Метание: ${throwable.name}`;
-  if (!skipTimeCost && resolveCombatTimeCost) {
-    const timeState = await resolveCombatTimeCost({
-      actionType: "throwable",
-      label,
-      item: throwable,
-      payload: { itemId: throwable.id },
-    });
-
-    if (timeState?.queued) return throwableResult({ ok: true, queued: true });
-    if (!timeState?.ok) return throwableResult({ ok: false, reason: "time-cost" });
-  }
-
+  const selectedTargets = resolveCombatActionTargets({ targets });
   const blockReason = getActionBlockReason(actor, "throwable", { item: throwable });
   if (blockReason) {
     ui.notifications.warn(blockReason);
@@ -96,14 +86,13 @@ export async function useThrowableItem({
 
   const energyCost = Number(throwable.system?.energyCost ?? 8);
   const throwableAoe = getThrowableAoeConfig(throwable);
-  const selectedTargets = getSelectedTargets(targets);
 
-  if (!throwableAoe && !selectedTargets.size) {
+  if (!throwableAoe && !selectedTargets.length) {
     ui.notifications.warn("Выберите цель");
     return throwableResult({ ok: false, reason: "missing-target" });
   }
 
-  const targetActor = throwableAoe ? null : [...selectedTargets][0]?.actor;
+  const targetActor = throwableAoe ? null : getPrimaryCombatTargetActor(selectedTargets);
   if (!throwableAoe && !targetActor) {
     ui.notifications.warn("У цели нет актёра");
     return throwableResult({ ok: false, reason: "missing-target-actor" });
@@ -119,12 +108,26 @@ export async function useThrowableItem({
   const throwPenalty = Number(injuries.throwPenalty ?? injuries.attackPenalty ?? 0);
   const derivedConditions = getDerivedConditionState(actor);
   if (!derivedConditions.canThrow) {
-    ui.notifications.warn("Персонаж не может метать предметы из-за критических травм.");
+    ui.notifications.warn(derivedConditions.throwBlockReason || "Персонаж не может метать предметы из-за состояния.");
     return throwableResult({ ok: false, reason: "cannot-throw" });
   }
 
-  const targetPart = normalizeTargetZone(throwable.system?.targetZone)
-    ?? normalizeTargetZone(throwable.system?.targetPart);
+  if (!skipTimeCost && resolveCombatTimeCost) {
+    const timeState = await resolveCombatTimeCost({
+      actionType: "throwable",
+      label,
+      item: throwable,
+      payload: {
+        itemId: throwable.id,
+        ...buildCombatTargetPayload(selectedTargets),
+      },
+    });
+
+    if (timeState?.queued) return throwableResult({ ok: true, queued: true });
+    if (!timeState?.ok) return throwableResult({ ok: false, reason: "time-cost" });
+  }
+
+  const targetPart = resolveAoeTargetZone(throwable.system?.targetZone, throwable.system?.targetPart);
   const damageType = String(throwable.system?.damageType ?? "physical").toLowerCase() === "physical"
     ? "physical"
     : "magical";
@@ -145,14 +148,21 @@ export async function useThrowableItem({
       color: "#d6a84f",
       attacker: actor,
       skillKey: "throwing",
-      hitBonus: -throwPenalty,
+      hitBonus: 0,
+      injuries: {
+        ...injuries,
+        attackPenalty: throwPenalty,
+        meleePenalty: throwPenalty,
+      },
       friendlyFire: throwableAoe.friendlyFire,
+      friendlyFireMode: throwableAoe.friendlyFireMode,
       baseDamage: power,
       damageType,
       aoeType: throwableAoe.type,
       maxTargets: throwableAoe.maxTargets,
       chainDecay: throwableAoe.chainDecay,
       targetZone: targetPart,
+      targetZoneMode: throwableAoe.targetZoneMode,
       effect: throwableEffect,
       onTemplatePlaced: async () => actor.update({
         "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost),

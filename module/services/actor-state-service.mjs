@@ -13,6 +13,15 @@ import {
   getMerchantMarkup
 } from "../utils/actor-utils.mjs";
 import { isItemGridPlaced } from "./inventory-service.mjs";
+import {
+  getActiveConditionEntries,
+  getConditionActionModifiers,
+  isConditionActive,
+} from "./condition-policy-service.mjs";
+import {
+  getActorBodyTraumaSummary,
+  getBodyPartTraumaStatus,
+} from "./body-trauma-service.mjs";
 
 export function getHitLocation(rollTotal) {
   const r = Number(rollTotal);
@@ -184,40 +193,11 @@ export function getEncumbranceInfo(actor) {
 }
 
 function getLimbStatusInfo(actor, partKey) {
-  const hpNode = actor?.system?.resources?.hp?.[partKey] ?? {};
-  const status = hpNode.status ?? {};
-
-  const currentHp = Number(hpNode.value ?? 0);
-  const destroyed = currentHp <= 0 || Boolean(status.destroyed);
-  const splinted = Boolean(status.splinted);
-  const fracture = Boolean(status.fracture) && !splinted;
-  const tourniquet = Boolean(status.tourniquet);
-  const minorBleeding = Math.max(0, Number(status.minorBleeding ?? 0));
-  const majorBleeding = Math.max(0, Number(status.majorBleeding ?? 0));
-  const activeMajorBleeding = tourniquet ? 0 : majorBleeding;
-
-  return {
-    currentHp,
-    destroyed,
-    fracture,
-    splinted,
-    tourniquet,
-    minorBleeding,
-    majorBleeding,
-    activeMajorBleeding
-  };
+  return getBodyPartTraumaStatus(actor, partKey);
 }
 
 function getAllLimbStatusMap(actor) {
-  return {
-    head: getLimbStatusInfo(actor, "head"),
-    torso: getLimbStatusInfo(actor, "torso"),
-    abdomen: getLimbStatusInfo(actor, "abdomen"),
-    leftArm: getLimbStatusInfo(actor, "leftArm"),
-    rightArm: getLimbStatusInfo(actor, "rightArm"),
-    leftLeg: getLimbStatusInfo(actor, "leftLeg"),
-    rightLeg: getLimbStatusInfo(actor, "rightLeg")
-  };
+  return getActorBodyTraumaSummary(actor).parts;
 }
 
 function clampNonNegativeInt(value) {
@@ -249,12 +229,13 @@ function getSynchronousDiseasePenalties(actor) {
 
 export function getActorInjuryInfo(actor) {
   const conditions = actor.system.conditions ?? {};
+  const traumaSummary = getActorBodyTraumaSummary(actor);
+  const parts = traumaSummary.parts ?? {};
 
-  const leftArm = getLimbStatusInfo(actor, "leftArm");
-  const rightArm = getLimbStatusInfo(actor, "rightArm");
-  const leftLeg = getLimbStatusInfo(actor, "leftLeg");
-  const rightLeg = getLimbStatusInfo(actor, "rightLeg");
-  const abdomen = getLimbStatusInfo(actor, "abdomen");
+  const leftArm = parts.leftArm ?? getLimbStatusInfo(actor, "leftArm");
+  const rightArm = parts.rightArm ?? getLimbStatusInfo(actor, "rightArm");
+  const leftLeg = parts.leftLeg ?? getLimbStatusInfo(actor, "leftLeg");
+  const rightLeg = parts.rightLeg ?? getLimbStatusInfo(actor, "rightLeg");
 
   const leftArmDisabled = Boolean(leftArm.destroyed);
   const rightArmDisabled = Boolean(rightArm.destroyed);
@@ -266,35 +247,10 @@ export function getActorInjuryInfo(actor) {
   const leftLegFractured = Boolean(leftLeg.fracture);
   const rightLegFractured = Boolean(rightLeg.fracture);
 
-  const minorBleedingTotal =
-    Number(leftArm.minorBleeding) +
-    Number(rightArm.minorBleeding) +
-    Number(leftLeg.minorBleeding) +
-    Number(rightLeg.minorBleeding) +
-    Number(abdomen.minorBleeding) +
-    Math.max(0, Number(actor.system?.resources?.hp?.head?.status?.minorBleeding ?? 0)) +
-    Math.max(0, Number(actor.system?.resources?.hp?.torso?.status?.minorBleeding ?? 0));
-
-  const head = getLimbStatusInfo(actor, "head");
-  const torso = getLimbStatusInfo(actor, "torso");
-
-  const majorBleedingRawTotal =
-    Number(leftArm.majorBleeding) +
-    Number(rightArm.majorBleeding) +
-    Number(leftLeg.majorBleeding) +
-    Number(rightLeg.majorBleeding) +
-    Number(abdomen.majorBleeding) +
-    Number(head.majorBleeding) +
-    Number(torso.majorBleeding);
-
-  const majorBleedingTotal =
-    Number(leftArm.activeMajorBleeding) +
-    Number(rightArm.activeMajorBleeding) +
-    Number(leftLeg.activeMajorBleeding) +
-    Number(rightLeg.activeMajorBleeding) +
-    Number(abdomen.activeMajorBleeding) +
-    Number(head.activeMajorBleeding) +
-    Number(torso.activeMajorBleeding);
+  const minorBleedingTotal = Number(traumaSummary.minorBleedingTotal ?? 0);
+  const majorBleedingRawTotal = Number(traumaSummary.majorBleedingRawTotal ?? 0);
+  const majorBleedingTotal = Number(traumaSummary.majorBleedingTotal ?? 0);
+  const abdomenEnergyPenalty = Number(traumaSummary.abdomenEnergyPenalty ?? 0);
 
   const legacyBleeding = Math.max(0, Number(conditions.bleeding ?? 0));
   const derivedBleeding = minorBleedingTotal + (majorBleedingTotal * 2);
@@ -341,6 +297,7 @@ export function getActorInjuryInfo(actor) {
 
   const movementPenalty =
     bleedPressurePenalty +
+    abdomenEnergyPenalty +
     legFracturePenalty +
     (disabledLegCount * 2);
 
@@ -350,8 +307,18 @@ export function getActorInjuryInfo(actor) {
     disabledArmCount;
 
   const diseasePenalties = getSynchronousDiseasePenalties(actor);
-  const totalMeleePenalty = meleePenalty + diseasePenalties.attackPenalty;
-  const totalCastPenalty = castPenalty + diseasePenalties.castPenalty;
+  const conditionModifiers = getConditionActionModifiers(conditions);
+  const totalMeleePenalty =
+    meleePenalty +
+    diseasePenalties.attackPenalty +
+    conditionModifiers.meleePenalty;
+  const totalThrowPenalty = throwPenalty + conditionModifiers.throwPenalty;
+  const totalCastPenalty =
+    castPenalty +
+    diseasePenalties.castPenalty +
+    conditionModifiers.castPenalty;
+  const totalMovementPenalty = movementPenalty + conditionModifiers.movementPenalty;
+  const totalManipulationPenalty = manipulationPenalty + conditionModifiers.manipulationPenalty;
 
   return {
     leftArmDisabled,
@@ -375,6 +342,7 @@ export function getActorInjuryInfo(actor) {
     shock,
     poison,
     burning,
+    abdomenEnergyPenalty,
 
     armFracturePenalty,
     legFracturePenalty,
@@ -382,10 +350,11 @@ export function getActorInjuryInfo(actor) {
     disabledLegCount,
     attackPenalty: totalMeleePenalty,
     meleePenalty: totalMeleePenalty,
-    throwPenalty,
+    throwPenalty: totalThrowPenalty,
     castPenalty: totalCastPenalty,
-    movementPenalty,
-    manipulationPenalty,
+    movementPenalty: totalMovementPenalty,
+    manipulationPenalty: totalManipulationPenalty,
+    conditionPenalty: conditionModifiers,
   };
 }
 
@@ -407,6 +376,8 @@ export function getDerivedConditionState(actor) {
 
   const destroyedArms = Number(injury.disabledArmCount ?? 0);
   const destroyedLegs = Number(injury.disabledLegCount ?? 0);
+  const conditions = actor?.system?.conditions ?? {};
+  const conditionModifiers = getConditionActionModifiers(conditions);
 
   const bleeding =
     clampNonNegativeInt(injury.minorBleedingTotal) +
@@ -421,25 +392,45 @@ export function getDerivedConditionState(actor) {
     (destroyedVital ? 100 : 0);
   const shock = Math.max(clampNonNegativeInt(injury.shock), traumaShock);
 
-  const movementBlocked =
+  const traumaMovementBlocked =
     destroyedVital ||
     destroyedLegs >= 2;
 
-  const manipulationBlocked =
+  const traumaManipulationBlocked =
     destroyedVital ||
     destroyedArms >= 2;
 
-  const canMeleeAttack =
+  const traumaCanMeleeAttack =
     !destroyedVital &&
     destroyedArms < 2;
+
+  const traumaCanThrow =
+    !destroyedVital &&
+    destroyedArms < 2;
+
+  const traumaCanCast =
+    !destroyedVital &&
+    destroyedArms < 2;
+
+  const movementBlocked =
+    traumaMovementBlocked ||
+    conditionModifiers.movementBlocked;
+
+  const manipulationBlocked =
+    traumaManipulationBlocked ||
+    conditionModifiers.manipulationBlocked;
+
+  const canMeleeAttack =
+    traumaCanMeleeAttack &&
+    conditionModifiers.canMeleeAttack;
 
   const canThrow =
-    !destroyedVital &&
-    destroyedArms < 2;
+    traumaCanThrow &&
+    conditionModifiers.canThrow;
 
   const canCast =
-    !destroyedVital &&
-    destroyedArms < 2;
+    traumaCanCast &&
+    conditionModifiers.canCast;
 
   const notes = [];
 
@@ -465,6 +456,18 @@ export function getDerivedConditionState(actor) {
     notes.push(`Шок: ${shock}.`);
   }
 
+  if (Number(injury.abdomenEnergyPenalty ?? 0) > 0) {
+    notes.push(`Травма живота мешает восстановлению энергии: -${injury.abdomenEnergyPenalty}.`);
+  }
+
+  notes.push(...conditionModifiers.notes);
+
+  const traumaMeleeBlockReason = destroyedVital
+    ? "Критическое разрушение жизненно важной зоны."
+    : (destroyedArms >= 2 ? "Обе руки выведены из строя." : "");
+  const traumaThrowBlockReason = traumaMeleeBlockReason;
+  const traumaCastBlockReason = traumaMeleeBlockReason;
+
   return {
     bleeding,
     shock,
@@ -473,6 +476,12 @@ export function getDerivedConditionState(actor) {
     canMeleeAttack,
     canThrow,
     canCast,
+    meleeBlockReason: canMeleeAttack ? "" : (traumaMeleeBlockReason || conditionModifiers.meleeBlockReason),
+    throwBlockReason: canThrow ? "" : (traumaThrowBlockReason || conditionModifiers.throwBlockReason),
+    castBlockReason: canCast ? "" : (traumaCastBlockReason || conditionModifiers.castBlockReason),
+    conditionModifiers,
+    activeConditions: getActiveConditionEntries(conditions),
+    abdomenEnergyPenalty: Number(injury.abdomenEnergyPenalty ?? 0),
     notes
   };
 }
@@ -661,6 +670,7 @@ export function getSpellCastBlockReason(actor, item, { isScroll = false } = {}) 
   const currentEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
   const currentMana = Number(actor.system?.resources?.mana?.value ?? 0);
   const injuries = getActorInjuryInfo(actor);
+  const derivedConditions = getDerivedConditionState(actor);
 
   if (injuries.leftArmDisabled && injuries.rightArmDisabled) {
     return "Обе руки выведены из строя";
@@ -672,6 +682,10 @@ export function getSpellCastBlockReason(actor, item, { isScroll = false } = {}) 
     if (silencedUntil > 0 && (game.time?.worldTime ?? 0) < silencedUntil) {
       return "Персонаж под эффектом безмолвия — нельзя колдовать";
     }
+  }
+
+  if (!derivedConditions.canCast) {
+    return derivedConditions.castBlockReason || "Персонаж не может колдовать из-за состояния.";
   }
 
   const energyCost = Number(item.system?.energyCost ?? 0);
@@ -694,9 +708,14 @@ export function getThrowableBlockReason(actor, item) {
   const currentEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
   const energyCost = Number(item.system?.energyCost ?? 0);
   const injuries = getActorInjuryInfo(actor);
+  const derivedConditions = getDerivedConditionState(actor);
 
   if (injuries.leftArmDisabled && injuries.rightArmDisabled) {
     return "Обе руки выведены из строя";
+  }
+
+  if (!derivedConditions.canThrow) {
+    return derivedConditions.throwBlockReason || "Персонаж не может метать из-за состояния.";
   }
 
   if (currentEnergy < energyCost) {
@@ -710,6 +729,7 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
   if (!actor) return "Нет актёра";
 
   const injuries = getActorInjuryInfo(actor);
+  const derivedConditions = getDerivedConditionState(actor);
   const encumbrance = getEncumbranceInfo(actor);
 
   if (actionType === "attack") {
@@ -718,6 +738,10 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     const baseEnergyCost = Number(payload.energyCost ?? 0);
     const finalEnergyCost = Math.ceil(baseEnergyCost * encumbrance.energyMultiplier);
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
+
+    if (!derivedConditions.canMeleeAttack) {
+      return derivedConditions.meleeBlockReason || "Персонаж не может атаковать из-за состояния.";
+    }
 
     if (weapon?.system?.twoHanded) {
       if (injuries.leftArmDisabled || injuries.rightArmDisabled) {
@@ -753,6 +777,14 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     const currentMana = Number(actor.system.resources?.mana?.value ?? 0);
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
 
+    if (!derivedConditions.canCast) {
+      return derivedConditions.castBlockReason || "Персонаж не может колдовать из-за состояния.";
+    }
+
+    if (isConditionActive(actor.system?.conditions ?? {}, "silence")) {
+      return "Персонаж под эффектом безмолвия.";
+    }
+
     if (currentMana < manaCost) {
       return `Нужно маны: ${manaCost}`;
     }
@@ -775,6 +807,10 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     const energyCost = Number(item.system.energyCost ?? 0);
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
 
+    if (!derivedConditions.canCast) {
+      return derivedConditions.castBlockReason || "Персонаж не может использовать свиток из-за состояния.";
+    }
+
     if (currentEnergy < energyCost) {
       return `Нужно энергии: ${energyCost}`;
     }
@@ -788,6 +824,10 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
 
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
     const energyCost = Number(item.system.energyCost ?? 0);
+
+    if (!derivedConditions.canThrow) {
+      return derivedConditions.throwBlockReason || "Персонаж не может метать из-за состояния.";
+    }
 
     if (currentEnergy < energyCost) {
       return `Нужно энергии: ${energyCost}`;
@@ -832,6 +872,7 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
 
 export function buildActionState(actor) {
   const injuries = getActorInjuryInfo(actor);
+  const derivedConditions = getDerivedConditionState(actor);
   const eq = actor.system?.equipment ?? {};
   const currentEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
 
@@ -844,7 +885,9 @@ export function buildActionState(actor) {
   const rightEnergyCost = Number(rightWeapon?.system?.energyCost ?? 5);
   const leftEnergyCost = Number(leftWeapon?.system?.energyCost ?? 5);
 
-  if (injuries.rightArmDisabled) {
+  if (!derivedConditions.canMeleeAttack) {
+    attackRightReason = derivedConditions.meleeBlockReason || "Персонаж не может атаковать из-за состояния.";
+  } else if (injuries.rightArmDisabled) {
     attackRightReason = "Правая рука выведена из строя";
   } else if (rightWeapon?.system?.twoHanded && (injuries.leftArmDisabled || injuries.rightArmDisabled)) {
     attackRightReason = "Для двуручного оружия нужны две рабочие руки";
@@ -852,7 +895,9 @@ export function buildActionState(actor) {
     attackRightReason = `Не хватает энергии (${currentEnergy}/${rightEnergyCost})`;
   }
 
-  if (injuries.leftArmDisabled) {
+  if (!derivedConditions.canMeleeAttack) {
+    attackLeftReason = derivedConditions.meleeBlockReason || "Персонаж не может атаковать из-за состояния.";
+  } else if (injuries.leftArmDisabled) {
     attackLeftReason = "Левая рука выведена из строя";
   } else if (leftWeapon?.system?.twoHanded && (injuries.leftArmDisabled || injuries.rightArmDisabled)) {
     attackLeftReason = "Для двуручного оружия нужны две рабочие руки";
@@ -1456,28 +1501,39 @@ export function getExpNextForSkill(currentValue) {
 export function getAttackThreshold(targetActor, modifiers = {}) {
   const BASE_THRESHOLD = 4;
   const conditions = targetActor?.system?.conditions ?? {};
+  const formationContext = modifiers.formationContext ?? null;
 
   // Броня цели — можно переопределить для монстров
   const armorTier = modifiers.armorTierOverride !== undefined
     ? Number(modifiers.armorTierOverride)
     : Number(targetActor?.system?.info?.armorTier ?? 0);
-  const armorCrackedPenalty = Number(conditions.armor_cracked ?? 0) > 0 ? -2 : 0;
+  const armorCrackedPenalty = isConditionActive(conditions, "armor_cracked") ? -2 : 0;
   const armorBonus = Math.max(0, Math.ceil(armorTier / 2) + armorCrackedPenalty);
 
   // Щит
-  const shieldDisabled = Number(conditions.shield_lost ?? 0) > 0;
+  const shieldDisabled = isConditionActive(conditions, "shield_lost");
   const shieldBonus = modifiers.hasShield && !shieldDisabled ? 1 : 0;
 
   // Штрафы ситуации
   const lyingPenalty    = modifiers.isLying    ? -2 : 0;
-  const surroundPenalty = modifiers.surroundCount > 0
-    ? -(modifiers.surroundCount) : 0;
+  const rawSurroundCount = Math.max(0, Number(modifiers.surroundCount ?? 0));
+  const surroundMitigation = Math.min(
+    rawSurroundCount,
+    Math.max(0, Number(formationContext?.surroundMitigation ?? 0))
+  );
+  const effectiveSurroundCount = Math.max(0, rawSurroundCount - surroundMitigation);
+  const surroundPenalty = effectiveSurroundCount > 0
+    ? -effectiveSurroundCount : 0;
   const stunnedPenalty  = modifiers.isStunned  ? -3 : 0;
   const darknessMalus   = modifiers.inDarkness ?  2 : 0;
-  const exposedPenalty  = Number(conditions.exposed ?? 0) > 0 ? -2 : 0;
-  const slowedPenalty   = Number(conditions.slowed ?? 0) > 0 ? -1 : 0;
-  const formationBonus  = Number(conditions.formation_stance ?? 0) > 0 ? 3 : 0;
-  const shieldWallBonus = Number(conditions.shield_wall_formation ?? 0) > 0 ? 4 : 0;
+  const exposedPenalty  = isConditionActive(conditions, "exposed") ? -2 : 0;
+  const slowedPenalty   = isConditionActive(conditions, "slowed") ? -1 : 0;
+  const formationBonus  = formationContext
+    ? Number(formationContext.formationBonus ?? 0)
+    : (isConditionActive(conditions, "formation_stance") ? 3 : 0);
+  const shieldWallBonus = formationContext
+    ? Number(formationContext.shieldWallBonus ?? 0)
+    : (isConditionActive(conditions, "shield_wall_formation") ? 4 : 0);
 
   // Страх на цели снижает её защиту
   const targetFearPenalty = modifiers.targetFeared ? -3 : 0;

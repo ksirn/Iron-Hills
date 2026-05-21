@@ -2,7 +2,7 @@
  * Iron Hills — Combat Attack Service
  *
  * Единый «pure» пайплайн single-target атаки. Используется:
- *   - actor-sheet._performAttack
+ *   - actor sheet attack orchestration
  *   - aoe-service.applyAoeDamage (для каждой цели в зоне)
  *   - combat-hud-app быстрый удар
  *
@@ -21,9 +21,6 @@
  */
 
 import {
-  getEncumbranceInfo,
-  getActorInjuryInfo,
-  getAttackThreshold,
   getFailureDegree,
   getHitLocation,
   getHitLabel,
@@ -33,9 +30,11 @@ import {
   resolveDamageHpKey,
   getShieldInterceptChance,
   grantSkillExp,
+  syncDerivedConditionsFromTrauma,
 } from "./actor-state-service.mjs";
 
 import { getWeaponAffixes } from "../utils/item-utils.mjs";
+import { buildAttackRollContext } from "./combat-hit-context-service.mjs";
 import { unequipActorSlot } from "./inventory-service.mjs";
 
 // ── Anatomy / overflow ────────────────────────────────────
@@ -177,7 +176,10 @@ export async function applyInjuryEffects(actor, locationKey, finalDamage, bleedi
       Number(actor.system?.conditions?.shock ?? 0) + 1;
   }
 
-  if (Object.keys(updates).length) await actor.update(updates);
+  if (Object.keys(updates).length) {
+    await actor.update(updates);
+    await syncDerivedConditionsFromTrauma(actor, { render: false });
+  }
 }
 
 // ── Item durability ───────────────────────────────────────
@@ -299,16 +301,33 @@ export async function resolveSingleAttack(args = {}) {
     shieldIntercept = true,
     ignoreShield    = false,
     skillValueFallback = null,
+    targetToken     = null,
   } = args;
 
   if (!attacker || !target) return null;
 
-  const skill = attacker.system?.skills?.[skillKey];
-  const skillValue = Number(skill?.value ?? skillValueFallback ?? 0);
+  const attackContext = buildAttackRollContext(attacker, target, {
+    skillKey,
+    skillValueFallback,
+    hitBonus: hitBonusInput,
+    surroundCount,
+    targetToken,
+    encumbrance: encInput,
+    injuries: injInput,
+  });
+  const {
+    skill,
+    skillValue,
+    dieSize,
+    encumbrance,
+    injuries,
+    attackPenalty,
+    hitBonus,
+    threshold,
+    defenseContext,
+    targetDefense,
+  } = attackContext;
   if (!(skillValue > 0)) return null;
-
-  const encumbrance = encInput ?? getEncumbranceInfo(attacker);
-  const injuries    = injInput ?? getActorInjuryInfo(attacker);
 
   const finalEnergyCost = Math.ceil(Number(energyCost || 0) * (encumbrance.energyMultiplier ?? 1));
 
@@ -319,36 +338,13 @@ export async function resolveSingleAttack(args = {}) {
   // Бросок навыка (может быть интерактивным)
   const { total: rollTotal, rolls: rollHistory, exploded } =
     await dieRoller(skillValue);
-  const dieSize = Math.max(2, skillValue * 2);
 
   // Порог цели
-  const targetEquip = target.system?.equipment ?? {};
-  const targetLeftHand = targetEquip.leftHand ? target.items?.get(targetEquip.leftHand) : null;
-  const targetHasShield = Boolean(
-    targetLeftHand?.system?.isShield || targetLeftHand?.type === "armor"
-  );
+  const targetShield = targetDefense.shield;
+  const targetHasShield = targetDefense.hasShield;
 
-  const targetIsMonster = target.type === "monster";
-  const targetArmorTier = targetIsMonster
-    ? Number(target.system?.resources?.armor?.physical ?? 0)
-    : Number(target.system?.info?.armorTier ?? 0);
-
-  const cond = target.system?.conditions ?? {};
-  const threshold = getAttackThreshold(target, {
-    hasShield:   targetHasShield,
-    isLying:     Boolean(cond.prone),
-    isStunned:   Number(cond.stunned ?? 0) > 0,
-    targetFeared: Number(cond.feared ?? 0) > 0,
-    surroundCount,
-    inDarkness:  false,
-    armorTierOverride: targetIsMonster ? targetArmorTier : undefined,
-  });
-
+  const targetIsMonster = targetDefense.targetIsMonster;
   // Штраф атакующего
-  const attackPenalty =
-    Number(encumbrance.attackPenalty ?? 0) +
-    Number(injuries.meleePenalty ?? injuries.attackPenalty ?? 0);
-  const hitBonus = Number(hitBonusInput ?? 0);
   const effectiveRoll = rollTotal - attackPenalty + hitBonus;
 
   const failDegree = getFailureDegree(effectiveRoll, threshold, dieSize);
@@ -409,6 +405,14 @@ export async function resolveSingleAttack(args = {}) {
     shieldBlock:      null,
     injuryLocationKey: null,
     damagePartKey:     null,
+    defenseContext,
+    hitContext: {
+      threshold,
+      effectiveThreshold: attackContext.effectiveThreshold,
+      attackPenalty,
+      hitBonus,
+      targetDefense,
+    },
   };
 
   if (!hit) return result;
@@ -447,7 +451,7 @@ export async function resolveSingleAttack(args = {}) {
     !ignoreShield &&
     !targetZone &&
     targetHasShield &&
-    targetLeftHand &&
+    targetShield &&
     anatomicalKey !== "shield"
   ) {
     const shieldSkillVal = Math.max(0, Number(target.system?.skills?.shield?.value ?? 0));
@@ -457,7 +461,7 @@ export async function resolveSingleAttack(args = {}) {
     if (pctR.total <= chancePct) {
       const blk = await new Roll("1d10 + @shield", { shield: shieldSkillVal }).evaluate();
       const br = blk.total;
-      const shieldRed = getDamageReduction(targetLeftHand, damageType);
+      const shieldRed = getDamageReduction(targetShield, damageType);
       const softened = Math.max(0, rawDamage - shieldRed);
 
       if (br < 6) {
@@ -516,8 +520,8 @@ export async function resolveSingleAttack(args = {}) {
 
         location = pickFixedLocation("shield");
 
-        if (wearArmor && targetLeftHand) {
-          await wearItem(target, targetLeftHand, wearShield);
+        if (wearArmor && targetShield) {
+          await wearItem(target, targetShield, wearShield);
         }
 
         await grantSkillExp(target, "shield", "Щит", 2).catch(() => {});
@@ -532,7 +536,7 @@ export async function resolveSingleAttack(args = {}) {
   if (targetIsMonster) {
     armorItem = null;
   } else if (location.key === "shield") {
-    armorItem = targetLeftHand ?? null;
+    armorItem = targetShield ?? null;
   } else {
     armorItem = getEquippedArmorForLocation(target, location.key);
   }
@@ -678,6 +682,25 @@ export async function resolveSingleAttack(args = {}) {
 
 const ATTACK_TEMPLATE = "systems/iron-hills-system/templates/chat/attack.hbs";
 
+function buildDefenseContextHtml(defenseContext) {
+  const notes = Array.isArray(defenseContext?.notes)
+    ? defenseContext.notes.filter(Boolean)
+    : [];
+  if (!notes.length) return "";
+
+  const summary = [
+    defenseContext.formationBonus ? `строй +${defenseContext.formationBonus}` : "",
+    defenseContext.shieldWallBonus ? `стена +${defenseContext.shieldWallBonus}` : "",
+    defenseContext.surroundMitigation ? `окружение +${defenseContext.surroundMitigation}` : "",
+  ].filter(Boolean).join(", ");
+
+  const detail = notes
+    .map(line => `<br>${line}`)
+    .join("");
+
+  return `<p><b>Позиционная защита:</b> ${summary || "без бонуса"}${detail}</p>`;
+}
+
 /**
  * Рендер AttackResult в HTML для ChatMessage через `templates/chat/attack.hbs`.
  *
@@ -715,6 +738,8 @@ export async function formatAttackChatHtml({ label, skillKey, attacker, target, 
   }
 
   // Прочность брони показываем для не-монстров с уроном или при удачном блоке щитом
+  const defenseContextHtml = buildDefenseContextHtml(result?.defenseContext);
+
   let armorDur = null;
   if (result?.hit && !result?.targetIsMonster && result?.armorItem) {
     const showDur = result.finalDamage > 0 || result?.shieldBlock?.success;
@@ -739,5 +764,6 @@ export async function formatAttackChatHtml({ label, skillKey, attacker, target, 
     overflowLabel,
     armorDur,
     shieldBlockHtml,
+    defenseContextHtml,
   });
 }

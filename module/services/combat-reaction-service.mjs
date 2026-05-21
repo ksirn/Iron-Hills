@@ -3,89 +3,18 @@ import {
   resolveSingleAttack
 } from "./combat-attack-service.mjs";
 import {
-  buildConditionUpdatePath,
-  getActorConditionValue
-} from "./condition-service.mjs";
+  buildActorBaseAttackParams,
+  normalizeAttackDamageType,
+} from "./combat-attack-profile-service.mjs";
+import {
+  consumePreparedReaction,
+  getPreparedReaction,
+} from "./combat-prepared-state-service.mjs";
 import {
   getActorToken,
   getTokenGridDistance,
   getWeaponRange
 } from "../utils/item-utils.mjs";
-
-const RANGED_SKILLS = new Set(["bow", "crossbow", "throwing"]);
-
-const REACTIONS = [
-  {
-    condition: "riposte_ready",
-    label: "Рипост",
-    requiresShieldBlock: true,
-    hitBonus: 2,
-  },
-  {
-    condition: "intercept_ready",
-    label: "Перехват",
-    requiresIncomingMelee: true,
-    hitBonus: 1,
-  },
-  {
-    condition: "counter_ready",
-    label: "Контрудар",
-    requiresDamage: true,
-    hitBonus: 0,
-  },
-];
-
-function getConditionValue(actor, key) {
-  return Math.max(0, Number(getActorConditionValue(actor, key) || 0));
-}
-
-function actorCanReact(actor) {
-  if (!actor) return false;
-  const conditions = actor.system?.conditions ?? {};
-  return !(
-    Number(conditions.unconscious ?? 0) > 0 ||
-    Number(conditions.stunned ?? 0) > 0 ||
-    Number(conditions.sleeping ?? 0) > 0
-  );
-}
-
-function getEquippedWeapon(actor) {
-  const equipment = actor?.system?.equipment ?? {};
-  for (const slot of ["rightHand", "leftHand"]) {
-    const itemId = equipment?.[slot];
-    const item = itemId ? actor.items?.get(itemId) : null;
-    if (item?.type === "weapon") return item;
-  }
-  return null;
-}
-
-function getReactionAttackProfile(actor, reaction) {
-  const weapon = getEquippedWeapon(actor);
-  const fallbackSkill = actor?.type === "monster"
-    ? String(actor.system?.combat?.attacks?.[0]?.skillKey ?? "unarmed")
-    : "unarmed";
-  const npcAttack = actor?.system?.combat?.attacks?.[0] ?? {};
-
-  return {
-    weapon,
-    skillKey: weapon?.system?.skill ?? fallbackSkill,
-    label: `${reaction.label}: ${weapon?.name ?? npcAttack.label ?? actor?.name ?? "Без оружия"}`,
-    damageType: weapon?.system?.damageType ?? npcAttack.damageType ?? "physical",
-    baseDamage: Number(weapon?.system?.damage ?? npcAttack.damage ?? actor?.system?.combat?.damage ?? 1),
-    hitBonus: Number(reaction.hitBonus ?? 0),
-    skillValueFallback: Number(
-      actor?.system?.combat?.attackSkill
-      ?? actor?.system?.combat?.unarmedSkill
-      ?? actor?.system?.combat?.attackBonus
-      ?? 1
-    ),
-  };
-}
-
-function isIncomingMelee(sourceSkillKey) {
-  const key = String(sourceSkillKey ?? "");
-  return key && !RANGED_SKILLS.has(key);
-}
 
 function reactionCanReach(attacker, target, weapon) {
   const attackerToken = getActorToken(attacker);
@@ -99,26 +28,16 @@ function reactionCanReach(attacker, target, weapon) {
   return distance <= range;
 }
 
-function getPreparedReaction(defender, result, { sourceSkillKey = "", sourceDamageType = "physical" } = {}) {
-  if (!actorCanReact(defender)) return null;
-  if (result?.targetKilled) return null;
+function getReactionAttackProfile(actor, reaction) {
+  const baseProfile = buildActorBaseAttackParams(actor, {
+    labelPrefix: `${reaction?.label ?? "Реакция"}: `,
+  });
 
-  const incomingMelee = isIncomingMelee(sourceSkillKey);
-  const physical = String(sourceDamageType ?? "physical").toLowerCase() === "physical";
-
-  for (const reaction of REACTIONS) {
-    if (getConditionValue(defender, reaction.condition) <= 0) continue;
-    if (reaction.requiresShieldBlock && !result?.shieldBlock?.success) continue;
-    if (reaction.requiresDamage && !(result?.hit && Number(result?.finalDamage ?? 0) > 0)) continue;
-    if (reaction.requiresIncomingMelee && !(incomingMelee && physical)) continue;
-    return reaction;
-  }
-
-  return null;
-}
-
-async function consumeReaction(actor, reaction) {
-  await actor.update({ [buildConditionUpdatePath(reaction.condition)]: 0 });
+  return {
+    ...baseProfile,
+    damageType: normalizeAttackDamageType(baseProfile.damageType),
+    hitBonus: Number(baseProfile.hitBonus ?? 0) + Number(reaction?.hitBonus ?? 0),
+  };
 }
 
 export async function applyPreparedCombatReaction({
@@ -136,11 +55,12 @@ export async function applyPreparedCombatReaction({
   }
 
   const profile = getReactionAttackProfile(defender, reaction);
+  const attackerToken = getActorToken(attacker);
   if (!reactionCanReach(defender, attacker, profile.weapon)) {
     return { triggered: false, html: "", reaction: null, result: null };
   }
 
-  await consumeReaction(defender, reaction);
+  await consumePreparedReaction(defender, reaction);
 
   const reactionResult = await resolveSingleAttack({
     attacker: defender,
@@ -159,7 +79,8 @@ export async function applyPreparedCombatReaction({
     wearWeapon: Boolean(profile.weapon),
     wearArmor: true,
     applyInjuries: true,
-    shieldIntercept: String(profile.damageType ?? "physical").toLowerCase() === "physical",
+    shieldIntercept: normalizeAttackDamageType(profile.damageType) === "physical",
+    targetToken: attackerToken,
     dieRoller: dieRoller ?? undefined,
     onLethal,
   });

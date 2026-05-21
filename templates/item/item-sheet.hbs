@@ -198,8 +198,24 @@
           <label>Затухание</label>
           <input type="number" name="system.aoe.chainDecay" value="{{system.aoe.chainDecay}}" min="0" max="1" step="0.05">
         </div>
-        <div class="ih-is-field narrow">
+        <div class="ih-is-field">
+          <label>Логика зон</label>
+          <select name="system.aoe.targetZoneMode">
+            {{#each aoeZoneModeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.targetZoneMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
           <label>Friendly fire</label>
+          <select name="system.aoe.friendlyFireMode">
+            {{#each aoeFriendlyFireOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.friendlyFireMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Legacy FF</label>
           <input type="checkbox" name="system.friendlyFire" {{checked system.friendlyFire}}>
         </div>
       </div>

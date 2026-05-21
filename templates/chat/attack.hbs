@@ -12,6 +12,7 @@
 {{/if}}
 <p><b>{{localize "IRONHILLS.Chat.Attack.EffectiveRoll"}}:</b> {{result.effectiveRoll}}</p>
 <p><b>{{localize "IRONHILLS.Chat.Attack.Threshold"}}:</b> {{result.threshold}}</p>
+{{#if defenseContextHtml}}{{{defenseContextHtml}}}{{/if}}
 {{#if (gt result.finalEnergyCost 0)}}
   <p><b>{{localize "IRONHILLS.Chat.Attack.EnergyCost"}}:</b> -{{result.finalEnergyCost}}</p>
 {{/if}}

@@ -49,7 +49,15 @@ import {
   isSyntheticActorDocument,
   resolveActorFromUuid
 } from "./utils/actor-utils.mjs";
+import {
+  executePendingCombatActionForActorSheet,
+  executePendingPayloadForActorSheet,
+} from "./services/actor-sheet-orchestration-service.mjs";
 import { syncDerivedConditionsFromTrauma } from "./services/actor-state-service.mjs";
+import {
+  applyActorFullRest,
+  applyActorShortRest,
+} from "./services/condition-service.mjs";
 import {
   cleanupInvalidActorReferences,
   ensureActorSkills,
@@ -104,6 +112,13 @@ async function syncDerivedConditionsCommand(actorRef) {
   }
 
   return syncDerivedConditionsFromTrauma(actor, { render: true });
+}
+
+function getActorSheetActionOptions() {
+  return {
+    actorSheetClass: IronHillsActorSheet,
+    tradeAppClass: TarkovTradeApp,
+  };
 }
 
 // Единый init: регистрация настроек, шитов, Handlebars-хелперов.
@@ -230,8 +245,8 @@ Hooks.once("init", () => {
         return;
       }
 
-      if (typeof actor.sheet?._executePendingCombatAction === "function") {
-        await actor.sheet._executePendingCombatAction(result.action);
+      if (actor.sheet) {
+        await executePendingCombatActionForActorSheet(actor.sheet, result.action, getActorSheetActionOptions());
       } else {
         ui.notifications.info(`Действие "${result.action?.label || "действие"}" завершено.`);
       }
@@ -363,7 +378,7 @@ Hooks.once("ready", async () => {
     }
     return game.ironHills.openCombatHud({ compactMode: true });
   };
-  
+
   function ensureDefaultPlayerHud() {
     // HUD всегда открыт для всех
     window.setTimeout(() => {
@@ -763,7 +778,7 @@ game.ironHills.openCombatManager = () => {
       }
     }
   });
-  
+
 // renderActorDirectory для кнопки World Tools регистрируется в world-sim-tools.mjs.
 // Дублирующий хук здесь удалён.
 
@@ -776,48 +791,9 @@ Hooks.on("ironHillsPendingActionFinished", async ({ actor, action }) => {
   const actorSheet = actor.sheet;
 
   try {
-
-    if (payload.actionType === "attack") {
-      await actorSheet._performAttack(payload);
-      return;
+    if (actorSheet) {
+      await executePendingPayloadForActorSheet(actorSheet, payload, getActorSheetActionOptions());
     }
-
-    if (payload.actionType === "spell") {
-      const item = actor.items.get(payload.itemId);
-      if (item) {
-        await actorSheet._castSpellLike({ item, isScroll: false });
-      }
-      return;
-    }
-
-    if (payload.actionType === "scroll") {
-      const item = actor.items.get(payload.itemId);
-      if (item) {
-        await actorSheet._castSpellLike({ item, isScroll: true });
-      }
-      return;
-    }
-
-    if (payload.actionType === "throwable") {
-      await actorSheet._useThrowable(payload.itemId);
-      return;
-    }
-
-    if (payload.actionType === "potion") {
-      await actorSheet._usePotion(payload.itemId);
-      return;
-    }
-
-    if (payload.actionType === "food") {
-      await actorSheet._consumeFood(payload.itemId);
-      return;
-    }
-
-    if (payload.actionType === "consumable") {
-      await actorSheet._useConsumable(payload.itemId);
-      return;
-    }
-
   } catch (err) {
     console.error("Pending action execution error", err);
   }
@@ -1157,77 +1133,23 @@ Hooks.once("ready", async () => {
 
     if (!targets.length) { ui.notifications.warn("Выбери токен персонажа"); return; }
 
+    const restKind = type === "long" || type === "full" ? "full" : "short";
+    let appliedRestCount = 0;
+
     for (const actor of targets) {
-      const baseMax = Number(actor.system?.resources?.energy?.baseMax ?? 10);
-      const curMax  = Number(actor.system?.resources?.energy?.max     ?? baseMax);
-      const missing = baseMax - curMax; // сколько max потеряно от усталости
-
-      let newMax;
-      if (type === "long") {
-        newMax = baseMax; // полное восстановление max
-      } else {
-        // Короткий: +50% от потерянного max (минимум 1 если есть потери)
-        newMax = Math.min(baseMax, curMax + Math.max(missing > 0 ? 1 : 0, Math.floor(missing * 0.5)));
-      }
-
-      const updates = {
-        "system.resources.energy.max":   newMax,
-        "system.resources.energy.value": newMax, // текущая тоже до max
-      };
-
-      // ── Прокачка baseMax ────────────────────────────────────
-      // baseMax растёт только если реально восстановили потерянный max.
-      // Логика: каждое полное восстановление = 1 очко опыта выносливости.
-      // При накоплении N очков → baseMax+1.
-      // N зависит от текущего baseMax (чем выше — тем сложнее растить).
-      const restoredMax = newMax - curMax; // сколько max восстановили
-      if (restoredMax > 0) {
-        const GROWTH_KEY = "flags.iron-hills-system.energyGrowthXp";
-        const curXp      = Number(actor.getFlag("iron-hills-system", "energyGrowthXp") ?? 0);
-        const threshold  = baseMax; // нужно baseMax очков чтобы вырасти (тяжёлые бойцы растут медленнее)
-        const xpGained   = restoredMax; // очков = сколько max восстановлено
-        const newXp      = curXp + xpGained;
-
-        if (newXp >= threshold) {
-          // Рост baseMax!
-          updates["system.resources.energy.baseMax"] = baseMax + 1;
-          updates[GROWTH_KEY] = newXp - threshold;
-          await ChatMessage.create({
-            speaker: ChatMessage.getSpeaker({ actor }),
-            content: `<div style="padding:6px">
-              💪 <b>${actor.name}</b> закалился — резерв энергии вырос до <b>${baseMax + 1}</b>!
-            </div>`
-          });
-        } else {
-          await actor.setFlag("iron-hills-system", "energyGrowthXp", newXp);
-        }
-      }
-
-      await actor.update(updates);
-
-      const label   = type === "long" ? "Длинный отдых" : "Короткий отдых";
-      const restHours = type === "long" ? 8 : 1;
-      const xpInfo  = restoredMax > 0
-        ? `<br>Опыт выносливости: +${restoredMax}`
-        : "";
-      ui.notifications.info(`${actor.name}: ${label} — энергия ${newMax}/${newMax}`);
-      await ChatMessage.create({
-        speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div style="font-family:var(--font-primary);padding:6px">
-          <b>${label}</b> — ${actor.name}<br>
-          ⚡ Энергия: <b>${curMax} → ${newMax} / ${newMax}</b>
-          ${restoredMax > 0 ? ` (+${restoredMax} макс.)` : " (макс. не изменился)"}
-          ${xpInfo}<br>
-          ⏰ Прошло ${restHours}ч.
-        </div>`
-      });
+      const result = restKind === "full"
+        ? await applyActorFullRest(actor)
+        : await applyActorShortRest(actor);
+      if (result?.ok !== false) appliedRestCount += 1;
     }
 
-    // Перематываем время на длительность отдыха (один раз, не за каждого актора)
-    const restHoursTotal = type === "long" ? 8 : 1;
-    await game.time.advance(restHoursTotal * 3600);
+    if (!appliedRestCount) return;
+
+    const delegatedRestHoursTotal = restKind === "full" ? 8 : 1;
+    await game.time.advance(delegatedRestHoursTotal * 3600);
     await applyLightingToScene(canvas?.scene);
     game.ironHills.apps?.weather?.render?.(false);
+    return;
   };
 
   game.ironHills.formatCurrency = formatCurrency;

@@ -1,57 +1,11 @@
+import { normalizeAoeConfig } from "./aoe-policy-service.mjs";
 import { getCombatParticipantByActor } from "./combat-flow-service.mjs";
 import {
-  addOrExtendActorCondition,
-  buildConditionUpdatePath,
-  getActorConditionValue
-} from "./condition-service.mjs";
+  applyPreparedTechniqueEffect,
+  consumePreparedAttackBonus as consumePreparedAttackBonusState,
+  isSupportTechniqueSpecial,
+} from "./combat-prepared-state-service.mjs";
 import { num } from "../utils/math-utils.mjs";
-
-const SUPPORT_TECHNIQUE_EFFECTS = {
-  counter_after_block: {
-    condition: "riposte_ready",
-    value: 6,
-    label: "Рипост готов",
-    text: "Рипост подготовлен: используйте его после успешного блока.",
-  },
-  reaction_interrupt: {
-    condition: "intercept_ready",
-    value: 6,
-    label: "Перехват готов",
-    text: "Перехват подготовлен: можно использовать как реакцию на ближнюю атаку.",
-  },
-  auto_counter_on_hit: {
-    condition: "counter_ready",
-    value: 6,
-    label: "Контрудар готов",
-    text: "Контрудар подготовлен: реакция доступна до начала следующего хода.",
-  },
-  formation_stance: {
-    condition: "formation_stance",
-    value: 6,
-    label: "Строй",
-    text: "Стойка строя активна: защита повышена до начала следующего хода.",
-  },
-  shield_wall_formation: {
-    condition: "shield_wall_formation",
-    value: 6,
-    label: "Стена щитов",
-    text: "Стена щитов активна: защита повышена до начала следующего хода.",
-  },
-  aim_bonus_3_next_shot: {
-    condition: "aimed_shot_bonus",
-    value: 3,
-    label: "Прицел",
-    text: "Прицеливание подготовлено: следующий дальний выстрел получает +3 к попаданию.",
-  },
-  passive_no_reload_penalty: {
-    condition: "rapid_reload",
-    value: 999,
-    label: "Быстрая перезарядка",
-    text: "Пассив быстрой перезарядки отмечен на персонаже.",
-  },
-};
-
-const RANGED_ATTACK_SKILLS = new Set(["bow", "crossbow", "throwing"]);
 
 function getRatio(value, max) {
   const safeMax = Math.max(1, num(max, 1));
@@ -65,7 +19,7 @@ export function getTechniqueHitBonus(effect = {}) {
 
 export function isTechniqueSupportAction(technique = null) {
   const special = String(technique?.effect?.special ?? "").trim();
-  return Boolean(SUPPORT_TECHNIQUE_EFFECTS[special]);
+  return isSupportTechniqueSpecial(special);
 }
 
 export function getTechniqueSupportEnergyCost(technique = null) {
@@ -73,37 +27,11 @@ export function getTechniqueSupportEnergyCost(technique = null) {
 }
 
 export async function applyTechniqueSupportEffect({ actor = null, technique = null } = {}) {
-  const special = String(technique?.effect?.special ?? "").trim();
-  const config = SUPPORT_TECHNIQUE_EFFECTS[special];
-  if (!actor || !config) {
-    return { ok: false, lines: [], conditions: [] };
-  }
-
-  const applied = await addOrExtendActorCondition(actor, config.condition, config.value, {
-    mode: "max",
-    valueKind: "duration",
-  });
-
-  return {
-    ok: true,
-    lines: [config.text],
-    conditions: [{ ...applied, label: config.label }],
-  };
+  return applyPreparedTechniqueEffect({ actor, technique });
 }
 
 export async function consumePreparedAttackBonus(actor, { skillKey = "" } = {}) {
-  if (!actor || !RANGED_ATTACK_SKILLS.has(String(skillKey ?? ""))) {
-    return { hitBonus: 0, lines: [] };
-  }
-
-  const aimedBonus = Math.max(0, Number(getActorConditionValue(actor, "aimed_shot_bonus") || 0));
-  if (!(aimedBonus > 0)) return { hitBonus: 0, lines: [] };
-
-  await actor.update({ [buildConditionUpdatePath("aimed_shot_bonus")]: 0 });
-  return {
-    hitBonus: aimedBonus,
-    lines: [`Прицел: +${aimedBonus} к попаданию, бонус израсходован.`],
-  };
+  return consumePreparedAttackBonusState(actor, { skillKey });
 }
 
 function getActorTorsoHpRatio(actor) {
@@ -144,24 +72,30 @@ export function getTechniqueDamageContext(effect = {}, { attacker = null, target
 
   if (effect?.special === "execute_low_hp") {
     const allowed = target && getActorTorsoHpRatio(target) < 0.3;
-    notes.push(allowed ? "Казнь: цель ниже 30% HP." : "Казнь: цель не ниже 30% HP, бонус урона не применён.");
+    notes.push(allowed
+      ? "Казнь: цель ниже 30% HP."
+      : "Казнь: цель не ниже 30% HP, бонус урона не применен.");
     return { multiplier: allowed ? multiplier : 1, notes, rangeOverride: null };
   }
 
   if (effect?.special === "first_strike_only") {
     const allowed = isFirstCombatAction(attacker);
-    notes.push(allowed ? "Первый удар: бонус урона применён." : "Первый удар: персонаж уже действовал, бонус урона не применён.");
+    notes.push(allowed
+      ? "Первый удар: бонус урона применен."
+      : "Первый удар: персонаж уже действовал, бонус урона не применен.");
     return { multiplier: allowed ? multiplier : 1, notes, rangeOverride: null };
   }
 
   if (effect?.special === "requires_hidden_or_flank") {
     const allowed = hasHiddenOrFlankAdvantage(attacker, target);
-    notes.push(allowed ? "Скрытность/фланг: бонус урона применён." : "Скрытность/фланг не подтверждены, бонус урона не применён.");
+    notes.push(allowed
+      ? "Скрытность/фланг: бонус урона применен."
+      : "Скрытность/фланг не подтверждены, бонус урона не применен.");
     return { multiplier: allowed ? multiplier : 1, notes, rangeOverride: null };
   }
 
   if (effect?.special === "counter_after_block") {
-    notes.push("Рипост требует успешного блока; автоматического триггера пока нет.");
+    notes.push("Рипост требует успешного блока и теперь обрабатывается как подготовленная реакция.");
     return { multiplier: 1, notes, rangeOverride: null };
   }
 
@@ -174,36 +108,63 @@ export function getTechniqueDamageContext(effect = {}, { attacker = null, target
 }
 
 export function getTechniqueAoeConfig(effect = {}) {
+  if (effect?.aoe && typeof effect.aoe === "object") {
+    return normalizeAoeConfig(effect.aoe, {
+      distance: 1,
+      friendlyFire: effect.friendlyFire,
+      friendlyFireMode: effect.friendlyFireMode,
+      targetZone: effect.targetZone,
+      targetZoneMode: effect.targetZoneMode,
+    });
+  }
+
   const raw = String(effect?.aoe ?? "");
   const isRanged = raw.startsWith("ranged");
   const maxTargetsMatch = raw.match(/(\d+)\s*targets?/);
   const maxTargets = maxTargetsMatch ? Number(maxTargetsMatch[1]) : null;
 
   if (raw === "melee_adjacent") {
-    return {
+    return normalizeAoeConfig({
       shape: "circle",
       type: "nova",
       distance: 1,
       maxTargets: null,
       chainDecay: 1,
-    };
+      friendlyFire: effect.friendlyFire,
+      friendlyFireMode: effect.friendlyFireMode,
+      targetZone: effect.targetZone,
+      targetZoneMode: effect.targetZoneMode,
+    });
   }
 
-  return {
+  return normalizeAoeConfig({
     shape: effect?.aoeShape ?? (isRanged ? "circle" : "circle"),
     type: effect?.aoeType ?? (maxTargets ? "shards" : "blast"),
     distance: Number(effect?.aoeDistance ?? (isRanged ? 4 : 1)),
     maxTargets,
     chainDecay: Number(effect?.chainDecay ?? 1),
-  };
+    friendlyFire: effect.friendlyFire,
+    friendlyFireMode: effect.friendlyFireMode,
+    targetZone: effect.targetZone,
+    targetZoneMode: effect.targetZoneMode,
+  }, {
+    distance: isRanged ? 4 : 1,
+    chainDecay: 1,
+  });
 }
 
-export function buildTechniqueAttackParams({ baseParams = {}, technique = null, attacker = null, target = null, targetZoneChoice = null } = {}) {
+export function buildTechniqueAttackParams({
+  baseParams = {},
+  technique = null,
+  attacker = null,
+  target = null,
+  targetZoneChoice = null
+} = {}) {
   const effect = technique?.effect ?? {};
   const damageContext = getTechniqueDamageContext(effect, { attacker, target });
   const damageMultiplier = damageContext.multiplier;
   const chosenZone = targetZoneChoice?.key ?? targetZoneChoice ?? null;
-  const labelSuffix = targetZoneChoice?.label ? ` → ${targetZoneChoice.label}` : "";
+  const labelSuffix = targetZoneChoice?.label ? ` -> ${targetZoneChoice.label}` : "";
   const defaultConditionDuration = effect.special === "knockback_1" ? 6 : 0;
 
   return {

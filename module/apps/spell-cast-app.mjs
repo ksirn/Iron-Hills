@@ -6,6 +6,12 @@ import {
   SPELLS, SPELLS_BY_SCHOOL, SPELL_SCHOOLS, getAvailableSpells
 } from "../constants/spells-catalog.mjs";
 import { getTargetPartLabel } from "../services/actor-state-service.mjs";
+import {
+  normalizeAoeConfig,
+  normalizeAoeTargetZone,
+  resolveAoeFriendlyFire,
+  resolveAoeFriendlyFireMode,
+} from "../services/aoe-policy-service.mjs";
 
 const BODY_ZONE_KEYS = Object.freeze(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
 const RANDOM_ZONE_OPTION = Object.freeze({ key: "", label: "Случайная зона" });
@@ -23,21 +29,16 @@ const AOE_LABELS = Object.freeze({
   nova: "🌟 Вокруг кастера"
 });
 
-function normalizeTargetZone(value) {
-  const zone = String(value ?? "").trim();
-  if (!zone || zone === "random" || zone === "auto" || zone === "none") return "";
-  return zone;
-}
-
 function getSpellTargetZone(spell) {
-  return normalizeTargetZone(spell?.targetZone)
-    || normalizeTargetZone(spell?.targetPart)
-    || normalizeTargetZone(spell?.effect?.targetZone)
-    || normalizeTargetZone(spell?.effect?.targetPart);
+  return normalizeAoeTargetZone(spell?.targetZone)
+    || normalizeAoeTargetZone(spell?.targetPart)
+    || normalizeAoeTargetZone(spell?.effect?.targetZone)
+    || normalizeAoeTargetZone(spell?.effect?.targetPart)
+    || "";
 }
 
 function getZoneOptions(selectedKey = "") {
-  const selectedZone = normalizeTargetZone(selectedKey);
+  const selectedZone = normalizeAoeTargetZone(selectedKey) ?? "";
   return BODY_ZONE_OPTIONS.map(option => ({
     ...option,
     selected: option.key === selectedZone
@@ -91,6 +92,9 @@ class IronHillsSpellCastApp extends Application {
     // Группируем по школам
     const schools = Object.values(SPELL_SCHOOLS).map(school => {
       const spells = (SPELLS_BY_SCHOOL[school.id] ?? []).map(spell => {
+        const aoeConfig = spell.aoe
+          ? normalizeAoeConfig(spell.aoe, { distance: 1 })
+          : null;
         const known    = knownIds.has(spell.id);
         const hasRank  = spell.rank <= magicSkill;
         const hasMana  = spell.manaCost <= manaCur;
@@ -100,17 +104,27 @@ class IronHillsSpellCastApp extends Application {
                        : null;
         const targetZone = getSpellTargetZone(spell);
         const canChooseTargetZone = Number(spell.damage ?? 0) > 0;
-        const canToggleFriendlyFire = Boolean(spell.aoe);
+        const canToggleFriendlyFire = Boolean(aoeConfig);
+        const friendlyFireMode = resolveAoeFriendlyFireMode(
+          spell.aoe?.friendlyFireMode,
+          spell.friendlyFireMode,
+          spell.aoe?.friendlyFire,
+          spell.friendlyFire,
+          "off",
+        );
+        const friendlyFire = Boolean(aoeConfig?.friendlyFire ?? resolveAoeFriendlyFire(spell.friendlyFire, false));
         return {
           ...spell,
+          aoe: aoeConfig,
           locked,
           available: !locked,
           targetZone,
-          friendlyFire: Boolean(spell.friendlyFire ?? false),
+          friendlyFire,
+          friendlyFireMode,
           canChooseTargetZone,
           canToggleFriendlyFire,
           bodyZones: canChooseTargetZone ? getZoneOptions(targetZone) : [],
-          aoeLabel: spell.aoe ? (AOE_LABELS[spell.aoe.type] ?? spell.aoe.type) : "",
+          aoeLabel: aoeConfig ? (AOE_LABELS[aoeConfig.type] ?? aoeConfig.type) : "",
         };
       });
       const hasAny = spells.some(s => s.available || s.locked !== "unknown");
@@ -156,7 +170,7 @@ class IronHillsSpellCastApp extends Application {
       const zoneInput = e.currentTarget.querySelector("[data-spell-target-zone]");
       const friendlyFireInput = e.currentTarget.querySelector("[data-spell-friendly-fire]");
       const targetZone = zoneInput
-        ? normalizeTargetZone(zoneInput.value)
+        ? (normalizeAoeTargetZone(zoneInput.value) ?? "")
         : getSpellTargetZone(chosen);
 
       if (targetZone) {
@@ -175,7 +189,17 @@ class IronHillsSpellCastApp extends Application {
         }
       }
       if (friendlyFireInput) {
-        chosen.friendlyFire = Boolean(friendlyFireInput.checked);
+        const checked = Boolean(friendlyFireInput.checked);
+        const defaultMode = friendlyFireInput.dataset.spellFriendlyFireMode ?? "off";
+        const defaultChecked = friendlyFireInput.dataset.spellFriendlyFireDefault === "true";
+        const friendlyFireMode = !checked
+          ? (defaultMode === "auto" && !defaultChecked ? "auto" : "off")
+          : (defaultMode === "auto" && defaultChecked ? "auto" : "on");
+        chosen.friendlyFire = checked;
+        chosen.friendlyFireMode = friendlyFireMode;
+        if (chosen.aoe && typeof chosen.aoe === "object") {
+          chosen.aoe = { ...chosen.aoe, friendlyFireMode };
+        }
       } else if (chosen.friendlyFire === undefined) {
         chosen.friendlyFire = false;
       }

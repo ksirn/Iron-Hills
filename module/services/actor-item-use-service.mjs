@@ -7,6 +7,7 @@ import {
   getItemActionType,
   useLegacyPotionEffect,
 } from "./item-effect-service.mjs";
+import { resolveCombatActionTargets } from "./combat-action-target-service.mjs";
 
 export function getPendingItemActionConfig(actionType) {
   const configs = {
@@ -220,6 +221,7 @@ export async function useItemByType(actor, itemOrId, {
   allowedTypes = null,
   missingMessage = "Предмет не найден",
   unsupportedMessage = "Этот тип предмета пока нельзя использовать",
+  actionOptions = {},
   handlers = {},
 } = {}) {
   const item = getOwnedItemForUse(actor, itemOrId, missingMessage);
@@ -230,33 +232,38 @@ export async function useItemByType(actor, itemOrId, {
     return false;
   }
 
+  const handlerOptions = {
+    skipTimeCost,
+    ...actionOptions,
+  };
+
   if (item.type === "food") {
-    await handlers.useFood?.(item.id, { skipTimeCost });
+    await handlers.useFood?.(item.id, handlerOptions);
     return true;
   }
 
   if (item.type === "spell") {
-    await handlers.castSpell?.({ item, isScroll: false, skipTimeCost });
+    await handlers.castSpell?.({ item, isScroll: false, ...handlerOptions });
     return true;
   }
 
   if (item.type === "scroll") {
-    await handlers.castSpell?.({ item, isScroll: true, skipTimeCost });
+    await handlers.castSpell?.({ item, isScroll: true, ...handlerOptions });
     return true;
   }
 
   if (item.type === "potion") {
-    await handlers.usePotion?.(item.id, { skipTimeCost });
+    await handlers.usePotion?.(item.id, handlerOptions);
     return true;
   }
 
   if (item.type === "throwable") {
-    await handlers.useThrowable?.(item.id, { skipTimeCost });
+    await handlers.useThrowable?.(item.id, handlerOptions);
     return true;
   }
 
   if (item.type === "consumable") {
-    await handlers.useConsumable?.(item.id, { skipTimeCost });
+    await handlers.useConsumable?.(item.id, handlerOptions);
     return true;
   }
 
@@ -270,11 +277,14 @@ export async function useItemByType(actor, itemOrId, {
 }
 
 export async function resumePendingItemAction(actor, data, config, handlers = {}) {
+  const targets = resolveCombatActionTargets({ targetRefs: data?.targetRefs });
+
   return useItemByType(actor, data?.itemId, {
     skipTimeCost: true,
     allowedTypes: config.allowedTypes,
     missingMessage: config.missingMessage,
     unsupportedMessage: config.missingMessage,
+    actionOptions: targets.length ? { targets } : {},
     handlers,
   });
 }

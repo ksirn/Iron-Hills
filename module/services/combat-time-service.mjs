@@ -1,3 +1,5 @@
+import { isConditionActive } from "./condition-policy-service.mjs";
+
 export function getCombatActionSeconds(actionType, item = null) {
   if (actionType === "attack") {
     if (item?.system?.timeCost) return Number(item.system.timeCost);
@@ -58,7 +60,7 @@ export function getCombatActionSeconds(actionType, item = null) {
 
 export function applyActorSpeedModifier(actor, seconds) {
   const conditions = actor?.system?.conditions ?? {};
-  if (conditions.slowed > 0) return seconds * 2.0;
-  if (conditions.hasted > 0) return seconds * 0.5;
+  if (isConditionActive(conditions, "slowed")) return seconds * 2.0;
+  if (isConditionActive(conditions, "hasted")) return seconds * 0.5;
   return seconds;
 }

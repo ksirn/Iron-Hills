@@ -16,6 +16,15 @@ import {
   applySingleTargetSpellDamage,
   applySingleTargetSpellUtilityEffect,
 } from "./spell-effect-service.mjs";
+import {
+  buildCombatTargetPayload,
+  getPrimaryCombatTargetActor,
+  resolveCombatActionTargets,
+} from "./combat-action-target-service.mjs";
+import {
+  resolveAoeFriendlyFireMode,
+  resolveAoeTargetZone,
+} from "./aoe-policy-service.mjs";
 
 function spellCastResult({
   ok = true,
@@ -27,13 +36,14 @@ function spellCastResult({
   return { ok, queued, consumedScroll, reason, result };
 }
 
-function getSelectedTargetActor(targets = globalThis.game?.user?.targets ?? []) {
-  const selectedTargets = targets instanceof Set ? targets : new Set(targets ?? []);
-  return [...selectedTargets][0]?.actor ?? null;
-}
-
 function getSpellData(item) {
   const catalogSpell = SPELLS[String(item?.system?.spellId ?? "")] ?? null;
+  const itemAoe = item?.system?.aoe && Number(item.system.aoe.distance ?? 0) > 0
+    ? item.system.aoe
+    : null;
+  const catalogAoe = catalogSpell?.aoe && Number(catalogSpell.aoe.distance ?? 0) > 0
+    ? catalogSpell.aoe
+    : null;
   const itemEffect = item?.system?.effect && typeof item.system.effect === "object"
     ? item.system.effect
     : null;
@@ -44,20 +54,31 @@ function getSpellData(item) {
   const effectType = item?.system?.effectType
     || (spellDamage > 0 ? "damage" : (spellEffect?.special === "heal" ? "heal" : ""));
   const rawDamageType = item?.system?.damageType ?? catalogSpell?.damageType ?? "magical";
-  const explicitTargetPart = String(item?.system?.targetZone ?? "").trim()
-    || String(item?.system?.targetPart ?? "").trim()
-    || String(catalogSpell?.targetZone ?? "").trim()
-    || String(catalogSpell?.targetPart ?? "").trim()
-    || String(spellEffect?.targetZone ?? "").trim()
-    || String(spellEffect?.targetPart ?? "").trim()
-    || null;
+  const explicitTargetPart = resolveAoeTargetZone(
+    item?.system?.targetZone,
+    item?.system?.targetPart,
+    catalogSpell?.targetZone,
+    catalogSpell?.targetPart,
+    spellEffect?.targetZone,
+    spellEffect?.targetPart,
+  );
 
   return {
     catalogSpell,
-    spellAoe: item?.system?.aoe ?? catalogSpell?.aoe ?? null,
+    spellAoe: itemAoe ?? catalogAoe,
     spellEffect,
     spellDamage,
-    spellFriendlyFire: Boolean(item?.system?.friendlyFire ?? catalogSpell?.friendlyFire ?? false),
+    spellFriendlyFire: resolveAoeFriendlyFireMode(
+      itemAoe?.friendlyFireMode,
+      itemAoe?.friendlyFire,
+      catalogAoe?.friendlyFireMode,
+      catalogSpell?.friendlyFireMode,
+      catalogAoe?.friendlyFire,
+      catalogSpell?.friendlyFire,
+      item?.system?.friendlyFireMode,
+      item?.system?.friendlyFire,
+      false,
+    ),
     effectType,
     damageType: String(rawDamageType).toLowerCase() === "physical" ? "physical" : "magical",
     targetPart: explicitTargetPart ?? "torso",
@@ -114,21 +135,7 @@ export async function castSpellLikeItem({
   }
 
   const spellLabel = `${isScroll ? "Свиток" : "Заклинание"}: ${item.name}`;
-  if (!skipTimeCost && resolveCombatTimeCost) {
-    const timeState = await resolveCombatTimeCost({
-      actionType: isScroll ? "scroll" : "cast-spell",
-      label: spellLabel,
-      item,
-      payload: {
-        itemId: item.id,
-        isScroll,
-      },
-    });
-
-    if (timeState?.queued) return spellCastResult({ ok: true, queued: true });
-    if (!timeState?.ok) return spellCastResult({ ok: false, reason: "time-cost" });
-  }
-
+  const selectedTargets = resolveCombatActionTargets({ targets });
   const school = item.system?.school;
   const schoolSkill = actor?.system?.skills?.[school];
   if (!schoolSkill) {
@@ -164,7 +171,7 @@ export async function castSpellLikeItem({
     if (!allowed) return spellCastResult({ ok: false, reason: "hostile-action-denied" });
   }
 
-  const targetActor = getSelectedTargetActor(targets);
+  const targetActor = getPrimaryCombatTargetActor(selectedTargets);
   if (!spellAoe && !targetActor) {
     ui.notifications.warn("Выберите цель");
     return spellCastResult({ ok: false, reason: "missing-target" });
@@ -175,8 +182,24 @@ export async function castSpellLikeItem({
   const castPenalty = Number(injuries.castPenalty ?? 0);
   const derivedConditions = getDerivedConditionState(actor);
   if (!derivedConditions.canCast) {
-    ui.notifications.warn("Персонаж не может колдовать из-за критических травм.");
+    ui.notifications.warn(derivedConditions.castBlockReason || "Персонаж не может колдовать из-за состояния.");
     return spellCastResult({ ok: false, reason: "cannot-cast" });
+  }
+
+  if (!skipTimeCost && resolveCombatTimeCost) {
+    const timeState = await resolveCombatTimeCost({
+      actionType: isScroll ? "scroll" : "cast-spell",
+      label: spellLabel,
+      item,
+      payload: {
+        itemId: item.id,
+        isScroll,
+        ...buildCombatTargetPayload(selectedTargets),
+      },
+    });
+
+    if (timeState?.queued) return spellCastResult({ ok: true, queued: true });
+    if (!timeState?.ok) return spellCastResult({ ok: false, reason: "time-cost" });
   }
 
   const resourceState = { currentMana, currentEnergy, manaCost, energyCost };
@@ -188,7 +211,12 @@ export async function castSpellLikeItem({
       label: item.name,
       color: "#8888ff",
       skillKey: school,
-      hitBonus: -castPenalty,
+      hitBonus: 0,
+      injuries: {
+        ...injuries,
+        attackPenalty: castPenalty,
+        meleePenalty: castPenalty,
+      },
       friendlyFire: spellFriendlyFire,
       baseDamage: effectType === "damage" ? power : 0,
       damageType,

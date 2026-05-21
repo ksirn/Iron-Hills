@@ -40,6 +40,8 @@
         {{#if aoe}}
         <div class="ih-spell-aoe-tag">
           {{aoeLabel}}
+          {{#if aoe.friendlyFireMode}} | FF {{aoe.friendlyFireMode}}{{/if}}
+          {{#if aoe.targetZoneMode}} | Zone {{aoe.targetZoneMode}}{{/if}}
           {{#if aoe.maxTargets}} · макс {{aoe.maxTargets}} цели{{/if}}
           · {{aoe.distance}} кл.
         </div>
@@ -56,7 +58,7 @@
           </label>
           {{#if canToggleFriendlyFire}}
           <label class="ih-spell-option ih-spell-option-check">
-            <input type="checkbox" data-spell-option data-spell-friendly-fire {{#if friendlyFire}}checked{{/if}}>
+            <input type="checkbox" data-spell-option data-spell-friendly-fire data-spell-friendly-fire-mode="{{friendlyFireMode}}" data-spell-friendly-fire-default="{{friendlyFire}}" {{#if friendlyFire}}checked{{/if}}>
             <span>Friendly fire</span>
           </label>
           {{/if}}
@@ -65,7 +67,7 @@
           {{#if canToggleFriendlyFire}}
           <div class="ih-spell-options">
             <label class="ih-spell-option ih-spell-option-check">
-              <input type="checkbox" data-spell-option data-spell-friendly-fire {{#if friendlyFire}}checked{{/if}}>
+              <input type="checkbox" data-spell-option data-spell-friendly-fire data-spell-friendly-fire-mode="{{friendlyFireMode}}" data-spell-friendly-fire-default="{{friendlyFire}}" {{#if friendlyFire}}checked{{/if}}>
               <span>Friendly fire</span>
             </label>
           </div>

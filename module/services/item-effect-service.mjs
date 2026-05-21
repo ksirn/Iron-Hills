@@ -8,6 +8,11 @@ import {
   recalculateActorWeight,
   removeQuantityFromItem,
 } from "./inventory-service.mjs";
+import {
+  normalizeAoeConfig,
+  normalizeAoeTargetZone,
+  resolveAoeFriendlyFireMode,
+} from "./aoe-policy-service.mjs";
 import { getPersistentActor } from "../utils/actor-utils.mjs";
 
 function itemEffectResult({
@@ -23,8 +28,6 @@ function itemEffectResult({
 
 const APPLICATION_SCOPES = new Set(["targeted", "global", "auto", "area"]);
 const TARGET_ACTOR_MODES = new Set(["self", "selected-or-self", "selected-only", "area"]);
-const THROWABLE_AOE_TYPES = new Set(["blast", "pierce", "sweep", "shards", "chain", "nova"]);
-const THROWABLE_AOE_SHAPES = new Set(["circle", "cone", "ray", "rect"]);
 
 export function getItemActionType(item) {
   return String(item?.system?.actionType ?? "").trim();
@@ -44,31 +47,34 @@ export function getItemActionPower(item, fallback = 1) {
   return Number(item?.system?.power ?? fallback);
 }
 
-export function normalizeTargetZone(value) {
-  const zone = String(value ?? "").trim();
-  if (!zone || zone === "random" || zone === "auto" || zone === "none") return null;
-  return zone;
-}
+export { normalizeAoeTargetZone as normalizeTargetZone };
 
 export function getThrowableAoeConfig(item) {
   const system = item?.system ?? {};
   const aoe = system.aoe && typeof system.aoe === "object" ? system.aoe : {};
-  const distance = Number(aoe.distance ?? system.aoeDistance ?? 0);
-  if (!(distance > 0)) return null;
+  const config = normalizeAoeConfig({
+    ...aoe,
+    friendlyFireMode: resolveAoeFriendlyFireMode(
+      aoe.friendlyFireMode,
+      system.friendlyFireMode,
+      aoe.friendlyFire,
+      system.friendlyFire,
+      false,
+    ),
+    damageType: system.damageType,
+    targetZone: system.targetZone,
+    targetPart: system.targetPart,
+  }, {
+    shape: system.aoeShape,
+    type: system.aoeType,
+    distance: system.aoeDistance,
+    maxTargets: system.maxTargets,
+    chainDecay: 1,
+    friendlyFireMode: aoe.friendlyFireMode ?? system.friendlyFireMode,
+    friendlyFire: aoe.friendlyFire ?? system.friendlyFire,
+  });
 
-  const shape = String(aoe.shape ?? system.aoeShape ?? "circle");
-  const type = String(aoe.type ?? system.aoeType ?? "blast");
-  const maxTargets = Number(aoe.maxTargets ?? system.maxTargets ?? 0);
-  const chainDecay = Number(aoe.chainDecay ?? 1);
-
-  return {
-    shape: THROWABLE_AOE_SHAPES.has(shape) ? shape : "circle",
-    type: THROWABLE_AOE_TYPES.has(type) ? type : "blast",
-    distance,
-    maxTargets: maxTargets > 0 ? maxTargets : null,
-    chainDecay: chainDecay > 0 ? chainDecay : 1,
-    friendlyFire: Boolean(system.friendlyFire ?? aoe.friendlyFire ?? false),
-  };
+  return config.distance > 0 ? config : null;
 }
 
 export function buildThrowableConditionStacks(poison = 0, burning = 0) {

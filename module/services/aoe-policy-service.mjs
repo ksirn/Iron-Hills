@@ -1,0 +1,276 @@
+import { actorsAreAllies } from "./disposition-service.mjs";
+
+export const AOE_SHAPE_KEYS = Object.freeze(["circle", "cone", "ray", "rect"]);
+export const AOE_TYPE_KEYS = Object.freeze(["blast", "pierce", "sweep", "shards", "chain", "nova"]);
+export const AOE_TARGET_ZONE_MODE_KEYS = Object.freeze(["random", "fixed", "aimed"]);
+export const AOE_FRIENDLY_FIRE_MODE_KEYS = Object.freeze(["off", "on", "auto"]);
+export const BODY_ZONE_KEYS = Object.freeze([
+  "head",
+  "neck",
+  "torso",
+  "abdomen",
+  "leftArm",
+  "rightArm",
+  "leftLeg",
+  "rightLeg",
+  "shield",
+]);
+
+const AOE_SHAPE_SET = new Set(AOE_SHAPE_KEYS);
+const AOE_TYPE_SET = new Set(AOE_TYPE_KEYS);
+const AOE_TARGET_ZONE_MODE_SET = new Set(AOE_TARGET_ZONE_MODE_KEYS);
+const AOE_FRIENDLY_FIRE_MODE_SET = new Set(AOE_FRIENDLY_FIRE_MODE_KEYS);
+
+function firstDefined(...values) {
+  return values.find(value => value !== undefined && value !== null && value !== "");
+}
+
+function finiteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeTargetList(targets = []) {
+  if (!targets) return [];
+  if (targets instanceof Set) return [...targets];
+  if (Array.isArray(targets)) return targets;
+  if (typeof targets[Symbol.iterator] === "function") return Array.from(targets);
+  return [targets];
+}
+
+function normalizeString(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function boolLike(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value > 0;
+
+  const text = normalizeString(value);
+  if (!text) return null;
+  if (["true", "1", "yes", "y", "on", "all", "always"].includes(text)) return true;
+  if (["false", "0", "no", "n", "off", "none", "never", "enemy", "enemies"].includes(text)) return false;
+  return null;
+}
+
+export function normalizeAoeShape(value, fallback = "circle") {
+  const shape = String(value ?? fallback ?? "circle").trim();
+  return AOE_SHAPE_SET.has(shape) ? shape : "circle";
+}
+
+export function normalizeAoeType(value, fallback = "blast") {
+  const type = String(value ?? fallback ?? "blast").trim();
+  return AOE_TYPE_SET.has(type) ? type : "blast";
+}
+
+export function normalizeAoeDistance(value, fallback = 0) {
+  return Math.max(0, finiteNumber(value, fallback));
+}
+
+export function normalizeAoeMaxTargets(value, fallback = null) {
+  const parsed = finiteNumber(value, fallback ?? 0);
+  return parsed > 0 ? Math.floor(parsed) : null;
+}
+
+export function normalizeAoeChainDecay(value, fallback = 1) {
+  const parsed = finiteNumber(value, fallback);
+  return parsed > 0 ? parsed : 1;
+}
+
+export function normalizeAoeFriendlyFireMode(value, fallback = "off") {
+  const bool = boolLike(value);
+  if (bool === true) return "on";
+  if (bool === false) return "off";
+
+  const mode = normalizeString(value || fallback || "off");
+  return AOE_FRIENDLY_FIRE_MODE_SET.has(mode) ? mode : "off";
+}
+
+export function resolveAoeFriendlyFireMode(...values) {
+  const value = firstDefined(...values);
+  return normalizeAoeFriendlyFireMode(value, "off");
+}
+
+export function resolveAoeFriendlyFire(...values) {
+  return resolveAoeFriendlyFireMode(...values) === "on";
+}
+
+export function isAoeFriendlyFireEnabled({
+  mode = "off",
+  type = "blast",
+  shape = "circle",
+  damageType = "physical",
+  effect = null,
+} = {}) {
+  const normalizedMode = normalizeAoeFriendlyFireMode(mode, "off");
+  if (normalizedMode === "on") return true;
+  if (normalizedMode === "off") return false;
+
+  const effectMode = normalizeAoeFriendlyFireMode(effect?.friendlyFireMode, "");
+  if (effectMode === "on") return true;
+  if (effectMode === "off" && effect?.friendlyFireMode !== undefined) return false;
+
+  const normalizedType = normalizeAoeType(type, "blast");
+  const normalizedShape = normalizeAoeShape(shape, "circle");
+  const normalizedDamage = normalizeString(damageType || "physical");
+
+  if (normalizedDamage === "healing" || ["heal", "buff"].includes(String(effect?.special ?? "").trim())) {
+    return false;
+  }
+
+  if (["blast", "nova", "shards", "sweep"].includes(normalizedType)) return true;
+  if (normalizedShape === "cone" && normalizedDamage !== "healing") return true;
+  return false;
+}
+
+export function normalizeAoeTargetZone(value) {
+  const zone = String(value ?? "").trim();
+  if (!zone || zone === "random" || zone === "auto" || zone === "none") return null;
+  return zone;
+}
+
+export function resolveAoeTargetZone(...values) {
+  for (const value of values) {
+    const zone = normalizeAoeTargetZone(value);
+    if (zone) return zone;
+  }
+  return null;
+}
+
+export function normalizeAoeTargetZoneMode(value, fallback = "random") {
+  const mode = normalizeString(value || fallback || "random");
+  if (mode === "targeted" || mode === "single") return "fixed";
+  return AOE_TARGET_ZONE_MODE_SET.has(mode) ? mode : "random";
+}
+
+export function buildAoeTargetZonePolicy({
+  targetZone = null,
+  effect = null,
+  aoe = null,
+  mode = null,
+} = {}) {
+  const zone = resolveAoeTargetZone(
+    targetZone,
+    effect?.targetZone,
+    effect?.targetPart,
+    aoe?.targetZone,
+    aoe?.targetPart,
+  );
+  const rawMode = firstDefined(
+    mode,
+    effect?.targetZoneMode,
+    effect?.zoneMode,
+    aoe?.targetZoneMode,
+    aoe?.zoneMode,
+    zone ? "fixed" : "random",
+  );
+  const zoneMode = normalizeAoeTargetZoneMode(rawMode, zone ? "fixed" : "random");
+
+  return {
+    mode: zoneMode,
+    zone,
+    usesFixedZone: Boolean(zone && zoneMode !== "random"),
+    requiresChoice: zoneMode === "aimed",
+  };
+}
+
+export function resolveAoeTargetZoneForTarget(policy = null) {
+  if (!policy?.zone || policy.mode === "random") return null;
+  return policy.zone;
+}
+
+export function normalizeAoeConfig(raw = null, defaults = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const shape = normalizeAoeShape(firstDefined(source.shape, defaults.shape), defaults.shape ?? "circle");
+  const type = normalizeAoeType(firstDefined(source.type, defaults.type), defaults.type ?? "blast");
+  const damageType = String(firstDefined(source.damageType, defaults.damageType, "physical"));
+  const friendlyFireMode = resolveAoeFriendlyFireMode(
+    source.friendlyFireMode,
+    source.friendlyFire,
+    defaults.friendlyFireMode,
+    defaults.friendlyFire,
+    "off",
+  );
+  const targetZoneMode = normalizeAoeTargetZoneMode(
+    firstDefined(source.targetZoneMode, source.zoneMode, defaults.targetZoneMode, defaults.zoneMode),
+    "random",
+  );
+
+  return {
+    shape,
+    type,
+    distance: normalizeAoeDistance(firstDefined(source.distance, defaults.distance), defaults.distance ?? 0),
+    maxTargets: normalizeAoeMaxTargets(firstDefined(source.maxTargets, defaults.maxTargets), defaults.maxTargets ?? null),
+    chainDecay: normalizeAoeChainDecay(firstDefined(source.chainDecay, defaults.chainDecay), defaults.chainDecay ?? 1),
+    friendlyFireMode,
+    friendlyFire: isAoeFriendlyFireEnabled({
+      mode: friendlyFireMode,
+      type,
+      shape,
+      damageType,
+      effect: firstDefined(source.effect, defaults.effect),
+    }),
+    targetZone: resolveAoeTargetZone(source.targetZone, source.targetPart, defaults.targetZone, defaults.targetPart),
+    targetZoneMode,
+    damageType,
+  };
+}
+
+export function findAoeActorToken(actor) {
+  if (!actor?.id || !globalThis.canvas?.tokens?.placeables) return null;
+  return globalThis.canvas.tokens.placeables.find(token => token.actor?.id === actor.id) ?? null;
+}
+
+export function getAoeTargetActor(target) {
+  if (!target) return null;
+  if (target.documentName === "Actor") return target;
+  if (target.actor?.documentName === "Actor") return target.actor;
+  if (target.document?.actor?.documentName === "Actor") return target.document.actor;
+  if (target.token?.actor?.documentName === "Actor") return target.token.actor;
+  return target.actor ?? null;
+}
+
+export function getAoeTargetToken(target) {
+  if (!target) return null;
+  if (target.documentName === "Token") return target;
+  if (target.documentName === "TokenDocument") return target.object ?? target;
+  if (target.document?.documentName === "Token") return target;
+  if (target.token) return target.token;
+  return findAoeActorToken(getAoeTargetActor(target));
+}
+
+export function wantsAlliedAoeTargets(effect = null) {
+  const special = String(effect?.special ?? "").trim();
+  return special === "heal" || special === "buff";
+}
+
+export function getAoeTargetPolicy({ friendlyFire = false, effect = null, purpose = "damage" } = {}) {
+  if (friendlyFire) return "all";
+  if (purpose === "utility" && wantsAlliedAoeTargets(effect)) return "allies";
+  return "enemies";
+}
+
+export function filterAoeTargetsByPolicy(targets = [], {
+  attacker = null,
+  friendlyFire = false,
+  effect = null,
+  purpose = "damage",
+} = {}) {
+  const candidates = normalizeTargetList(targets).filter(target => getAoeTargetActor(target));
+  const policy = getAoeTargetPolicy({ friendlyFire, effect, purpose });
+
+  if (!attacker || policy === "all") {
+    return { targets: candidates, skipped: 0, policy };
+  }
+
+  let skipped = 0;
+  const filtered = candidates.filter(targetRef => {
+    const actor = getAoeTargetActor(targetRef);
+    const isAlly = actorsAreAllies(attacker, actor);
+    const keep = policy === "allies" ? isAlly : !isAlly;
+    if (!keep) skipped++;
+    return keep;
+  });
+
+  return { targets: filtered, skipped, policy };
+}

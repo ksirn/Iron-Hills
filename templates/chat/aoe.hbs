@@ -1,18 +1,21 @@
-{{!-- Iron Hills — AoE attack/spell summary chat card.
-     Контекст: { label, icon, totalCount, hitCount, alliesSpared, results:[{name, hit, roll, threshold, damage, armor, condition}] } --}}
+{{!-- Iron Hills AoE attack/spell summary chat card. --}}
 
 <div style="padding:6px;font-family:var(--font-primary)">
   {{icon}} <b>{{label}}</b><br>
   {{localize "IRONHILLS.Chat.Aoe.TargetCount"}}: <b>{{totalCount}}</b> / {{localize "IRONHILLS.Chat.Aoe.HitCount"}}: <b>{{hitCount}}</b>
+  <br>Zones: <b>{{targetZoneLabel}}</b> | FF: <b>{{friendlyFireMode}}</b>
   {{#if (gt alliesSpared 0)}}
     <br><span style="color:#7d9aff;">{{localize "IRONHILLS.Chat.Aoe.AlliesSpared"}}: {{alliesSpared}}</span>
+  {{/if}}
+  {{#if (gt alliesHit 0)}}
+    <br><span style="color:#f87171;">Allies hit: {{alliesHit}}</span>
   {{/if}}
   <br>
   {{#each results}}
     {{#if this.hit}}
-      ✓ {{this.name}}: <b>{{this.damage}}</b> {{localize "IRONHILLS.Chat.Aoe.LineHit"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}}{{#if (gt this.armor 0)}}, броня −{{this.armor}}{{/if}}{{#if this.condition}}, {{this.condition}}{{/if}})
+      [hit] {{#if this.ally}}[ally] {{/if}}{{this.name}}: <b>{{this.damage}}</b> {{localize "IRONHILLS.Chat.Aoe.LineHit"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}}{{#if (gt this.armor 0)}}, armor -{{this.armor}}{{/if}}{{#if this.condition}}, {{this.condition}}{{/if}})
     {{else}}
-      ✗ {{this.name}}: {{localize "IRONHILLS.Chat.Aoe.LineMiss"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}})
+      [miss] {{#if this.ally}}[ally] {{/if}}{{this.name}}: {{localize "IRONHILLS.Chat.Aoe.LineMiss"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}})
     {{/if}}
     {{#unless @last}}<br>{{/unless}}
   {{/each}}

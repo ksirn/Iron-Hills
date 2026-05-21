@@ -12,6 +12,8 @@ import {
   tickActorBodyTrauma,
   tickActorOngoingDamage
 } from "./condition-service.mjs";
+import { PREPARED_TURN_START_CONDITIONS } from "./combat-prepared-state-service.mjs";
+import { getTurnStartSkipConditionDefinitions } from "./condition-policy-service.mjs";
 
 const DEFAULT_TURN_SECONDS = 6;
 const ALLOWED_SIDES = new Set(["ally", "enemy", "neutral"]);
@@ -519,7 +521,6 @@ async function applyConditionTurnStart(state, participant) {
   const actor = resolveActor(participant?.actorUuid || participant?.actorId);
   if (!actor) return;
 
-  const stunned = Number(getActorConditionValue(actor, "stunned") || 0);
   const shock = Number(getActorConditionValue(actor, "shock") || 0);
 
   const updates = {};
@@ -537,18 +538,28 @@ async function applyConditionTurnStart(state, participant) {
     });
   }
 
-  if (stunned > 0) {
+  const skipConditions = getTurnStartSkipConditionDefinitions()
+    .map(definition => ({
+      ...definition,
+      value: Number(getActorConditionValue(actor, definition.key) || 0),
+    }))
+    .filter(definition => definition.value > 0);
+
+  if (skipConditions.length) {
     participant.remainingSeconds = 0;
     participant.hasActed = true;
 
+    const labels = skipConditions.map(definition => definition.label).join(", ");
     logEntries.push({
       id: randomId("log"),
       type: "condition-control",
-      text: `${actor.name} оглушён и пропускает ход.`,
+      text: `${actor.name} пропускает ход: ${labels}.`,
       timestamp: nowStamp()
     });
 
-    updates[buildConditionUpdatePath("stunned")] = Math.max(0, stunned - DEFAULT_TURN_SECONDS);
+    for (const definition of skipConditions) {
+      updates[buildConditionUpdatePath(definition.key)] = Math.max(0, definition.value - DEFAULT_TURN_SECONDS);
+    }
   }
 
   if (shock > 0) {
@@ -560,26 +571,8 @@ async function applyConditionTurnStart(state, participant) {
     });
   }
 
-  for (const key of [
-    "hasted",
-    "slowed",
-    "feared",
-    "exposed",
-    "pushed",
-    "prone",
-    "shield_lost",
-    "armor_cracked",
-    "broken_limb",
-    "grappled",
-    "sleeping",
-    "disarmed",
-    "formation_stance",
-    "shield_wall_formation",
-    "riposte_ready",
-    "counter_ready",
-    "intercept_ready",
-    "aimed_shot_bonus",
-  ]) {
+  for (const key of PREPARED_TURN_START_CONDITIONS) {
+    if (updates[buildConditionUpdatePath(key)] !== undefined) continue;
     const value = Number(getActorConditionValue(actor, key) || 0);
     if (value > 0) updates[buildConditionUpdatePath(key)] = Math.max(0, value - DEFAULT_TURN_SECONDS);
   }

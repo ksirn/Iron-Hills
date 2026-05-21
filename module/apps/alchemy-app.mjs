@@ -258,23 +258,53 @@ class IronHillsAlchemyApp extends Application {
     const qBonus  = { common:0, fine:1, masterwork:2, legendary:3 }[quality];
 
     const r   = mixResult.rule.result;
+    const tier = Number(tool.system?.tier ?? 1);
+    const resultPower = Math.max(1, Math.floor(mixResult.power + qBonus));
     const sys = {
-      tier:      tool.system?.tier ?? 1,
+      tier,
       quality,
       quantity:  1,
       weight:    0.5,
-      power:     Math.floor(mixResult.power + qBonus),
+      power:     resultPower,
       effectType: r.effectType ?? "",
       actionScope: "single",
       targetActorMode: "targeted",
       targetPart: "torso",
     };
+
+    if (r.type === "throwable") {
+      const aoeDistance = Math.max(1, Math.min(3, Math.ceil(resultPower / 4)));
+      Object.assign(sys, {
+        weight: 0.6,
+        effectType: "damage",
+        damageType: r.damageType ?? "magical",
+        actionScope: "area",
+        applicationScope: "area",
+        targetActorMode: "area",
+        targetZone: "",
+        energyCost: 8 + tier,
+        friendlyFire: false,
+        friendlyFireMode: "auto",
+        aoe: {
+          type: "blast",
+          shape: "circle",
+          distance: aoeDistance,
+          maxTargets: null,
+          chainDecay: 1,
+          targetZoneMode: "random",
+          friendlyFireMode: "auto",
+        },
+        appliesPoison: Number(r.appliesPoison ?? 0),
+        appliesBurning: Number(r.appliesBurning ?? (r.effectType === "burn" ? Math.max(1, Math.ceil(resultPower / 3)) : 0)),
+      });
+    }
+
     if (mixResult.hydration) sys.hydration = Math.floor(mixResult.hydration + qBonus);
     if (mixResult.satiety)   sys.satiety   = Math.floor(mixResult.satiety + qBonus);
 
     await addItemToActorOrStack(actor, {
       name:   r.name, type: r.type,
-      img:    "icons/svg/potion.svg",
+      img:    r.type === "throwable" ? "icons/commodities/materials/bowl-powder-red.webp" : "icons/svg/potion.svg",
       system: sys,
     });
 

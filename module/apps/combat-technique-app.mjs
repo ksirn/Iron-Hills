@@ -8,6 +8,7 @@ import {
   getAvailableTechniques,
   CONDITION_LABELS,
 } from "../constants/combat-techniques.mjs";
+import { getTechniqueAoeConfig } from "../services/combat-technique-service.mjs";
 
 // Зоны тела для прицельного удара
 const AIM_ZONES = [
@@ -32,12 +33,22 @@ const AIM_ZONES = [
 // Требования для прицельного удара по навыку
 const AIM_REQ = 3; // навык >= 3 чтобы прицеливаться
 
+function techniqueViewModel(technique) {
+  if (!technique?.effect?.aoe) return technique;
+  const aoe = getTechniqueAoeConfig(technique.effect);
+  return {
+    ...technique,
+    aoeMeta: `${aoe.type}/${aoe.shape} ${aoe.distance} | FF ${aoe.friendlyFireMode} | Zone ${aoe.targetZoneMode}`,
+  };
+}
+
 class IronHillsCombatTechniqueApp extends Application {
 
   constructor(attacker, weapon, targets, options = {}) {
     super(options);
     this._attacker  = attacker;
     this._weapon    = weapon;
+    this._attackProfile = options.attackProfile ?? null;
     this._targets   = targets; // массив акторов-целей
     this._tab       = "techniques"; // "techniques" | "aim"
     this._resolve   = null; // Promise resolver
@@ -61,9 +72,9 @@ class IronHillsCombatTechniqueApp extends Application {
    * Открыть диалог и вернуть выбор игрока.
    * @returns {Promise<{type, technique?, zone?, target?} | null>}
    */
-  static async choose(attacker, weapon, targets) {
+  static async choose(attacker, weapon, targets, attackProfile = null) {
     return new Promise(resolve => {
-      const app = new IronHillsCombatTechniqueApp(attacker, weapon, targets);
+      const app = new IronHillsCombatTechniqueApp(attacker, weapon, targets, { attackProfile });
       app._resolve = resolve;
       app.render(true);
     });
@@ -72,18 +83,19 @@ class IronHillsCombatTechniqueApp extends Application {
   async getData() {
     const actor  = this._attacker;
     const weapon = this._weapon;
-    const skill  = weapon?.system?.skill ?? "";
-    const skillVal = Number(actor?.system?.skills?.[skill]?.value ?? 0);
-    const weapTier = Number(weapon?.system?.tier ?? 1);
+    const profile = this._attackProfile ?? {};
+    const skill  = weapon?.system?.skill ?? profile.skillKey ?? "";
+    const skillVal = Number(actor?.system?.skills?.[skill]?.value ?? profile.skillValueFallback ?? 0);
+    const weapTier = Number(weapon?.system?.tier ?? profile.weaponTier ?? 1);
 
     // Доступные приёмы
-    const available = getAvailableTechniques(actor, weapon);
+    const available = getAvailableTechniques(actor, weapon).map(techniqueViewModel);
     // Все приёмы навыка (для отображения заблокированных)
     const allTechs  = TECHNIQUES_BY_SKILL[skill] ?? [];
     const locked    = allTechs.filter(t =>
       !available.find(a => a.id === t.id)
     ).map(t => ({
-      ...t,
+      ...techniqueViewModel(t),
       lockReason: skillVal < t.reqSkill
         ? `Нужен навык ${t.reqSkill} (у тебя ${skillVal})`
         : `Нужно оружие ${t.reqWeaponTier}+ ступени`,
@@ -94,17 +106,17 @@ class IronHillsCombatTechniqueApp extends Application {
 
     // Базовый удар — всегда доступен
     const baseAttack = {
-      damage: weapon?.system?.damage ?? 0,
-      energyCost: weapon?.system?.energyCost ?? 8,
+      damage: weapon?.system?.damage ?? profile.baseDamage ?? 0,
+      energyCost: weapon?.system?.energyCost ?? profile.energyCost ?? 8,
       skill, skillVal,
       dieSize: Math.min(20, skillVal * 2),
     };
 
     return {
       actorName:   actor?.name ?? "?",
-      weaponName:  weapon?.name ?? "Кулак",
       weaponTier:  weapTier,
       weaponImg:   weapon?.img ?? "icons/weapons/swords/sword-shortsword.webp",
+      weaponName:  weapon?.name ?? profile.label ?? "Unarmed",
       skill,
       skillVal,
       tab:         this._tab,

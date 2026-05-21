@@ -14,6 +14,15 @@ import { isCombatActive } from "./combat-flow-service.mjs";
 import { applyHitEffects, buildHitEffect } from "./hit-effect-service.mjs";
 import { getWeatherSkillMod } from "./weather-service.mjs";
 import {
+  buildCombatTargetPayload,
+  getCombatTargetActor,
+  getCombatTargetToken,
+} from "./combat-action-target-service.mjs";
+import {
+  normalizeAttackDamageType,
+  resolveActorAttackTargets,
+} from "./combat-attack-profile-service.mjs";
+import {
   getActorToken,
   getTokenGridDistance,
   getWeaponRange,
@@ -26,10 +35,6 @@ function attackResult({
   reason = "",
 } = {}) {
   return { ok, queued, result, reason };
-}
-
-function getSelectedTargetEntries(targets = globalThis.game?.user?.targets ?? []) {
-  return targets instanceof Set ? [...targets] : Array.from(targets ?? []);
 }
 
 export async function performActorAttack({
@@ -52,6 +57,10 @@ export async function performActorAttack({
   conditionChance = 1.0,
   effectNotes = [],
   rangeOverride = null,
+  skillValueFallback = null,
+  actionSeconds = null,
+  autoTargetHostile = false,
+  useExplodingDice = true,
   targets = globalThis.game?.user?.targets ?? [],
   requireSettledInventory = null,
   getCombatActionSeconds = null,
@@ -66,6 +75,8 @@ export async function performActorAttack({
     return attackResult({ ok: false, reason: "missing-energy" });
   }
 
+  damageType = normalizeAttackDamageType(damageType);
+
   if (!skipTimeCost && requireSettledInventory) {
     const settled = await requireSettledInventory(`атака: ${label}`);
     if (!settled) return attackResult({ ok: false, reason: "pending-inventory" });
@@ -75,7 +86,7 @@ export async function performActorAttack({
   const injuries = getActorInjuryInfo(actor);
   const derivedConditions = getDerivedConditionState(actor);
   if (!derivedConditions.canMeleeAttack) {
-    ui.notifications.warn("Персонаж не может выполнить ближнюю атаку из-за критических травм.");
+    ui.notifications.warn(derivedConditions.meleeBlockReason || "Персонаж не может выполнить ближнюю атаку из-за состояния.");
     return attackResult({ ok: false, reason: "cannot-melee-attack" });
   }
 
@@ -99,28 +110,33 @@ export async function performActorAttack({
     return attackResult({ ok: false, reason: "blocked" });
   }
 
-  const selectedTargets = getSelectedTargetEntries(targets);
+  const selectedTargets = resolveActorAttackTargets(actor, {
+    targets,
+    autoTargetHostile,
+  });
   if (!selectedTargets.length) {
     ui.notifications.warn("Выберите цель");
     return attackResult({ ok: false, reason: "missing-target" });
   }
 
   const targetToken = selectedTargets[0];
-  const targetActor = targetToken?.actor;
+  const targetActor = getCombatTargetActor(targetToken);
   if (!targetActor) {
     ui.notifications.warn("У цели нет актёра");
     return attackResult({ ok: false, reason: "missing-target-actor" });
   }
 
   const skill = actor.system.skills?.[skillKey];
-  if (!skill) {
+  const fallbackSkillValue = Number(skillValueFallback ?? 0);
+  if (!skill && !(fallbackSkillValue > 0)) {
     ui.notifications.warn(`У персонажа нет навыка ${skillKey}`);
     return attackResult({ ok: false, reason: "missing-skill" });
   }
 
   const attackerToken = getActorToken(actor);
-  if (attackerToken && targetToken && globalThis.canvas?.scene) {
-    const dist = getTokenGridDistance(attackerToken, targetToken);
+  const targetTokenForRange = getCombatTargetToken(targetToken);
+  if (attackerToken && targetTokenForRange && globalThis.canvas?.scene) {
+    const dist = getTokenGridDistance(attackerToken, targetTokenForRange);
     const range = Number(rangeOverride ?? 0) > 0
       ? Number(rangeOverride)
       : (weapon ? getWeaponRange(weapon) : (skillKey === "exotic" ? 1 : 1));
@@ -135,7 +151,7 @@ export async function performActorAttack({
       actionType: "attack",
       label: `Атака: ${label}`,
       item: weapon,
-      totalSeconds: getCombatActionSeconds?.("attack", weapon),
+      totalSeconds: Number(actionSeconds ?? 0) || getCombatActionSeconds?.("attack", weapon),
       payload: {
         hand,
         skillKey,
@@ -154,6 +170,11 @@ export async function performActorAttack({
         conditionChance,
         effectNotes,
         rangeOverride,
+        skillValueFallback,
+        actionSeconds,
+        autoTargetHostile,
+        useExplodingDice,
+        ...buildCombatTargetPayload(selectedTargets),
       },
     });
 
@@ -186,12 +207,22 @@ export async function performActorAttack({
     encumbrance,
     injuries,
     ignoreShield: technique?.effect?.special === "ignore_shield",
-    dieRoller,
+    skillValueFallback,
+    targetToken: targetTokenForRange,
+    dieRoller: dieRoller ?? undefined,
     onLethal,
   });
   if (!result) return attackResult({ ok: false, reason: "attack-cancelled" });
 
-  const extraHtml = (await applyHitEffects({
+  let extraHtml = "";
+  if (technique) {
+    extraHtml += `<p><b>РџСЂРёС‘Рј:</b> ${technique.icon ?? "вљ”"} ${technique.label ?? ""}</p>`;
+  }
+  if (aimed && targetZone) {
+    extraHtml += `<p><b>РџСЂРёС†РµР»:</b> ${result.locationLabel ?? targetZone}</p>`;
+  }
+
+  extraHtml += (await applyHitEffects({
     attacker: actor,
     target: targetActor,
     result,
@@ -217,7 +248,7 @@ export async function performActorAttack({
     result,
     sourceSkillKey: skillKey,
     sourceDamageType: damageType,
-    dieRoller,
+    dieRoller: dieRoller ?? undefined,
     onLethal,
   });
 

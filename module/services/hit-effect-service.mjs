@@ -3,8 +3,15 @@ import {
   getConditionLabel
 } from "./condition-service.mjs";
 import {
+  getConditionDefaultMode,
+  getConditionDefaultValueKind,
+  isOngoingDamageCondition,
+  normalizeConditionKey,
+} from "./condition-policy-service.mjs";
+import {
   resolveDamageHpKey,
-  getTargetPartLabel
+  getTargetPartLabel,
+  syncDerivedConditionsFromTrauma
 } from "./actor-state-service.mjs";
 import { unequipActorSlot } from "./inventory-service.mjs";
 import { getActorToken } from "../utils/item-utils.mjs";
@@ -53,7 +60,7 @@ function normalizeConditionStacks(stacks = []) {
   const list = Array.isArray(stacks) ? stacks : [stacks];
   return list
     .map(stack => ({
-      key: String(stack?.key ?? "").trim(),
+      key: normalizeConditionKey(stack?.key),
       value: Math.max(0, Number(stack?.value ?? 0)),
       mode: stack?.mode,
       valueKind: stack?.valueKind,
@@ -94,6 +101,7 @@ async function applyLocalBleedingCondition(actor, partKey, amount) {
   const previous = Math.max(0, Number(foundry.utils.getProperty(actor, path) ?? 0));
   const next = previous + Math.max(1, Number(amount ?? 1));
   await actor.update({ [path]: next });
+  await syncDerivedConditionsFromTrauma(actor, { render: false });
   return { applied: true, key: "bleeding", previous, value: next, partKey };
 }
 
@@ -227,13 +235,13 @@ export function buildStackHitEffect(stacks = []) {
 export async function applyConditionStacks(actor, stacks = [], { mode = "add" } = {}) {
   const applied = [];
   for (const stack of normalizeConditionStacks(stacks)) {
-    const key = String(stack?.key ?? "").trim();
+    const key = normalizeConditionKey(stack?.key);
     const value = Math.max(0, Number(stack?.value ?? 0));
     if (!actor || !key || !(value > 0)) continue;
 
     const result = await addOrExtendActorCondition(actor, key, value, {
-      mode: stack.mode ?? mode,
-      valueKind: stack.valueKind ?? "stack",
+      mode: stack.mode ?? mode ?? getConditionDefaultMode(key),
+      valueKind: stack.valueKind ?? getConditionDefaultValueKind(key),
     });
     applied.push(result);
   }
@@ -338,7 +346,7 @@ export async function applyHitEffects({
   target = null,
   result = null,
   effect = null,
-  conditionMode = "max",
+  conditionMode = null,
   conditionValueKind = "duration",
 } = {}) {
   const outcome = {
@@ -352,26 +360,32 @@ export async function applyHitEffects({
   if (!result?.hit || !target || !effect) return outcome;
 
   const conditionTexts = [];
-  const conditionKey = String(effect.applyCondition ?? "").trim();
+  const conditionKey = normalizeConditionKey(effect.applyCondition);
   if (conditionKey && Math.random() < normalizeChance(effect.conditionChance)) {
     const duration = normalizeDuration(effect.conditionDuration);
+    const resolvedConditionMode = conditionMode ?? getConditionDefaultMode(conditionKey);
+    const resolvedConditionValueKind = conditionValueKind ?? getConditionDefaultValueKind(conditionKey);
     let conditionTextOverride = null;
     let applied;
 
     if (conditionKey === "bleeding" && hasBodyHp(target)) {
       const partKey = getResultBodyPartKey(result);
-      const stacks = getBleedingStackAmount(duration, conditionValueKind);
+      const stacks = getBleedingStackAmount(duration, resolvedConditionValueKind);
       applied = await applyLocalBleedingCondition(target, partKey, stacks);
       conditionTextOverride = `${getConditionLabel(conditionKey)} +${stacks} (${getTargetPartLabel(partKey)})`;
     } else {
       applied = await addOrExtendActorCondition(target, conditionKey, duration, {
-        mode: conditionMode,
-        valueKind: conditionValueKind,
+        mode: resolvedConditionMode,
+        valueKind: resolvedConditionValueKind,
       });
     }
 
     outcome.conditions.push(applied);
-    conditionTexts.push(conditionTextOverride ?? `${getConditionLabel(conditionKey)}${duration > 1 ? ` (${duration}с)` : ""}`);
+    const conditionDelta = Math.max(0, Number(applied?.value ?? 0) - Number(applied?.previous ?? 0));
+    const defaultConditionText = isOngoingDamageCondition(conditionKey)
+      ? `${getConditionLabel(conditionKey)} +${Math.max(1, conditionDelta || 1)}`
+      : `${getConditionLabel(conditionKey)}${duration > 1 ? ` (${duration}с)` : ""}`;
+    conditionTexts.push(conditionTextOverride ?? defaultConditionText);
   }
 
   const conditionStacks = normalizeConditionStacks(effect.conditionStacks ?? effect.stacks ?? []);

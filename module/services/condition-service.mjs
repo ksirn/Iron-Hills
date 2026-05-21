@@ -2,12 +2,29 @@ import {
   getHitLocation,
   getHitLabel,
   resolveDamageHpKey,
+  syncDerivedConditionsFromTrauma,
 } from "./actor-state-service.mjs";
 import { applyDamageToBodyPart } from "./combat-attack-service.mjs";
 import { getPersistentActor } from "../utils/actor-utils.mjs";
+import {
+  actorHasBodyHp,
+  BODY_TRAUMA_PART_KEYS,
+  buildActorRestProfile,
+  DEFAULT_BODY_TRAUMA_STATUS,
+  getActorBodyTraumaSummary,
+  LEGACY_TRAUMA_FRACTURE_PART_KEYS,
+} from "./body-trauma-service.mjs";
+import {
+  getConditionDefaultMode,
+  getConditionDefaultValueKind,
+  getConditionLabel as getPolicyConditionLabel,
+  getConditionStorageKey,
+  normalizeConditionAmount as normalizePolicyConditionAmount,
+  normalizeConditionKey,
+} from "./condition-policy-service.mjs";
 
 export function getActorConditionValue(actor, key) {
-  const raw = actor?.system?.conditions?.[key];
+  const raw = actor?.system?.conditions?.[getConditionStorageKey(key)];
 
   if (typeof raw === "number") return raw;
   if (typeof raw === "boolean") return raw ? 1 : 0;
@@ -21,87 +38,47 @@ export function getActorConditionValue(actor, key) {
 }
 
 export function buildConditionUpdatePath(key) {
-  return `system.conditions.${key}`;
+  return `system.conditions.${getConditionStorageKey(key)}`;
 }
-
-const CONDITION_LABELS = Object.freeze({
-  bleeding: "Кровотечение",
-  poison: "Яд",
-  burning: "Горение",
-  shock: "Шок",
-  stunned: "Оглушение",
-  stun: "Оглушение",
-  exposed: "Уязвимость",
-  pushed: "Отброшен",
-  prone: "Повален",
-  slowed: "Замедление",
-  hasted: "Ускорение",
-  feared: "Страх",
-  grappled: "Захват",
-  sleeping: "Сон",
-  disarmed: "Разоружение",
-  shield_lost: "Без щита",
-  armor_cracked: "Броня треснута",
-  broken_limb: "Перелом",
-  aimed_shot_bonus: "Прицел",
-  formation_stance: "Строй",
-  shield_wall_formation: "Стена щитов",
-  riposte_ready: "Рипост готов",
-  counter_ready: "Контрудар готов",
-  intercept_ready: "Перехват готов",
-  rapid_reload: "Быстрая перезарядка",
-  silence: "Безмолвие",
-  slow: "Замедление",
-  fear: "Страх",
-});
 
 export function getConditionLabel(key) {
-  const normalized = String(key ?? "").trim();
+  const normalized = normalizeConditionKey(key);
   if (!normalized) return "";
-  return CONDITION_LABELS[normalized] ?? normalized;
+  return getPolicyConditionLabel(normalized) ?? normalized;
 }
 
-const ONGOING_DAMAGE_CONDITIONS = new Set(["bleeding", "poison", "burning"]);
-const BODY_PART_KEYS = Object.freeze(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
-const LEGACY_FRACTURE_PART_KEYS = new Set(["leftArm", "rightArm", "leftLeg", "rightLeg"]);
-const DEFAULT_BODY_PART_STATUS = Object.freeze({
-  minorBleeding: 0,
-  majorBleeding: 0,
-  fracture: false,
-  destroyed: false,
-  splinted: false,
-  tourniquet: false,
-});
+const BODY_PART_KEYS = BODY_TRAUMA_PART_KEYS;
+const LEGACY_FRACTURE_PART_KEYS = LEGACY_TRAUMA_FRACTURE_PART_KEYS;
+const DEFAULT_BODY_PART_STATUS = DEFAULT_BODY_TRAUMA_STATUS;
 
 function normalizeConditionAmount(key, value, { valueKind = "stack" } = {}) {
-  const amount = Math.max(1, Number(value ?? 1));
-  if (valueKind === "duration" && ONGOING_DAMAGE_CONDITIONS.has(key)) {
-    return Math.max(1, Math.ceil(amount / 6));
-  }
-  return amount;
+  return normalizePolicyConditionAmount(key, value, { valueKind });
 }
 
-export async function addOrExtendActorCondition(actor, conditionKey, value = 1, { mode = "max", valueKind = "stack" } = {}) {
-  const key = String(conditionKey ?? "").trim();
+export async function addOrExtendActorCondition(actor, conditionKey, value = 1, { mode = null, valueKind = null } = {}) {
+  const key = normalizeConditionKey(conditionKey);
   if (!actor || !key) {
     return { applied: false, key, previous: 0, value: 0 };
   }
 
+  const resolvedMode = mode ?? getConditionDefaultMode(key);
+  const resolvedValueKind = valueKind ?? getConditionDefaultValueKind(key);
+  const storageKey = getConditionStorageKey(key);
   const previous = Math.max(0, Number(getActorConditionValue(actor, key) || 0));
-  const amount = normalizeConditionAmount(key, value, { valueKind });
-  const next = mode === "add"
+  const amount = normalizeConditionAmount(key, value, { valueKind: resolvedValueKind });
+  const next = resolvedMode === "add"
     ? previous + amount
     : Math.max(previous, amount);
 
   if (next !== previous) {
-    await actor.update({ [buildConditionUpdatePath(key)]: next });
+    await actor.update({ [buildConditionUpdatePath(storageKey)]: next });
   }
 
-  return { applied: next !== previous, key, previous, value: next };
+  return { applied: next !== previous, key, storageKey, previous, value: next };
 }
 
 function hasBodyHp(actor) {
-  return Boolean(actor?.system?.resources?.hp?.torso);
+  return actorHasBodyHp(actor);
 }
 
 function getBodyPartHpNode(actor, partKey) {
@@ -138,14 +115,7 @@ function getBodyPartHpValue(actor, partKey) {
 }
 
 export function hasActorBodyBleeding(actor) {
-  if (!hasBodyHp(actor)) return false;
-  return BODY_PART_KEYS.some(partKey =>
-    Number(getBodyPartStatusValue(actor, partKey, "minorBleeding") || 0) > 0 ||
-    (
-      Number(getBodyPartStatusValue(actor, partKey, "majorBleeding") || 0) > 0 &&
-      !getBodyPartStatusBool(actor, partKey, "tourniquet")
-    )
-  );
+  return Boolean(hasBodyHp(actor) && getActorBodyTraumaSummary(actor).hasActiveBleeding);
 }
 
 export async function ensureActorBodyTraumaStatusStructure(actor) {
@@ -246,6 +216,26 @@ function notifyMedicalInfo(message) {
   ui.notifications.info(message);
 }
 
+async function finalizeActorTraumaState(actor) {
+  if (!actor || !hasBodyHp(actor)) return { changed: false };
+
+  const refreshed = await refreshActorBodyTraumaStatus(actor);
+  const synced = await syncDerivedConditionsFromTrauma(actor, { render: false });
+
+  return {
+    changed: Boolean(refreshed?.changed || synced?.changed),
+    refreshed,
+    synced,
+  };
+}
+
+async function updateActorTraumaState(actor, updates) {
+  if (updates && Object.keys(updates).length) {
+    await actor.update(updates);
+  }
+  return finalizeActorTraumaState(actor);
+}
+
 async function createMedicalChat(sourceActor, targetActor, item, lines, {
   verb = "использует",
   targetPreposition = "на",
@@ -309,7 +299,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
     }
 
     const nextMinor = Math.max(0, currentMinor - amount);
-    await targetActor.update({
+    await updateActorTraumaState(targetActor, {
       [buildBodyPartStatusPath(targetPart, "minorBleeding")]: nextMinor,
     });
 
@@ -334,7 +324,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
     }
 
     const nextMajor = Math.max(0, currentMajor - amount);
-    await targetActor.update({
+    await updateActorTraumaState(targetActor, {
       [buildBodyPartStatusPath(targetPart, "majorBleeding")]: nextMajor,
       [buildBodyPartStatusPath(targetPart, "tourniquet")]: nextMajor > 0,
     });
@@ -375,7 +365,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
       updates[`system.conditions.fractures.${targetPart}`] = false;
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(sourceActor, targetActor, item, [
       partLabel,
       "Перелом стабилизирован",
@@ -414,7 +404,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
       updates[`system.conditions.fractures.${targetPart}`] = false;
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(sourceActor, targetActor, item, [
       partLabel,
       "Проведена тяжёлая медицинская обработка",
@@ -428,7 +418,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
 
     if (currentHp >= maxHp) {
       if (currentHp > 0 && status?.destroyed) {
-        await targetActor.update({
+        await updateActorTraumaState(targetActor, {
           [buildBodyPartStatusPath(targetPart, "destroyed")]: false,
         });
       }
@@ -445,7 +435,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
       updates[buildBodyPartStatusPath(targetPart, "destroyed")] = false;
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(sourceActor, targetActor, item, [
       partLabel,
       `Восстановлено ${nextHp - currentHp} HP`,
@@ -554,12 +544,12 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
     }
 
     if (!totalRestored) {
-      if (Object.keys(updates).length) await targetActor.update(updates);
+      if (Object.keys(updates).length) await updateActorTraumaState(targetActor, updates);
       notifyMedicalWarn("Тело уже полностью восстановлено.");
       return medicalResult({ consumeItem: false });
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(sourceActor, targetActor, item, `Тело получает общее восстановление: ${totalRestored} HP`);
     return medicalResult({ consumeItem: true });
   }
@@ -582,7 +572,7 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
       return medicalResult({ consumeItem: false });
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(sourceActor, targetActor, item, `Малые кровотечения остановлены: ${stopped}`);
     return medicalResult({ consumeItem: true });
   }
@@ -616,7 +606,7 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
 
     if (!stopped) {
       if (Object.keys(updates).length) {
-        await targetActor.update(updates);
+        await updateActorTraumaState(targetActor, updates);
         notifyMedicalInfo("Лишние жгуты сняты, активных кровотечений нет.");
       } else {
         notifyMedicalWarn("Активных кровотечений не найдено.");
@@ -624,7 +614,7 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
       return medicalResult({ consumeItem: false });
     }
 
-    await targetActor.update(updates);
+    await updateActorTraumaState(targetActor, updates);
     await createMedicalChat(
       sourceActor,
       targetActor,
@@ -831,12 +821,12 @@ export async function tickActorBodyTrauma(actor, {
     }
   }
 
-  const status = await refreshActorBodyTraumaStatus(actor);
+  const status = await finalizeActorTraumaState(actor);
 
   return {
     changed: effects.length > 0 || Boolean(status.changed),
     effects,
-    updates: status.updates ?? {},
+    updates: status.refreshed?.updates ?? {},
   };
 }
 
@@ -988,8 +978,82 @@ function restResult({
   reason = "",
   shortRest = false,
   fullRest = false,
+  profile = null,
 } = {}) {
-  return { ok, changed, reason, shortRest, fullRest };
+  return { ok, changed, reason, shortRest, fullRest, profile };
+}
+
+function fullRestBlockReason(profile) {
+  if (profile?.blockers?.includes("bleeding")) {
+    return "Нельзя полноценно отдохнуть: сначала останови кровотечение.";
+  }
+  if (profile?.blockers?.includes("burning")) {
+    return "Нельзя полноценно отдохнуть: персонаж горит.";
+  }
+  return "";
+}
+
+async function applyEnergyGrowthFromRest(actor, updates, profile) {
+  const recoveredMax = Math.max(0, Number(profile?.recoveredEnergyMax ?? 0));
+  const baseMax = Number(profile?.baseEnergyMax ?? 0);
+  const threshold = Math.max(1, baseMax);
+
+  if (!actor || recoveredMax <= 0) {
+    return {
+      xpGained: 0,
+      xpAfter: Number(actor?.getFlag?.("iron-hills-system", "energyGrowthXp") ?? 0),
+      threshold,
+      grew: false,
+      newBaseMax: baseMax,
+    };
+  }
+
+  const currentXp = Number(actor.getFlag?.("iron-hills-system", "energyGrowthXp") ?? 0);
+  const nextXp = currentXp + recoveredMax;
+  const flagPath = "flags.iron-hills-system.energyGrowthXp";
+
+  if (nextXp >= threshold) {
+    updates["system.resources.energy.baseMax"] = baseMax + 1;
+    updates[flagPath] = nextXp - threshold;
+    return {
+      xpGained: recoveredMax,
+      xpAfter: nextXp - threshold,
+      threshold,
+      grew: true,
+      newBaseMax: baseMax + 1,
+    };
+  }
+
+  updates[flagPath] = nextXp;
+  return {
+    xpGained: recoveredMax,
+    xpAfter: nextXp,
+    threshold,
+    grew: false,
+    newBaseMax: baseMax,
+  };
+}
+
+function buildRestChatLines(profile, growth = null) {
+  const lines = [
+    `Энергия: ${profile.currentEnergy} -> ${profile.nextEnergy} / ${profile.nextEnergyMax}`,
+    `Мана: ${profile.currentMana} -> ${profile.nextMana} / ${profile.maxMana}`,
+  ];
+
+  if (profile.recoveredEnergyMax > 0) {
+    lines.push(`Восстановление максимума энергии: +${profile.recoveredEnergyMax}`);
+  }
+  if (profile.bleeding > 0 || profile.abdomenEnergyPenalty > 0 || profile.energyRecoveryPenalty > 0) {
+    lines.push(`Давление травм: кровотечение ${profile.bleeding}, живот ${profile.abdomenEnergyPenalty}, общий штраф ${profile.energyRecoveryPenalty}`);
+  }
+  if (growth?.xpGained > 0) {
+    lines.push(`Опыт выносливости: +${growth.xpGained} (${growth.xpAfter}/${growth.threshold})`);
+  }
+  if (growth?.grew) {
+    lines.push(`Базовый максимум энергии вырос до ${growth.newBaseMax}`);
+  }
+
+  return lines;
 }
 
 export async function applyActorShortRest(actor) {
@@ -997,29 +1061,25 @@ export async function applyActorShortRest(actor) {
     return restResult({ ok: false, reason: "У актёра нет ресурса энергии." });
   }
 
-  const endurance = Number(actor.system.skills?.endurance?.value ?? 1);
-  const bleeding = Number(actor.system.conditions?.bleeding ?? 0);
-  const currentEnergy = Number(actor.system.resources.energy.value ?? 0);
-  const maxEnergy = Number(actor.system.resources.energy.max ?? 100);
-  const currentMana = Number(actor.system.resources.mana?.value ?? 0);
-  const maxMana = Number(actor.system.resources.mana?.max ?? 50);
+  await ensureActorBodyTraumaStatusStructure(actor);
+  await refreshActorBodyTraumaStatus(actor);
 
-  const restoredEnergy = Math.max(0, 20 + endurance * 2 - bleeding * 2);
-  const restoredMana = Math.max(0, 10 + Math.floor(endurance / 2));
-  const newEnergy = Math.min(maxEnergy, currentEnergy + restoredEnergy);
-  const newMana = Math.min(maxMana, currentMana + restoredMana);
+  const profile = buildActorRestProfile(actor, "short");
+  const updates = {
+    "system.resources.energy.max": profile.nextEnergyMax,
+    "system.resources.energy.value": profile.nextEnergy,
+    "system.resources.mana.value": profile.nextMana,
+  };
+  const growth = await applyEnergyGrowthFromRest(actor, updates, profile);
 
-  await actor.update({
-    "system.resources.energy.value": newEnergy,
-    "system.resources.mana.value": newMana,
-  });
+  await actor.update(updates);
 
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<b>${actor.name}</b> делает короткий отдых.<br>Энергия: +${restoredEnergy}<br>Мана: +${restoredMana}`,
+    content: `<b>${actor.name}</b> делает короткий отдых.<br>${buildRestChatLines(profile, growth).join("<br>")}`,
   });
 
-  return restResult({ changed: true, shortRest: true });
+  return restResult({ changed: true, shortRest: true, profile });
 }
 
 export async function applyActorFullRest(actor) {
@@ -1027,35 +1087,33 @@ export async function applyActorFullRest(actor) {
     return restResult({ ok: false, reason: "У актёра нет ресурса энергии." });
   }
 
-  const maxEnergy = Number(actor.system.resources.energy.max ?? 100);
-  const maxMana = Number(actor.system.resources.mana?.max ?? 50);
-  const currentBleeding = Number(actor.system.conditions?.bleeding ?? 0);
-  const currentPoison = Number(actor.system.conditions?.poison ?? 0);
-  const currentBurning = Number(actor.system.conditions?.burning ?? 0);
+  await ensureActorBodyTraumaStatusStructure(actor);
+  await refreshActorBodyTraumaStatus(actor);
 
-  if (hasActorBodyBleeding(actor) || currentBleeding > 0) {
-    const reason = "Нельзя полноценно отдохнуть: сначала останови кровотечение.";
+  const profile = buildActorRestProfile(actor, "full");
+  const currentPoison = Number(profile.poison ?? 0);
+
+  if (profile.blocked) {
+    const reason = fullRestBlockReason(profile);
     ui.notifications.warn(reason);
-    return restResult({ ok: false, reason });
+    return restResult({ ok: false, reason, profile });
   }
 
-  if (currentBurning > 0) {
-    const reason = "Нельзя полноценно отдохнуть: персонаж горит.";
-    ui.notifications.warn(reason);
-    return restResult({ ok: false, reason });
-  }
-
-  await actor.update({
-    "system.resources.energy.value": maxEnergy,
-    "system.resources.mana.value": maxMana,
-    "system.conditions.shock": 0,
+  const updates = {
+    "system.resources.energy.max": profile.nextEnergyMax,
+    "system.resources.energy.value": profile.nextEnergy,
+    "system.resources.mana.value": profile.nextMana,
+    "system.conditions.bleeding": Number(profile.summary?.activeBleedingTotal ?? 0),
+    "system.conditions.shock": Number(profile.summary?.traumaShock ?? 0),
     "system.conditions.poison": Math.max(0, currentPoison - 1),
-  });
+  };
+  const growth = await applyEnergyGrowthFromRest(actor, updates, profile);
+  await actor.update(updates);
 
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<b>${actor.name}</b> делает полный отдых.<br>Энергия и мана восстановлены, шок снижен насколько позволяют травмы, яд ослаблен.`,
+    content: `<b>${actor.name}</b> делает полный отдых.<br>${buildRestChatLines(profile, growth).join("<br>")}<br>Яд: ${profile.poison} -> ${Math.max(0, profile.poison - 1)}<br>Шок после травм: ${Number(profile.summary?.traumaShock ?? 0)}`,
   });
 
-  return restResult({ changed: true, fullRest: true });
+  return restResult({ changed: true, fullRest: true, profile });
 }

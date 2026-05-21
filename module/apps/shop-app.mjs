@@ -221,6 +221,15 @@ function _buildItemData(item) {
         spellId: item.id, school: item.school,
         rank: item.rank, manaCost: item.manaCost,
         castTime: item.castTime, damage: item.damage ?? 0,
+        damageType: item.damageType ?? "magical",
+        effectType: Number(item.damage ?? 0) > 0 ? "damage" : (item.effect?.special === "heal" ? "heal" : ""),
+        effect: item.effect ?? null,
+        power: Number(item.damage ?? 0) > 0 ? Number(item.damage ?? 0) : Number(item.effect?.healAmount ?? 0),
+        targetPart: item.targetPart ?? item.targetZone ?? "torso",
+        targetZone: item.targetZone ?? item.targetPart ?? "",
+        friendlyFire: Boolean(item.friendlyFire ?? item.aoe?.friendlyFire ?? false),
+        friendlyFireMode: item.aoe?.friendlyFireMode ?? item.friendlyFireMode ?? "off",
+        aoe: item.aoe ?? null,
       }),
     }
   };

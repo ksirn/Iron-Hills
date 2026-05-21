@@ -124,7 +124,7 @@ export const MIXING_RULES = [
     requires: ["poison"],
     minPotency: 2,
     result: { type: "consumable", name: "Яд", effectType: "poison",
-      power: (p) => p },
+      damageType: "magical", appliesBurning: 1, power: (p) => p },
   },
   // antidote = противоядие
   {

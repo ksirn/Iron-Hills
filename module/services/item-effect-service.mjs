@@ -1,9 +1,7 @@
-import { getTargetPartLabel } from "./actor-state-service.mjs";
 import {
   applyMedicalActionGlobally,
   applyMedicalActionToBodyPart,
 } from "./condition-service.mjs";
-import { healActorBodyPart } from "./hit-effect-service.mjs";
 import {
   recalculateActorWeight,
   removeQuantityFromItem,
@@ -13,7 +11,18 @@ import {
   normalizeAoeTargetZone,
   resolveAoeFriendlyFireMode,
 } from "./aoe-policy-service.mjs";
+import {
+  getCombatTargetActor,
+  normalizeCombatTargets,
+} from "./combat-action-target-service.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 import { getPersistentActor } from "../utils/actor-utils.mjs";
+import {
+  ITEM_ACTION_TYPE_DEFAULTS as ACTION_TYPE_DEFAULTS,
+  ITEM_APPLICATION_SCOPES as APPLICATION_SCOPES,
+  ITEM_TARGET_ACTOR_MODES as TARGET_ACTOR_MODES,
+  LEGACY_ITEM_EFFECT_ACTIONS as LEGACY_POTION_EFFECT_ACTIONS,
+} from "../utils/item-action-config.mjs";
 
 function itemEffectResult({
   ok = true,
@@ -26,21 +35,93 @@ function itemEffectResult({
   return { ok, handled, consumedItem, consumeItem, cancelled, changed };
 }
 
-const APPLICATION_SCOPES = new Set(["targeted", "global", "auto", "area"]);
-const TARGET_ACTOR_MODES = new Set(["self", "selected-or-self", "selected-only", "area"]);
+function normalizeApplicationScopeValue(value) {
+  const raw = String(value ?? "").trim();
+  if (APPLICATION_SCOPES.has(raw)) return raw;
+
+  const alias = {
+    single: "targeted",
+    target: "targeted",
+    targeted: "targeted",
+    body: "global",
+    self: "global",
+    aoe: "area",
+  }[raw.toLowerCase()];
+
+  return APPLICATION_SCOPES.has(alias) ? alias : "";
+}
+
+function normalizeTargetActorModeValue(value) {
+  const raw = String(value ?? "").trim();
+  if (TARGET_ACTOR_MODES.has(raw)) return raw;
+
+  const alias = {
+    selected: "selected-only",
+    "selected-only": "selected-only",
+    selectedonly: "selected-only",
+    target: "selected-only",
+    enemy: "selected-only",
+    targeted: "selected-or-self",
+    "selected-or-self": "selected-or-self",
+    selectedorself: "selected-or-self",
+    ally: "selected-or-self",
+    self: "self",
+    area: "area",
+    aoe: "area",
+  }[raw.toLowerCase()];
+
+  return TARGET_ACTOR_MODES.has(alias) ? alias : "";
+}
+
+function uniqueActors(actors = [], { includeSource = true, sourceActor = null } = {}) {
+  const seen = new Set();
+
+  return (actors ?? [])
+    .map(actor => getCombatTargetActor(actor) ?? actor?.actor ?? actor)
+    .filter(Boolean)
+    .filter(actor => includeSource || actor.id !== sourceActor?.id)
+    .filter(actor => {
+      const key = actor.uuid ?? actor.id ?? actor.name;
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+export function normalizeItemActionSelectedActors(sourceActor, {
+  targets = null,
+  selectedActors = null,
+  includeSource = false,
+} = {}) {
+  const rawActors = Array.isArray(selectedActors)
+    ? selectedActors
+    : normalizeCombatTargets(targets ?? globalThis.game?.user?.targets ?? []);
+
+  return uniqueActors(rawActors, { includeSource, sourceActor });
+}
 
 export function getItemActionType(item) {
   return String(item?.system?.actionType ?? "").trim();
 }
 
 export function getItemApplicationScope(item, fallback = "targeted") {
-  const raw = String(item?.system?.applicationScope ?? "").trim().toLowerCase();
-  return APPLICATION_SCOPES.has(raw) ? raw : fallback;
+  const raw = normalizeApplicationScopeValue(item?.system?.applicationScope);
+  if (raw) return raw;
+
+  const actionScope = normalizeApplicationScopeValue(item?.system?.actionScope);
+  if (actionScope) return actionScope;
+
+  const inferred = ACTION_TYPE_DEFAULTS[getItemActionType(item)]?.applicationScope;
+  return APPLICATION_SCOPES.has(inferred) ? inferred : fallback;
 }
 
 export function getItemTargetActorMode(item, fallback = "self") {
-  const raw = String(item?.system?.targetActorMode ?? "").trim().toLowerCase();
-  return TARGET_ACTOR_MODES.has(raw) ? raw : fallback;
+  const raw = normalizeTargetActorModeValue(item?.system?.targetActorMode);
+  if (raw) return raw;
+
+  const inferred = ACTION_TYPE_DEFAULTS[getItemActionType(item)]?.targetActorMode;
+  return TARGET_ACTOR_MODES.has(inferred) ? inferred : fallback;
 }
 
 export function getItemActionPower(item, fallback = 1) {
@@ -62,8 +143,9 @@ export function getThrowableAoeConfig(item) {
       false,
     ),
     damageType: system.damageType,
-    targetZone: system.targetZone,
-    targetPart: system.targetPart,
+    targetZone: aoe.targetZone ?? system.targetZone,
+    targetPart: aoe.targetPart ?? system.targetPart,
+    targetZoneMode: aoe.targetZoneMode ?? system.targetZoneMode,
   }, {
     shape: system.aoeShape,
     type: system.aoeType,
@@ -72,6 +154,9 @@ export function getThrowableAoeConfig(item) {
     chainDecay: 1,
     friendlyFireMode: aoe.friendlyFireMode ?? system.friendlyFireMode,
     friendlyFire: aoe.friendlyFire ?? system.friendlyFire,
+    targetZone: system.targetZone,
+    targetPart: system.targetPart,
+    targetZoneMode: system.targetZoneMode,
   });
 
   return config.distance > 0 ? config : null;
@@ -84,32 +169,40 @@ export function buildThrowableConditionStacks(poison = 0, burning = 0) {
   ];
 }
 
-export function getSelectedActorTargets(sourceActor, targets = game.user?.targets ?? []) {
-  return Array.from(targets)
-    .map(token => token?.actor ?? null)
-    .filter(Boolean)
-    .filter(actor => actor.id !== sourceActor?.id);
+export function getSelectedActorTargets(sourceActor, targets = globalThis.game?.user?.targets ?? []) {
+  return normalizeItemActionSelectedActors(sourceActor, { targets });
 }
 
 export async function resolveItemActionTargetActor({
   sourceActor,
   item,
-  selectedActors = getSelectedActorTargets(sourceActor),
+  targetActor = null,
+  targets = null,
+  selectedActors = null,
   chooseActor = null,
 } = {}) {
   const targetActorMode = getItemTargetActorMode(item, "self");
+  const explicitTarget = uniqueActors([targetActor], { includeSource: true })[0] ?? null;
 
   if (targetActorMode === "self" || targetActorMode === "area") {
     return { ok: true, cancelled: false, targetActor: sourceActor, reason: "" };
   }
 
+  if (explicitTarget) {
+    return { ok: true, cancelled: false, targetActor: explicitTarget, reason: "" };
+  }
+
+  const resolvedSelectedActors = Array.isArray(selectedActors)
+    ? normalizeItemActionSelectedActors(sourceActor, { selectedActors })
+    : normalizeItemActionSelectedActors(sourceActor, { targets });
+
   if (targetActorMode === "selected-only") {
-    if (selectedActors.length === 1) {
-      return { ok: true, cancelled: false, targetActor: selectedActors[0], reason: "" };
+    if (resolvedSelectedActors.length === 1) {
+      return { ok: true, cancelled: false, targetActor: resolvedSelectedActors[0], reason: "" };
     }
 
-    if (selectedActors.length > 1 && chooseActor) {
-      const choice = await chooseActor(selectedActors);
+    if (resolvedSelectedActors.length > 1 && chooseActor) {
+      const choice = await chooseActor(resolvedSelectedActors);
       if (!choice) return { ok: false, cancelled: true, targetActor: null, reason: "" };
       return { ok: true, cancelled: false, targetActor: choice, reason: "" };
     }
@@ -118,17 +211,17 @@ export async function resolveItemActionTargetActor({
       ok: false,
       cancelled: true,
       targetActor: null,
-      reason: selectedActors.length > 1 ? "" : "Выделите цель токеном.",
+      reason: resolvedSelectedActors.length > 1 ? "" : "Выделите цель токеном.",
     };
   }
 
   if (targetActorMode === "selected-or-self") {
-    if (selectedActors.length === 1) {
-      return { ok: true, cancelled: false, targetActor: selectedActors[0], reason: "" };
+    if (resolvedSelectedActors.length === 1) {
+      return { ok: true, cancelled: false, targetActor: resolvedSelectedActors[0], reason: "" };
     }
 
-    if (selectedActors.length > 1 && chooseActor) {
-      const choice = await chooseActor([sourceActor, ...selectedActors]);
+    if (resolvedSelectedActors.length > 1 && chooseActor) {
+      const choice = await chooseActor(uniqueActors([sourceActor, ...resolvedSelectedActors], { includeSource: true }));
       if (!choice) return { ok: false, cancelled: true, targetActor: null, reason: "" };
       return { ok: true, cancelled: false, targetActor: choice, reason: "" };
     }
@@ -142,13 +235,19 @@ export async function resolveItemActionTargetActor({
 export async function resolveItemTargetPart({
   targetActor,
   item,
+  targetPart = null,
   choosePart = null,
 } = {}) {
-  const presetPart = String(item?.system?.targetPart ?? "").trim();
+  const explicitPart = normalizeAoeTargetZone(targetPart) ?? String(targetPart ?? "").trim();
+  const presetPart = normalizeAoeTargetZone(item?.system?.targetPart) ?? String(item?.system?.targetPart ?? "").trim();
   const scope = getItemApplicationScope(item, "targeted");
 
   if (scope === "global") {
     return { ok: true, cancelled: false, targetPart: null };
+  }
+
+  if (explicitPart) {
+    return { ok: true, cancelled: false, targetPart: explicitPart };
   }
 
   if (scope === "auto" || scope === "area") {
@@ -218,7 +317,20 @@ export async function consumeFoodItem(actor, item) {
 
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-    content: `<b>${liveActor.name}</b> использует <b>${liveItem.name}</b><br>Сытость: +${satietyGain}<br>Жажда: +${hydrationGain}`,
+    content: buildCombatChatCard({
+      title: "Еда",
+      subtitle: liveItem.name,
+      icon: "+",
+      status: "Использовано",
+      statusClass: "is-good",
+      rows: [
+        ["Персонаж", liveActor.name],
+        ["Предмет", liveItem.name],
+        ["Сытость", `+${satietyGain}`],
+        ["Жажда", `+${hydrationGain}`],
+      ],
+      className: "ih-system-chat-card ih-consume-chat-card",
+    }),
   });
 
   return itemEffectResult({ consumedItem: true, changed: true });
@@ -261,7 +373,21 @@ export async function drinkFromVessel(actor, item) {
 
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-    content: `<b>${liveActor.name}</b> делает глоток из <b>${liveItem.name}</b> (${nextCurrent}/${max}). Жажда: +${hydrationGain} · Сытость: +${satietyGain}`,
+    content: buildCombatChatCard({
+      title: "Глоток",
+      subtitle: liveItem.name,
+      icon: "+",
+      status: `${nextCurrent}/${max}`,
+      statusClass: nextCurrent > 0 ? "is-good" : "is-warn",
+      rows: [
+        ["Персонаж", liveActor.name],
+        ["Ёмкость", liveItem.name],
+        ["Осталось", `${nextCurrent}/${max}`],
+        ["Жажда", `+${hydrationGain}`],
+        ["Сытость", `+${satietyGain}`],
+      ],
+      className: "ih-system-chat-card ih-consume-chat-card ih-drink-chat-card",
+    }),
   });
 
   return itemEffectResult({ changed: true });
@@ -277,57 +403,27 @@ export async function useLegacyPotionEffect(actor, item) {
   const power = Number(liveItem.system?.power ?? 0);
   const effectType = liveItem.system?.effectType ?? liveItem.system?.effect;
   const targetPart = liveItem.system?.targetPart ?? liveItem.system?.zone ?? "torso";
+  const legacyAction = LEGACY_POTION_EFFECT_ACTIONS[effectType];
 
-  if (effectType === "healHP") {
-    const { newHP } = await healActorBodyPart(liveActor, targetPart, power);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-      content: `<b>${liveActor.name}</b> выпивает <b>${liveItem.name}</b><br>Лечение: ${power}<br>${getTargetPartLabel(targetPart)} теперь имеет HP: ${newHP}`,
-    });
-    await consumeOneItem(liveActor, liveItem);
-    return itemEffectResult({ consumedItem: true, changed: true });
+  if (legacyAction?.applicationScope === "targeted") {
+    return applyMedicalActionToBodyPart(
+      liveActor,
+      liveActor,
+      liveItem,
+      legacyAction.actionType,
+      targetPart,
+      power
+    );
   }
 
-  if (effectType === "restoreEnergy") {
-    const energy = getBoundedResource(liveActor, "energy", { maxFallback: 100 });
-    const next = Math.min(energy.max, energy.current + power);
-    await liveActor.update({ "system.resources.energy.value": next });
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-      content: `<b>${liveActor.name}</b> выпивает <b>${liveItem.name}</b><br>⚡ Энергия: ${energy.current} → ${next}/${energy.max}`,
-    });
-    await consumeOneItem(liveActor, liveItem);
-    return itemEffectResult({ consumedItem: true, changed: true });
-  }
-
-  if (effectType === "restoreEnergyMax") {
-    const baseMax = Number(liveActor.system?.resources?.energy?.baseMax ?? liveActor.system?.resources?.energy?.max ?? 10);
-    const currentMax = Number(liveActor.system?.resources?.energy?.max ?? 10);
-    const current = Number(liveActor.system?.resources?.energy?.value ?? 0);
-    const nextMax = Math.min(baseMax, currentMax + power);
-    const nextCurrent = Math.min(nextMax, current + power);
-    await liveActor.update({
-      "system.resources.energy.max": nextMax,
-      "system.resources.energy.value": nextCurrent,
-    });
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-      content: `<b>${liveActor.name}</b> выпивает <b>${liveItem.name}</b><br>⚡ Макс. энергия: ${currentMax} → ${nextMax} (+${power})`,
-    });
-    await consumeOneItem(liveActor, liveItem);
-    return itemEffectResult({ consumedItem: true, changed: true });
-  }
-
-  if (effectType === "restoreMana") {
-    const mana = getBoundedResource(liveActor, "mana", { maxFallback: 50 });
-    const next = Math.min(mana.max, mana.current + power);
-    await liveActor.update({ "system.resources.mana.value": next });
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: liveActor }),
-      content: `<b>${liveActor.name}</b> выпивает <b>${liveItem.name}</b><br>Мана: +${power}`,
-    });
-    await consumeOneItem(liveActor, liveItem);
-    return itemEffectResult({ consumedItem: true, changed: true });
+  if (legacyAction?.applicationScope === "global") {
+    return applyMedicalActionGlobally(
+      liveActor,
+      liveActor,
+      liveItem,
+      legacyAction.actionType,
+      power
+    );
   }
 
   return itemEffectResult({ handled: false });

@@ -17,9 +17,27 @@ import {
   getCombatSummary,
   isCombatActive,
   requestActionTimeCommit,
+  restoreActorPendingAction,
   spendActionSeconds,
   startCombat,
 } from "./combat-flow-service.mjs";
+import {
+  buildCombatRows,
+  buildSystemDialogContent,
+  createCombatChatMessage,
+} from "./combat-chat-service.mjs";
+
+function pendingExecutionOk(result) {
+  if (result === false) return false;
+  if (!result || typeof result !== "object") return true;
+  if (result.ok === false || result.cancelled || result.canceled || result.queued) return false;
+  return true;
+}
+
+function getPendingExecutionReason(result) {
+  if (!result || typeof result !== "object") return "";
+  return result.reason || result.error || "";
+}
 
 export function getCombatParticipantsFromActorAndTargets(actor, targets = globalThis.game?.user?.targets ?? []) {
   const result = [];
@@ -56,17 +74,20 @@ export async function startCombatFromSheet(actor, {
   const state = startCombat(participants);
   if (!state) return { ok: false, reason: "start-failed" };
 
-  const lines = state.participants.map((participant, index) =>
-    `<p>${index + 1}. <b>${participant.actorName}</b> — инициатива ${participant.initiativeTotal} (бросок ${participant.initiativeRoll} + навык ${participant.initiativeSkill})</p>`
-  ).join("");
-
-  await ChatMessage.create({
-    content: `
-      <h3>Бой начат</h3>
-      <p><b>Раунд:</b> ${state.round}</p>
-      <p><b>Первый ход:</b> ${state.participants[0]?.actorName ?? "—"}</p>
-      ${lines}
-    `,
+  await createCombatChatMessage({
+    title: "Бой начат",
+    icon: "!",
+    status: `Раунд ${state.round}`,
+    statusClass: "is-warn",
+    rows: [
+      ["Участников", state.participants.length],
+      ["Первый ход", state.participants[0]?.actorName ?? "—"],
+    ],
+    bodyHtml: buildCombatRows(state.participants.map((participant, index) => ({
+      label: `${index + 1}. ${participant.actorName}`,
+      value: `${participant.initiativeTotal} (d20 ${participant.initiativeRoll} + навык ${participant.initiativeSkill})`,
+    }))),
+    className: "ih-combat-flow-card ih-combat-start-card",
   });
 
   render?.(true);
@@ -79,11 +100,15 @@ export async function endCombatFromSheet({
   const summary = getCombatSummary();
   endCombat();
 
-  await ChatMessage.create({
-    content: `
-      <h3>Бой завершён</h3>
-      <p><b>Раундов прошло:</b> ${summary.round ?? 0}</p>
-    `,
+  await createCombatChatMessage({
+    title: "Бой завершён",
+    icon: "!",
+    status: "Финал",
+    statusClass: "is-muted",
+    rows: [
+      ["Раундов прошло", summary.round ?? 0],
+    ],
+    className: "ih-combat-flow-card ih-combat-end-card",
   });
 
   render?.(true);
@@ -113,13 +138,16 @@ export async function advanceCombatTurnFromSheet(actor, {
   const state = advanceTurn();
   const current = state?.participants?.[state.turnIndex] ?? null;
 
-  await ChatMessage.create({
-    content: `
-      <h3>Следующий ход</h3>
-      <p><b>Раунд:</b> ${state.round}</p>
-      <p><b>Ходит:</b> ${current?.actorName ?? "—"}</p>
-      <p><b>Доступно секунд:</b> ${current?.remainingSeconds ?? 0}</p>
-    `,
+  await createCombatChatMessage({
+    title: "Следующий ход",
+    icon: ">",
+    status: `Раунд ${state.round}`,
+    statusClass: "is-warn",
+    rows: [
+      ["Ходит", current?.actorName ?? "—"],
+      ["Доступно секунд", current?.remainingSeconds ?? 0],
+    ],
+    className: "ih-combat-flow-card ih-combat-next-turn-card",
   });
 
   render?.(true);
@@ -152,9 +180,35 @@ export async function continuePendingCombatActionFromSheet(actor, {
     return result;
   }
 
-  await executePendingAction?.(result.action);
+  const execution = await executePendingAction?.(result.action);
+  if (!pendingExecutionOk(execution)) {
+    const reason = getPendingExecutionReason(execution);
+    const restore = restoreActorPendingAction(actor, result.action, {
+      remainingSeconds: 0,
+      awaitingConfirmation: true,
+      reason,
+    });
+    ui.notifications.warn(
+      reason
+        ? `Действие не выполнено (${reason}) и возвращено в ожидание.`
+        : "Действие не выполнено и возвращено в ожидание."
+    );
+    render?.(false);
+    return {
+      ...result,
+      ok: false,
+      done: false,
+      execution,
+      restoredPendingAction: restore.pendingAction ?? null,
+      reason: reason || "pending-execution-failed",
+    };
+  }
+
   render?.(false);
-  return result;
+  return {
+    ...result,
+    execution,
+  };
 }
 
 export async function endCombatTurnFromSheet(actor, {
@@ -194,12 +248,17 @@ export async function cancelPendingCombatActionFromSheet(actor, {
 
   cancelPendingAction(actor);
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `
-      <h3>Действие отменено</h3>
-      <p><b>${actor.name}</b> отменяет: <b>${pending.label}</b></p>
-    `,
+  await createCombatChatMessage({
+    actor,
+    title: "Действие отменено",
+    subtitle: actor.name,
+    icon: "x",
+    status: "Отмена",
+    statusClass: "is-muted",
+    rows: [
+      ["Действие", pending.label],
+    ],
+    className: "ih-combat-flow-card ih-combat-cancel-action-card",
   });
 
   render?.(true);
@@ -233,14 +292,19 @@ export async function commitTimedActionFromSheet(actor, {
   }
 
   if (timing.committed) {
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `
-        <h3>Начато долгое действие</h3>
-        <p><b>${actor.name}</b> начинает: <b>${label}</b></p>
-        <p><b>Всего нужно:</b> ${timeCost} сек.</p>
-        <p><b>Осталось до завершения:</b> ${timing.pendingAction?.remainingSeconds ?? 0} сек.</p>
-      `,
+    await createCombatChatMessage({
+      actor,
+      title: "Начато долгое действие",
+      subtitle: actor.name,
+      icon: "...",
+      status: "В процессе",
+      statusClass: "is-warn",
+      rows: [
+        ["Действие", label],
+        ["Всего нужно", `${timeCost} сек.`],
+        ["Осталось", `${timing.pendingAction?.remainingSeconds ?? 0} сек.`],
+      ],
+      className: "ih-combat-flow-card ih-combat-long-action-card",
     });
 
     render?.(true);
@@ -302,6 +366,34 @@ export async function resolveCombatTimeCostForActor(actor, {
   const rawSeconds = Number(totalSeconds || getCombatActionSeconds(actionType, item));
   const secondsCost = Math.max(0.5, applyActorSpeedModifier(actor, rawSeconds));
   const remaining = Number(commitCheck.remainingSeconds ?? 0);
+  const pending = getActorPendingAction(actor);
+
+  if (pending) {
+    const reason = "Сначала продолжите или отмените незавершённое длительное действие.";
+    ui.notifications.warn(reason);
+    return {
+      ok: false,
+      queued: false,
+      immediate: false,
+      reason,
+      pendingAction: pending,
+      secondsCost,
+      remainingSeconds: remaining,
+    };
+  }
+
+  if (remaining <= 0) {
+    const reason = "У участника не осталось секунд в этом ходу.";
+    ui.notifications.warn(reason);
+    return {
+      ok: false,
+      queued: false,
+      immediate: false,
+      reason,
+      secondsCost,
+      remainingSeconds: remaining,
+    };
+  }
 
   if (remaining >= secondsCost) {
     const spendResult = spendActionSeconds(actor, secondsCost, {
@@ -332,24 +424,19 @@ export async function resolveCombatTimeCostForActor(actor, {
     };
   }
 
-  const pending = getActorPendingAction(actor);
-  if (pending) {
-    ui.notifications.warn("У этого участника уже есть незавершённое длительное действие.");
-    return {
-      ok: false,
-      queued: false,
-      immediate: false,
-      reason: "Уже есть незавершённое длительное действие.",
-    };
-  }
-
   const confirmed = await Dialog.confirm({
     title: "Действие займёт несколько ходов",
-    content: `
-      <p><b>${label}</b> требует <b>${secondsCost}</b> сек.</p>
-      <p>Сейчас осталось только <b>${remaining}</b> сек.</p>
-      <p>Перенести действие на следующие ходы?</p>
-    `,
+    content: buildSystemDialogContent({
+      className: "ih-combat-action-confirm-dialog",
+      headline: label,
+      headlineMeta: "длинное действие",
+      status: "Перенести на следующие ходы?",
+      statusClass: "is-warn",
+      rows: [
+        ["Требуется", `${secondsCost} сек.`],
+        ["Осталось сейчас", `${remaining} сек.`],
+      ],
+    }),
   });
 
   if (!confirmed) {
@@ -380,9 +467,19 @@ export async function resolveCombatTimeCostForActor(actor, {
     };
   }
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<b>${actor.name}</b> начинает действие <b>${label}</b>, которое потребует несколько ходов.`,
+  await createCombatChatMessage({
+    actor,
+    title: "Действие перенесено",
+    subtitle: actor.name,
+    icon: "...",
+    status: "Несколько ходов",
+    statusClass: "is-warn",
+    rows: [
+      ["Действие", label],
+      ["Стоимость", `${secondsCost} сек.`],
+      ["Осталось сейчас", `${remaining} сек.`],
+    ],
+    className: "ih-combat-flow-card ih-combat-queued-action-card",
   });
 
   return {

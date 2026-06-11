@@ -4,18 +4,23 @@
   {{!-- ── ЛЕВАЯ: экипировка ── --}}
   <div class="ih-gi-equip-panel">
     <div class="ih-gi-equip-title">Экипировка</div>
-    <div class="ih-gi-silhouette" style="min-height:{{equipSilhouetteH}}px;height:{{equipSilhouetteH}}px;">
+    <div class="ih-gi-silhouette"
+         data-ih-style-min-height-px="{{equipSilhouetteH}}"
+         data-ih-style-height-px="{{equipSilhouetteH}}">
       {{#each equipSlots}}
       <div class="ih-gi-equip-slot {{#if slotKind}}ih-gi-slot-{{slotKind}}{{/if}} {{#if hasItem}}has-item ih-has-inv-tooltip{{/if}}"
            data-slot="{{key}}"
            draggable="{{#if hasItem}}true{{else}}false{{/if}}"
-           style="left:{{x}}px; top:{{y}}px; width:{{w}}px; height:{{h}}px;">
+           data-ih-style-left-px="{{x}}"
+           data-ih-style-top-px="{{y}}"
+           data-ih-style-width-px="{{w}}"
+           data-ih-style-height-px="{{h}}">
         {{#if hasItem}}
           {{!-- draggable=false: иначе браузер начинает drag на <img>, dragstart не всплывает к слоту --}}
           <img class="ih-gi-equip-img" src="{{itemImg}}" alt="{{itemName}}" draggable="false">
           {{#if durPct}}
           <div class="ih-gi-equip-dur">
-            <div class="ih-gi-equip-dur-fill" style="width:{{durPct}}%"></div>
+            <div class="ih-gi-equip-dur-fill" data-ih-style-width-pct="{{durPct}}"></div>
           </div>
           {{/if}}
           {{#if resist}}<span class="ih-gi-equip-resist">{{resist}}</span>{{/if}}
@@ -25,7 +30,7 @@
               <img src="{{itemImg}}" width="24" height="24">
               <div>
                 <div class="ih-gi-tooltip-name">{{itemName}}</div>
-                <div class="muted-text" style="font-size:9px">{{label}}</div>
+                <div class="muted-text ih-gi-tooltip-sub">{{label}}</div>
               </div>
             </div>
             {{#if itemTooltipStats}}
@@ -58,7 +63,7 @@
     <div class="ih-gi-pending-zone">
       <div class="ih-gi-pending-header">
         📥 К распределению <span class="ih-gi-pending-count">{{pendingItems.length}}</span>
-        <span class="muted-text" style="font-size:10px;font-weight:400">
+        <span class="muted-text ih-gi-pending-note">
           — размести в слот/сетку или выброси, чтобы закрыть инвентарь
         </span>
       </div>
@@ -66,10 +71,9 @@
         {{#each pendingItems}}
         <div class="ih-gi-pending-item" draggable="true"
              data-pending-item-id="{{itemId}}">
-          <img src="{{img}}" width="24" height="24"
-               style="border-radius:3px;object-fit:contain;background:#1a1f2e">
+          <img class="ih-gi-pending-img" src="{{img}}" width="24" height="24">
           <span class="ih-gi-pending-name">{{name}}</span>
-          <span class="muted-text" style="font-size:10px">{{w}}×{{h}}</span>
+          <span class="muted-text ih-gi-pending-size">{{w}}×{{h}}</span>
           {{#if qty}}<span class="ih-gi-pending-qty">×{{qty}}</span>{{/if}}
           <span class="ih-gi-pending-fit {{placementClass}}" title="{{placementText}}">{{placementText}}</span>
           <a class="ih-btn ih-btn-small" data-auto-place data-item-id="{{itemId}}"
@@ -91,9 +95,12 @@
            data-sec-key="{{key}}">
 
         {{!-- Заголовок секции --}}
-        <div class="ih-gi-sec-header" data-sec-key="{{key}}">
+        <div class="ih-gi-sec-header" data-sec-key="{{key}}" data-source-item-id="{{sourceItemId}}">
           <span class="ih-gi-sec-icon">{{contIcon}}</span>
           <span class="ih-gi-sec-name">{{label}}</span>
+          {{#if sourceItemId}}
+          <a class="ih-btn ih-btn-small" data-unmount-attachment data-item-id="{{sourceItemId}}" title="Снять attachment">↩</a>
+          {{/if}}
           <span class="muted-text">{{cols}}×{{rows}}</span>
           {{#if accessSeconds}}
           <span class="ih-gi-access">⏱ {{accessSeconds}}с</span>
@@ -112,12 +119,16 @@
         <div class="ih-gi-canvas-wrap">
           <div class="ih-gi-canvas {{#if pocketMode}}pocket-mode{{/if}}"
                data-sec-key="{{key}}"
-               style="width:{{gridW}}px; height:{{gridH}}px;">
+               data-ih-style-width-px="{{gridW}}"
+               data-ih-style-height-px="{{gridH}}">
 
             {{#each cells}}
             <div class="ih-gi-cell {{#if isPocket}}is-pocket{{/if}}"
                  data-col="{{col}}" data-row="{{row}}"
-                 style="left:{{x}}px; top:{{y}}px; width:{{size}}px; height:{{size}}px;">
+                 data-ih-style-left-px="{{x}}"
+                 data-ih-style-top-px="{{y}}"
+                 data-ih-style-width-px="{{size}}"
+                 data-ih-style-height-px="{{size}}">
             </div>
             {{/each}}
 
@@ -126,8 +137,10 @@
                  draggable="true"
                  data-item-id="{{itemId}}"
                  data-sec-key="{{../key}}"
-                 style="left:{{cssLeft}}px; top:{{cssTop}}px;
-                        width:{{cssW}}px; height:{{cssH}}px;">
+                 data-ih-style-left-px="{{cssLeft}}"
+                 data-ih-style-top-px="{{cssTop}}"
+                 data-ih-style-width-px="{{cssW}}"
+                 data-ih-style-height-px="{{cssH}}">
               <img class="ih-gi-item-img" src="{{img}}" alt="{{name}}">
               {{#if (gt qty 1)}}<span class="ih-gi-qty">{{qty}}</span>{{/if}}
               <span class="ih-gi-tier">{{tier}}</span>
@@ -135,7 +148,7 @@
               {{#if durPct}}
               <div class="ih-gi-dur-bar">
                 <div class="ih-gi-dur-fill {{#if (lt durPct 25)}}is-crit{{else if (lt durPct 50)}}is-warn{{/if}}"
-                     style="width:{{durPct}}%"></div>
+                     data-ih-style-width-pct="{{durPct}}"></div>
               </div>
               {{/if}}
               {{!-- Tooltip --}}
@@ -144,7 +157,7 @@
                   <img src="{{img}}" width="24" height="24">
                   <div>
                     <div class="ih-gi-tooltip-name">{{visibleName}}</div>
-                    <div class="muted-text" style="font-size:9px">Тир {{tier}}{{#if (gt qty 1)}} · ×{{qty}}{{/if}}</div>
+                    <div class="muted-text ih-gi-tooltip-sub">Тир {{tier}}{{#if (gt qty 1)}} · ×{{qty}}{{/if}}</div>
                   </div>
                 </div>
                 {{#if tooltipStats}}
@@ -157,7 +170,7 @@
                 </div>
                 {{/if}}
                 {{#unless identified}}
-                <div style="color:#facc15;font-size:10px;margin-top:3px">❓ Не опознан</div>
+                <div class="ih-gi-unknown-note">❓ Не опознан</div>
                 {{/unless}}
               </div>
             </div>

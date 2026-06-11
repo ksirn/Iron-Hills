@@ -4,21 +4,19 @@
   {{!-- Шапки --}}
   <div class="tt-headers">
     <div class="tt-col-header">
-      <img src="{{merchantImg}}" width="28" height="28"
-           style="border-radius:50%;object-fit:cover;background:#1a1f2e">
+      <img class="tt-party-img" src="{{merchantImg}}" width="28" height="28">
       <div>
-        <div style="font-weight:700">{{merchantName}}</div>
-        <div class="muted-text" style="font-size:10px">🪙 {{merchantCoins}} · ×{{priceFactor}}</div>
+        <div class="tt-party-name">{{merchantName}}</div>
+        <div class="muted-text tt-party-meta">🪙 {{merchantCoins}} · ×{{priceFactor}}</div>
       </div>
     </div>
     <div class="tt-middle-header">⇄</div>
-    <div class="tt-col-header" style="justify-content:flex-end">
-      <div style="text-align:right">
-        <div style="font-weight:700">{{buyerName}}</div>
-        <div class="muted-text" style="font-size:10px">🪙 {{buyerCoins}}</div>
+    <div class="tt-col-header is-right">
+      <div class="tt-party-info is-right">
+        <div class="tt-party-name">{{buyerName}}</div>
+        <div class="muted-text tt-party-meta">🪙 {{buyerCoins}}</div>
       </div>
-      <img src="{{buyerImg}}" width="28" height="28"
-           style="border-radius:50%;object-fit:cover;background:#1a1f2e">
+      <img class="tt-party-img" src="{{buyerImg}}" width="28" height="28">
     </div>
   </div>
 
@@ -37,25 +35,34 @@
         </div>
       </div>
       <div class="tt-grid-wrap">
-        <div class="tt-grid" style="width:{{mGrid.gridW}}px;height:{{mGrid.gridH}}px">
+        <div class="tt-grid"
+             data-ih-style-width-px="{{mGrid.gridW}}"
+             data-ih-style-height-px="{{mGrid.gridH}}">
           {{#each mGrid.cells}}
-          <div class="tt-cell" style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          <div class="tt-cell"
+               data-ih-style-left-px="{{x}}"
+               data-ih-style-top-px="{{y}}"
+               data-ih-style-width-px="{{size}}"
+               data-ih-style-height-px="{{size}}"></div>
           {{/each}}
           {{#each mGrid.placed}}
           <div class="tt-item" draggable="true"
                data-item-id="{{item.id}}" data-side="merchant"
-               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px">
+               data-ih-style-left-px="{{cssLeft}}"
+               data-ih-style-top-px="{{cssTop}}"
+               data-ih-style-width-px="{{cssW}}"
+               data-ih-style-height-px="{{cssH}}">
             <img src="{{item.img}}" alt="{{item.name}}">
             <span class="tt-item-name">{{item.name}}</span>
-            {{#if qty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
+            {{#if showQty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
             <span class="tt-item-price">{{priceStr}}</span>
             {{!-- Tooltip --}}
             <div class="tt-tooltip">
               <div class="tt-tip-header">
                 <img src="{{item.img}}" width="24" height="24">
                 <div>
-                  <div style="font-weight:700;font-size:11px">{{item.name}}</div>
-                  <div class="muted-text" style="font-size:9px">Тир {{tier}}</div>
+                  <div class="tt-tip-name">{{item.name}}</div>
+                  <div class="muted-text tt-tip-tier">Тир {{tier}}</div>
                 </div>
               </div>
               {{#if tooltipStats}}<div class="tt-tip-stats">{{tooltipStats}}</div>{{/if}}
@@ -91,7 +98,7 @@
         {{/each}}
         {{!-- Монеты торговца --}}
         <div class="tt-coins-block">
-          <span class="muted-text" style="font-size:10px">Монеты торговца</span>
+          <span class="muted-text tt-coins-label">Монеты торговца</span>
           <div class="tt-coins-row">
             <span class="tt-coin-icon copper">●</span>
             <input class="tt-coins-input" type="number" min="0"
@@ -144,7 +151,7 @@
         {{/each}}
         {{!-- Монеты игрока --}}
         <div class="tt-coins-block">
-          <span class="muted-text" style="font-size:10px">Монеты игрока</span>
+          <span class="muted-text tt-coins-label">Монеты игрока</span>
           <div class="tt-coins-row">
             <span class="tt-coin-icon copper">●</span>
             <input class="tt-coins-input" type="number" min="0"
@@ -177,25 +184,34 @@
         </div>
       </div>
       <div class="tt-grid-wrap">
-        <div class="tt-grid" style="width:{{pGrid.gridW}}px;height:{{pGrid.gridH}}px">
+        <div class="tt-grid"
+             data-ih-style-width-px="{{pGrid.gridW}}"
+             data-ih-style-height-px="{{pGrid.gridH}}">
           {{#each pGrid.cells}}
-          <div class="tt-cell" style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+          <div class="tt-cell"
+               data-ih-style-left-px="{{x}}"
+               data-ih-style-top-px="{{y}}"
+               data-ih-style-width-px="{{size}}"
+               data-ih-style-height-px="{{size}}"></div>
           {{/each}}
           {{#each pGrid.placed}}
           <div class="tt-item" draggable="true"
                data-item-id="{{item.id}}" data-side="player"
-               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px">
+               data-ih-style-left-px="{{cssLeft}}"
+               data-ih-style-top-px="{{cssTop}}"
+               data-ih-style-width-px="{{cssW}}"
+               data-ih-style-height-px="{{cssH}}">
             <img src="{{item.img}}" alt="{{item.name}}">
             <span class="tt-item-name">{{item.name}}</span>
-            {{#if qty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
+            {{#if showQty}}<span class="tt-item-qty">×{{qty}}</span>{{/if}}
             <span class="tt-item-price">{{priceStr}}</span>
             {{!-- Tooltip --}}
             <div class="tt-tooltip">
               <div class="tt-tip-header">
                 <img src="{{item.img}}" width="24" height="24">
                 <div>
-                  <div style="font-weight:700;font-size:11px">{{item.name}}</div>
-                  <div class="muted-text" style="font-size:9px">Тир {{tier}}</div>
+                  <div class="tt-tip-name">{{item.name}}</div>
+                  <div class="muted-text tt-tip-tier">Тир {{tier}}</div>
                 </div>
               </div>
               {{#if tooltipStats}}<div class="tt-tip-stats">{{tooltipStats}}</div>{{/if}}

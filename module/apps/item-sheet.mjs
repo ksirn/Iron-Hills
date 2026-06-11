@@ -1,3 +1,18 @@
+import {
+  getDamageResistanceOptions,
+  getDamageTypeOptions,
+} from "../services/damage-type-service.mjs";
+import { SPELL_SCHOOLS, normalizeSpellSchoolKey } from "../constants/spells-catalog.mjs";
+import {
+  ITEM_ACTION_TYPE_LABELS as RUNTIME_ACTION_TYPE_LABELS,
+  ITEM_EFFECT_TYPE_LABELS as RUNTIME_EFFECT_TYPE_LABELS,
+} from "../utils/item-action-config.mjs";
+import {
+  formatItemActionSummary,
+  getItemActionLabel,
+  getItemEffectLabel,
+} from "../utils/item-utils.mjs";
+
 /**
  * Iron Hills — Item Sheet v2
  * Единый лист для всех типов предметов.
@@ -90,6 +105,71 @@ const AOE_FRIENDLY_FIRE_OPTIONS = [
   { key:"auto", label:"По типу атаки" },
 ];
 
+const SPELL_EFFECT_TYPE_OPTIONS = [
+  { key:"",              label:"Авто" },
+  { key:"damage",        label:"Урон" },
+  { key:"heal",          label:"Лечение" },
+  { key:"buff",          label:"Бафф" },
+  { key:"debuff",        label:"Дебафф" },
+  { key:"summon",        label:"Призыв" },
+  { key:"banish",        label:"Изгнание" },
+  { key:"restoreEnergy", label:"Энергия" },
+  { key:"restoreMana",   label:"Мана" },
+  { key:"curePoison",    label:"Снять яд" },
+  { key:"cureDisease",   label:"Снять болезнь" },
+  { key:"stun",          label:"Оглушение" },
+  { key:"disarm",        label:"Обезоруживание" },
+  { key:"silence",       label:"Безмолвие" },
+  { key:"slow",          label:"Замедление" },
+  { key:"fear",          label:"Страх" },
+  { key:"reserveDrain",  label:"Резерв" },
+];
+
+const SPELL_SPECIAL_OPTIONS = [
+  { key:"",                 label:"Нет" },
+  { key:"heal",             label:"heal" },
+  { key:"buff",             label:"buff" },
+  { key:"debuff",           label:"debuff" },
+  { key:"summon",           label:"summon" },
+  { key:"banish",           label:"banish" },
+  { key:"lifesteal",        label:"lifesteal" },
+  { key:"double_vs_undead", label:"double_vs_undead" },
+  { key:"restoreEnergy",    label:"restoreEnergy" },
+  { key:"restoreMana",      label:"restoreMana" },
+  { key:"curePoison",       label:"curePoison" },
+  { key:"cureDisease",      label:"cureDisease" },
+  { key:"stimulant",        label:"stimulant" },
+  { key:"stun",             label:"stun" },
+  { key:"disarm",           label:"disarm" },
+  { key:"silence",          label:"silence" },
+  { key:"slow",             label:"slow" },
+  { key:"fear",             label:"fear" },
+  { key:"reserveDrain",     label:"reserveDrain" },
+];
+
+const SPELL_CONDITION_OPTIONS = [
+  { key:"",           label:"Нет" },
+  { key:"burning",    label:"burning" },
+  { key:"slowed",     label:"slowed" },
+  { key:"stunned",    label:"stunned" },
+  { key:"pushed",     label:"pushed" },
+  { key:"exposed",    label:"exposed" },
+  { key:"prone",      label:"prone" },
+  { key:"hasted",     label:"hasted" },
+  { key:"silenced",   label:"silenced" },
+  { key:"feared",     label:"feared" },
+  { key:"fleeing",    label:"fleeing" },
+  { key:"grappled",   label:"grappled" },
+  { key:"poison",     label:"poison" },
+  { key:"bleeding",   label:"bleeding" },
+];
+
+const SPELL_SUMMON_OPTIONS = [
+  { key:"summon",   label:"summon" },
+  { key:"skeleton", label:"skeleton" },
+  { key:"spirit",   label:"spirit" },
+];
+
 const TARGET_ACTOR_MODE_LABELS = {
   self: "На себя",
   "selected-or-self": "Выбранная цель или себя",
@@ -156,6 +236,78 @@ const ARMOR_SLOTS = [
   { key:"backpack", label:"Рюкзак"       },
 ];
 
+function isObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
+}
+
+function numberOrZero(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function numberOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function cleanKey(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeAoeFormObject(aoe = null) {
+  if (!isObject(aoe)) return;
+  aoe.shape = cleanKey(aoe.shape) || "circle";
+  aoe.type = cleanKey(aoe.type) || "blast";
+  aoe.distance = Math.max(0, numberOrZero(aoe.distance));
+  aoe.maxTargets = numberOrNull(aoe.maxTargets);
+  if (aoe.maxTargets !== null) aoe.maxTargets = Math.max(0, aoe.maxTargets);
+  const chainDecay = aoe.chainDecay === null || aoe.chainDecay === undefined || aoe.chainDecay === ""
+    ? 1
+    : aoe.chainDecay;
+  aoe.chainDecay = Math.min(1, Math.max(0, numberOrZero(chainDecay)));
+  aoe.targetZone = cleanKey(aoe.targetZone);
+  aoe.targetZoneMode = cleanKey(aoe.targetZoneMode) || (aoe.targetZone ? "fixed" : "random");
+  aoe.friendlyFireMode = cleanKey(aoe.friendlyFireMode) || "auto";
+}
+
+function normalizeItemSheetFormData(updateData = {}, type = "") {
+  const system = updateData.system;
+  if (!isObject(system)) return updateData;
+
+  if (isObject(system.aoe)) normalizeAoeFormObject(system.aoe);
+
+  if (type === "spell" || type === "scroll") {
+    system.spellId = cleanKey(system.spellId);
+    system.school = normalizeSpellSchoolKey(system.school, { fallback: cleanKey(system.school) });
+    system.damageType = cleanKey(system.damageType) || "none";
+    system.effectType = cleanKey(system.effectType);
+    system.applicationScope = cleanKey(system.applicationScope) || "targeted";
+    system.targetActorMode = cleanKey(system.targetActorMode) || "selected-only";
+    system.targetPart = cleanKey(system.targetPart);
+    system.targetZone = cleanKey(system.targetZone);
+    system.targetZoneMode = cleanKey(system.targetZoneMode) || (system.targetZone ? "fixed" : "random");
+    system.friendlyFireMode = cleanKey(system.friendlyFireMode) || "off";
+
+    if (isObject(system.effect)) {
+      system.effect.special = cleanKey(system.effect.special);
+      system.effect.applyCondition = cleanKey(system.effect.applyCondition);
+      system.effect.summonId = cleanKey(system.effect.summonId) || "summon";
+      system.effect.conditionDuration = Math.max(0, numberOrZero(system.effect.conditionDuration));
+      const conditionChance = numberOrNull(system.effect.conditionChance);
+      if (conditionChance === null) {
+        system.effect.conditionChance = null;
+      } else {
+        system.effect.conditionChance = Math.min(1, Math.max(0, conditionChance));
+      }
+      system.effect.healAmount = Math.max(0, numberOrZero(system.effect.healAmount));
+      system.effect.duration = Math.max(0, numberOrZero(system.effect.duration));
+    }
+  }
+
+  return updateData;
+}
+
 class IronHillsItemSheet extends ItemSheet {
 
   static get defaultOptions() {
@@ -178,7 +330,7 @@ class IronHillsItemSheet extends ItemSheet {
   async _onChangeInput(event) {
     const fd = this._getFormData();
     if (!fd) return;
-    const updateData = fd.object;
+    const updateData = normalizeItemSheetFormData(fd.object, this.item.type);
     await this.item.update(updateData);
   }
 
@@ -186,7 +338,7 @@ class IronHillsItemSheet extends ItemSheet {
     if (event) event.preventDefault();
     const fd = this._getFormData();
     if (!fd) return {};
-    const updateData = fd.object;
+    const updateData = normalizeItemSheetFormData(fd.object, this.item.type);
     await this.item.update(updateData);
     if (options.closeOnSubmit) this.close();
     return updateData;
@@ -229,7 +381,7 @@ class IronHillsItemSheet extends ItemSheet {
     if (!form) { console.warn("IronHills | form not found"); return; }
     try {
       const fd = new FormDataExtended(form, { editors: this.editors ?? {} });
-      await this.item.update(fd.object);
+      await this.item.update(normalizeItemSheetFormData(fd.object, this.item.type));
     } catch(e) {
       console.error("IronHills | save error:", e);
     }
@@ -264,9 +416,9 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.system        = s;
     ctx.qualityCfg    = quality;
     ctx.qualityOpts   = Object.entries(QUALITY_CFG).map(([k,v]) => ({ key:k, label:v.label, color:v.color }));
-    ctx.effectLabels  = EFFECT_LABELS;
+    ctx.effectLabels  = { ...RUNTIME_EFFECT_TYPE_LABELS, ...EFFECT_LABELS };
     ctx.scopeLabels   = SCOPE_LABELS;
-    ctx.actionTypeLabels = ACTION_TYPE_LABELS;
+    ctx.actionTypeLabels = { ...RUNTIME_ACTION_TYPE_LABELS, ...ACTION_TYPE_LABELS };
     ctx.applicationScopeLabels = APPLICATION_SCOPE_LABELS;
     ctx.targetActorModeLabels = TARGET_ACTOR_MODE_LABELS;
     ctx.zoneLabels    = ZONE_LABELS;
@@ -274,6 +426,17 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.aoeTypeOptions  = AOE_TYPE_OPTIONS;
     ctx.aoeZoneModeOptions = AOE_ZONE_MODE_OPTIONS;
     ctx.aoeFriendlyFireOptions = AOE_FRIENDLY_FIRE_OPTIONS;
+    ctx.damageTypeOptions = getDamageTypeOptions({ includePassive: false, includeTrue: false });
+    ctx.spellDamageTypeOptions = getDamageTypeOptions({ includePassive: true, includeTrue: true });
+    ctx.spellSchoolOptions = Object.entries(SPELL_SCHOOLS ?? {}).map(([key, school]) => ({
+      key,
+      label: `${school.icon ?? ""} ${school.label ?? key}`.trim(),
+    }));
+    ctx.spellEffectTypeOptions = SPELL_EFFECT_TYPE_OPTIONS;
+    ctx.spellSpecialOptions = SPELL_SPECIAL_OPTIONS;
+    ctx.spellConditionOptions = SPELL_CONDITION_OPTIONS;
+    ctx.spellSummonOptions = SPELL_SUMMON_OPTIONS;
+    ctx.armorResistanceOptions = getDamageResistanceOptions(s.protection);
     ctx.skillOptions  = SKILL_OPTIONS;
     ctx.craftTypes    = CRAFT_TYPES;
     ctx.matCategories = MATERIAL_CATEGORIES;
@@ -290,8 +453,11 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.isThrowable = type === "throwable";
 
     // Описание эффекта зелья
-    if (ctx.isPotion && (s.actionType || s.effect)) {
-      ctx.effectLabel = ACTION_TYPE_LABELS[s.actionType] ?? EFFECT_LABELS[s.effect] ?? s.actionType ?? s.effect;
+    if (ctx.isPotion && (s.actionType || s.effectType || s.effect || s.power)) {
+      ctx.effectLabel = formatItemActionSummary(s, { includeIcon: false })
+        || getItemActionLabel(s.actionType, {
+          fallback: getItemEffectLabel(s.effectType ?? s.effect, { fallback: s.actionType ?? s.effect }),
+        });
     }
 
     // Качество — бонус к параметрам

@@ -35,6 +35,21 @@ import {
 
 import { getWeaponAffixes } from "../utils/item-utils.mjs";
 import { buildAttackRollContext } from "./combat-hit-context-service.mjs";
+import {
+  getAttackModeLabel,
+  normalizeAttackMode,
+} from "./combat-attack-mode-service.mjs";
+import {
+  getDamageArmorChannel,
+  getDamageArmorChannelLabel,
+  getDamageTypeLabel,
+  getDamageResistanceValue,
+  isShieldBlockableDamageType,
+  normalizeDamageType,
+} from "./damage-type-service.mjs";
+import { normalizeAoeTargetZone } from "./aoe-policy-service.mjs";
+import { getSkillLabel } from "./combat-presentation-service.mjs";
+import { addOrExtendActorCondition } from "./condition-service.mjs";
 import { unequipActorSlot } from "./inventory-service.mjs";
 
 // ── Anatomy / overflow ────────────────────────────────────
@@ -83,7 +98,10 @@ function getBodyStatusValue(actor, partKey, statusKey) {
  */
 export async function applyDamageToBodyPart(actor, locationKey, damage, opts = {}) {
   const { onLethal = null, _depth = 0 } = opts;
-  if (damage <= 0) return { newHP: 0, overflow: 0, overflowTarget: null };
+  if (damage <= 0) {
+    const currentHP = Number(actor?.system?.resources?.hp?.[locationKey]?.value ?? 0);
+    return { newHP: currentHP, overflow: 0, overflowTarget: null };
+  }
   if (_depth > 4) return { newHP: 0, overflow: 0, overflowTarget: null };
 
   const path = `system.resources.hp.${locationKey}.value`;
@@ -149,8 +167,6 @@ export async function applyInjuryEffects(actor, locationKey, finalDamage, bleedi
   const isDestroyed = currentHp <= 0;
   const isMajorTrauma = isDestroyed || finalDamage >= maxHP;
   const updates = {};
-  updates["system.conditions.bleeding"] =
-    Number(actor.system?.conditions?.bleeding ?? 0) + bleedingStacks;
 
   if (BODY_PART_KEY_SET.has(injuryPartKey)) {
     updates[`system.resources.hp.${injuryPartKey}.status.minorBleeding`] =
@@ -222,6 +238,10 @@ function pickFixedLocation(targetZone) {
   return { key: targetZone, label: ZONE_LABELS[targetZone] ?? targetZone };
 }
 
+function normalizeAttackTargetZone(targetZone) {
+  return normalizeAoeTargetZone(targetZone);
+}
+
 /**
  * Главная функция боевого пайплайна.
  *
@@ -286,6 +306,7 @@ export async function resolveSingleAttack(args = {}) {
     damageType      = "physical",
     energyCost      = 0,
     weapon          = null,
+    attackMode: attackModeInput = null,
     hitBonus: hitBonusInput = 0,
     ignoreArmor     = 0,
     targetZone      = null,
@@ -306,9 +327,16 @@ export async function resolveSingleAttack(args = {}) {
 
   if (!attacker || !target) return null;
 
+  const attackMode = normalizeAttackMode(attackModeInput, { skillKey, weapon });
+  const resolvedDamageType = normalizeDamageType(damageType, { fallback: "physical" });
+  const damageArmorChannel = getDamageArmorChannel(resolvedDamageType);
+  const normalizedTargetZone = normalizeAttackTargetZone(targetZone);
+
   const attackContext = buildAttackRollContext(attacker, target, {
     skillKey,
     skillValueFallback,
+    attackMode,
+    weapon,
     hitBonus: hitBonusInput,
     surroundCount,
     targetToken,
@@ -377,12 +405,16 @@ export async function resolveSingleAttack(args = {}) {
     attackPenalty,
     finalEnergyCost,
     hitBonus,
-    damageType,
+    damageType: resolvedDamageType,
+    damageArmorChannel,
+    attackMode,
     baseDamage:       Number(baseDamage),
     margin:           0,
     rawDamage:        0,
     finalDamage:      0,
     reduction:        0,
+    reductionBeforePenetration: 0,
+    reductionNegated: 0,
     armorPenetration: 0,
     techPenetration:  0,
     armorItem:        null,
@@ -409,11 +441,18 @@ export async function resolveSingleAttack(args = {}) {
     hitContext: {
       threshold,
       effectiveThreshold: attackContext.effectiveThreshold,
+      attackMode,
       attackPenalty,
       hitBonus,
       targetDefense,
     },
   };
+
+  if (!hit && normalizedTargetZone) {
+    const missLocation = pickFixedLocation(normalizedTargetZone);
+    result.locationKey = missLocation.key;
+    result.locationLabel = missLocation.label;
+  }
 
   if (!hit) return result;
 
@@ -431,8 +470,8 @@ export async function resolveSingleAttack(args = {}) {
 
   let location;
   let locationRollValue = 0;
-  if (targetZone) {
-    location = pickFixedLocation(targetZone);
+  if (normalizedTargetZone) {
+    location = pickFixedLocation(normalizedTargetZone);
   } else {
     const r = await new Roll("1d20").evaluate();
     locationRollValue = r.total;
@@ -447,9 +486,9 @@ export async function resolveSingleAttack(args = {}) {
   if (
     !targetIsMonster &&
     shieldIntercept &&
-    damageType === "physical" &&
+    isShieldBlockableDamageType(resolvedDamageType) &&
     !ignoreShield &&
-    !targetZone &&
+    !normalizedTargetZone &&
     targetHasShield &&
     targetShield &&
     anatomicalKey !== "shield"
@@ -461,7 +500,7 @@ export async function resolveSingleAttack(args = {}) {
     if (pctR.total <= chancePct) {
       const blk = await new Roll("1d10 + @shield", { shield: shieldSkillVal }).evaluate();
       const br = blk.total;
-      const shieldRed = getDamageReduction(targetShield, damageType);
+      const shieldRed = getDamageReduction(targetShield, resolvedDamageType);
       const softened = Math.max(0, rawDamage - shieldRed);
 
       if (br < 6) {
@@ -543,16 +582,16 @@ export async function resolveSingleAttack(args = {}) {
 
   let reduction;
   if (targetIsMonster) {
-    const monsterPhys = Number(target.system?.resources?.armor?.physical ?? 0);
-    const monsterMag  = Number(target.system?.resources?.armor?.magical  ?? 0);
-    reduction = damageType === "magical" ? monsterMag : monsterPhys;
+    reduction = getDamageResistanceValue(target.system?.resources?.armor ?? {}, resolvedDamageType);
   } else {
-    reduction = getBestResistForZone(target, reductionZone, damageType);
+    reduction = getBestResistForZone(target, reductionZone, resolvedDamageType);
   }
 
+  const reductionBeforePenetration = Math.max(0, Number(reduction) || 0);
   const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
-  const techPenetration  = Math.round(reduction * totalIgnoreArmor);
-  const effectiveReduction = Math.max(0, reduction - armorPenetration - techPenetration);
+  const techPenetration  = Math.round(reductionBeforePenetration * totalIgnoreArmor);
+  const effectiveReduction = Math.max(0, reductionBeforePenetration - armorPenetration - techPenetration);
+  const reductionNegated = Math.max(0, reductionBeforePenetration - effectiveReduction);
   const finalDamage = Math.max(0, rawForReduction - effectiveReduction);
 
   const injuryFxKey =
@@ -571,6 +610,8 @@ export async function resolveSingleAttack(args = {}) {
     locationRoll: locationRollValue,
     armorItem,
     reduction: effectiveReduction,
+    reductionBeforePenetration,
+    reductionNegated,
     armorPenetration,
     techPenetration,
     finalDamage,
@@ -669,8 +710,10 @@ export async function resolveSingleAttack(args = {}) {
   if (finalDamage > 0 && affixes.stunChance > 0) {
     const r = await new Roll("1d100").evaluate();
     if (r.total <= Math.round(affixes.stunChance * 100)) {
-      const cur = Number(target.system?.conditions?.stunned ?? 0);
-      await target.update({ "system.conditions.stunned": cur + 6 });
+      await addOrExtendActorCondition(target, "stunned", 6, {
+        mode: "add",
+        valueKind: "duration",
+      });
       result.affixesApplied.stunnedExtra = true;
     }
   }
@@ -682,23 +725,322 @@ export async function resolveSingleAttack(args = {}) {
 
 const ATTACK_TEMPLATE = "systems/iron-hills-system/templates/chat/attack.hbs";
 
-function buildDefenseContextHtml(defenseContext) {
+function cleanAttackText(value, fallback = "") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function joinAttackParts(parts = [], separator = " · ") {
+  return parts
+    .map(part => cleanAttackText(part))
+    .filter(Boolean)
+    .join(separator);
+}
+
+function signedAttackNumber(value) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed === 0) return "0";
+  return parsed > 0 ? `+${parsed}` : String(parsed);
+}
+
+function getAttackRollDesc(result = {}) {
+  return (result?.rollHistory ?? [])
+    .map(r => `d${r.die}=${r.result}`)
+    .join(" -> ");
+}
+
+function getAttackOverflowLabel(result = {}) {
+  return result?.overflowTarget ? getHitLabel(result.overflowTarget) : "";
+}
+
+function getAttackArmorDurability(result = {}) {
+  if (!result?.hit || result?.targetIsMonster || !result?.armorItem) return null;
+  const showDur = result.finalDamage > 0 || result?.shieldBlock?.success;
+  if (!showDur) return null;
+
+  const value = Number(result.armorItem.system?.durability?.value ?? 0);
+  if (value < 0) return null;
+  return {
+    value,
+    max: Number(result.armorItem.system?.durability?.max ?? 100),
+  };
+}
+
+function buildAttackStatus(result = {}) {
+  if (result.hit) {
+    return {
+      icon: result.targetKilled ? "!" : "✓",
+      label: result.targetKilled ? "Цель погибает" : "Попадание",
+      className: result.targetKilled ? "is-kill" : "is-hit",
+    };
+  }
+
+  if (result.isAnticrit) {
+    return {
+      icon: "!",
+      label: `Антикрит (${result.failDegree ?? 0})`,
+      className: "is-anticrit",
+    };
+  }
+
+  if (Number(result.failDegree ?? 0) >= 8) {
+    return {
+      icon: "×",
+      label: `Жёсткий промах (${result.failDegree})`,
+      className: "is-hard-miss",
+    };
+  }
+
+  return {
+    icon: "×",
+    label: "Промах",
+    className: "is-miss",
+  };
+}
+
+function buildDefenseContextRows(defenseContext) {
   const notes = Array.isArray(defenseContext?.notes)
     ? defenseContext.notes.filter(Boolean)
     : [];
-  if (!notes.length) return "";
+  if (!notes.length) return [];
 
   const summary = [
     defenseContext.formationBonus ? `строй +${defenseContext.formationBonus}` : "",
     defenseContext.shieldWallBonus ? `стена +${defenseContext.shieldWallBonus}` : "",
     defenseContext.surroundMitigation ? `окружение +${defenseContext.surroundMitigation}` : "",
-  ].filter(Boolean).join(", ");
+  ].filter(Boolean).join(", ") || "без бонуса";
 
-  const detail = notes
-    .map(line => `<br>${line}`)
-    .join("");
+  return [{
+    label: "Позиционная защита",
+    value: joinAttackParts([summary, ...notes], "; "),
+    className: "is-defense",
+  }];
+}
 
-  return `<p><b>Позиционная защита:</b> ${summary || "без бонуса"}${detail}</p>`;
+function buildShieldBlockRows(result = {}) {
+  const sb = result?.shieldBlock;
+  if (!sb?.triggered) return [];
+
+  if (sb.success) {
+    return [{
+      label: "Блок щитом",
+      value: joinAttackParts([
+        sb.tierLabel,
+        `перехват ${sb.chancePct}% (d100 ${sb.pctRoll})`,
+        `блок ${sb.blockRoll}`,
+        `снято ${sb.shieldReduction}`,
+        `в тело raw ${sb.rawLeakToBody}`,
+        `износ -${sb.shieldWear}`,
+      ], "; "),
+      className: "is-shield",
+    }];
+  }
+
+  return [{
+    label: "Щит",
+    value: joinAttackParts([
+      `попытка блока ${sb.chancePct}% (d100 ${sb.pctRoll})`,
+      `блок ${sb.blockRoll}`,
+      sb.note,
+    ], "; "),
+    className: "is-shield",
+  }];
+}
+
+function buildAttackAffixRows(result = {}) {
+  const affixes = result?.affixesApplied;
+  if (!affixes) return [];
+
+  return [
+    {
+      label: "Критический множитель",
+      value: `x${affixes.criticalMult}`,
+      visible: Number(affixes.criticalMult ?? 1) > 1,
+    },
+    {
+      label: "Кража жизни",
+      value: `+${affixes.lifestolenHp} HP`,
+      visible: Number(affixes.lifestolenHp ?? 0) > 0,
+    },
+    {
+      label: "Кровотечение",
+      value: `+${affixes.bleedingBonus}`,
+      visible: Number(affixes.bleedingBonus ?? 0) > 0,
+    },
+    {
+      label: "Обезоруживание",
+      value: "цель обезоружена",
+      visible: Boolean(affixes.disarmed),
+    },
+    {
+      label: "Оглушение",
+      value: "дополнительное оглушение",
+      visible: Boolean(affixes.stunnedExtra),
+    },
+    {
+      label: "Казнь",
+      value: "цель добита",
+      visible: Boolean(affixes.executed),
+    },
+  ].filter(row => row.visible !== false).map(row => ({
+    ...row,
+    className: "is-affix",
+  }));
+}
+
+function buildAttackStatPills(result = {}, status = {}) {
+  return [
+    { label: "Результат", value: status.label, className: status.className },
+    { label: "Бросок", value: `${result.effectiveRoll ?? 0}/${result.threshold ?? 0}` },
+    { label: "Урон", value: result.hit ? Number(result.finalDamage ?? 0) : "-", visible: Boolean(result.hit) },
+    { label: "Энергия", value: `-${result.finalEnergyCost}`, visible: Number(result.finalEnergyCost ?? 0) > 0 },
+  ].filter(row => row.visible !== false);
+}
+
+function buildAttackMetaRows({
+  skillKey = "",
+  skillLabel = "",
+  attacker = null,
+  target = null,
+  result = {},
+  damageTypeLabel = "",
+  damageArmorChannelLabel = "",
+} = {}) {
+  return [
+    { label: "Атакующий", value: attacker?.name ?? "—" },
+    { label: "Цель", value: target?.name ?? "—" },
+    { label: "Навык", value: joinAttackParts([skillLabel || skillKey, skillKey ? `(${skillKey})` : ""], " ") },
+    { label: "Режим", value: getAttackModeLabel(result.attackMode), visible: Boolean(result.attackMode) },
+    { label: "Тип урона", value: damageTypeLabel, visible: Boolean(damageTypeLabel) },
+    { label: "Канал брони", value: damageArmorChannelLabel, visible: Boolean(damageArmorChannelLabel) },
+  ].filter(row => row.visible !== false);
+}
+
+function buildAttackRollRows(result = {}, rollDesc = "") {
+  return [
+    { label: "Куб", value: `d${result.dieSize ?? 0}` },
+    {
+      label: "Бросок",
+      value: result.exploded && rollDesc ? `${rollDesc} = ${result.rollTotal}` : result.rollTotal,
+    },
+    { label: "Штраф", value: `-${result.attackPenalty}`, visible: Number(result.attackPenalty ?? 0) > 0 },
+    { label: "Бонус", value: signedAttackNumber(result.hitBonus), visible: Number(result.hitBonus ?? 0) !== 0 },
+    { label: "Эффективно", value: result.effectiveRoll },
+    { label: "Порог", value: result.threshold },
+    { label: "Перевес", value: signedAttackNumber(result.margin), visible: Boolean(result.hit) },
+  ].filter(row => row.visible !== false);
+}
+
+function buildAttackDamageRows({
+  result = {},
+  overflowLabel = "",
+  armorDur = null,
+} = {}) {
+  if (!result.hit) {
+    return result.locationLabel ? [{
+      label: "Зона",
+      value: result.locationLabel,
+    }] : [];
+  }
+
+  const reductionDetails = Number(result.reductionBeforePenetration ?? 0) > Number(result.reduction ?? 0)
+    ? joinAttackParts([
+        `база ${result.reductionBeforePenetration}`,
+        `снято ${result.reductionNegated}`,
+        Number(result.armorPenetration ?? 0) > 0 ? `пробито ${result.armorPenetration}` : "",
+        Number(result.techPenetration ?? 0) > 0 ? `техника ${result.techPenetration}` : "",
+      ], ", ")
+    : "";
+  const zoneSource = result.locationRoll ? `d20 ${result.locationRoll}` : "прицельно";
+
+  return [
+    { label: "Зона", value: joinAttackParts([result.locationLabel, zoneSource], " · "), visible: Boolean(result.locationLabel) },
+    { label: "База", value: result.baseDamage },
+    { label: "Сырой урон", value: result.rawDamage },
+    {
+      label: "Броня",
+      value: result.armorItem?.name ?? "нет",
+      visible: !result.targetIsMonster,
+    },
+    {
+      label: "Поглощение",
+      value: reductionDetails ? `${result.reduction} (${reductionDetails})` : result.reduction,
+    },
+    { label: "Итоговый урон", value: result.finalDamage, className: "is-damage" },
+    { label: "Осталось HP", value: result.remainingHP },
+    {
+      label: "Переходящий урон",
+      value: `${result.overflowDamage} -> ${overflowLabel}`,
+      visible: Number(result.overflowDamage ?? 0) > 0,
+    },
+    {
+      label: "Прочность брони",
+      value: `${armorDur?.value}/${armorDur?.max}`,
+      visible: Boolean(armorDur),
+    },
+  ].filter(row => row.visible !== false);
+}
+
+function buildAttackNoticeRows(result = {}) {
+  return [
+    ...buildDefenseContextRows(result.defenseContext),
+    ...buildShieldBlockRows(result),
+    ...buildAttackAffixRows(result),
+    {
+      label: "Финал",
+      value: "цель погибает",
+      visible: Boolean(result.targetKilled),
+      className: "is-kill",
+    },
+  ].filter(row => row.visible !== false);
+}
+
+export function buildAttackChatData({
+  label = "Атака",
+  skillKey = "",
+  attacker = null,
+  target = null,
+  result = {},
+} = {}) {
+  const skillLabel = getSkillLabel(skillKey) || skillKey;
+  const damageTypeLabel = getDamageTypeLabel(result?.damageType);
+  const damageArmorChannelLabel = getDamageArmorChannelLabel(result?.damageArmorChannel ?? result?.damageType);
+  const rollDesc = getAttackRollDesc(result);
+  const overflowLabel = getAttackOverflowLabel(result);
+  const armorDur = getAttackArmorDurability(result);
+  const status = buildAttackStatus(result);
+  const cardClass = joinAttackParts([
+    status.className,
+    result.hit ? "is-hit" : "is-miss",
+    result.targetKilled ? "is-kill" : "",
+  ], " ");
+
+  return {
+    title: label,
+    icon: status.icon,
+    statusLabel: status.label,
+    statusClass: status.className,
+    cardClass,
+    statPills: buildAttackStatPills(result, status),
+    metaRows: buildAttackMetaRows({
+      skillKey,
+      skillLabel,
+      attacker,
+      target,
+      result,
+      damageTypeLabel,
+      damageArmorChannelLabel,
+    }),
+    rollRows: buildAttackRollRows(result, rollDesc),
+    damageRows: buildAttackDamageRows({ result, overflowLabel, armorDur }),
+    noticeRows: buildAttackNoticeRows(result),
+    result,
+    rollDesc,
+    overflowLabel,
+    armorDur,
+    damageTypeLabel,
+    damageArmorChannelLabel,
+  };
 }
 
 /**
@@ -713,57 +1055,7 @@ function buildDefenseContextHtml(defenseContext) {
  * @returns {Promise<string>}
  */
 export async function formatAttackChatHtml({ label, skillKey, attacker, target, result }) {
-  const rollDesc = (result?.rollHistory ?? [])
-    .map(r => `d${r.die}=${r.result}`)
-    .join(" → ");
-
-  const overflowLabel = result?.overflowTarget
-    ? getHitLabel(result.overflowTarget)
-    : "";
-
-  let shieldBlockHtml = "";
-  const sb = result?.shieldBlock;
-  if (sb?.triggered) {
-    if (sb.success) {
-      shieldBlockHtml =
-        `<p><b>Блок щитом</b> (${sb.tierLabel}): шанс перехвата ${sb.chancePct}% (d100: ${sb.pctRoll}), навык ${sb.shieldSkill}, ` +
-        `бросок блока d10+навык: <b>${sb.blockRoll}</b>. ` +
-        `Снято с сырого урона щитом ≈${sb.shieldReduction}; в тело просочилось (raw) ${sb.rawLeakToBody}. ` +
-        `Износ щита: <b>−${sb.shieldWear}</b></p>`;
-    } else {
-      shieldBlockHtml =
-        `<p><b>Щит:</b> попытка блока (шанс ${sb.chancePct}%, d100: ${sb.pctRoll}), d10+навык: ` +
-        `<b>${sb.blockRoll}</b> — ${sb.note ?? ""}</p>`;
-    }
-  }
-
-  // Прочность брони показываем для не-монстров с уроном или при удачном блоке щитом
-  const defenseContextHtml = buildDefenseContextHtml(result?.defenseContext);
-
-  let armorDur = null;
-  if (result?.hit && !result?.targetIsMonster && result?.armorItem) {
-    const showDur = result.finalDamage > 0 || result?.shieldBlock?.success;
-    if (showDur) {
-      const value = Number(result.armorItem.system?.durability?.value ?? 0);
-      if (value >= 0) {
-        armorDur = {
-          value,
-          max: Number(result.armorItem.system?.durability?.max ?? 100),
-        };
-      }
-    }
-  }
-
   return renderTemplate(ATTACK_TEMPLATE, {
-    label,
-    skillKey,
-    attacker: { name: attacker?.name ?? "—" },
-    target:   { name: target?.name   ?? "—" },
-    result,
-    rollDesc,
-    overflowLabel,
-    armorDur,
-    shieldBlockHtml,
-    defenseContextHtml,
+    attack: buildAttackChatData({ label, skillKey, attacker, target, result }),
   });
 }

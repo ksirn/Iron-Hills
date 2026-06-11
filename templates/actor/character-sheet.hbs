@@ -5,11 +5,11 @@
     <div class="ih-cs-portrait-wrap">
       <img class="ih-cs-portrait" src="{{actor.img}}" alt="{{actor.name}}">
       <div class="ih-cs-effects">
-        {{#if system.conditions.bleeding}}<span class="ih-cs-fx" style="color:var(--ih-hp-crit)" title="Кровотечение: {{system.conditions.bleeding}}"><i class="fas fa-droplet"></i></span>{{/if}}
-        {{#if system.conditions.poison}}<span class="ih-cs-fx" style="color:var(--ih-food)" title="Яд: {{system.conditions.poison}}"><i class="fas fa-skull"></i></span>{{/if}}
-        {{#if system.conditions.burning}}<span class="ih-cs-fx" style="color:var(--ih-hp-bad)" title="Горение: {{system.conditions.burning}}"><i class="fas fa-fire"></i></span>{{/if}}
-        {{#if system.conditions.shock}}<span class="ih-cs-fx" style="color:var(--ih-mana)" title="Шок: {{system.conditions.shock}}"><i class="fas fa-bolt"></i></span>{{/if}}
-        {{#if system.conditions.stunned}}<span class="ih-cs-fx" style="color:var(--ih-hp-warn)" title="Оглушение: {{system.conditions.stunned}}"><i class="fas fa-dizzy"></i></span>{{/if}}
+        {{#if system.conditions.bleeding}}<span class="ih-cs-fx is-bleeding" title="Кровотечение: {{system.conditions.bleeding}}"><i class="fas fa-droplet"></i></span>{{/if}}
+        {{#if system.conditions.poison}}<span class="ih-cs-fx is-poison" title="Яд: {{system.conditions.poison}}"><i class="fas fa-skull"></i></span>{{/if}}
+        {{#if system.conditions.burning}}<span class="ih-cs-fx is-burning" title="Горение: {{system.conditions.burning}}"><i class="fas fa-fire"></i></span>{{/if}}
+        {{#if system.conditions.shock}}<span class="ih-cs-fx is-shock" title="Шок: {{system.conditions.shock}}"><i class="fas fa-bolt"></i></span>{{/if}}
+        {{#if system.conditions.stunned}}<span class="ih-cs-fx is-stunned" title="Оглушение: {{system.conditions.stunned}}"><i class="fas fa-dizzy"></i></span>{{/if}}
       </div>
     </div>
 
@@ -44,9 +44,9 @@
 
     <div class="ih-cs-coins-block">
       <div class="ih-cs-coins-title">Монеты</div>
-      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#cd7f32">Медь</span><input type="number" name="system.currency.copper" value="{{system.currency.copper}}" min="0" class="ih-cs-coin-input"></div>
-      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:#a8b8d0">Серебро</span><input type="number" name="system.currency.silver" value="{{system.currency.silver}}" min="0" class="ih-cs-coin-input"></div>
-      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label" style="color:var(--ih-hp-warn)">Золото</span><input type="number" name="system.currency.gold" value="{{system.currency.gold}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label is-copper">Медь</span><input type="number" name="system.currency.copper" value="{{system.currency.copper}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label is-silver">Серебро</span><input type="number" name="system.currency.silver" value="{{system.currency.silver}}" min="0" class="ih-cs-coin-input"></div>
+      <div class="ih-cs-coin-row"><span class="ih-cs-coin-label is-gold">Золото</span><input type="number" name="system.currency.gold" value="{{system.currency.gold}}" min="0" class="ih-cs-coin-input"></div>
     </div>
   </div>
 
@@ -57,14 +57,19 @@
     <div class="ih-cs-left">
 
       <div class="ih-cs-section">
-        <div class="ih-cs-section-title">Тело</div>
+        <div class="ih-cs-section-title">
+          <span>Тело</span>
+          {{#if medicalTriage.visible}}
+          <span class="ih-cs-section-meta ih-cs-triage-meta {{medicalTriage.severityClass}}">{{medicalTriage.bodyStatusLabel}}</span>
+          {{/if}}
+        </div>
         <div class="ih-cs-body-layout">
 
           {{!-- Силуэт человечка --}}
           <div class="ih-cs-figure">
             {{#each zones}}{{#if (eq key "head")}}
             <div class="ih-cs-fig-part ih-cs-fig-head {{cssClass}}" title="{{tooltip}}">
-              <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+              <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
               <span class="ih-cs-fig-label">Г</span>
               {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
               {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
@@ -74,16 +79,17 @@
             <div class="ih-cs-fig-row">
               {{#each zones}}{{#if (eq key "leftArm")}}
               <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
-                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Л</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
                 {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
                 {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
               </div>
               {{/if}}{{/each}}
               {{#each zones}}{{#if (eq key "torso")}}
               <div class="ih-cs-fig-part ih-cs-fig-torso {{cssClass}}" title="{{tooltip}}">
-                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Т</span>
                 {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
                 {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
@@ -92,9 +98,10 @@
               {{/if}}{{/each}}
               {{#each zones}}{{#if (eq key "rightArm")}}
               <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
-                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">П</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
                 {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
                 {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
               </div>
@@ -102,7 +109,7 @@
             </div>
             {{#each zones}}{{#if (eq key "abdomen")}}
             <div class="ih-cs-fig-part ih-cs-fig-abdomen {{cssClass}}" title="{{tooltip}}">
-              <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+              <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
               <span class="ih-cs-fig-label">Ж</span>
               {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
               {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -111,18 +118,20 @@
             <div class="ih-cs-fig-row">
               {{#each zones}}{{#if (eq key "leftLeg")}}
               <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
-                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Л</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
                 {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
               </div>
               {{/if}}{{/each}}
               <div class="ih-cs-fig-gap"></div>
               {{#each zones}}{{#if (eq key "rightLeg")}}
               <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
-                <div class="ih-cs-fig-fill" style="height:{{pct}}%"></div>
+                <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">П</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+                {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
                 {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
               </div>
               {{/if}}{{/each}}
@@ -138,12 +147,13 @@
                      value="{{value}}" class="ih-cs-hp-input">
               <span class="ih-cs-hp-max">/{{max}}</span>
               <div class="ih-cs-hp-bar-track">
-                <div class="ih-cs-hp-bar-fill" style="width:{{pct}}%"></div>
+                <div class="ih-cs-hp-bar-fill" data-ih-style-width-pct="{{pct}}"></div>
               </div>
               <div class="ih-cs-zone-dots">
                 {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major" title="{{trauma.majorBleedingTitle}}"></span>{{/if}}
                 {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor" title="Кровь {{trauma.minorBleeding}}"></span>{{/if}}
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture" title="Перелом"></span>{{/if}}
+                {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted" title="Шина"></span>{{/if}}
                 {{#if trauma.tourniquet}}<span class="ih-fig-dot dot-tourniquet" title="Жгут"></span>{{/if}}
                 {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed" title="Уничтожено"></span>{{/if}}
               </div>
@@ -152,6 +162,34 @@
           </div>
 
         </div>
+        {{#if medicalTriage.visible}}
+        <div class="ih-cs-triage {{medicalTriage.severityClass}}">
+          <div class="ih-cs-triage-head">
+            <span class="ih-cs-triage-icon">{{medicalTriage.icon}}</span>
+            <div class="ih-cs-triage-titlebox">
+              <div class="ih-cs-triage-title">{{medicalTriage.title}}</div>
+              <div class="ih-cs-triage-note">{{medicalTriage.actionHint}}</div>
+            </div>
+            <span class="ih-cs-triage-action">{{medicalTriage.primaryAction}}</span>
+          </div>
+          <div class="ih-cs-triage-chips">
+            {{#each medicalTriage.statChips}}
+            <span class="ih-med-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+            {{/each}}
+          </div>
+          {{#if medicalTriage.hasRecommendedParts}}
+          <div class="ih-cs-triage-parts">
+            {{#each medicalTriage.recommendedPreview}}
+            <div class="ih-cs-triage-part {{cssClass}}">
+              <span class="ih-cs-triage-part-name">{{label}}</span>
+              <span class="ih-cs-triage-part-hp">{{hpLabel}}</span>
+              <span class="ih-cs-triage-part-action">{{recommendedAction}}</span>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
       </div>
 
       <div class="ih-cs-section">
@@ -164,9 +202,9 @@
               <input type="number" name="system.resources.energy.value" value="{{system.resources.energy.value}}" class="ih-cs-res-input">
               <span class="ih-cs-res-max">/{{system.resources.energy.max}}</span>
             </div>
-            <div class="ih-cs-res-track"><div class="ih-cs-res-fill energy" style="width:{{overviewSummary.energyPct}}%"></div></div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill energy" data-ih-style-width-pct="{{overviewSummary.energyPct}}"></div></div>
             {{#if overviewSummary.unconscious}}
-            <div class="ih-cs-debuff-tag" style="color:#ef4444">💀 Без сознания</div>
+            <div class="ih-cs-debuff-tag is-danger">💀 Без сознания</div>
             {{/if}}
           </div>
           <div class="ih-cs-res-row">
@@ -176,7 +214,7 @@
               <input type="number" name="system.resources.mana.value" value="{{system.resources.mana.value}}" class="ih-cs-res-input">
               <span class="ih-cs-res-max">/{{system.resources.mana.max}}</span>
             </div>
-            <div class="ih-cs-res-track"><div class="ih-cs-res-fill mana" style="width:{{overviewSummary.manaPct}}%"></div></div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill mana" data-ih-style-width-pct="{{overviewSummary.manaPct}}"></div></div>
           </div>
           <div class="ih-cs-res-row">
             <span class="ih-cs-res-icon food">🍖</span>
@@ -185,9 +223,9 @@
               <input type="number" name="system.resources.satiety.value" value="{{system.resources.satiety.value}}" class="ih-cs-res-input">
               <span class="ih-cs-res-max">/{{system.resources.satiety.max}}</span>
             </div>
-            <div class="ih-cs-res-track"><div class="ih-cs-res-fill food" style="width:{{overviewSummary.satietyPct}}%"></div></div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill food" data-ih-style-width-pct="{{overviewSummary.satietyPct}}"></div></div>
             {{#if overviewSummary.hungerState}}
-            <div class="ih-cs-debuff-tag" style="color:{{overviewSummary.hungerState.color}}"
+            <div class="ih-cs-debuff-tag" data-ih-style-color="{{overviewSummary.hungerState.color}}"
                  title="−{{overviewSummary.hungerState.penalty}} макс. энергии">
               {{overviewSummary.hungerState.icon}} {{overviewSummary.hungerState.label}}
             </div>
@@ -200,22 +238,94 @@
               <input type="number" name="system.resources.hydration.value" value="{{system.resources.hydration.value}}" class="ih-cs-res-input">
               <span class="ih-cs-res-max">/{{system.resources.hydration.max}}</span>
             </div>
-            <div class="ih-cs-res-track"><div class="ih-cs-res-fill water" style="width:{{overviewSummary.hydrationPct}}%"></div></div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill water" data-ih-style-width-pct="{{overviewSummary.hydrationPct}}"></div></div>
             {{#if overviewSummary.thirstState}}
-            <div class="ih-cs-debuff-tag" style="color:{{overviewSummary.thirstState.color}}"
+            <div class="ih-cs-debuff-tag" data-ih-style-color="{{overviewSummary.thirstState.color}}"
                  title="−{{overviewSummary.thirstState.penalty}} макс. энергии">
               {{overviewSummary.thirstState.icon}} {{overviewSummary.thirstState.label}}
             </div>
             {{/if}}
           </div>
           <div class="ih-cs-res-row">
-            <span class="ih-cs-res-icon" style="color:var(--ih-text-2)">⚖</span>
+            <span class="ih-cs-res-icon weight">⚖</span>
             <span class="ih-cs-res-name">Нагрузка</span>
             <span class="ih-cs-res-static">{{overviewSummary.weightValue}}/{{overviewSummary.weightMax}}</span>
-            <div class="ih-cs-res-track"><div class="ih-cs-res-fill" style="width:{{overviewSummary.weightPct}}%;background:var(--ih-text-2)"></div></div>
+            <div class="ih-cs-res-track"><div class="ih-cs-res-fill weight" data-ih-style-width-pct="{{overviewSummary.weightPct}}"></div></div>
           </div>
         </div>
       </div>
+
+      {{#if recoveryPlan.visible}}
+      <div class="ih-cs-section">
+        <div class="ih-cs-section-title">
+          <span>Восстановление</span>
+          <span class="ih-cs-section-meta ih-cs-recovery-meta {{recoveryPlan.status.cssClass}}">{{recoveryPlan.status.title}}</span>
+        </div>
+        <div class="ih-cs-recovery {{recoveryPlan.status.cssClass}}">
+          <div class="ih-cs-recovery-head">
+            <div class="ih-cs-recovery-status">
+              <span class="ih-cs-recovery-status-title">{{recoveryPlan.status.title}}</span>
+              <span class="ih-cs-recovery-status-detail">{{recoveryPlan.status.detail}}</span>
+            </div>
+            <div class="ih-cs-recovery-actions">
+              <a class="ih-btn ih-btn-small" data-update-effects title="Применить тик состояний">Тик</a>
+              {{#if recoveryPlan.shortRest.canUse}}
+              <a class="ih-btn ih-btn-small" data-short-rest title="Короткий отдых">Короткий</a>
+              {{else}}
+              <a class="ih-btn ih-btn-small is-disabled" title="{{recoveryPlan.shortRest.blockedReason}}">Короткий</a>
+              {{/if}}
+              {{#if recoveryPlan.fullRest.canUse}}
+              <a class="ih-btn ih-btn-small ih-btn-primary" data-full-rest title="Полный отдых">Полный</a>
+              {{else}}
+              <a class="ih-btn ih-btn-small is-disabled" title="{{recoveryPlan.fullRest.blockedReason}}">Полный</a>
+              {{/if}}
+            </div>
+          </div>
+
+          {{#if recoveryPlan.hasWarnings}}
+          <div class="ih-cs-recovery-warnings">
+            {{#each recoveryPlan.warningPreview}}
+            <span class="ih-rec-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+
+          <div class="ih-cs-recovery-rests">
+            <div class="ih-cs-rest-card {{recoveryPlan.shortRest.cssClass}}">
+              <div class="ih-cs-rest-title">{{recoveryPlan.shortRest.title}}</div>
+              {{#each recoveryPlan.shortRest.rows}}
+              <div class="ih-cs-rest-row {{cssClass}}">
+                <span>{{label}}</span><b>{{delta}}</b><em>{{value}}</em>
+              </div>
+              {{/each}}
+            </div>
+            <div class="ih-cs-rest-card {{recoveryPlan.fullRest.cssClass}}">
+              <div class="ih-cs-rest-title">{{recoveryPlan.fullRest.title}}</div>
+              {{#if recoveryPlan.fullRest.hasBlockers}}
+              <div class="ih-cs-rest-blockers">
+                {{#each recoveryPlan.fullRest.blockers}}<span>{{label}}</span>{{/each}}
+              </div>
+              {{/if}}
+              {{#each recoveryPlan.fullRest.rows}}
+              <div class="ih-cs-rest-row {{cssClass}}">
+                <span>{{label}}</span><b>{{delta}}</b><em>{{value}}</em>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+
+          {{#if recoveryPlan.hasActiveConditions}}
+          <div class="ih-cs-recovery-effects">
+            {{#each recoveryPlan.activeConditionPreview}}
+            <span class="ih-rec-effect {{cssClass}}" title="{{label}}: {{valueLabel}}">
+              <i class="fas {{icon}}"></i><span>{{label}}</span><b>{{valueLabel}}</b>
+            </span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+      </div>
+      {{/if}}
 
       {{!-- Болезни --}}
       {{#if diseases.length}}
@@ -232,7 +342,7 @@
               <span class="ih-cs-disease-name">{{label}}</span>
               <span class="ih-cs-disease-stage">{{stageName}}</span>
               <div class="ih-cs-disease-bar">
-                <div class="ih-cs-disease-bar-fill" style="width:{{progressPct}}%"></div>
+                <div class="ih-cs-disease-bar-fill" data-ih-style-width-pct="{{progressPct}}"></div>
               </div>
             </div>
             {{#if ../isGM}}
@@ -305,23 +415,23 @@
         <div class="ih-cs-soul-grid">
           {{!-- Энергия резерва --}}
           <div class="ih-cs-soul-item">
-            <span class="ih-cs-soul-label" style="color:var(--ih-energy)">⚡ Энергия</span>
+            <span class="ih-cs-soul-label energy">⚡ Энергия</span>
             <div class="ih-cs-soul-val">{{system.resources.soul.energyReserve.value}} / {{system.resources.soul.energyReserve.max}}</div>
             {{!-- Прогресс раскачки --}}
             {{#if system.resources.soul.energyReserve.max}}
             <div class="ih-cs-soul-accum" title="Накоплено восстановлений: {{system.resources.soul.energyReserve.trainingAccum}} / {{system.resources.soul.energyReserve.max}}">
-              <div class="ih-cs-soul-accum-fill" style="width:{{soulEnergyTrainPct}}%;background:var(--ih-energy)"></div>
+              <div class="ih-cs-soul-accum-fill energy" data-ih-style-width-pct="{{soulEnergyTrainPct}}"></div>
             </div>
             <span class="ih-cs-soul-accum-label">{{system.resources.soul.energyReserve.trainingAccum}} / {{system.resources.soul.energyReserve.max}}</span>
             {{/if}}
           </div>
           {{!-- Мана резерва --}}
           <div class="ih-cs-soul-item">
-            <span class="ih-cs-soul-label" style="color:var(--ih-mana)">✦ Мана</span>
+            <span class="ih-cs-soul-label mana">✦ Мана</span>
             <div class="ih-cs-soul-val">{{system.resources.soul.manaReserve.value}} / {{system.resources.soul.manaReserve.max}}</div>
             {{#if system.resources.soul.manaReserve.max}}
             <div class="ih-cs-soul-accum" title="Накоплено восстановлений: {{system.resources.soul.manaReserve.trainingAccum}} / {{system.resources.soul.manaReserve.max}}">
-              <div class="ih-cs-soul-accum-fill" style="width:{{soulManaTrainPct}}%;background:var(--ih-mana)"></div>
+              <div class="ih-cs-soul-accum-fill mana" data-ih-style-width-pct="{{soulManaTrainPct}}"></div>
             </div>
             <span class="ih-cs-soul-accum-label">{{system.resources.soul.manaReserve.trainingAccum}} / {{system.resources.soul.manaReserve.max}}</span>
             {{/if}}
@@ -367,11 +477,11 @@
             {{#each skills}}
             <div class="ih-cs-skill-row"
                  data-skill-roll="{{key}}" data-label="{{label}}"
-                 style="cursor:pointer;" title="Кликни для броска">
+                 title="Кликни для броска">
               <span class="ih-cs-skill-name">{{label}}</span>
               <span class="ih-cs-skill-die">d{{dieSize}}</span>
               <div class="ih-cs-skill-exp-track" title="{{exp}} / {{expNext}}">
-                <div class="ih-cs-skill-exp-fill" style="width:{{expPct}}%"></div>
+                <div class="ih-cs-skill-exp-fill" data-ih-style-width-pct="{{expPct}}"></div>
               </div>
               <span class="ih-cs-skill-tier">{{value}}</span>
             </div>
@@ -395,7 +505,8 @@
               <span class="ih-cs-rel-name">{{targetName}}</span>
               <div class="ih-cs-rel-bar">
                 <div class="ih-cs-rel-fill {{#if (gt score 0)}}positive{{else if (lt score 0)}}negative{{/if}}"
-                     style="width:{{relPct}}%; {{#if (gt score 0)}}margin-left:50%{{else}}margin-left:{{relLeft}}%;{{/if}}"></div>
+                     data-ih-style-width-pct="{{relPct}}"
+                     {{#if (gt score 0)}}data-ih-style-margin-left-pct="50"{{else}}data-ih-style-margin-left-pct="{{relLeft}}"{{/if}}></div>
                 <div class="ih-cs-rel-center"></div>
               </div>
               <span class="ih-cs-rel-score {{#if (gt score 0)}}text-good{{else if (lt score 0)}}text-bad{{/if}}">{{score}}</span>
@@ -415,7 +526,7 @@
               <span class="ih-cs-rel-name">{{targetName}}</span>
               <div class="ih-cs-rel-bar">
                 <div class="ih-cs-rel-fill {{#if (gt score 0)}}positive{{else if (lt score 0)}}negative{{/if}}"
-                     style="width:{{relPct}}%;"></div>
+                     data-ih-style-width-pct="{{relPct}}"></div>
                 <div class="ih-cs-rel-center"></div>
               </div>
               <span class="ih-cs-rel-score">{{score}}</span>
@@ -450,10 +561,21 @@
               {{#if system.durability}}
               <div class="ih-cs-inv-dur-track" title="Прочность: {{system.durability.value}}/{{system.durability.max}}">
                 <div class="ih-cs-inv-dur-fill {{#if (lt system.durability.value 25)}}is-crit{{else if (lt system.durability.value 50)}}is-warn{{/if}}"
-                     style="width:{{durabilityPct}}%"></div>
+                     data-ih-style-width-pct="{{durabilityPct}}"></div>
               </div>
               {{/if}}
               <span class="ih-cs-inv-weight muted-text">{{system.weight}}кг</span>
+              {{#if inventoryActions.length}}
+              <div class="ih-cs-inv-actions">
+                {{#each inventoryActions}}
+                  {{#if enabled}}
+                  <a class="{{className}}" data-item-action="{{key}}" data-item-id="{{../id}}" title="{{title}}"><i class="{{iconClass}}"></i></a>
+                  {{else}}
+                  <a class="{{className}} is-disabled" title="{{title}}"><i class="{{iconClass}}"></i></a>
+                  {{/if}}
+                {{/each}}
+              </div>
+              {{/if}}
             </div>
             {{/each}}
           </div>
@@ -486,10 +608,10 @@
            title="{{factionName}}: {{rep}}">
         <span class="ih-cs-faction-name">{{factionName}}</span>
         <div class="ih-cs-rep-bar">
-          <div class="ih-cs-rep-fill" style="width:{{pct}}%;background:{{level.color}}"></div>
+          <div class="ih-cs-rep-fill" data-ih-style-width-pct="{{pct}}" data-ih-style-background="{{level.color}}"></div>
           <div class="ih-cs-rep-zero"></div>
         </div>
-        <span class="ih-cs-rep-label" style="color:{{level.color}}">{{level.label}}</span>
+        <span class="ih-cs-rep-label" data-ih-style-color="{{level.color}}">{{level.label}}</span>
         <span class="ih-cs-rep-val muted-text">{{rep}}</span>
         {{#if @root.isGM}}
         <a class="ih-cs-rep-edit" data-edit-rep="{{factionId}}" title="Изменить">✏</a>
@@ -503,9 +625,9 @@
     </a>
     {{/if}}
     {{else}}
-    <div class="muted-text" style="font-size:11px;padding:4px 0">
+    <div class="muted-text ih-cs-faction-empty">
       Нет взаимодействий с фракциями.
-      {{#if isGM}}<a data-action="edit-reputation" style="color:var(--ih-accent)">Добавить ✏</a>{{/if}}
+      {{#if isGM}}<a class="ih-cs-rep-add-link" data-action="edit-reputation">Добавить ✏</a>{{/if}}
     </div>
     {{/if}}
   </div>

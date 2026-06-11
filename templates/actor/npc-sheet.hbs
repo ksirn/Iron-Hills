@@ -24,14 +24,14 @@
       </div>
       <div class="ih-npc-v2-resources">
         <div class="ih-npc-v2-res">
-          <span style="color:#60a5fa" title="Энергия / Макс / База">⚡</span>
+          <span class="ih-npc-v2-res-icon is-energy" title="Энергия / Макс / База">⚡</span>
           <input type="number" name="system.resources.energy.value" value="{{energy.value}}" min="0">
           <span class="muted-text">/</span>
           <input type="number" name="system.resources.energy.max" value="{{energy.max}}" min="0">
-          <span class="muted-text" style="font-size:9px" title="Базовый максимум (до боя)">({{energy.baseMax}})</span>
+          <span class="muted-text ih-npc-v2-base-max" title="Базовый максимум (до боя)">({{energy.baseMax}})</span>
         </div>
         <div class="ih-npc-v2-res">
-          <span style="color:#a78bfa">✦</span>
+          <span class="ih-npc-v2-res-icon is-mana">✦</span>
           <input type="number" name="system.resources.mana.value" value="{{mana.value}}" min="0">
           <span class="muted-text">/</span>
           <input type="number" name="system.resources.mana.max" value="{{mana.max}}" min="0">
@@ -65,21 +65,34 @@
             <div class="ih-npc-v2-skill-row">
               <span class="ih-npc-v2-skill-name">{{label}}</span>
               <div class="ih-cs-skill-exp-track">
-                <div class="ih-cs-skill-exp-fill" style="width:{{exp}}%"></div>
+                <div class="ih-cs-skill-exp-fill" data-ih-style-width-pct="{{exp}}"></div>
               </div>
               <input class="ih-npc-v2-skill-val" type="number"
                      name="system.skills.{{key}}.value" value="{{value}}" min="0" max="10">
-              <span class="muted-text" style="font-size:10px;width:26px;text-align:center">d{{dieSize}}</span>
+              <span class="muted-text ih-npc-v2-skill-die">d{{dieSize}}</span>
             </div>
             {{/each}}
           </div>
           {{/each}}
         {{else}}
-          <div class="muted-text" style="padding:8px">
+          <div class="muted-text ih-npc-v2-empty-note">
             Нет навыков{{#if isGM}} — нажми + Добавить{{/if}}
           </div>
         {{/if}}
       </div>
+      {{#if isCreature}}
+      <div class="ih-npc-v2-section">
+        <div class="ih-npc-v2-section-title">Броня и резисты</div>
+        <div class="ih-npc-resist-grid">
+          {{#each monsterResistanceOptions}}
+          <label class="ih-npc-resist-field">
+            <span>{{label}}</span>
+            <input type="number" name="system.resources.armor.{{key}}" value="{{value}}" min="0">
+          </label>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
     </div>
 
     {{!-- Вкладка: HP --}}
@@ -90,7 +103,7 @@
         <div class="ih-cs-zone {{#if (lt pct 30)}}is-critical{{else if (lt pct 60)}}is-bad{{/if}}">
           <span class="ih-cs-zone-label">{{label}}</span>
           <div class="ih-cs-zone-bar-track">
-            <div class="ih-cs-zone-bar" style="width:{{pct}}%"></div>
+            <div class="ih-cs-zone-bar" data-ih-style-width-pct="{{pct}}"></div>
           </div>
           <div class="ih-cs-zone-hp">
             <input class="ih-cs-hp-input" type="number"
@@ -107,20 +120,50 @@
     {{!-- Вкладка: Снаряжение --}}
     <div class="ih-npc-tab-panel" data-panel="items">
       <div class="ih-npc-v2-section">
-        <div class="ih-npc-v2-section-title">Снаряжение ({{items.length}})</div>
+        <div class="ih-npc-v2-section-title">
+          Снаряжение ({{items.length}})
+          <a class="ih-cs-section-action" data-open-inventory>Открыть инвентарь</a>
+        </div>
         {{#if items.length}}
-          {{#each items}}
-          <div class="ih-cs-inv-row">
-            <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
-            <span class="ih-cs-inv-name" data-item-id="{{id}}" style="cursor:pointer">{{name}}</span>
-            <span class="muted-text" style="font-size:10px">{{type}}</span>
-            {{#if ../isGM}}
-            <a class="ih-icon-btn tiny" data-delete-item data-item-id="{{id}}">✕</a>
-            {{/if}}
+          {{#each groupedItems}}
+          {{#if items.length}}
+          <div class="ih-cs-inv-group">
+            <div class="ih-cs-inv-group-title">{{label}}</div>
+            {{#each items}}
+            <div class="ih-cs-inv-row ih-cs-inv-row-simple">
+              <img class="ih-cs-inv-icon" src="{{img}}" alt="{{name}}">
+              <span class="ih-cs-inv-name is-openable" data-open-item data-item-id="{{id}}">{{name}}</span>
+              {{#if system.quantity}}<span class="ih-cs-inv-qty">×{{system.quantity}}</span>{{/if}}
+              {{#if system.durability}}
+              <div class="ih-cs-inv-dur-track" title="Прочность: {{system.durability.value}}/{{system.durability.max}}">
+                <div class="ih-cs-inv-dur-fill {{#if (lt system.durability.value 25)}}is-crit{{else if (lt system.durability.value 50)}}is-warn{{/if}}"
+                     data-ih-style-width-pct="{{durabilityPct}}"></div>
+              </div>
+              {{/if}}
+              <span class="muted-text ih-cs-inv-type">{{type}}</span>
+              <span class="ih-cs-inv-weight muted-text">{{system.weight}}кг</span>
+              {{#if inventoryActions.length}}
+              <div class="ih-cs-inv-actions">
+                {{#each inventoryActions}}
+                  {{#if enabled}}
+                  <a class="{{className}}" data-item-action="{{key}}" data-item-id="{{../id}}" title="{{title}}"><i class="{{iconClass}}"></i></a>
+                  {{else}}
+                  <a class="{{className}} is-disabled" title="{{title}}"><i class="{{iconClass}}"></i></a>
+                  {{/if}}
+                {{/each}}
+              </div>
+              {{/if}}
+              <a class="ih-icon-btn tiny" data-open-item data-item-id="{{id}}" title="Открыть"><i class="fas fa-book-open"></i></a>
+              {{#if @root.isGM}}
+              <a class="ih-icon-btn tiny" data-delete-item data-item-id="{{id}}" title="Удалить"><i class="fas fa-times"></i></a>
+              {{/if}}
+            </div>
+            {{/each}}
           </div>
+          {{/if}}
           {{/each}}
         {{else}}
-          <div class="muted-text" style="padding:8px">Нет предметов</div>
+          <div class="muted-text ih-npc-v2-empty-note">Нет предметов</div>
         {{/if}}
       </div>
     </div>
@@ -130,28 +173,28 @@
       {{#if showMonsterLootUi}}
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Разделка (монстр)</div>
-        <p class="muted-text" style="font-size:11px;margin:0 0 6px 0">
+        <p class="muted-text ih-npc-info-note">
           Ключ пула из <code>monster-loot-pools.mjs</code>; по нему синхронизируются встроенные слоты добычи (шанс при разделке).
           Если пусто — подставляется пул по <b>ID бестиария</b>.
         </p>
         {{#if monsterLootGmWarning}}
-        <p style="font-size:11px;color:#fca5a5;margin:0 0 8px;padding:8px;background:rgba(127,29,29,0.25);border-radius:6px">{{monsterLootGmWarning}}</p>
+        <p class="ih-npc-gm-warning">{{monsterLootGmWarning}}</p>
         {{/if}}
-        <label style="display:block;margin-bottom:6px">Пул добычи разделки
+        <label class="ih-npc-info-field">Пул добычи разделки
           <input type="text" name="system.info.lootPool" list="ih-monster-loot-pool-datalist"
                  value="{{system.info.lootPool}}"
                  placeholder="{{monsterBestiaryCanon}} или пусто = из бестиария"
-                 style="width:100%;box-sizing:border-box">
+                 class="ih-npc-info-input">
         </label>
         {{#if monsterLootPoolKeys.length}}
         <datalist id="ih-monster-loot-pool-datalist">
           {{#each monsterLootPoolKeys}}<option value="{{this}}"></option>{{/each}}
         </datalist>
         {{/if}}
-        <label style="display:block;margin-bottom:6px">ID бестиария <span class="muted-text">(ключ строки компендиума)</span>
-          <input type="text" name="system.info.bestiaryId" value="{{system.info.bestiaryId}}" placeholder="river_maw_spawn" style="width:100%;box-sizing:border-box">
+        <label class="ih-npc-info-field">ID бестиария <span class="muted-text">(ключ строки компендиума)</span>
+          <input class="ih-npc-info-input" type="text" name="system.info.bestiaryId" value="{{system.info.bestiaryId}}" placeholder="river_maw_spawn">
         </label>
-        <p class="muted-text" style="font-size:10px;margin:6px 0 0 0">
+        <p class="muted-text ih-npc-info-subnote">
           Живого монстра нельзя разделать или обыскать. Мёртвого — через «Обыск»: «Выживание», набор разделки и DC по ступени.
         </p>
       </div>
@@ -159,29 +202,27 @@
       {{#if showNpcObyskUi}}
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Обыск и карманничество (NPC)</div>
-        <p class="muted-text" style="font-size:11px;margin:0 0 8px 0">
+        <p class="muted-text ih-npc-info-note is-spaced">
           Лут — только предметы на этом листе. С мёртвого тела игрок забирает всё без бросков (кнопка в «Обыск» или перетаскивание).
           С живого — попытка карманничества по «Скрытности».
         </p>
-        <label style="display:flex;align-items:center;gap:8px;margin:8px 0 6px;font-size:12px">
+        <label class="ih-npc-checkbox-field">
           <input type="checkbox" name="system.info.allowPickpocket" {{checked allowPickpocketEnabled}} data-dtype="Boolean">
           Разрешить карманничество у живой цели
         </label>
-        <p class="muted-text" style="font-size:10px;margin:6px 0 0 0">
+        <p class="muted-text ih-npc-info-subnote">
           Поля <code>lootTable</code> / <code>pickpocketTable</code> для NPC не участвуют в механике; их можно не трогать.
         </p>
       </div>
       {{/if}}
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Описание</div>
-        <textarea name="system.info.desc"
-                  style="width:100%;min-height:80px;box-sizing:border-box;resize:vertical"
+        <textarea class="ih-npc-info-textarea" name="system.info.desc"
                   placeholder="{{#if isCreature}}Краткое описание твари…{{else}}Описание NPC...{{/if}}">{{system.info.desc}}</textarea>
       </div>
       <div class="ih-npc-v2-section">
         <div class="ih-npc-v2-section-title">Заметки GM</div>
-        <textarea name="system.info.notes"
-                  style="width:100%;min-height:60px;box-sizing:border-box;resize:vertical"
+        <textarea class="ih-npc-info-textarea is-notes" name="system.info.notes"
                   placeholder="Заметки...">{{system.info.notes}}</textarea>
       </div>
     </div>

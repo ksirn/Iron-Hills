@@ -4,6 +4,12 @@
  */
 import { SKILL_GROUPS } from "../constants/skills.mjs";
 import { MONSTER_BESTIARY } from "../constants/monster-bestiary.mjs";
+import { getDamageResistanceOptions } from "../services/damage-type-service.mjs";
+import {
+  deleteOwnedItemForActorSheet,
+  useInventoryActionForActorSheet,
+} from "../services/actor-sheet-orchestration-service.mjs";
+import { buildGroupedItems } from "../services/actor-state-service.mjs";
 import { lootTableKeys } from "../services/wilderness-service.mjs";
 
 class IronHillsNpcSheet extends ActorSheet {
@@ -92,14 +98,11 @@ class IronHillsNpcSheet extends ActorSheet {
     // Ресурсы
     ctx.energy = s.resources?.energy ?? { value:10, max:10, baseMax:10 };
     ctx.mana   = s.resources?.mana   ?? { value:5,  max:5  };
+    ctx.monsterResistanceOptions = getDamageResistanceOptions(s.resources?.armor);
 
     // Снаряжение
-    ctx.items  = a.items.map(i => ({
-      id:    i.id,
-      name:  i.name,
-      img:   i.img,
-      type:  i.type,
-    }));
+    ctx.groupedItems = buildGroupedItems(a, { includeUnplaced: true });
+    ctx.items = ctx.groupedItems.flatMap(group => group.items ?? []);
 
     ctx.allowPickpocketEnabled = s.info?.allowPickpocket !== false;
 
@@ -127,6 +130,18 @@ class IronHillsNpcSheet extends ActorSheet {
 
   activateListeners(html) {
     super.activateListeners(html);
+
+    const stopEvent = (event) => {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+    };
+    const selectedTargets = () => globalThis.game?.user?.targets ?? [];
+    const renderSelf = () => this.render(false);
+    const warnDisabledAction = (event) => {
+      stopEvent(event);
+      const message = event.currentTarget.getAttribute("title") || "Action is unavailable";
+      globalThis.ui?.notifications?.warn?.(message);
+    };
 
     // Сохранение — select и checkbox мгновенно, text/number при blur
     const saveAll = async () => {
@@ -160,16 +175,33 @@ class IronHillsNpcSheet extends ActorSheet {
     });
 
     // Открыть предмет
-    html.find("[data-item-id]").on("click", e => {
+    html.find("[data-open-item]").on("click", e => {
+      stopEvent(e);
       const item = this.actor.items.get(e.currentTarget.dataset.itemId);
       item?.sheet?.render(true);
     });
 
     // Удалить предмет
+    html.find("a.is-disabled").on("click", warnDisabledAction);
+
+    html.find("[data-open-inventory]").on("click", event => {
+      stopEvent(event);
+      globalThis.game?.ironHills?.openGridInventory?.(this.actor);
+    });
+
+    html.find("[data-item-action]").on("click", async event => {
+      stopEvent(event);
+      await useInventoryActionForActorSheet(this, event.currentTarget.dataset.itemAction, event.currentTarget.dataset.itemId, {
+        targets: selectedTargets(),
+      });
+      renderSelf();
+    });
+
     html.find("[data-delete-item]").on("click", async e => {
+      stopEvent(e);
       if (!game.user?.isGM) return;
-      const item = this.actor.items.get(e.currentTarget.dataset.itemId);
-      await item?.delete();
+      await deleteOwnedItemForActorSheet(this, e.currentTarget.dataset.itemId);
+      renderSelf();
     });
 
     // Добавить навык

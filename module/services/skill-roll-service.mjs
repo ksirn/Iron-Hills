@@ -1,3 +1,8 @@
+import {
+  buildCombatChatCard,
+  escapeCombatHtml,
+} from "./combat-chat-service.mjs";
+
 export function getSkillDieSize(skillValue) {
   return Math.max(2, Number(skillValue ?? 1) * 2);
 }
@@ -12,6 +17,55 @@ export function formatExplodingDiceRoll(result, fallbackDieSize = null) {
   }
 
   return `d${dieSize} = ${total}`;
+}
+
+function normalizeDialogRows(rows = []) {
+  return (Array.isArray(rows) ? rows : [])
+    .map(row => Array.isArray(row)
+      ? { label: row[0], value: row[1], visible: row[2] }
+      : row)
+    .filter(row => row && row.visible !== false && row.label !== undefined);
+}
+
+export function buildSkillRollDialogContent({
+  className = "",
+  headline = "",
+  headlineMeta = "",
+  status = "",
+  statusClass = "",
+  rows = [],
+  notes = [],
+} = {}) {
+  const rowHtml = normalizeDialogRows(rows)
+    .map(row => `
+      <div class="ih-skill-dialog-row ${escapeCombatHtml(row.className ?? "")}">
+        <span>${escapeCombatHtml(row.label ?? "")}</span>
+        <b>${escapeCombatHtml(row.value ?? "")}</b>
+      </div>
+    `)
+    .join("");
+  const noteHtml = normalizeDialogRows(notes)
+    .map(row => `
+      <div class="ih-skill-dialog-note ${escapeCombatHtml(row.className ?? "")}">
+        <span>${escapeCombatHtml(row.label ?? "")}</span>
+        <b>${escapeCombatHtml(row.value ?? "")}</b>
+      </div>
+    `)
+    .join("");
+
+  return `
+    <div class="ih-skill-dialog ${escapeCombatHtml(className)}">
+      ${headline ? `
+        <div class="ih-skill-dialog-headline">
+          <b>${escapeCombatHtml(headline)}</b>
+          ${headlineMeta ? `<span>${escapeCombatHtml(headlineMeta)}</span>` : ""}
+        </div>
+      ` : ""}
+      ${status ? `<div class="ih-skill-dialog-status ${escapeCombatHtml(statusClass)}">${escapeCombatHtml(status)}</div>` : ""}
+      ${rowHtml ? `<div class="ih-skill-dialog-rows">${rowHtml}</div>` : ""}
+      ${noteHtml ? `<div class="ih-skill-dialog-notes">${noteHtml}</div>` : ""}
+    </div>
+  `;
 }
 
 export async function rollExplodingDice(skillValue) {
@@ -33,15 +87,18 @@ export async function rollExplodingDice(skillValue) {
 
     const confirmed = await Dialog.confirm({
       title: "💥 Взрыв куба!",
-      content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;text-align:center;">
-        <div style="margin-bottom:8px;">
-          <span style="font-size:32px;font-weight:700;color:#facc15;">${result}</span>
-          <span style="color:#6a7d99;font-size:13px;"> на d${currentDie}</span>
-        </div>
-        <p style="color:#4ade80;font-weight:600;margin:4px 0;">Максимум! Можно рискнуть.</p>
-        <p style="font-size:12px;margin:4px 0;">Перейти на <b style="color:#5b9cf6">d${nextDie}</b>?</p>
-        <p style="font-size:11px;color:#6a7d99;margin:4px 0;">Отмена — зафиксировать <b>${result}</b></p>
-      </div>`
+      content: buildSkillRollDialogContent({
+        className: "ih-skill-dialog-explode",
+        headline: result,
+        headlineMeta: `на d${currentDie}`,
+        status: "Максимум. Можно рискнуть.",
+        statusClass: "is-good",
+        rows: [
+          ["Текущий куб", `d${currentDie}`],
+          ["Следующий куб", `d${nextDie}`],
+          ["Отмена", `зафиксировать ${result}`],
+        ],
+      }),
     });
 
     if (!confirmed) break;
@@ -58,16 +115,16 @@ async function chooseSkillRollStrategy({ label, dieSize, threshold }) {
     const hasThreshold = threshold !== null;
     const dlg = new Dialog({
       title: `🎲 ${label}`,
-      content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-          <span style="color:#6a7d99;font-size:12px;">Навык:</span>
-          <b style="color:#5b9cf6;font-size:18px;">d${dieSize}</b>
-        </div>
-        ${hasThreshold ? `<div style="margin-bottom:10px;padding:6px 10px;background:rgba(91,156,246,0.08);border:1px solid rgba(91,156,246,0.2);border-radius:6px;font-size:12px;">
-          Порог: <b style="color:#e8edf5">${threshold}</b>
-        </div>` : ""}
-        <p style="font-size:11px;color:#6a7d99;margin:0;">Выбери стратегию броска:</p>
-      </div>`,
+      content: buildSkillRollDialogContent({
+        className: "ih-skill-dialog-strategy",
+        headline: label,
+        headlineMeta: "выбор броска",
+        status: "Выбери стратегию броска",
+        rows: [
+          ["Навык", `d${dieSize}`],
+          ["Порог", threshold, hasThreshold],
+        ],
+      }),
       buttons: {
         simple: {
           label: "🎲 Один бросок",
@@ -110,19 +167,26 @@ export async function performUniversalSkillRoll(actor, skillKey, label, options 
     const total = rollResult.total;
     const display = formatExplodingDiceRoll(rollResult, dieSize);
     const isAnticrit = total === 1 && dieSize > 2;
-
-    let flavor = `<b>${label}</b> — ${display}`;
-    if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 АНТИКРИТ!</span>`;
-    if (threshold !== null) {
-      const hit = total >= threshold;
-      flavor += `<br>${hit
-        ? `<span style="color:#4ade80">✓ Успех (перевес: +${total - threshold})</span>`
-        : `<span style="color:#f87171">✗ Провал</span>`}`;
-    }
+    const hit = threshold !== null ? total >= threshold : null;
 
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
-      content: flavor
+      content: buildCombatChatCard({
+        title: label,
+        subtitle: actor.name,
+        icon: isAnticrit ? "!" : "*",
+        status: isAnticrit ? "Антикрит" : hit === null ? "Бросок" : hit ? "Успех" : "Провал",
+        statusClass: isAnticrit || hit === false ? "is-danger" : hit === true ? "is-good" : "is-muted",
+        rows: [
+          ["Стратегия", "один бросок"],
+          ["Куб", `d${dieSize}`],
+          ["Бросок", display],
+          ["Итог", total],
+          ["Порог", threshold, threshold !== null],
+          ["Перевес", total - threshold, threshold !== null],
+        ],
+        className: "ih-system-chat-card ih-skill-roll-chat-card",
+      }),
     });
     await applySkillExp?.(skillKey, label);
     return { total, strategy, success: threshold !== null ? total >= threshold : null };
@@ -148,15 +212,23 @@ export async function performUniversalSkillRoll(actor, skillKey, label, options 
       const choice = await new Promise(resolve => {
         const dlg = new Dialog({
           title: `🔄 ${label} — попытка ${attempts}`,
-          content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px 0;">
-            <div style="font-size:20px;font-weight:700;color:#e8edf5;text-align:center;margin-bottom:8px;">${display}</div>
-            ${threshold !== null ? `<div style="text-align:center;margin-bottom:8px;color:${total >= threshold ? "#4ade80" : "#f87171"};">
-              ${total >= threshold ? "✓ Успех!" : "✗ Провал"}
-            </div>` : ""}
-            <div style="font-size:11px;color:#6a7d99;text-align:center;">
-              Перебросить: −${energyCostPerRoll} энергии (осталось: ${energy})
-            </div>
-          </div>`,
+          content: buildSkillRollDialogContent({
+            className: "ih-skill-dialog-reroll",
+            headline: display,
+            headlineMeta: `попытка ${attempts}`,
+            status: threshold !== null
+              ? total >= threshold ? "Успех" : "Провал"
+              : "Результат броска",
+            statusClass: threshold !== null
+              ? total >= threshold ? "is-good" : "is-danger"
+              : "",
+            rows: [
+              ["Порог", threshold, threshold !== null],
+              ["Итог", total],
+              ["Энергия", `${energy}/${energyCostPerRoll}`],
+              ["Переброс", canAfford ? `-${energyCostPerRoll}` : "недоступен"],
+            ],
+          }),
           buttons: {
             keep: { label: "✓ Оставить", callback: () => resolve("keep") },
             reroll: {
@@ -184,14 +256,26 @@ export async function performUniversalSkillRoll(actor, skillKey, label, options 
       }
     }
 
-    let flavor = `<b>${label}</b> — попыток: ${attempts}, итог: <b>${finalTotal}</b>`;
-    if (threshold !== null) {
-      flavor += `<br>${finalTotal >= threshold
-        ? `<span style="color:#4ade80">✓ Успех (перевес: +${finalTotal - threshold})</span>`
-        : `<span style="color:#f87171">✗ Провал</span>`}`;
-    }
+    const success = threshold !== null ? finalTotal >= threshold : null;
 
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: label,
+        subtitle: actor.name,
+        icon: "*",
+        status: success === null ? "Итог" : success ? "Успех" : "Провал",
+        statusClass: success === false ? "is-danger" : success === true ? "is-good" : "is-muted",
+        rows: [
+          ["Стратегия", "до победного"],
+          ["Попыток", attempts],
+          ["Итог", finalTotal],
+          ["Порог", threshold, threshold !== null],
+          ["Перевес", finalTotal - threshold, threshold !== null],
+        ],
+        className: "ih-system-chat-card ih-skill-roll-chat-card ih-skill-reroll-card",
+      }),
+    });
     await applySkillExp?.(skillKey, label);
     return { total: finalTotal, strategy, success: threshold !== null ? finalTotal >= threshold : null };
   }
@@ -216,14 +300,25 @@ export async function performUniversalSkillRoll(actor, skillKey, label, options 
     const margin = total - threshold;
     const isAnticrit = total === 1 && dieSize > 2 && attempts === 1;
 
-    let flavor = `<b>${label}</b> — до порога ${threshold}`;
-    flavor += `<br>Попыток: ${attempts}${exploded ? " 💥" : ""}, итог: <b>${total}</b>`;
-    flavor += `<br>${success
-      ? `<span style="color:#4ade80">✓ Успех! Перевес: +${margin}</span>`
-      : `<span style="color:#f87171">✗ Провал после ${attempts} попыток</span>`}`;
-    if (isAnticrit) flavor += `<br><span style="color:#f87171">💀 Антикрит на первом броске!</span>`;
-
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: flavor });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: label,
+        subtitle: actor.name,
+        icon: isAnticrit ? "!" : "*",
+        status: isAnticrit ? "Антикрит" : success ? "Успех" : "Провал",
+        statusClass: isAnticrit || !success ? "is-danger" : "is-good",
+        rows: [
+          ["Стратегия", "до порога"],
+          ["Порог", threshold],
+          ["Попыток", attempts],
+          ["Взрыв куба", exploded ? "да" : "нет"],
+          ["Итог", total],
+          ["Перевес", margin],
+        ],
+        className: "ih-system-chat-card ih-skill-roll-chat-card ih-skill-target-card",
+      }),
+    });
     await applySkillExp?.(skillKey, label);
     return { total, strategy, success, margin };
   }

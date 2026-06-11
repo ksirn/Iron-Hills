@@ -8,13 +8,22 @@ import {
   formatAttackChatHtml,
   resolveSingleAttack,
 } from "./combat-attack-service.mjs";
+import {
+  buildCombatRows,
+  createCombatChatMessage,
+  joinCombatHtml,
+} from "./combat-chat-service.mjs";
 import { applyPreparedCombatReaction } from "./combat-reaction-service.mjs";
+import {
+  getAttackBlockState,
+  normalizeAttackMode,
+} from "./combat-attack-mode-service.mjs";
 import { consumePreparedAttackBonus } from "./combat-technique-service.mjs";
 import { isCombatActive } from "./combat-flow-service.mjs";
 import { applyHitEffects, buildHitEffect } from "./hit-effect-service.mjs";
 import { getWeatherSkillMod } from "./weather-service.mjs";
 import {
-  buildCombatTargetPayload,
+  buildCombatActionTargetPayload,
   getCombatTargetActor,
   getCombatTargetToken,
 } from "./combat-action-target-service.mjs";
@@ -37,6 +46,17 @@ function attackResult({
   return { ok, queued, result, reason };
 }
 
+async function spendInterruptedAttackEnergy(actor, energyCost, encumbrance) {
+  const finalEnergyCost = Math.ceil(Number(energyCost || 0) * Number(encumbrance?.energyMultiplier ?? 1));
+  if (finalEnergyCost <= 0) return 0;
+
+  const curEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
+  await actor.update({
+    "system.resources.energy.value": Math.max(0, curEnergy - finalEnergyCost),
+  });
+  return finalEnergyCost;
+}
+
 export async function performActorAttack({
   actor,
   hand = null,
@@ -48,8 +68,10 @@ export async function performActorAttack({
   weapon = null,
   skipTimeCost = false,
   hitBonus = 0,
+  attackMode: attackModeInput = null,
   ignoreArmor = 0,
   targetZone = null,
+  targetZoneMode = null,
   aimed = false,
   technique = null,
   applyCondition = null,
@@ -76,6 +98,12 @@ export async function performActorAttack({
   }
 
   damageType = normalizeAttackDamageType(damageType);
+  const attackMode = normalizeAttackMode(attackModeInput, {
+    skillKey,
+    weapon,
+    technique,
+    rangeOverride,
+  });
 
   if (!skipTimeCost && requireSettledInventory) {
     const settled = await requireSettledInventory(`атака: ${label}`);
@@ -85,9 +113,10 @@ export async function performActorAttack({
   const encumbrance = getEncumbranceInfo(actor);
   const injuries = getActorInjuryInfo(actor);
   const derivedConditions = getDerivedConditionState(actor);
-  if (!derivedConditions.canMeleeAttack) {
-    ui.notifications.warn(derivedConditions.meleeBlockReason || "Персонаж не может выполнить ближнюю атаку из-за состояния.");
-    return attackResult({ ok: false, reason: "cannot-melee-attack" });
+  const attackBlockState = getAttackBlockState(derivedConditions, attackMode);
+  if (!attackBlockState.canAttack) {
+    ui.notifications.warn(attackBlockState.reason || "Персонаж не может атаковать из-за состояния.");
+    return attackResult({ ok: false, reason: `cannot-${attackBlockState.mode}-attack` });
   }
 
   if (!isCombatActive() && !globalThis.game?.user?.isGM) {
@@ -103,6 +132,10 @@ export async function performActorAttack({
   const blockReason = getActionBlockReason(actor, "attack", {
     hand,
     weapon,
+    skillKey,
+    attackMode,
+    rangeOverride,
+    technique,
     energyCost,
   });
   if (blockReason) {
@@ -160,10 +193,9 @@ export async function performActorAttack({
         baseDamage,
         energyCost,
         weaponId: weapon?.id ?? "",
+        attackMode,
         hitBonus,
         ignoreArmor,
-        targetZone,
-        aimed,
         technique,
         applyCondition,
         conditionDuration,
@@ -174,7 +206,12 @@ export async function performActorAttack({
         actionSeconds,
         autoTargetHostile,
         useExplodingDice,
-        ...buildCombatTargetPayload(selectedTargets),
+        ...buildCombatActionTargetPayload({
+          targets: selectedTargets,
+          targetZone,
+          targetZoneMode,
+          aimed,
+        }),
       },
     });
 
@@ -182,7 +219,43 @@ export async function performActorAttack({
     if (!timeState?.ok) return attackResult({ ok: false, reason: "time-cost" });
   }
 
-  const preparedBonus = await consumePreparedAttackBonus(actor, { skillKey });
+  const preReaction = await applyPreparedCombatReaction({
+    attacker: actor,
+    defender: targetActor,
+    result: null,
+    sourceSkillKey: skillKey,
+    sourceAttackMode: attackMode,
+    sourceDamageType: damageType,
+    phase: "pre-hit",
+    dieRoller: dieRoller ?? undefined,
+    onLethal,
+  });
+  const preReactionHtml = preReaction.html ?? "";
+  if (preReaction.interrupted) {
+    const spentEnergy = await spendInterruptedAttackEnergy(actor, energyCost, encumbrance);
+    await createCombatChatMessage({
+      actor,
+      title: label,
+      rows: [
+        ["Атакующий", actor.name],
+        ["Цель", targetActor.name],
+        ["Результат", `атака прервана подготовленной реакцией ${targetActor.name}`],
+        ["Энергия", `-${spentEnergy}`, spentEnergy > 0],
+      ],
+      bodyHtml: preReactionHtml,
+      className: "ih-combat-interrupted-attack",
+    });
+    await afterAttack?.({ actor, targetActor, result: null, interrupted: true, reaction: preReaction });
+    return attackResult({
+      result: {
+        interrupted: true,
+        reaction: preReaction,
+      },
+      reason: "interrupted",
+    });
+  }
+
+  const preparedBonus = await consumePreparedAttackBonus(actor, { skillKey, weapon });
   if (preparedBonus.hitBonus) {
     hitBonus = Number(hitBonus ?? 0) + preparedBonus.hitBonus;
     effectNotes = [
@@ -200,6 +273,7 @@ export async function performActorAttack({
     damageType,
     energyCost,
     weapon,
+    attackMode,
     hitBonus,
     ignoreArmor,
     targetZone,
@@ -214,15 +288,20 @@ export async function performActorAttack({
   });
   if (!result) return attackResult({ ok: false, reason: "attack-cancelled" });
 
-  let extraHtml = "";
+  const extraRows = [];
   if (technique) {
-    extraHtml += `<p><b>РџСЂРёС‘Рј:</b> ${technique.icon ?? "вљ”"} ${technique.label ?? ""}</p>`;
+    extraRows.push(["Приём", `${technique.icon ?? "⚔"} ${technique.label ?? ""}`]);
   }
   if (aimed && targetZone) {
-    extraHtml += `<p><b>РџСЂРёС†РµР»:</b> ${result.locationLabel ?? targetZone}</p>`;
+    extraRows.push(["Прицел", result.locationLabel ?? targetZone]);
+  }
+  if (technique?.effect?.targetZoneMode && !aimed) {
+    extraRows.push(["Зона приёма", result.locationLabel ?? targetZone ?? "случайная"]);
   }
 
-  extraHtml += (await applyHitEffects({
+  const extraHtml = joinCombatHtml(
+    buildCombatRows(extraRows, { className: "ih-attack-extra-rows" }),
+    (await applyHitEffects({
     attacker: actor,
     target: targetActor,
     result,
@@ -232,7 +311,8 @@ export async function performActorAttack({
       conditionChance,
       notes: effectNotes,
     }),
-  })).html;
+    })).html,
+  );
 
   const content = await formatAttackChatHtml({
     label,
@@ -247,6 +327,7 @@ export async function performActorAttack({
     defender: targetActor,
     result,
     sourceSkillKey: skillKey,
+    sourceAttackMode: attackMode,
     sourceDamageType: damageType,
     dieRoller: dieRoller ?? undefined,
     onLethal,
@@ -254,11 +335,11 @@ export async function performActorAttack({
 
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
-    content: content + extraHtml + reaction.html,
+    content: joinCombatHtml(preReactionHtml, content, extraHtml, reaction.html),
   });
 
   await applySkillExp?.(skillKey, label);
-  await afterAttack?.({ actor, targetActor, result });
+  await afterAttack?.({ actor, targetActor, result, preReaction, reaction, preparedBonus });
 
   return attackResult({ result });
 }

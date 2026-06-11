@@ -10,6 +10,10 @@ import {
 } from "./craft-ingredients.mjs";
 import { getItemQuantity } from "../utils/item-utils.mjs";
 import {
+  materialToItemData,
+  normalizeItemDataForInventory,
+} from "../utils/catalog-item-data.mjs";
+import {
   removeQuantityFromItem,
   recalculateActorWeight,
 } from "./inventory-service.mjs";
@@ -114,22 +118,7 @@ export async function grantRawFiber(actor, qty = 1) {
   const m = MATERIALS.raw_fiber;
   if (!m) return;
   const q = Math.max(1, Number(qty) || 1);
-  const docData = {
-    name: m.label,
-    type: "material",
-    img: "icons/svg/item-bag.svg",
-    flags: { "iron-hills-system": { catalogId: "raw_fiber" } },
-    system: {
-      tier: m.tier,
-      category: m.category,
-      weight: Number(m.weight ?? 1) * q,
-      quantity: q,
-      gridW: 1,
-      gridH: 1,
-      value: Number(m.value ?? 1) * q,
-      quality: "common",
-    },
-  };
+  const docData = materialToItemData(m, { quantity: q });
   await addItemToActorOrStack(actor, docData);
   await recalculateActorWeight(actor);
 }
@@ -186,7 +175,11 @@ export async function finalizeWorkbenchSuccess(actor, recipe, merged, rollTotal,
     );
   }
 
-  await addItemToActorOrStack(actor, docData);
+  const normalizedDocData = normalizeItemDataForInventory(docData, {
+    quantity: docData.system?.quantity ?? 1,
+  });
+
+  await addItemToActorOrStack(actor, normalizedDocData);
 
   await teachCraftRecipe(actor, recipe.id);
 

@@ -7,8 +7,8 @@ import { applyActionTypeItemFromDialog } from "./item-action-dialog-service.mjs"
 import { castSpellLikeItem } from "./spell-casting-service.mjs";
 import { useThrowableItem } from "./throwable-service.mjs";
 
-export async function applyActorSheetActionTypeItem(sourceActor, item) {
-  return applyActionTypeItemFromDialog(sourceActor, item);
+export async function applyActorSheetActionTypeItem(sourceActor, item, options = {}) {
+  return applyActionTypeItemFromDialog(sourceActor, item, options);
 }
 
 export async function useActorSheetFood(actor, itemId, {
@@ -25,12 +25,14 @@ export async function useActorSheetFood(actor, itemId, {
 
 export async function useActorSheetPotion(actor, itemId, {
   skipTimeCost = false,
+  targets = null,
   resolveCombatTimeCost = null,
   applyActionTypeItem = applyActorSheetActionTypeItem,
   afterRefresh = null,
 } = {}) {
   return usePotionItemFromSheet(actor, itemId, {
     skipTimeCost,
+    targets,
     resolveCombatTimeCost,
     applyActionTypeItem,
     afterRefresh,
@@ -39,12 +41,14 @@ export async function useActorSheetPotion(actor, itemId, {
 
 export async function useActorSheetConsumable(actor, itemId, {
   skipTimeCost = false,
+  targets = null,
   resolveCombatTimeCost = null,
   applyActionTypeItem = applyActorSheetActionTypeItem,
   afterRefresh = null,
 } = {}) {
   return useConsumableItemFromSheet(actor, itemId, {
     skipTimeCost,
+    targets,
     resolveCombatTimeCost,
     applyActionTypeItem,
     afterRefresh,
@@ -62,6 +66,7 @@ export async function castActorSheetSpellLike({
   applySkillExp = null,
   onLethal = null,
   afterCast = null,
+  spellOverrides = null,
 } = {}) {
   return castSpellLikeItem({
     actor,
@@ -74,6 +79,7 @@ export async function castActorSheetSpellLike({
     applySkillExp,
     onLethal,
     afterCast,
+    spellOverrides,
   });
 }
 
@@ -87,6 +93,9 @@ export async function useActorSheetThrowable({
   applySkillExp = null,
   onLethal = null,
   afterUse = null,
+  targetZone = null,
+  targetPart = null,
+  targetZoneMode = null,
 } = {}) {
   return useThrowableItem({
     actor,
@@ -98,5 +107,8 @@ export async function useActorSheetThrowable({
     applySkillExp,
     onLethal,
     afterUse,
+    targetZone,
+    targetPart,
+    targetZoneMode,
   });
 }

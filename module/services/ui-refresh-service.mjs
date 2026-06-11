@@ -17,6 +17,10 @@ function isInstanceOf(app, ctor) {
   }
 }
 
+function getOpenUiWindows() {
+  return Object.values(globalThis.ui?.windows ?? {});
+}
+
 export function queueAppRender(app, force = false, delay = 30) {
   if (!app?.rendered) return;
 debugLog("queueAppRender:schedule", {
@@ -67,7 +71,7 @@ debugWarn("refreshMerchantTradeViews skipped: invalid actorSheetClass", actorShe
     return;
   }
 
-  for (const app of Object.values(ui.windows)) {
+  for (const app of getOpenUiWindows()) {
     if (!app) continue;
     if (!isInstanceOf(app, actorSheetClass)) continue;
     if (app.actor?.type !== "merchant") continue;
@@ -86,7 +90,7 @@ export function rerenderOpenTradeApps(tradeAppClass) {
     return;
   }
 
-  for (const app of Object.values(ui.windows)) {
+  for (const app of getOpenUiWindows()) {
     if (!app) continue;
     if (!isInstanceOf(app, tradeAppClass)) continue;
 debugLog("rerenderOpenTradeApps:queue", {
@@ -103,7 +107,7 @@ export function refreshCharacterAndMerchantSheets(actorSheetClass) {
     return;
   }
 
-  for (const app of Object.values(ui.windows)) {
+  for (const app of getOpenUiWindows()) {
     if (!app) continue;
     if (!isInstanceOf(app, actorSheetClass)) continue;
     if (!app.actor) continue;
@@ -123,7 +127,7 @@ export function refreshAllTradeUIs(actorSheetClass, tradeAppClass) {
  * Канонический шорткат, чтобы не плодить локальных копий.
  */
 export function rerenderOpenIronHillsActorSheets() {
-  for (const app of Object.values(ui.windows ?? {})) {
+  for (const app of getOpenUiWindows()) {
     if (!app?.rendered) continue;
     if (app.constructor?.name !== "IronHillsActorSheet") continue;
     try { app.render(false); } catch (err) {

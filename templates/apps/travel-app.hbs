@@ -4,7 +4,7 @@
   <div class="ih-travel-section">
     <div class="ih-travel-section-title">Группа</div>
     <div class="ih-travel-group-row">
-      <div class="ih-travel-group-dot" style="background:{{groupColor}}"></div>
+      <div class="ih-travel-group-dot" data-ih-style-background="{{groupColor}}"></div>
       <select class="ih-travel-group-select" data-group-select>
         <option value="">Все персонажи игроков</option>
         {{#each groups}}
@@ -20,7 +20,7 @@
     <div class="ih-travel-other-groups">
       {{#each otherGroups}}
       <div class="ih-travel-other-group">
-        <div class="ih-travel-group-dot" style="background:{{color}}"></div>
+        <div class="ih-travel-group-dot" data-ih-style-background="{{color}}"></div>
         <span>{{label}}</span>
         {{#if location}}<span class="muted-text">@ {{location}}</span>{{/if}}
         <span class="muted-text">{{localHours}}ч · {{memberCount}} чел.</span>
@@ -55,7 +55,7 @@
       <span class="ih-travel-hours-display"><b data-hours-label>{{hours}}</b>ч <b data-mins-label>{{mins}}</b>м</span>
     </div>
     {{!-- Часы --}}
-    <div class="ih-wa-set-row" style="margin-bottom:4px">
+    <div class="ih-wa-set-row ih-travel-time-row">
       <label class="ih-wa-set-label">Ч</label>
       <div class="ih-wa-stepper">
         <a class="ih-wa-step-btn" data-step-hours="-1">−</a>
@@ -64,7 +64,7 @@
       </div>
     </div>
     {{!-- Минуты --}}
-    <div class="ih-wa-set-row" style="margin-bottom:6px">
+    <div class="ih-wa-set-row ih-travel-time-row is-last">
       <label class="ih-wa-set-label">М</label>
       <div class="ih-wa-stepper">
         <a class="ih-wa-step-btn" data-step-mins="-10">−</a>
@@ -100,8 +100,7 @@
           {{#if ../campMode}}
           <div class="ih-travel-camp-acts">
             {{#each ../activities}}
-            <a class="ih-btn ih-btn-small {{#if (eq ../../activityKey key)}}ih-btn-primary{{/if}}"
-               style="font-size:9px;padding:1px 5px"
+            <a class="ih-btn ih-btn-small ih-travel-camp-act {{#if (eq ../../activityKey key)}}ih-btn-primary{{/if}}"
                data-camp-activity="{{key}}" data-actor-id="{{../../actorId}}">{{label}}</a>
             {{/each}}
           </div>
@@ -110,14 +109,14 @@
             <div class="ih-travel-bar-row" title="Сытость −{{satCost}}">
               <span>🍖</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill" style="width:{{satPct}}%"></div>
+                <div class="ih-travel-bar-fill" data-ih-style-width-pct="{{satPct}}"></div>
               </div>
               <span class="ih-travel-bar-delta neg">−{{satCost}}</span>
             </div>
             <div class="ih-travel-bar-row" title="Жажда −{{hydCost}}">
               <span>💧</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill water" style="width:{{hydPct}}%"></div>
+                <div class="ih-travel-bar-fill water" data-ih-style-width-pct="{{hydPct}}"></div>
               </div>
               <span class="ih-travel-bar-delta neg">−{{hydCost}}</span>
             </div>
@@ -126,7 +125,7 @@
             <div class="ih-travel-bar-row" title="⚡ {{enVal}}/{{enCurMax}} → {{newEn}}/{{newEnMax}}">
               <span>⚡</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill energy" style="width:{{enPct}}%"></div>
+                <div class="ih-travel-bar-fill energy" data-ih-style-width-pct="{{enPct}}"></div>
               </div>
               {{#if enCost}}
                 <span class="ih-travel-bar-delta neg">−{{enCostFmt}}</span>
@@ -145,7 +144,7 @@
             <div class="ih-travel-bar-row" title="⚡ Макс: {{enCurMax}} → {{newEnMax}}">
               <span>⬆⚡</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill energy-max" style="width:{{enPct}}%"></div>
+                <div class="ih-travel-bar-fill energy-max" data-ih-style-width-pct="{{enPct}}"></div>
               </div>
               <span class="ih-travel-bar-delta pos">макс. +{{maxDelta}}</span>
             </div>
@@ -155,7 +154,7 @@
             <div class="ih-travel-bar-row">
               <span>✦</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill mana" style="width:100%"></div>
+                <div class="ih-travel-bar-fill mana is-full"></div>
               </div>
               <span class="ih-travel-bar-delta muted-text">полная</span>
             </div>
@@ -163,7 +162,7 @@
             <div class="ih-travel-bar-row" title="Мана {{mnVal}} → {{newMn}}">
               <span>✦</span>
               <div class="ih-travel-bar-track">
-                <div class="ih-travel-bar-fill mana" style="width:{{enPct}}%"></div>
+                <div class="ih-travel-bar-fill mana" data-ih-style-width-pct="{{enPct}}"></div>
               </div>
               {{#if (gt mnDelta 0)}}
                 <span class="ih-travel-bar-delta pos">+{{mnDelta}}</span>
@@ -188,12 +187,12 @@
   <div class="ih-travel-actions">
     {{#if campMode}}
     {{!-- Режим привала: одна кнопка применяет индивидуальные активности --}}
-    <a class="ih-btn ih-btn-primary" style="flex:1;justify-content:center" data-apply-rest>
+    <a class="ih-btn ih-btn-primary ih-travel-action-primary" data-apply-rest>
       🏕 Привал {{hours}}ч {{mins}}м
     </a>
     {{else}}
     {{!-- Обычный режим: применить выбранную активность --}}
-    <a class="ih-btn ih-btn-primary" style="flex:1;justify-content:center" data-apply-time>
+    <a class="ih-btn ih-btn-primary ih-travel-action-primary" data-apply-time>
       ⏳ Применить {{hours}}ч {{mins}}м
     </a>
     {{/if}}

@@ -11,9 +11,19 @@ import {
   findCharacterByName,
   getRegionSettlements,
 } from "./utils/world-helpers.mjs";
+import {
+  buildCombatChatCard,
+  buildCombatParagraphs,
+} from "./services/combat-chat-service.mjs";
 
 function makeChainId() {
   return `arc-${Date.now()}-${randInt(1000, 9999)}`;
+}
+
+function buildQuestListBody(lines = [], emptyText = "") {
+  const list = (Array.isArray(lines) ? lines : [])
+    .filter(line => line !== undefined && line !== null && String(line).trim() !== "");
+  return buildCombatParagraphs(list.length ? list : [emptyText || "Нет записей."]);
 }
 
 function getWorldItems() {
@@ -811,16 +821,19 @@ async function grantQuestRewards(quest) {
   });
 
   await ChatMessage.create({
-    content: `
-      <h3>Награда за квест</h3>
-      <p><b>Квест:</b> ${quest.name}</p>
-      <p><b>Персонаж:</b> ${characterName || "не выбран"}</p>
-      <p><b>Серебро:</b> ${rewards.silver ?? 0}</p>
-      <p><b>Предмет:</b> ${rewards.rewardItemName || "—"}</p>
-      <p><b>Результат выдачи:</b> ${itemReason}</p>
-      <p><b>Репутация с поселением:</b> ${rewards.settlementRep ?? 0}</p>
-      <p><b>Репутация с фракцией:</b> ${rewards.factionRep ?? 0}</p>
-    `
+    content: buildCombatChatCard({
+      title: "Награда за квест",
+      icon: "🎁",
+      rows: [
+        ["Квест", quest.name],
+        ["Персонаж", characterName || "не выбран"],
+        ["Серебро", rewards.silver ?? 0],
+        ["Предмет", rewards.rewardItemName || "—"],
+        ["Репутация с поселением", rewards.settlementRep ?? 0],
+        ["Репутация с фракцией", rewards.factionRep ?? 0],
+      ],
+      notices: [["Результат выдачи", itemReason]],
+    })
   });
 
   return {
@@ -929,14 +942,18 @@ async function applyQuestOutcome(actor, mode) {
   }
 
   await ChatMessage.create({
-    content: `
-      <h3>Квест: ${actor.name}</h3>
-      <p><b>Результат:</b> ${mode === "success" ? "Завершён" : "Провал"}</p>
-      <p><b>Тип:</b> ${actor.system.info?.questType || "—"}</p>
-      <p><b>Арка:</b> ${actor.system.chain?.arcType || "—"}</p>
-      <p><b>Этап:</b> ${actor.system.chain?.step || 1}/${actor.system.chain?.maxStep || 1}</p>
-      ${nextQuest ? `<p><b>Открыт следующий этап:</b> ${nextQuest.name}</p>` : ""}
-    `
+    content: buildCombatChatCard({
+      title: `Квест: ${actor.name}`,
+      icon: mode === "success" ? "✓" : "✕",
+      status: mode === "success" ? "Завершён" : "Провал",
+      statusClass: mode === "success" ? "is-good" : "is-danger",
+      rows: [
+        ["Тип", actor.system.info?.questType || "—"],
+        ["Арка", actor.system.chain?.arcType || "—"],
+        ["Этап", `${actor.system.chain?.step || 1}/${actor.system.chain?.maxStep || 1}`],
+      ],
+      notices: nextQuest ? [["Открыт следующий этап", nextQuest.name]] : [],
+    })
   });
 }
 
@@ -950,7 +967,11 @@ async function continueQuestChain(actor) {
   }
 
   await ChatMessage.create({
-    content: `<h3>Продолжение арки</h3><p>Открыт следующий этап: <b>${nextQuest.name}</b></p>`
+    content: buildCombatChatCard({
+      title: "Продолжение арки",
+      icon: "→",
+      rows: [["Открыт следующий этап", nextQuest.name]],
+    })
   });
 
   ui.notifications.info(`Открыт следующий этап: ${nextQuest.name}`);
@@ -991,7 +1012,14 @@ function bindQuestSheetButtons(app, html) {
     ui.notifications.info(result.reason);
 
     await ChatMessage.create({
-      content: `<h3>Проверка квеста</h3><p><b>${app.actor.name}</b></p><p>${result.reason}</p>`
+      content: buildCombatChatCard({
+        title: "Проверка квеста",
+        icon: result.ok ? "✓" : "!",
+        status: result.ok ? "Доступен" : "Недоступен",
+        statusClass: result.ok ? "is-good" : "is-warn",
+        rows: [["Квест", app.actor.name]],
+        notices: [["Результат", result.reason]],
+      })
     });
   });
 }
@@ -1007,7 +1035,14 @@ async function generateSingleQuestFromUi(html) {
   const quest = await Actor.create(buildQuestByType(finalType, settlement, region, difficulty));
 
   await ChatMessage.create({
-    content: `<h3>Новый квест</h3><p><b>${quest.name}</b></p><p>Тип: ${quest.system.info.questType}</p>`
+    content: buildCombatChatCard({
+      title: "Новый квест",
+      icon: "!",
+      rows: [
+        ["Название", quest.name],
+        ["Тип", quest.system.info.questType],
+      ],
+    })
   });
 
   ui.notifications.info(`Создан квест: ${quest.name}`);
@@ -1029,7 +1064,12 @@ async function generateQuestPackFromUi(html) {
   }
 
   await ChatMessage.create({
-    content: `<h3>Набор квестов</h3>${created.map(q => `<p>${q}</p>`).join("")}`
+    content: buildCombatChatCard({
+      title: "Набор квестов",
+      icon: "!",
+      rows: [["Создано", created.length]],
+      bodyHtml: buildQuestListBody(created),
+    })
   });
 
   ui.notifications.info(`Создано квестов: ${created.length}`);
@@ -1037,6 +1077,7 @@ async function generateQuestPackFromUi(html) {
 
 async function generateRegionalQuestsFromUi(html) {
   const region = html.find("[name='region-select']").val() || "";
+  const difficulty = Number(html.find("[name='quest-difficulty']").val()) || null;
   const settlements = getRegionSettlements(region);
 
   if (!settlements.length) {
@@ -1055,7 +1096,15 @@ async function generateRegionalQuestsFromUi(html) {
   }
 
   await ChatMessage.create({
-    content: `<h3>Региональные квесты</h3>${created.map(q => `<p>${q}</p>`).join("")}`
+    content: buildCombatChatCard({
+      title: "Региональные квесты",
+      icon: "!",
+      rows: [
+        ["Регион", region || "—"],
+        ["Создано", created.length],
+      ],
+      bodyHtml: buildQuestListBody(created),
+    })
   });
 
   ui.notifications.info(`Создано региональных квестов: ${created.length}`);
@@ -1075,7 +1124,15 @@ async function generateStoryArcFromUi(html) {
   }
 
   await ChatMessage.create({
-    content: `<h3>Сюжетная арка</h3>${created.map(q => `<p>${q.system.chain.step}. ${q.name}</p>`).join("")}`
+    content: buildCombatChatCard({
+      title: "Сюжетная арка",
+      icon: "⛓",
+      rows: [
+        ["Этапов", created.length],
+        ["Тип арки", created[0]?.system.chain?.arcType || arcType],
+      ],
+      bodyHtml: buildQuestListBody(created.map(q => `${q.system.chain.step}. ${q.name}`)),
+    })
   });
 
   ui.notifications.info(`Создана арка: ${created.length} этап(а)`);

@@ -17,7 +17,3 @@ export function formatSignedNumber(value) {
   const n = Number(value ?? 0);
   return n >= 0 ? `+${n}` : `${n}`;
 }
-
-export function buildChatSectionRow(label, value) {
-  return `<p><b>${label}:</b> ${value}</p>`;
-}

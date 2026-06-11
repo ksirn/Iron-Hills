@@ -7,6 +7,8 @@ import {
   getAvailableIngredientQuantity,
 } from "../services/world-content-service.mjs";
 import { filterRecipesForActor } from "../constants/craft-knowledge.mjs";
+import { getDamageTypeLabel } from "../services/damage-type-service.mjs";
+import { formatItemActionSummary } from "../utils/item-utils.mjs";
 
 /**
  * Расчёт шанса успеха с учётом взрыва куба (exploding dice).
@@ -44,7 +46,7 @@ function calcExplodingChance(threshold, skillValue) {
 
   return Math.round(p(threshold, startDie) * 100);
 }
-import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS } from "../constants/items-catalog.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, CONSUMABLES, THROWABLES } from "../constants/items-catalog.mjs";
 
 // Все предметы из каталога в плоский список
 const ALL_CATALOG_ITEMS = [
@@ -54,6 +56,8 @@ const ALL_CATALOG_ITEMS = [
   ...Object.values(POTIONS),
   ...Object.values(FOOD),
   ...Object.values(TOOLS),
+  ...Object.values(CONSUMABLES),
+  ...Object.values(THROWABLES),
 ];
 
 // Найти запись каталога для подписи ингредиента (металл: слиток в приоритете; для плавки — preferOre)
@@ -218,7 +222,7 @@ class IronHillsCraftKnowledgeApp extends Application {
             out.push({ label:"Урон", val:`${dmg}`, quality:`Хор:+${fBonus} / Мас:+${mwBonus} / Лег:+${legBonus}` });
             out.push({ label:"Навык",    val:rs.skill ?? "—" });
             out.push({ label:"Энергия",  val:rs.energyCost ?? "—" });
-            out.push({ label:"Тип",      val:rs.damageType === "magical" ? "✦ Магический" : "⚔ Физический" });
+            out.push({ label:"Тип",      val:getDamageTypeLabel(rs.damageType) });
             if (rs.twoHanded) out.push({ label:"", val:"✋ Двуручное" });
           } else if (rt === "armor") {
             const phys = rs.protection?.physical ?? rs.resist?.physical ?? 0;
@@ -251,18 +255,10 @@ class IronHillsCraftKnowledgeApp extends Application {
                 out.push({ label:"Сытность", val: `+${rs.vesselSatietyPerDrink}/глоток` });
               }
             } else {
-              const EFFECTS = {
-                healHP:"🩹 Лечение HP", healAll:"💚 Лечение тела",
-                restoreEnergy:"⚡ Восстановление энергии", restoreMana:"✦ Восстановление маны",
-                restoreEnergyMax:"🏃 Лимит выносливости",
-                restoreHydration:"💧 Жажда", restoreSatiety:"🍖 Голод",
-                curePoison:"🟢 Противоядие", cureDisease:"🏥 Болезнь",
-                speedBoost:"⚡ Скорость", strengthBoost:"💪 Сила",
-                stun:"⚡ Оглушение", silence:"🔇 Безмолвие",
-                slow:"🐢 Замедление", fear:"😱 Страх", reserveDrain:"💀 Резерв",
-              };
-              out.push({ label:"Эффект", val:EFFECTS[rs.effect] ?? rs.effect ?? "—" });
-              out.push({ label:"Сила",   val:rs.power ?? "—" });
+              out.push({
+                label:"Эффект",
+                val: formatItemActionSummary(rs, { includeIcon: false }) || rs.effect || rs.effectType || "—",
+              });
               if (rs.scope)    out.push({ label:"Цель",    val:rs.scope });
               if (rs.duration) out.push({ label:"Длит.",   val:`${rs.duration}с` });
             }

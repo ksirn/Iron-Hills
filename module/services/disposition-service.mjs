@@ -36,7 +36,7 @@ export const DISPOSITION = Object.freeze({
 export function getActorDisposition(actor) {
   if (!actor) return DISPOSITION.NEUTRAL;
 
-  const token = canvas?.tokens?.placeables?.find(t => t.actor?.id === actor.id);
+  const token = globalThis.canvas?.tokens?.placeables?.find(t => t.actor?.id === actor.id);
   if (token?.document?.disposition !== undefined && token.document.disposition !== null) {
     return Number(token.document.disposition);
   }

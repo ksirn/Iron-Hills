@@ -45,8 +45,7 @@
   {{!-- Кнопки --}}
   <div class="ih-ep-footer">
     <a class="ih-btn" data-ep-cancel>Отмена</a>
-    <a class="ih-btn ih-btn-primary" data-ep-confirm
-       style="{{#unless items.length}}opacity:0.4;pointer-events:none{{/unless}}">
+    <a class="ih-btn ih-btn-primary {{#unless items.length}}ih-btn-disabled{{/unless}}" data-ep-confirm>
       Выбрать
     </a>
   </div>

@@ -34,7 +34,7 @@ export const NPC_SPECIALIZATIONS = {
   mage: {
     label: "Маг",
     desc: "Обученный колдун нескольких школ; мантия и посох.",
-    skills: { fire: 2, water: 2, mind: 1, life: 1, lore: 2 },
+    skills: { fire: 2, ice: 2, mind: 1, light: 1, lore: 2 },
     energy: 8,
     mana: 16,
     defense: 0,
@@ -66,7 +66,7 @@ export const NPC_SPECIALIZATIONS = {
   priest: {
     label: "Жрец",
     desc: "Служитель культа; жизнь, разум, проповедь и уход за паствой.",
-    skills: { life: 3, mind: 2, lore: 3, persuasion: 2, medicine: 1 },
+    skills: { light: 3, mind: 2, lore: 3, persuasion: 2, medicine: 1 },
     energy: 9,
     mana: 14,
     defense: 0,

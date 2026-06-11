@@ -5,6 +5,11 @@
  */
 
 import { EntityPickerDialog } from "../apps/entity-picker.mjs";
+import {
+  buildSystemDialogContent,
+  buildSystemDialogForm,
+  buildSystemDialogInput,
+} from "./combat-chat-service.mjs";
 
 const SETTING_KEY = "partyGroups";
 const SETTING_SCOPE = "world";
@@ -104,9 +109,16 @@ export class IronHillsPartyManagerApp extends Application {
       const name = await new Promise(resolve => {
         const dlg = new Dialog({
           title: "Новая группа",
-          content: `<input id="grp-name" type="text" placeholder="Название группы"
-            style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);
-                   color:#e8edf5;padding:6px;border-radius:6px;">`,
+          content: buildSystemDialogContent({
+            className: "ih-party-group-dialog",
+            headline: "Новая группа",
+            headlineMeta: "партия",
+            formHtml: buildSystemDialogForm(buildSystemDialogInput({
+              id: "grp-name",
+              label: "Название",
+              placeholder: "Название группы",
+            })),
+          }),
           buttons: {
             ok: { label: "Создать", callback: () => resolve(document.getElementById("grp-name")?.value) }
           },

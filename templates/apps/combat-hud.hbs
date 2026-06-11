@@ -13,7 +13,7 @@
       {{#if hasGlobalEffects}}
       <div class="ih-portrait-effects">
         {{#each globalEffects}}{{#if active}}
-        <span class="ih-fx-icon" style="color:{{color}}" title="{{label}}: {{value}}">
+        <span class="ih-fx-icon" data-ih-style-color="{{color}}" title="{{label}}: {{value}}">
           <i class="fas {{icon}}"></i>
         </span>
         {{/if}}{{/each}}
@@ -36,6 +36,22 @@
 
   </div>
 
+  {{!-- Tactical status: готовность, секунды, цели --}}
+  <div class="ih-hud-tactical {{readiness.cssClass}}">
+    <div class="ih-hud-tactical-main">
+      <span class="ih-hud-tactical-icon">{{readiness.icon}}</span>
+      <div class="ih-hud-tactical-text">
+        <div class="ih-hud-tactical-title">{{readiness.title}}</div>
+        <div class="ih-hud-tactical-detail">{{readiness.detail}}</div>
+      </div>
+    </div>
+    <div class="ih-hud-pill-row">
+      {{#each hudPills}}
+      <span class="ih-hud-pill"><b>{{label}}</b>{{value}}</span>
+      {{/each}}
+    </div>
+  </div>
+
   {{!-- Тело + ресурсы --}}
   <div class="ih-compact-body-row">
 
@@ -44,12 +60,13 @@
       {{!-- Голова --}}
       {{#each zones}}{{#if (eq key "head")}}
       <div class="ih-fig-part ih-fig-head {{cssClass}}" title="{{tooltip}}">
-        <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+        <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
         <div class="ih-fig-dots">
           {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
           {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
           {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
           {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+          {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
         </div>
       </div>
       {{/if}}{{/each}}
@@ -58,18 +75,19 @@
       <div class="ih-fig-row">
         {{#each zones}}{{#if (eq key "leftArm")}}
         <div class="ih-fig-part ih-fig-arm {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
             {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
           </div>
         </div>
         {{/if}}{{/each}}
 
         {{#each zones}}{{#if (eq key "torso")}}
         <div class="ih-fig-part ih-fig-torso {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
@@ -80,11 +98,12 @@
 
         {{#each zones}}{{#if (eq key "rightArm")}}
         <div class="ih-fig-part ih-fig-arm {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
             {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
           </div>
         </div>
         {{/if}}{{/each}}
@@ -93,7 +112,7 @@
       {{!-- Живот --}}
       {{#each zones}}{{#if (eq key "abdomen")}}
       <div class="ih-fig-part ih-fig-abdomen {{cssClass}}" title="{{tooltip}}">
-        <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+        <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
         <div class="ih-fig-dots">
           {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
           {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
@@ -106,20 +125,22 @@
       <div class="ih-fig-row">
         {{#each zones}}{{#if (eq key "leftLeg")}}
         <div class="ih-fig-part ih-fig-leg {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
           </div>
         </div>
         {{/if}}{{/each}}
         <div class="ih-fig-gap"></div>
         {{#each zones}}{{#if (eq key "rightLeg")}}
         <div class="ih-fig-part ih-fig-leg {{cssClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" style="height:{{pct}}%"></div>
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
             {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
+            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
           </div>
         </div>
         {{/if}}{{/each}}
@@ -130,49 +151,138 @@
     <div class="ih-compact-bars">
       <div class="ih-res-bar" title="Энергия: {{energyValue}}/{{energyMax}}">
         <span class="ih-res-icon energy">⚡</span>
-        <div class="ih-res-track"><div class="ih-res-fill energy" style="width:{{energyPct}}%"></div></div>
+        <div class="ih-res-track"><div class="ih-res-fill energy" data-ih-style-width-pct="{{energyPct}}"></div></div>
         <span class="ih-res-val">{{energyValue}}</span>
       </div>
       <div class="ih-res-bar" title="Мана: {{manaValue}}/{{manaMax}}">
         <span class="ih-res-icon mana">✦</span>
-        <div class="ih-res-track"><div class="ih-res-fill mana" style="width:{{manaPct}}%"></div></div>
+        <div class="ih-res-track"><div class="ih-res-fill mana" data-ih-style-width-pct="{{manaPct}}"></div></div>
         <span class="ih-res-val">{{manaValue}}</span>
       </div>
       <div class="ih-res-bar" title="Сытость: {{satietyValue}}/{{satietyMax}}">
         <span class="ih-res-icon food">🍖</span>
-        <div class="ih-res-track"><div class="ih-res-fill food" style="width:{{satietyPct}}%"></div></div>
+        <div class="ih-res-track"><div class="ih-res-fill food" data-ih-style-width-pct="{{satietyPct}}"></div></div>
         <span class="ih-res-val">{{satietyValue}}</span>
       </div>
       <div class="ih-res-bar" title="Жажда: {{hydrationValue}}/{{hydrationMax}}">
         <span class="ih-res-icon water">💧</span>
-        <div class="ih-res-track"><div class="ih-res-fill water" style="width:{{hydrationPct}}%"></div></div>
+        <div class="ih-res-track"><div class="ih-res-fill water" data-ih-style-width-pct="{{hydrationPct}}"></div></div>
         <span class="ih-res-val">{{hydrationValue}}</span>
       </div>
 
       {{!-- Быстрые слоты --}}
       <div class="ih-compact-slots">
         {{#each quickSlots}}
-        <a class="ih-quick-chip" data-quickslot="{{slotKey}}" title="[{{short}}] {{itemName}}">
-          <span>{{short}}</span>
+        <a class="ih-quick-chip {{#unless canUse}}is-disabled{{/unless}} {{#unless hasItem}}is-empty{{/unless}}"
+           {{#if canUse}}data-quickslot="{{slotKey}}"{{/if}}
+           title="{{tooltip}}">
+          <span>{{display}}</span>
         </a>
         {{/each}}
       </div>
     </div>
   </div>{{!-- .ih-compact-body-row --}}
 
+  {{#if medicalTriage.needsAttention}}
+  <div class="ih-med-triage {{medicalTriage.severityClass}}">
+    <div class="ih-med-triage-head">
+      <span class="ih-med-triage-icon">{{medicalTriage.icon}}</span>
+      <div class="ih-med-triage-text">
+        <div class="ih-med-triage-title">{{medicalTriage.title}}</div>
+        <div class="ih-med-triage-note">{{medicalTriage.actionHint}}</div>
+      </div>
+      <span class="ih-med-triage-action">{{medicalTriage.primaryAction}}</span>
+    </div>
+    <div class="ih-med-triage-chips">
+      {{#each medicalTriage.statChips}}
+      <span class="ih-med-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if recoveryPlan.needsAttention}}
+  <div class="ih-rec-hud {{recoveryPlan.status.cssClass}}">
+    <div class="ih-rec-hud-head">
+      <span class="ih-rec-hud-title">{{recoveryPlan.status.title}}</span>
+      <span class="ih-rec-hud-detail">{{recoveryPlan.status.detail}}</span>
+    </div>
+    {{#if recoveryPlan.hasWarnings}}
+    <div class="ih-rec-hud-chips">
+      {{#each recoveryPlan.warningPreview}}
+      <span class="ih-rec-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+      {{/each}}
+    </div>
+    {{/if}}
+    {{#if recoveryPlan.hasActiveConditions}}
+    <div class="ih-rec-hud-effects">
+      {{#each recoveryPlan.activeConditionPreview}}
+      <span class="ih-rec-effect {{cssClass}}" title="{{label}}: {{valueLabel}}">
+        <i class="fas {{icon}}"></i><b>{{valueLabel}}</b>
+      </span>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{!-- Выбранные цели --}}
+  <div class="ih-target-panel {{targetHud.cssClass}}">
+    <div class="ih-target-head">
+      <span class="ih-target-title">Цели</span>
+      <span class="ih-target-summary">{{targetHud.summaryLabel}}</span>
+      {{#if targetHud.hasTargets}}
+      <a class="ih-target-clear" data-clear-targets title="Сбросить цели">×</a>
+      {{/if}}
+    </div>
+
+    {{#if targetHud.hasTargets}}
+    <div class="ih-target-list">
+      {{#each targetHud.preview}}
+      <div class="ih-target-row {{sideClass}} {{relationClass}}" title="{{tooltip}}">
+        <img src="{{img}}" alt="{{name}}">
+        <div class="ih-target-info">
+          <span class="ih-target-name">{{name}}</span>
+          <span class="ih-target-state">
+            {{relationLabel}} · {{secondsLabel}}{{#if hasPendingAction}} · {{pendingLabel}} {{pendingStatus}}{{/if}}
+          </span>
+        </div>
+      </div>
+      {{/each}}
+      {{#if targetHud.hasOverflow}}
+      <div class="ih-target-overflow">+{{targetHud.overflowCount}} ещё</div>
+      {{/if}}
+    </div>
+    {{else}}
+    <div class="ih-target-empty">Обычная атака потребует выбранную цель.</div>
+    {{/if}}
+  </div>
+
   {{!-- Pending action --}}
   {{#if hasPendingAction}}
-  <div class="ih-pending-bar">
+  <div class="ih-pending-bar {{pendingActionStatusClass}}">
     <span class="ih-pending-label">⏳ {{pendingActionLabel}}</span>
+    <span class="ih-pending-status">{{pendingActionStatusLabel}}</span>
     <span class="ih-pending-secs">{{pendingActionRemainingSeconds}}с</span>
+    <div class="ih-pending-progress" title="{{pendingActionProgressPct}}%">
+      <span data-ih-style-width-pct="{{pendingActionProgressPct}}"></span>
+    </div>
     {{#if canContinuePendingAction}}<a class="ih-chip ih-chip-ok" data-continue-pending title="Продолжить">▶</a>{{/if}}
     {{#if canCancelPendingAction}}<a class="ih-chip ih-chip-danger" data-cancel-pending title="Отменить">✕</a>{{/if}}
   </div>
+  {{#if pendingActionTacticalMeta.visible}}
+  <div class="ih-pending-meta">
+    {{#each pendingActionTacticalMeta.chips}}
+    <span class="ih-pending-meta-chip"><b>{{label}}</b>{{value}}</span>
+    {{/each}}
+  </div>
+  {{/if}}
   {{/if}}
 
   {{!-- Action кнопки (только в бой/свой ход) --}}
   {{#if combatActive}}{{#if isCurrentTurn}}
   <div class="ih-compact-actions">
+    {{#if canStartNewAction}}
     <a class="ih-cact-btn" data-attack-hand="leftHand" title="{{leftHandName}}">⚔</a>
     {{#if rightHandEquipped}}
     <a class="ih-cact-btn" data-attack-hand="rightHand" title="{{rightHandName}}">🗡</a>
@@ -185,6 +295,7 @@
     {{/if}}
     <a class="ih-cact-btn ih-cact-sprint {{#if isSprinting}}is-active{{/if}}"
        data-toggle-sprint title="Шаг/Рывок">{{#if isSprinting}}🏃{{else}}🚶{{/if}}</a>
+    {{/if}}
     {{#if canEndTurn}}
     <a class="ih-cact-btn ih-cact-end" data-end-turn title="Завершить ход">✓</a>
     {{/if}}
@@ -210,10 +321,11 @@
   {{#if combatActive}}
   <div class="ih-queue-strip">
     {{#each queue}}
-    <div class="ih-queue-pill {{sideClass}} {{#if isCurrent}}is-current{{/if}}"
-         title="{{name}} — {{secondsLeft}}с">
+    <div class="ih-queue-pill {{sideClass}} {{#if isCurrent}}is-current{{/if}} {{#if hasPendingAction}}has-pending{{/if}} {{#if pendingActionReady}}is-pending-ready{{/if}}"
+         title="{{tooltip}}">
       <span class="ih-queue-name">{{name}}</span>
       <span class="ih-queue-secs">{{secondsLeft}}с</span>
+      {{#if hasPendingAction}}<span class="ih-queue-pending">{{pendingActionRemainingSeconds}}с</span>{{/if}}
     </div>
     {{/each}}
   </div>

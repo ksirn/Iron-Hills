@@ -1,17 +1,28 @@
 import { isCombatActive } from "./combat-flow-service.mjs";
+import {
+  buildCombatChatCard,
+  buildCombatParagraphs,
+} from "./combat-chat-service.mjs";
 
 export async function requestGmHostileAction(actor, actionLabel) {
   if (isCombatActive()) return true;
   if (globalThis.game?.user?.isGM) return true;
 
   await ChatMessage.create({
-    content: `
-      <div style="border:1px solid rgba(248,113,113,0.4);border-radius:8px;padding:10px;background:rgba(248,113,113,0.06);">
-        <b>⚔ Запрос на враждебное действие</b><br>
-        <b>${actor?.name ?? "Актёр"}</b> хочет выполнить <b>${actionLabel}</b> вне боя.<br>
-        <small style="opacity:0.7">GM, используй команду <code>/ir approve</code> или начни бой.</small>
-      </div>
-    `,
+    content: buildCombatChatCard({
+      title: "Запрос на враждебное действие",
+      icon: "⚔",
+      status: "нужен GM",
+      statusClass: "is-danger",
+      rows: [
+        ["Актёр", actor?.name ?? "Актёр"],
+        ["Действие", actionLabel],
+      ],
+      bodyHtml: buildCombatParagraphs([
+        { value: "GM, используй команду <code>/ir approve</code> или начни бой.", html: true },
+      ]),
+      className: "ih-hostile-chat-card",
+    }),
     whisper: ChatMessage.getWhisperRecipients("GM"),
   });
 

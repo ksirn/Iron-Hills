@@ -1,4 +1,5 @@
 import { actorsAreAllies } from "./disposition-service.mjs";
+import { isHealingDamageType, normalizeDamageType } from "./damage-type-service.mjs";
 
 export const AOE_SHAPE_KEYS = Object.freeze(["circle", "cone", "ray", "rect"]);
 export const AOE_TYPE_KEYS = Object.freeze(["blast", "pierce", "sweep", "shards", "chain", "nova"]);
@@ -15,11 +16,35 @@ export const BODY_ZONE_KEYS = Object.freeze([
   "rightLeg",
   "shield",
 ]);
+export const AOE_TARGETABLE_BODY_ZONE_KEYS = Object.freeze(
+  BODY_ZONE_KEYS.filter(key => key !== "shield")
+);
+
+export const AOE_FRIENDLY_FIRE_LABELS = Object.freeze({
+  off: "союзников не задевать",
+  on: "задевать всех",
+  auto: "по типу атаки",
+});
+
+export const AOE_TARGET_ZONE_MODE_LABELS = Object.freeze({
+  random: "случайная зона у каждой цели",
+  fixed: "одна заданная зона",
+  aimed: "выбор зоны перед применением",
+});
 
 const AOE_SHAPE_SET = new Set(AOE_SHAPE_KEYS);
 const AOE_TYPE_SET = new Set(AOE_TYPE_KEYS);
 const AOE_TARGET_ZONE_MODE_SET = new Set(AOE_TARGET_ZONE_MODE_KEYS);
 const AOE_FRIENDLY_FIRE_MODE_SET = new Set(AOE_FRIENDLY_FIRE_MODE_KEYS);
+const BODY_ZONE_SET = new Set(BODY_ZONE_KEYS);
+const BODY_ZONE_ALIASES = Object.freeze({
+  body: "torso",
+  chest: "torso",
+  belly: "abdomen",
+  stomach: "abdomen",
+  arms: "leftArm",
+  legs: "leftLeg",
+});
 
 function firstDefined(...values) {
   return values.find(value => value !== undefined && value !== null && value !== "");
@@ -112,21 +137,23 @@ export function isAoeFriendlyFireEnabled({
 
   const normalizedType = normalizeAoeType(type, "blast");
   const normalizedShape = normalizeAoeShape(shape, "circle");
-  const normalizedDamage = normalizeString(damageType || "physical");
+  const healingLike = isHealingDamageType(damageType);
 
-  if (normalizedDamage === "healing" || ["heal", "buff"].includes(String(effect?.special ?? "").trim())) {
+  if (healingLike || ["heal", "buff"].includes(String(effect?.special ?? "").trim())) {
     return false;
   }
 
   if (["blast", "nova", "shards", "sweep"].includes(normalizedType)) return true;
-  if (normalizedShape === "cone" && normalizedDamage !== "healing") return true;
+  if (normalizedShape === "cone" && !healingLike) return true;
   return false;
 }
 
 export function normalizeAoeTargetZone(value) {
   const zone = String(value ?? "").trim();
   if (!zone || zone === "random" || zone === "auto" || zone === "none") return null;
-  return zone;
+  const alias = BODY_ZONE_ALIASES[zone.toLowerCase()];
+  const normalized = alias ?? zone;
+  return BODY_ZONE_SET.has(normalized) ? normalized : null;
 }
 
 export function resolveAoeTargetZone(...values) {
@@ -141,6 +168,16 @@ export function normalizeAoeTargetZoneMode(value, fallback = "random") {
   const mode = normalizeString(value || fallback || "random");
   if (mode === "targeted" || mode === "single") return "fixed";
   return AOE_TARGET_ZONE_MODE_SET.has(mode) ? mode : "random";
+}
+
+export function getAoeFriendlyFireLabel(mode) {
+  const normalized = normalizeAoeFriendlyFireMode(mode, "off");
+  return AOE_FRIENDLY_FIRE_LABELS[normalized] ?? normalized;
+}
+
+export function getAoeTargetZoneModeLabel(mode) {
+  const normalized = normalizeAoeTargetZoneMode(mode, "random");
+  return AOE_TARGET_ZONE_MODE_LABELS[normalized] ?? normalized;
 }
 
 export function buildAoeTargetZonePolicy({
@@ -164,7 +201,8 @@ export function buildAoeTargetZonePolicy({
     aoe?.zoneMode,
     zone ? "fixed" : "random",
   );
-  const zoneMode = normalizeAoeTargetZoneMode(rawMode, zone ? "fixed" : "random");
+  let zoneMode = normalizeAoeTargetZoneMode(rawMode, zone ? "fixed" : "random");
+  if (zoneMode === "fixed" && !zone) zoneMode = "random";
 
   return {
     mode: zoneMode,
@@ -174,16 +212,50 @@ export function buildAoeTargetZonePolicy({
   };
 }
 
-export function resolveAoeTargetZoneForTarget(policy = null) {
-  if (!policy?.zone || policy.mode === "random") return null;
-  return policy.zone;
+function resolveTargetRefZone(targetRef = null) {
+  return resolveAoeTargetZone(
+    targetRef?._ihAoe?.targetZone,
+    targetRef?._ihAoe?.targetPart,
+    targetRef?.targetZone,
+    targetRef?.targetPart,
+  );
+}
+
+export function resolveAoeTargetZoneDetails(policy = null, targetRef = null) {
+  const mode = normalizeAoeTargetZoneMode(policy?.mode, "random");
+  if (policy?.zone && mode !== "random") {
+    return {
+      zone: policy.zone,
+      mode,
+      source: mode === "aimed" ? "aimed" : "fixed",
+    };
+  }
+
+  const targetZone = resolveTargetRefZone(targetRef);
+  if (targetZone) {
+    return {
+      zone: targetZone,
+      mode,
+      source: "target",
+    };
+  }
+
+  return {
+    zone: null,
+    mode,
+    source: "random",
+  };
+}
+
+export function resolveAoeTargetZoneForTarget(policy = null, targetRef = null) {
+  return resolveAoeTargetZoneDetails(policy, targetRef).zone;
 }
 
 export function normalizeAoeConfig(raw = null, defaults = {}) {
   const source = raw && typeof raw === "object" ? raw : {};
   const shape = normalizeAoeShape(firstDefined(source.shape, defaults.shape), defaults.shape ?? "circle");
   const type = normalizeAoeType(firstDefined(source.type, defaults.type), defaults.type ?? "blast");
-  const damageType = String(firstDefined(source.damageType, defaults.damageType, "physical"));
+  const damageType = normalizeDamageType(firstDefined(source.damageType, defaults.damageType, "physical"), { fallback: "physical" });
   const friendlyFireMode = resolveAoeFriendlyFireMode(
     source.friendlyFireMode,
     source.friendlyFire,
@@ -191,10 +263,12 @@ export function normalizeAoeConfig(raw = null, defaults = {}) {
     defaults.friendlyFire,
     "off",
   );
-  const targetZoneMode = normalizeAoeTargetZoneMode(
+  const targetZone = resolveAoeTargetZone(source.targetZone, source.targetPart, defaults.targetZone, defaults.targetPart);
+  let targetZoneMode = normalizeAoeTargetZoneMode(
     firstDefined(source.targetZoneMode, source.zoneMode, defaults.targetZoneMode, defaults.zoneMode),
-    "random",
+    targetZone ? "fixed" : "random",
   );
+  if (targetZoneMode === "fixed" && !targetZone) targetZoneMode = "random";
 
   return {
     shape,
@@ -210,7 +284,7 @@ export function normalizeAoeConfig(raw = null, defaults = {}) {
       damageType,
       effect: firstDefined(source.effect, defaults.effect),
     }),
-    targetZone: resolveAoeTargetZone(source.targetZone, source.targetPart, defaults.targetZone, defaults.targetPart),
+    targetZone,
     targetZoneMode,
     damageType,
   };

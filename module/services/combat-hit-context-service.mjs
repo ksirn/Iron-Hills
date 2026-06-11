@@ -7,6 +7,10 @@ import {
   getEquippedShield,
   resolveDefenseContext,
 } from "./combat-defense-context-service.mjs";
+import {
+  getAttackInjuryPenalty,
+  normalizeAttackMode,
+} from "./combat-attack-mode-service.mjs";
 import { isConditionActive } from "./condition-policy-service.mjs";
 
 function numberOr(value, fallback = 0) {
@@ -87,6 +91,8 @@ export function buildAttackRollContext(attacker, target, {
   skillKey = "unarmed",
   skillValueFallback = null,
   hitBonus = 0,
+  attackMode = null,
+  weapon = null,
   surroundCount = 0,
   targetToken = null,
   encumbrance = null,
@@ -100,9 +106,10 @@ export function buildAttackRollContext(attacker, target, {
   const dieSize = Math.max(2, skillValue * 2);
   const resolvedEncumbrance = encumbrance ?? getEncumbranceInfo(attacker);
   const resolvedInjuries = injuries ?? getActorInjuryInfo(attacker);
+  const resolvedAttackMode = normalizeAttackMode(attackMode, { skillKey, weapon });
   const attackPenalty =
     numberOr(resolvedEncumbrance?.attackPenalty, 0) +
-    numberOr(resolvedInjuries?.meleePenalty ?? resolvedInjuries?.attackPenalty, 0);
+    numberOr(getAttackInjuryPenalty(resolvedInjuries, resolvedAttackMode), 0);
   const resolvedHitBonus = numberOr(hitBonus, 0);
   const targetDefense = buildTargetDefenseContext(target, {
     targetToken,
@@ -116,6 +123,7 @@ export function buildAttackRollContext(attacker, target, {
   return {
     skill,
     skillValue,
+    attackMode: resolvedAttackMode,
     dieSize,
     encumbrance: resolvedEncumbrance,
     injuries: resolvedInjuries,
@@ -132,6 +140,8 @@ export function calculateHitChance(attacker, target, {
   skillKey = "unarmed",
   hitBonus = 0,
   skillValueFallback = null,
+  attackMode = null,
+  weapon = null,
   surroundCount = 0,
   targetToken = null,
   encumbrance = null,
@@ -142,6 +152,8 @@ export function calculateHitChance(attacker, target, {
     skillKey,
     hitBonus,
     skillValueFallback,
+    attackMode,
+    weapon,
     surroundCount,
     targetToken,
     encumbrance,

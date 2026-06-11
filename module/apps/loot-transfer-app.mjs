@@ -4,11 +4,15 @@
  * Предметы можно только drag&drop-ом перетаскивать между секциями.
  * Никакого "взять всё", никакого списка — только сетки инвентаря.
  */
-import { buildContainers } from "./grid-inventory-app.mjs";
+import {
+  IronHillsGridInventoryApp,
+  buildContainers,
+  getPendingItemsForActor,
+} from "./grid-inventory-app.mjs";
 import { getPersistentActor } from "../utils/actor-utils.mjs";
-import { addItemToActorOrStack } from "../services/trade-service.mjs";
 import {
   canEquipItemInSlot,
+  clearActorItemReferences,
   EQUIPMENT_SLOT_DEFS,
   equipActorItem,
   moveItemToInventorySection,
@@ -22,6 +26,19 @@ import {
 } from "../services/wilderness-service.mjs";
 
 const CELL = 40; // чуть меньше чем в основном инвентаре
+
+function resolveLiveActor(actor) {
+  return getPersistentActor(actor) ?? actor ?? null;
+}
+
+async function deleteTransferredItem(actor, item) {
+  if (!item || item.pack || typeof item.delete !== "function") return;
+  const liveActor = resolveLiveActor(actor ?? item.actor);
+  if (liveActor?.id) {
+    await clearActorItemReferences(liveActor, item.id).catch(() => {});
+  }
+  await item.delete();
+}
 
 class IronHillsLootTransfer extends Application {
 
@@ -70,7 +87,7 @@ class IronHillsLootTransfer extends Application {
       delete data._id;
       if (data.flags?.["iron-hills-system"]) data.flags["iron-hills-system"] = {};
       await Item.create(data, { parent: pile });
-      if (typeof item.delete === "function") await item.delete();
+      await deleteTransferredItem(actorSrc, item);
     }
     if (canvas?.scene) {
       await canvas.scene.createEmbeddedDocuments("Token", [{
@@ -90,6 +107,9 @@ class IronHillsLootTransfer extends Application {
 
     const leftEquip  = this._buildEquipSlots(this._left);
     const rightEquip = rightIsActor ? this._buildEquipSlots(this._right) : [];
+    const rightContainers = rightIsActor ? buildContainers(this._right) : [];
+    const rightSections = rightIsActor ? this._buildSections(this._right, rightContainers) : [];
+    const rightLooseItems = rightIsActor ? this._buildLooseItems(this._right, rightContainers) : [];
 
     const harvestUi = buildLootTransferHarvestPresentation(this._left, this._right);
     const pickpocketUi = buildLootTransferPickpocketPresentation(this._left, this._right);
@@ -105,7 +125,8 @@ class IronHillsLootTransfer extends Application {
       leftEquip,
       rightEquip,
       leftSections:  this._buildSections(this._left),
-      rightSections: rightIsActor ? this._buildSections(this._right) : [],
+      rightSections,
+      rightLooseItems,
       stashGrid: rightIsContainer ? this._buildContainerList(this._right) : null,
       cellSize: CELL,
       harvestUi,
@@ -207,9 +228,9 @@ class IronHillsLootTransfer extends Application {
   }
 
 
-  _buildSections(actor) {
+  _buildSections(actor, containers = null) {
     if (!actor) return [];
-    const conts = buildContainers(actor);
+    const conts = containers ?? buildContainers(actor);
     const equip = actor.system?.equipment ?? {};
 
     return conts.flatMap(cont =>
@@ -255,6 +276,23 @@ class IronHillsLootTransfer extends Application {
   }
 
   // ── Listeners ─────────────────────────────────────────────
+  _buildLooseItems(actor, containers = null) {
+    if (!actor) return [];
+    const conts = containers ?? buildContainers(actor);
+    return getPendingItemsForActor(actor, conts).map(item => ({
+      itemId: item.id,
+      actorId: actor.id,
+      secKey: "__loose__",
+      name: item.name,
+      img: item.img ?? "icons/svg/item-bag.svg",
+      type: item.type,
+      tier: item.system?.tier ?? 1,
+      qty: item.system?.quantity ?? 1,
+      w: Number(item.system?.gridW ?? 1),
+      h: Number(item.system?.gridH ?? 1),
+    }));
+  }
+
   activateListeners(html) {
     super.activateListeners(html);
 
@@ -344,6 +382,7 @@ class IronHillsLootTransfer extends Application {
         if (item) {
           await IronHillsLootTransfer.dropToGround([item], srcActor);
           this._drag = null;
+          await this._refreshAfterInventoryChange(srcActor);
           this.render(false);
         }
       });
@@ -419,6 +458,28 @@ class IronHillsLootTransfer extends Application {
   }
 
   // ── Экипировка предмета в слот ───────────────────────────
+  async _refreshAfterInventoryChange(...actors) {
+    const liveActors = [];
+    const seen = new Set();
+    for (const actor of actors) {
+      const live = resolveLiveActor(actor);
+      if (!live?.id || seen.has(live.id)) continue;
+      seen.add(live.id);
+      liveActors.push(live);
+    }
+
+    for (const actor of liveActors) {
+      IronHillsGridInventoryApp.findOpenForActor(actor)?.render(false);
+    }
+
+    const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
+    if (PendingItemsApp) {
+      for (const actor of liveActors) {
+        if (actor.type === "character") await PendingItemsApp.openIfNeeded(actor);
+      }
+    }
+  }
+
   async _doEquip(slotKey, targetActorId) {
     if (!this._drag) return;
     const { itemId, actorId: srcActorId, fromEquip } = this._drag;
@@ -464,10 +525,12 @@ class IronHillsLootTransfer extends Application {
       const data = item.toObject();
       delete data._id;
       foundry.utils.setProperty(data, "flags.iron-hills-system", {});
-      const shouldPlaceInGrid = Boolean(targetSecKey && targetSecKey !== "__stash__");
-      const created = shouldPlaceInGrid
-        ? await Item.create(data, { parent: dstActor })
-        : await addItemToActorOrStack(dstActor, data);
+      const createdItems = await dstActor.createEmbeddedDocuments("Item", [data]);
+      const created = createdItems?.[0] ?? null;
+      if (!created) {
+        ui.notifications.warn("Не удалось перенести предмет в слот экипировки.");
+        return;
+      }
 
       const CONTAINER_TYPES = ["backpack", "belt"];
       if (owner && CONTAINER_TYPES.includes(item.type)) {
@@ -479,13 +542,13 @@ class IronHillsLootTransfer extends Application {
         for (const ci of contents) {
           const cd = ci.toObject();
           delete cd._id;
-          await Item.create(cd, { parent: dstActor });
-          await ci.delete();
+          await dstActor.createEmbeddedDocuments("Item", [cd]);
+          await deleteTransferredItem(owner, ci);
         }
       }
 
       const removeFrom = owner ?? srcActor;
-      if (removeFrom && !item.pack && typeof item.delete === "function") await item.delete();
+      await deleteTransferredItem(removeFrom, item);
       item = created;
     }
 
@@ -498,6 +561,7 @@ class IronHillsLootTransfer extends Application {
 
     // Перекладка между слотами на том же актёре без клонирования — очистить старый слот
 
+    await this._refreshAfterInventoryChange(dstActor, srcActor);
     this.render(false);
   }
 
@@ -561,7 +625,7 @@ class IronHillsLootTransfer extends Application {
           ? { sectionKey: targetSecKey, gridPos: { col, row } }
           : {}
       );
-      const created = await Item.create(data, { parent: dstActor });
+      await dstActor.createEmbeddedDocuments("Item", [data]);
 
       // Переносим содержимое рюкзака/пояса вместе с ним
       const CONTAINER_TYPES = ["backpack", "belt"];
@@ -575,14 +639,15 @@ class IronHillsLootTransfer extends Application {
           const cd = ci.toObject();
           delete cd._id;
           // Сохраняем относительную позицию внутри контейнера
-          await Item.create(cd, { parent: dstActor });
-          await ci.delete();
+          await dstActor.createEmbeddedDocuments("Item", [cd]);
+          await deleteTransferredItem(srcActor, ci);
         }
       }
 
-      if (srcActor && !item.pack) await item.delete();
+      await deleteTransferredItem(srcActor, item);
     }
 
+    await this._refreshAfterInventoryChange(dstActor, srcActor);
     this.render(false);
   }
   // ── Открыть вложенный контейнер (рюкзак внутри лута) ─────

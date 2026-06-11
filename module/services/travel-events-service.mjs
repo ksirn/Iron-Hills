@@ -11,6 +11,11 @@
 
 // ─── Таблицы событий ────────────────────────────────────────────
 
+import {
+  buildCombatChatCard,
+  buildCombatParagraphs,
+} from "./combat-chat-service.mjs";
+
 const ROAD_EVENTS = [
   // Мирные (60%)
   { id:"merchant_caravan",  chance:15, label:"🐂 Торговый Обоз",      type:"encounter_friendly" },
@@ -239,33 +244,37 @@ export async function presentTravelEvent(ev, stepNum, totalSteps) {
   const dangerStars = danger > 0 ? " " + "⭐".repeat(danger) : "";
 
   // Сообщение в чат для всех
-  const playerMsg = `
-    <div style="padding:8px;border-left:3px solid #5b9cf6;background:rgba(91,156,246,0.08)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px">
-        ${icon} ${event.label}${dangerStars}
-        <span style="font-size:10px;color:#a8b8d0;font-weight:400">
-          — Тайл ${stepNum}/${totalSteps}
-        </span>
-      </div>
-      <div style="font-size:12px;color:#c8d8f0">${details.desc}</div>
-      ${details.options?.length > 0
-        ? `<div style="margin-top:6px;font-size:10px;color:#a8b8d0">
-            Варианты: ${details.options.join(" · ")}
-           </div>`
-        : ""}
-    </div>`;
+  const playerMsg = buildCombatChatCard({
+    title: event.label,
+    subtitle: `Тайл ${stepNum}/${totalSteps}`,
+    icon,
+    status: dangerStars.trim(),
+    bodyHtml: buildCombatParagraphs([details.desc]),
+    notices: details.options?.length > 0
+      ? [["Варианты", details.options.join(" · ")]]
+      : [],
+    className: "ih-travel-event-card",
+  });
 
   await ChatMessage.create({ content: playerMsg });
 
   // Подсказка для GM (whisper)
   if (game.user?.isGM && details.gm) {
     await ChatMessage.create({
-      content: `<div style="padding:6px;background:rgba(250,204,21,0.1);border-left:3px solid #facc15">
-        🎲 <b>GM:</b> ${details.gm}
-        ${details.delay     ? `<br>⏱ +${details.delay}ч к пути`    : ""}
-        ${details.reward    ? `<br>🎁 Награда: ${JSON.stringify(details.reward)}` : ""}
-        ${details.timeBonus ? `<br>✅ -${details.timeBonus}ч к пути` : ""}
-      </div>`,
+      content: buildCombatChatCard({
+        title: "GM",
+        subtitle: event.label,
+        icon: "🎲",
+        status: "подсказка",
+        statusClass: "is-warn",
+        bodyHtml: buildCombatParagraphs([details.gm]),
+        rows: [
+          ["Задержка", `+${details.delay}ч к пути`, Boolean(details.delay)],
+          ["Награда", JSON.stringify(details.reward), Boolean(details.reward)],
+          ["Бонус времени", `-${details.timeBonus}ч к пути`, Boolean(details.timeBonus)],
+        ],
+        className: "ih-travel-event-card",
+      }),
       whisper: ChatMessage.getWhisperRecipients("GM"),
     });
   }

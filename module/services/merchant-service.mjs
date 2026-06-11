@@ -10,8 +10,22 @@
  *  5 — Столица      (всё до митрила, любые заклинания)
  */
 
-import { WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, MATERIALS } from "../constants/items-catalog.mjs";
-import { SPELLS } from "../constants/spells-catalog.mjs";
+import {
+  ARMORS,
+  ATTACHMENTS,
+  BACKPACKS,
+  BELTS,
+  CONSUMABLES,
+  FOOD,
+  MATERIALS,
+  POTIONS,
+  THROWABLES,
+  TOOLS,
+  WEAPONS,
+} from "../constants/items-catalog.mjs";
+import { SPELLS, normalizeSpellSchoolKey } from "../constants/spells-catalog.mjs";
+import { buildShopStockEntry, normalizeItemDataForInventory } from "../utils/catalog-item-data.mjs";
+import { catalogItemDataFromId } from "../utils/loot-line-items.mjs";
 
 // ── Типы торговцев ──────────────────────────────────────────
 export const MERCHANT_TYPES = {
@@ -48,13 +62,13 @@ export const MERCHANT_COINS_BY_TIER = {
 
 // ── Количество позиций по типу торговца ─────────────────────
 const STOCK_SIZE = {
-  general:    { weapons:3, armor:3, potions:4, food:6, tools:4, materials:4 },
-  weaponsmith:{ weapons:10,armor:0, potions:0, food:0, tools:2, materials:3 },
-  armorsmith: { weapons:0, armor:10,potions:0, food:0, tools:2, materials:3 },
-  alchemist:  { weapons:0, armor:0, potions:8, food:2, tools:3, materials:5 },
-  mage:       { weapons:0, armor:0, potions:4, food:0, tools:0, materials:4, spells:8 },
-  jeweler:    { weapons:0, armor:2, potions:0, food:0, tools:0, materials:8 },
-  blackmarket:{ weapons:5, armor:3, potions:3, food:0, tools:2, materials:5 },
+  general:    { weapons:3, armor:3, potions:4, food:6, tools:4, materials:4, consumables:4, throwables:1, belts:2, backpacks:2, attachments:3 },
+  weaponsmith:{ weapons:10,armor:0, potions:0, food:0, tools:2, materials:3, consumables:1, throwables:2, belts:1, backpacks:0, attachments:4 },
+  armorsmith: { weapons:0, armor:10,potions:0, food:0, tools:2, materials:3, consumables:1, throwables:0, belts:2, backpacks:1, attachments:2 },
+  alchemist:  { weapons:0, armor:0, potions:8, food:2, tools:3, materials:5, consumables:5, throwables:4, belts:1, backpacks:1, attachments:2 },
+  mage:       { weapons:0, armor:0, potions:4, food:0, tools:0, materials:4, spells:8, consumables:2, throwables:1, belts:0, backpacks:0, attachments:1 },
+  jeweler:    { weapons:0, armor:2, potions:0, food:0, tools:0, materials:8, consumables:0, throwables:0, belts:1, backpacks:0, attachments:1 },
+  blackmarket:{ weapons:5, armor:3, potions:3, food:0, tools:2, materials:5, consumables:3, throwables:4, belts:2, backpacks:1, attachments:4 },
 };
 
 // ── Наценка по типу торговца ────────────────────────────────
@@ -67,6 +81,167 @@ const PRICE_MULT = {
   jeweler:    1.4,
   blackmarket:0.8, // дешевле но сомнительного происхождения
 };
+
+function stockQuantity(rand, max, stockScale = 1) {
+  return Math.max(1, Math.ceil(rand() * max * stockScale));
+}
+
+function pushCatalogStock(stock, row, itemType, quantity, priceMultiplier) {
+  const entry = buildShopStockEntry(row, itemType, { quantity, priceMultiplier });
+  if (entry) stock.push(entry);
+}
+
+function tierPool(rows, maxTier, predicate = () => true) {
+  return Object.values(rows ?? {}).filter((row) => {
+    const tier = Number(row?.tier ?? row?.rank ?? 1);
+    if (!Number.isFinite(tier) || tier > maxTier) return false;
+    try {
+      return predicate(row);
+    } catch (_err) {
+      return false;
+    }
+  });
+}
+
+function stockCatalogType(item = {}) {
+  return String(
+    item.catalogType
+      ?? item.itemType
+      ?? item.type
+      ?? item.itemData?.type
+      ?? ""
+  ).trim();
+}
+
+function stockCatalogId(item = {}) {
+  return String(
+    item.catalogId
+      ?? item.itemData?.flags?.["iron-hills-system"]?.catalogId
+      ?? item.itemData?.system?.spellId
+      ?? item.itemData?.system?.catalogId
+      ?? item.id
+      ?? ""
+  ).trim();
+}
+
+function legacyShopItemSystem(item = {}) {
+  const itemType = stockCatalogType(item);
+  return {
+    ...(item.system && typeof item.system === "object" ? item.system : {}),
+    tier: item.tier ?? item.rank ?? item.system?.tier ?? 1,
+    weight: item.weight ?? item.system?.weight ?? 0,
+    quantity: item.qty ?? item.quantity ?? item.system?.quantity ?? 1,
+    value: item.value ?? item.system?.value ?? 0,
+    quality: item.quality ?? item.system?.quality ?? "common",
+    ...(itemType === "weapon" && {
+      damage: item.damage,
+      damageType: item.damageType ?? "physical",
+      skill: item.skill,
+      energyCost: item.energyCost,
+      timeCost: item.timeCost ?? 2,
+      twoHanded: item.twoHanded ?? false,
+      range: item.range,
+    }),
+    ...(itemType === "spell" && {
+      spellId: item.id,
+      school: normalizeSpellSchoolKey(item.school, { fallback: item.school }),
+      rank: item.rank ?? item.tier,
+      manaCost: item.manaCost,
+      castTime: item.castTime,
+      damage: item.damage ?? 0,
+      damageType: item.damageType ?? "magical",
+      effectType: Number(item.damage ?? 0) > 0 ? "damage" : (item.effect?.special === "heal" ? "heal" : ""),
+      effect: item.effect ?? null,
+      power: Number(item.damage ?? 0) > 0 ? Number(item.damage ?? 0) : Number(item.effect?.healAmount ?? 0),
+      targetPart: item.targetPart ?? item.targetZone ?? "torso",
+      targetZone: item.targetZone ?? item.targetPart ?? "",
+      friendlyFire: Boolean(item.friendlyFire ?? item.aoe?.friendlyFire ?? false),
+      friendlyFireMode: item.aoe?.friendlyFireMode ?? item.friendlyFireMode ?? "off",
+      aoe: item.aoe ?? null,
+    }),
+    ...(itemType === "scroll" && {
+      spellId: item.id,
+      school: normalizeSpellSchoolKey(item.school, { fallback: item.school }),
+      rank: item.rank ?? item.tier ?? 1,
+      manaCost: 0,
+      energyCost: item.energyCost ?? 0,
+      castTime: item.castTime ?? 0,
+      damage: item.damage ?? item.power ?? 0,
+      damageType: item.damageType ?? "magical",
+      effectType: item.effectType ?? (Number(item.damage ?? item.power ?? 0) > 0 ? "damage" : ""),
+      effect: item.effect ?? null,
+      power: item.power ?? item.damage ?? 1,
+      targetPart: item.targetPart ?? item.targetZone ?? "torso",
+      targetZone: item.targetZone ?? "",
+      friendlyFire: Boolean(item.friendlyFire ?? item.aoe?.friendlyFire ?? false),
+      friendlyFireMode: item.aoe?.friendlyFireMode ?? item.friendlyFireMode ?? "off",
+      aoe: item.aoe ?? null,
+    }),
+    ...(itemType === "throwable" && {
+      effectType: item.effectType ?? "damage",
+      damageType: item.damageType ?? "physical",
+      power: item.power ?? item.damage ?? 2,
+      energyCost: item.energyCost ?? 8,
+      targetPart: item.targetPart ?? "torso",
+      targetZone: item.targetZone ?? "",
+      friendlyFire: Boolean(item.friendlyFire ?? false),
+      friendlyFireMode: item.friendlyFireMode ?? item.aoe?.friendlyFireMode ?? "off",
+      aoe: item.aoe ?? null,
+      appliesPoison: item.appliesPoison ?? item.poison ?? 0,
+      appliesBurning: item.appliesBurning ?? item.burning ?? 0,
+    }),
+    ...(itemType === "consumable" && {
+      effect: item.effect ?? item.effectType ?? item.actionType ?? "bandage",
+      effectType: item.effectType ?? item.effect ?? item.actionType ?? "bandage",
+      actionType: item.actionType ?? "",
+      applicationScope: item.applicationScope ?? "",
+      targetActorMode: item.targetActorMode ?? "",
+      targetPart: item.targetPart ?? "",
+      power: item.power ?? 1,
+    }),
+  };
+}
+
+export function buildShopPurchaseItemData(item) {
+  const quantity = Math.max(1, Math.floor(Number(item?.qty ?? item?.quantity ?? item?.itemData?.system?.quantity ?? 1)));
+
+  if (item?.itemData) {
+    return normalizeItemDataForInventory(item.itemData, { quantity });
+  }
+
+  const catalogType = stockCatalogType(item);
+  const catalogId = stockCatalogId(item);
+  const catalogItem = catalogItemDataFromId(catalogType, catalogId, { quantity });
+  if (catalogItem) return catalogItem;
+
+  const typeMap = {
+    weapon: "weapon",
+    armor: "armor",
+    potion: "potion",
+    food: "food",
+    tool: "tool",
+    material: "material",
+    spell: "spell",
+    scroll: "scroll",
+    throwable: "throwable",
+    consumable: "consumable",
+    medical: "consumable",
+    medical_consumable: "consumable",
+    drink_vessel: "consumable",
+    belt: "belt",
+    backpack: "backpack",
+    attachment: "attachment",
+    resource: "resource",
+  };
+
+  return normalizeItemDataForInventory({
+    name: item?.label ?? item?.name ?? "Item",
+    type: typeMap[catalogType] ?? "material",
+    img: item?.img,
+    flags: item?.flags,
+    system: legacyShopItemSystem({ ...item, qty: quantity }),
+  }, { quantity });
+}
 
 /**
  * Сгенерировать ассортимент торговца
@@ -109,8 +284,7 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(economy.status === "war" ? 1.2 : 0.9)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"weapon", qty: 1,
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "weapon", 1, effectivePrice);
     }
   }
 
@@ -121,8 +295,7 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(0.85)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"armor", qty: 1,
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "armor", 1, effectivePrice);
     }
   }
 
@@ -133,9 +306,7 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(economy.status === "plague" ? 0.3 : 0.8)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"potion",
-        qty: Math.max(1, Math.ceil(rand() * 3 * stockScale)),
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "potion", stockQuantity(rand, 3, stockScale), effectivePrice);
     }
   }
 
@@ -147,9 +318,7 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(foodScale)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"food",
-        qty: Math.max(1, Math.ceil(rand() * 5 * stockScale)),
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "food", stockQuantity(rand, 5, stockScale), effectivePrice);
     }
   }
 
@@ -160,9 +329,7 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(0.75)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"tool",
-        qty: Math.max(1, Math.ceil(rand() * 2 * stockScale)),
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "tool", stockQuantity(rand, 2, stockScale), effectivePrice);
     }
   }
 
@@ -173,13 +340,61 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(0.8)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"material",
-        qty: Math.max(1, Math.ceil(rand() * 5 * stockScale)),
-        shopPrice: Math.ceil(item.value * effectivePrice) });
+      pushCatalogStock(stock, item, "material", stockQuantity(rand, 5, stockScale), effectivePrice);
     }
   }
 
-  // Заклинания
+  // Tarkov inventory support items.
+  if (sizes.consumables) {
+    const pool = tierPool(CONSUMABLES, maxTier);
+    const count = scaledSize(sizes.consumables);
+    for (let i = 0; i < count && pool.length; i++) {
+      if (!inStock(economy.status === "plague" ? 0.45 : 0.75)) continue;
+      const item = pick(pool);
+      const qty = item.kind === "drink_vessel" || item.vesselMax !== undefined
+        ? 1
+        : stockQuantity(rand, 3, stockScale);
+      pushCatalogStock(stock, item, "consumable", qty, effectivePrice);
+    }
+  }
+
+  if (sizes.throwables) {
+    const pool = tierPool(THROWABLES, maxTier);
+    const count = scaledSize(sizes.throwables);
+    for (let i = 0; i < count && pool.length; i++) {
+      if (!inStock(economy.status === "war" ? 1.15 : 0.75)) continue;
+      pushCatalogStock(stock, pick(pool), "throwable", stockQuantity(rand, 2, stockScale), effectivePrice);
+    }
+  }
+
+  if (sizes.belts) {
+    const pool = tierPool(BELTS, maxTier);
+    const count = scaledSize(sizes.belts);
+    for (let i = 0; i < count && pool.length; i++) {
+      if (!inStock(0.75)) continue;
+      pushCatalogStock(stock, pick(pool), "belt", 1, effectivePrice);
+    }
+  }
+
+  if (sizes.backpacks) {
+    const pool = tierPool(BACKPACKS, maxTier);
+    const count = scaledSize(sizes.backpacks);
+    for (let i = 0; i < count && pool.length; i++) {
+      if (!inStock(0.7)) continue;
+      pushCatalogStock(stock, pick(pool), "backpack", 1, effectivePrice);
+    }
+  }
+
+  if (sizes.attachments) {
+    const pool = tierPool(ATTACHMENTS, maxTier);
+    const count = scaledSize(sizes.attachments);
+    for (let i = 0; i < count && pool.length; i++) {
+      if (!inStock(0.8)) continue;
+      pushCatalogStock(stock, pick(pool), "attachment", stockQuantity(rand, 2, stockScale), effectivePrice);
+    }
+  }
+
+  // Spells.
   if (sizes.spells) {
     const maxRank = Math.min(10, settlementTier * 2);
     const pool = Object.values(SPELLS).filter(s => s.rank <= maxRank);
@@ -187,12 +402,34 @@ export function generateMerchantStock(merchantType, settlementTier = 1, seed = 0
     for (let i = 0; i < count && pool.length; i++) {
       if (!inStock(0.7)) continue;
       const item = pick(pool);
-      stock.push({ ...item, itemType:"spell", qty: 1,
-        shopPrice: Math.ceil(item.rank * 100 * effectivePrice) });
+      pushCatalogStock(stock, item, "spell", 1, effectivePrice);
     }
   }
 
   return { stock, economy: econState };
+}
+
+export function generateMerchantActorStockItems(merchantType, settlementTier = 1, options = {}) {
+  const seed = Number(options.seed ?? 0) || 0;
+  const generated = generateMerchantStock(
+    merchantType,
+    settlementTier,
+    seed,
+    options.settlementId ?? null,
+    options.economyStatus ?? null
+  );
+
+  const allStock = Array.isArray(generated?.stock) ? generated.stock : [];
+  const limit = Number(options.limit);
+  const selectedStock = Number.isFinite(limit)
+    ? allStock.slice(0, Math.max(0, Math.floor(limit)))
+    : allStock;
+
+  return {
+    stock: selectedStock,
+    economy: generated?.economy,
+    items: selectedStock.map((entry) => buildShopPurchaseItemData(entry)).filter(Boolean),
+  };
 }
 
 /**

@@ -4,6 +4,12 @@
  * Игроки: квесты группы + квесты локации где находится группа.
  */
 import { getPartyGroups, getMembersOfGroup } from "../services/party-manager.mjs";
+import {
+  buildSystemDialogContent,
+  buildSystemDialogForm,
+  buildSystemDialogInput,
+  buildSystemDialogSelectField,
+} from "../services/combat-chat-service.mjs";
 import { EntityPickerDialog } from "./entity-picker.mjs";
 
 /**
@@ -272,7 +278,12 @@ class IronHillsQuestBoardApp extends Application {
 
       const chosen = await Dialog.wait({
         title:   "Назначить группу",
-        content: `<p style="color:#a8b8d0">Выбери группу для квеста <b>${quest.name}</b></p>`,
+        content: buildSystemDialogContent({
+          className: "ih-quest-assign-dialog",
+          headline: quest.name,
+          headlineMeta: "назначение группы",
+          status: "Выберите группу",
+        }),
         buttons,
         default: groups[0]?.id
       });
@@ -327,27 +338,33 @@ class IronHillsQuestBoardApp extends Application {
       // Запрашиваем базовые данные
       const result = await Dialog.wait({
         title:   "Новое задание",
-        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;display:flex;flex-direction:column;gap:8px;padding:4px;">
-          <label>Название<br>
-            <input id="qb-name" type="text" placeholder="Название задания"
-              style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;margin-top:3px;">
-          </label>
-          <label>Тип
-            <select id="qb-type" style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;margin-top:3px;">
-              <option value="combat">⚔ Боевое</option>
-              <option value="exploration">🗺 Исследование</option>
-              <option value="social">💬 Социальное</option>
-              <option value="delivery">📦 Доставка</option>
-              <option value="investigation">🔍 Расследование</option>
-              <option value="escort">🛡 Сопровождение</option>
-              <option value="work">⚒ Работа</option>
-            </select>
-          </label>
-          <label>Сложность (1-10)
-            <input id="qb-diff" type="number" min="1" max="10" value="3"
-              style="width:80px;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:6px;border-radius:6px;margin-top:3px;">
-          </label>
-        </div>`,
+        content: buildSystemDialogContent({
+          className: "ih-quest-create-dialog",
+          headline: "Новое задание",
+          headlineMeta: "ручное создание",
+          formHtml: buildSystemDialogForm([
+            buildSystemDialogInput({
+              id: "qb-name",
+              label: "Название",
+              placeholder: "Название задания",
+            }),
+            buildSystemDialogSelectField({
+              name: "qb-type",
+              label: "Тип",
+              options: Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label })),
+              selectedValue: "combat",
+            }),
+            buildSystemDialogInput({
+              id: "qb-diff",
+              type: "number",
+              label: "Сложность (1-10)",
+              value: 3,
+              min: 1,
+              max: 10,
+              className: "is-compact",
+            }),
+          ]),
+        }),
         buttons: {
           create: {
             label: "Создать",

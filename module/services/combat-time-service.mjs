@@ -47,7 +47,7 @@ export function getCombatActionSeconds(actionType, item = null) {
     return Number(item?.system?.actionSeconds ?? 2);
   }
 
-  if (actionType === "consumable") {
+  if (actionType === "consumable" || actionType === "use-consumable") {
     return Number(item?.system?.actionSeconds ?? 2);
   }
 

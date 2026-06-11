@@ -30,12 +30,18 @@ import {
   splitRelationsSummary,
 } from "./world-content-service.mjs";
 import {
+  buildActorMedicalTriage,
+  getBodyPartTraumaStatus,
+  getBodyTraumaPartLabel,
+} from "./body-trauma-service.mjs";
+import {
   isCombatActive,
   getCombatSummary,
   getActorCombatUiState,
   getActiveParticipant,
   getActorPendingAction,
 } from "./combat-flow-service.mjs";
+import { buildActorRecoveryPlan } from "./recovery-service.mjs";
 
 const SHEET_ITEM_TYPES = Object.freeze([
   "weapon",
@@ -206,7 +212,7 @@ function zoneTooltip(label, value, max, trauma) {
     ? `Сильное кровотечение пережато: ${trauma.majorBleeding}`
     : `Сильное кровотечение: ${trauma.majorBleeding}`);
   if (trauma.minorBleeding) parts.push(`Малое кровотечение: ${trauma.minorBleeding}`);
-  if (trauma.fracture) parts.push("Перелом");
+  if (trauma.rawFracture) parts.push(trauma.fractureSuppressed ? "Перелом стабилизирован" : "Перелом");
   if (trauma.tourniquet) parts.push("Жгут наложен");
   if (trauma.splinted) parts.push("Шина наложена");
   return parts.join(" | ");
@@ -216,20 +222,20 @@ function buildBodyZone(key, label, node) {
   const value = Number(node?.value ?? 0);
   const max = Number(node?.max ?? 0);
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const status = node?.status ?? {};
-  const majorBleeding = Number(status.majorBleeding ?? 0);
-  const tourniquet = Boolean(status.tourniquet);
+  const status = getBodyPartTraumaStatus({ system: { resources: { hp: { [key]: node } } } }, key);
   const trauma = {
-    minorBleeding: Number(status.minorBleeding ?? 0),
-    majorBleeding,
-    majorBleedingSuppressed: tourniquet && majorBleeding > 0,
-    majorBleedingTitle: tourniquet && majorBleeding > 0
-      ? `Сильн. кровь пережата ${majorBleeding}`
-      : `Сильн. кровь ${majorBleeding}`,
-    fracture: Boolean(status.fracture),
-    destroyed: Boolean(status.destroyed),
-    splinted: Boolean(status.splinted),
-    tourniquet
+    minorBleeding: status.minorBleeding,
+    majorBleeding: status.majorBleeding,
+    majorBleedingSuppressed: status.suppressedMajorBleeding > 0,
+    majorBleedingTitle: status.suppressedMajorBleeding > 0
+      ? `Сильн. кровь пережата ${status.majorBleeding}`
+      : `Сильн. кровь ${status.majorBleeding}`,
+    rawFracture: status.rawFracture,
+    fracture: status.fracture,
+    fractureSuppressed: status.fractureSuppressed,
+    destroyed: status.destroyed,
+    splinted: status.splinted,
+    tourniquet: status.tourniquet
   };
 
   return {
@@ -245,10 +251,14 @@ function buildBodyZone(key, label, node) {
 }
 
 function assignBodyContext(context, actor) {
-  if (actor.type !== "character" && actor.type !== "npc") return;
+  if (actor.type !== "character" && actor.type !== "npc") {
+    context.medicalTriage = null;
+    return;
+  }
 
   const hp = actor.system?.resources?.hp ?? {};
-  context.zones = BODY_PARTS.map(([key, label]) => buildBodyZone(key, label, hp[key]));
+  context.zones = BODY_PARTS.map(([key, label]) => buildBodyZone(key, getBodyTraumaPartLabel(key) || label, hp[key]));
+  context.medicalTriage = buildActorMedicalTriage(actor);
 }
 
 function assignMonsterContext(context, actor) {
@@ -402,6 +412,7 @@ export async function buildActorSheetDataContext({
   await assignDiseaseContext(context, actor);
 
   context.tradeSummary = buildTradeSummary(actor);
+  context.recoveryPlan = buildActorRecoveryPlan(actor);
   context.quickSlotsUnlocked = getQuickSlotsUnlocked(actor);
   context.quickSlotBonus = getQuickSlotBonusFromItems(actor);
   context.quickSlotCarrierItems = buildQuickSlotCarrierItems(actor);

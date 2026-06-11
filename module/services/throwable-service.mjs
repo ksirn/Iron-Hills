@@ -9,6 +9,11 @@ import {
   formatAttackChatHtml,
   resolveSingleAttack,
 } from "./combat-attack-service.mjs";
+import { createCombatChatMessage, joinCombatHtml } from "./combat-chat-service.mjs";
+import {
+  isShieldBlockableDamageType,
+  normalizeDamageType,
+} from "./damage-type-service.mjs";
 import { isCombatActive } from "./combat-flow-service.mjs";
 import {
   applyHitEffects,
@@ -23,7 +28,7 @@ import {
   getThrowableAoeConfig,
 } from "./item-effect-service.mjs";
 import {
-  buildCombatTargetPayload,
+  buildCombatActionTargetPayload,
   getPrimaryCombatTargetActor,
   resolveCombatActionTargets,
 } from "./combat-action-target-service.mjs";
@@ -35,15 +40,40 @@ function throwableResult({
   consumedItem = false,
   aoe = false,
   result = null,
+  summary = null,
   reason = "",
 } = {}) {
-  return { ok, queued, consumedItem, aoe, result, reason };
+  return { ok, queued, consumedItem, aoe, result, summary, reason };
 }
 
 function getThrowableItem(actor, itemOrId) {
   if (!actor) return null;
   if (typeof itemOrId === "string") return actor.items?.get(itemOrId) ?? null;
   return itemOrId ?? null;
+}
+
+function buildThrowableUseSummary({
+  item,
+  mode = "single",
+  target = null,
+  result = null,
+  summary = null,
+  consumedItem = false,
+} = {}) {
+  return {
+    itemId: item?.id ?? null,
+    itemName: item?.name ?? "",
+    itemType: item?.type ?? "throwable",
+    mode,
+    consumedItem: Boolean(consumedItem),
+    targetId: target?.id ?? null,
+    targetName: target?.name ?? "",
+    hit: result?.hit ?? null,
+    finalDamage: Number(result?.finalDamage ?? 0),
+    locationKey: result?.locationKey ?? null,
+    locationLabel: result?.locationLabel ?? "",
+    aoe: summary ?? null,
+  };
 }
 
 async function consumeThrowable(actor, item, applySkillExp = null, afterUse = null) {
@@ -64,6 +94,9 @@ export async function useThrowableItem({
   applySkillExp = null,
   onLethal = null,
   afterUse = null,
+  targetZone = null,
+  targetPart = null,
+  targetZoneMode = null,
 } = {}) {
   const throwable = getThrowableItem(actor, item ?? itemId);
   if (!throwable || throwable.type !== "throwable") {
@@ -119,7 +152,12 @@ export async function useThrowableItem({
       item: throwable,
       payload: {
         itemId: throwable.id,
-        ...buildCombatTargetPayload(selectedTargets),
+        ...buildCombatActionTargetPayload({
+          targets: selectedTargets,
+          targetZone,
+          targetPart,
+          targetZoneMode,
+        }),
       },
     });
 
@@ -127,10 +165,15 @@ export async function useThrowableItem({
     if (!timeState?.ok) return throwableResult({ ok: false, reason: "time-cost" });
   }
 
-  const targetPart = resolveAoeTargetZone(throwable.system?.targetZone, throwable.system?.targetPart);
-  const damageType = String(throwable.system?.damageType ?? "physical").toLowerCase() === "physical"
-    ? "physical"
-    : "magical";
+  const resolvedTargetPart = resolveAoeTargetZone(
+    targetZone,
+    targetPart,
+    throwableAoe?.targetZone,
+    throwable.system?.targetZone,
+    throwable.system?.targetPart
+  );
+  const resolvedTargetZoneMode = targetZoneMode ?? throwableAoe?.targetZoneMode ?? throwable.system?.targetZoneMode ?? null;
+  const damageType = normalizeDamageType(throwable.system?.damageType, { fallback: "physical" });
   const power = Number(throwable.system?.power ?? 0);
   const poison = Number(throwable.system?.appliesPoison ?? 0);
   const burning = Number(throwable.system?.appliesBurning ?? 0);
@@ -148,6 +191,8 @@ export async function useThrowableItem({
       color: "#d6a84f",
       attacker: actor,
       skillKey: "throwing",
+      attackMode: "throw",
+      weapon: throwable,
       hitBonus: 0,
       injuries: {
         ...injuries,
@@ -161,9 +206,13 @@ export async function useThrowableItem({
       aoeType: throwableAoe.type,
       maxTargets: throwableAoe.maxTargets,
       chainDecay: throwableAoe.chainDecay,
-      targetZone: targetPart,
-      targetZoneMode: throwableAoe.targetZoneMode,
+      targetZone: resolvedTargetPart,
+      targetZoneMode: resolvedTargetZoneMode,
       effect: throwableEffect,
+      applyInjuries: true,
+      wearArmor: true,
+      shieldIntercept: isShieldBlockableDamageType(damageType),
+      onLethal,
       onTemplatePlaced: async () => actor.update({
         "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost),
       }),
@@ -171,7 +220,18 @@ export async function useThrowableItem({
     if (!aoeResult.ok) return throwableResult({ ok: false, aoe: true, result: aoeResult, reason: "aoe-cancelled" });
 
     await consumeThrowable(actor, throwable, applySkillExp, afterUse);
-    return throwableResult({ consumedItem: true, aoe: true, result: aoeResult });
+    return throwableResult({
+      consumedItem: true,
+      aoe: true,
+      result: aoeResult,
+      summary: buildThrowableUseSummary({
+        item: throwable,
+        mode: "aoe",
+        result: aoeResult,
+        summary: aoeResult.summary ?? null,
+        consumedItem: true,
+      }),
+    });
   }
 
   const attackResult = await resolveSingleAttack({
@@ -182,11 +242,12 @@ export async function useThrowableItem({
     damageType,
     energyCost,
     weapon: throwable,
-    targetZone: targetPart,
+    attackMode: "throw",
+    targetZone: resolvedTargetPart,
     spendEnergy: true,
     wearWeapon: false,
     wearArmor: true,
-    shieldIntercept: damageType === "physical",
+    shieldIntercept: isShieldBlockableDamageType(damageType),
     injuries: {
       ...injuries,
       attackPenalty: throwPenalty,
@@ -211,11 +272,21 @@ export async function useThrowableItem({
     result: attackResult,
   });
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: attackHtml + hitEffects.html,
+  await createCombatChatMessage({
+    actor,
+    content: joinCombatHtml(attackHtml, hitEffects.html),
   });
 
   await consumeThrowable(actor, throwable, applySkillExp, afterUse);
-  return throwableResult({ consumedItem: true, result: attackResult });
+  return throwableResult({
+    consumedItem: true,
+    result: attackResult,
+    summary: buildThrowableUseSummary({
+      item: throwable,
+      mode: "single",
+      target: targetActor,
+      result: attackResult,
+      consumedItem: true,
+    }),
+  });
 }

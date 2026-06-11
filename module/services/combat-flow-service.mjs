@@ -4,22 +4,78 @@ import {
   getPersistentActorUuid
 } from "../utils/actor-utils.mjs";
 import {
-  buildConditionUpdatePath,
+  applyActorTurnStartLifecycleTick,
   ensureActorBodyTraumaStatusStructure,
   getActorConditionValue,
-  hasActorBodyBleeding,
   refreshActorBodyTraumaStatus,
-  tickActorBodyTrauma,
-  tickActorOngoingDamage
 } from "./condition-service.mjs";
-import { PREPARED_TURN_START_CONDITIONS } from "./combat-prepared-state-service.mjs";
-import { getTurnStartSkipConditionDefinitions } from "./condition-policy-service.mjs";
 
 const DEFAULT_TURN_SECONDS = 6;
+const MIN_ACTION_SECONDS = 0.5;
 const ALLOWED_SIDES = new Set(["ally", "enemy", "neutral"]);
 
+function finiteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function roundSeconds(value) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+export function normalizeCombatActionSeconds(value, {
+  fallback = 1,
+  allowZero = false,
+  min = MIN_ACTION_SECONDS,
+} = {}) {
+  const raw = finiteNumber(value, fallback);
+  if (allowZero && raw <= 0) return 0;
+  return roundSeconds(Math.max(Number(min ?? MIN_ACTION_SECONDS), raw));
+}
+
+function normalizeAvailableSeconds(value, fallback = 0) {
+  return roundSeconds(Math.max(0, finiteNumber(value, fallback)));
+}
+
+export function resolvePendingActionProgress(pendingAction, availableSeconds = 0) {
+  const totalSeconds = normalizeCombatActionSeconds(pendingAction?.totalSeconds, {
+    fallback: 0,
+    allowZero: true,
+  });
+  const currentSpent = Math.min(totalSeconds, normalizeAvailableSeconds(pendingAction?.spentSeconds, 0));
+  const explicitRemaining = pendingAction?.remainingSeconds;
+  const remainingBefore = explicitRemaining !== undefined
+    ? normalizeAvailableSeconds(explicitRemaining, Math.max(0, totalSeconds - currentSpent))
+    : Math.max(0, totalSeconds - currentSpent);
+  const spendable = normalizeAvailableSeconds(availableSeconds, 0);
+  const spentNow = Math.min(spendable, remainingBefore);
+  const remainingAfterAction = roundSeconds(Math.max(0, remainingBefore - spentNow));
+  const spentAfter = roundSeconds(Math.min(totalSeconds, currentSpent + spentNow));
+  const remainingTurnSeconds = roundSeconds(Math.max(0, spendable - spentNow));
+
+  return {
+    totalSeconds,
+    neededSeconds: remainingBefore,
+    availableSeconds: spendable,
+    spentNow,
+    spentAfter,
+    remainingActionSeconds: remainingAfterAction,
+    remainingTurnSeconds,
+    completed: remainingAfterAction <= 0,
+    action: {
+      ...deepClone(pendingAction ?? {}),
+      totalSeconds,
+      spentSeconds: spentAfter,
+      remainingSeconds: remainingAfterAction,
+      awaitingConfirmation: false,
+    },
+  };
+}
+
 function deepClone(value) {
-  return foundry.utils.deepClone(value);
+  if (globalThis.foundry?.utils?.deepClone) return foundry.utils.deepClone(value);
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
 function nowStamp() {
@@ -27,7 +83,9 @@ function nowStamp() {
 }
 
 function randomId(prefix = "combat") {
-  return `${prefix}-${foundry.utils.randomID()}`;
+  const id = globalThis.foundry?.utils?.randomID?.()
+    ?? Math.random().toString(36).slice(2, 10);
+  return `${prefix}-${id}`;
 }
 
 const COMBAT_SETTING = "ironHillsCombatState";
@@ -74,7 +132,7 @@ function getCombatStateInternal() {
 let _combatUiRefreshScheduled = false;
 
 function forceRefreshOpenCombatWindows() {
-  const apps = game.ironHills?.apps ?? {};
+  const apps = globalThis.game?.ironHills?.apps ?? {};
 
   const refreshTargets = [
     apps.combatHud,
@@ -90,7 +148,7 @@ function forceRefreshOpenCombatWindows() {
     }
   }
 
-  for (const app of Object.values(ui.windows ?? {})) {
+  for (const app of Object.values(globalThis.ui?.windows ?? {})) {
     if (!app?.rendered) continue;
 
     const className = app.constructor?.name ?? "";
@@ -116,7 +174,8 @@ function scheduleCombatUiRefresh() {
   // Один debounced вызов через rAF — достаточно для синхронизации с браузерным циклом.
   // Тройной вызов (microtask + rAF + setTimeout) создавал лишние перерисовки и
   // промежуточные состояния UI после каждого изменения боевого состояния.
-  requestAnimationFrame(() => {
+  const scheduleFrame = globalThis.requestAnimationFrame ?? (callback => setTimeout(callback, 0));
+  scheduleFrame(() => {
     _combatUiRefreshScheduled = false;
     forceRefreshOpenCombatWindows();
   });
@@ -125,8 +184,8 @@ function scheduleCombatUiRefresh() {
 function notifyCombatUi() {
   const state = getCombatState();
 
-  Hooks.callAll("ironHillsCombatStateUpdated", state);
-  Hooks.callAll("ironHillsCombatUpdated", state);
+  globalThis.Hooks?.callAll?.("ironHillsCombatStateUpdated", state);
+  globalThis.Hooks?.callAll?.("ironHillsCombatUpdated", state);
 
   scheduleCombatUiRefresh();
 }
@@ -139,7 +198,7 @@ function notifyPendingActionReady(participant) {
     action: deepClone(participant.pendingAction)
   };
 
-  Hooks.callAll("ironHillsPendingActionReady", payload);
+  globalThis.Hooks?.callAll?.("ironHillsPendingActionReady", payload);
 }
 
 function saveCombatState(nextState) {
@@ -212,8 +271,11 @@ function sanitizeParticipants(participants = []) {
     const actor = resolveParticipantActor(participant);
     if (!actor) continue;
 
-    const maxSeconds = Math.max(1, Number(participant.maxSeconds ?? DEFAULT_TURN_SECONDS));
-    const remainingSeconds = Math.max(0, Number(participant.remainingSeconds ?? maxSeconds));
+    const maxSeconds = normalizeCombatActionSeconds(participant.maxSeconds, {
+      fallback: DEFAULT_TURN_SECONDS,
+      min: 1,
+    });
+    const remainingSeconds = Math.min(maxSeconds, normalizeAvailableSeconds(participant.remainingSeconds, maxSeconds));
 
     result.push({
       ...participant,
@@ -232,7 +294,13 @@ function sanitizeParticipants(participants = []) {
       hasActed: Boolean(participant.hasActed),
       defeated: Boolean(participant.defeated ?? !isActorAlive(actor)),
       active: Boolean(participant.active),
-      pendingAction: participant.pendingAction ? deepClone(participant.pendingAction) : null
+      pendingAction: participant.pendingAction
+        ? createPendingAction({
+            ...participant.pendingAction,
+            actorId: actor.id,
+            actorUuid: getActorUuid(actor),
+          })
+        : null
     });
   }
 
@@ -361,23 +429,37 @@ function getParticipantCurrentHp(actor) {
 
 function isActorAlive(actor) {
   if (!actor) return false;
+  if (actor.system?.resources?.soulReserve?.isDead) return false;
 
-  const torso = Number(actor.system?.resources?.hp?.torso?.value ?? 0);
-  const head = Number(actor.system?.resources?.hp?.head?.value ?? 0);
+  const hp = actor.system?.resources?.hp ?? {};
+  if (hp.value !== undefined) return Number(hp.value ?? 0) > 0;
+
+  const torso = Number(hp.torso?.value ?? 0);
+  const head = Number(hp.head?.value ?? 0);
 
   if (torso <= 0 || head <= 0) return false;
   return getParticipantCurrentHp(actor) > 0;
 }
 
 function createPendingAction(data = {}) {
+  const totalSeconds = normalizeCombatActionSeconds(data.totalSeconds, {
+    fallback: 0,
+    allowZero: true,
+  });
+  const spentSeconds = Math.min(totalSeconds, normalizeAvailableSeconds(data.spentSeconds, 0));
+  const remainingSeconds = data.remainingSeconds !== undefined
+    ? normalizeAvailableSeconds(data.remainingSeconds, Math.max(0, totalSeconds - spentSeconds))
+    : roundSeconds(Math.max(0, totalSeconds - spentSeconds));
+
   return {
     id: data.id || randomId("pending"),
     label: data.label || "Длительное действие",
     actionType: data.actionType || data.data?.actionType || "generic",
-    totalSeconds: Number(data.totalSeconds ?? 0),
-    spentSeconds: Number(data.spentSeconds ?? 0),
-    remainingSeconds: Number(data.remainingSeconds ?? 0),
+    totalSeconds,
+    spentSeconds,
+    remainingSeconds,
     requiresConfirmation: Boolean(data.requiresConfirmation ?? true),
+    awaitingConfirmation: Boolean(data.awaitingConfirmation ?? false),
     startedRound: Number(data.startedRound ?? 1),
     startedTurn: Number(data.startedTurn ?? 1),
     actorId: data.actorId || "",
@@ -401,7 +483,10 @@ function buildCombatParticipant(actorOrTokenOrData, extra = {}) {
       }
     : rollInitiativeData(actor);
 
-  const maxSeconds = Math.max(1, Number(extra.maxSeconds ?? DEFAULT_TURN_SECONDS));
+  const maxSeconds = normalizeCombatActionSeconds(extra.maxSeconds, {
+    fallback: DEFAULT_TURN_SECONDS,
+    min: 1,
+  });
 
   const pendingAction = extra.pendingAction
     ? createPendingAction({
@@ -428,7 +513,7 @@ function buildCombatParticipant(actorOrTokenOrData, extra = {}) {
     initiativeRoll: Number(extra.initiativeRoll ?? initiativeData.initiativeRoll),
     initiativeTotal: Number(extra.initiativeTotal ?? initiativeData.initiativeTotal),
     maxSeconds,
-    remainingSeconds: Math.max(0, Number(extra.remainingSeconds ?? maxSeconds)),
+    remainingSeconds: Math.min(maxSeconds, normalizeAvailableSeconds(extra.remainingSeconds, maxSeconds)),
     hasActed: Boolean(extra.hasActed ?? false),
     defeated: Boolean(extra.defeated ?? !isActorAlive(actor)),
     active: Boolean(extra.active ?? false),
@@ -487,28 +572,6 @@ function refreshDefeatedFlags(state) {
   return state;
 }
 
-async function applyLocalLimbTurnStart(state, participant) {
-  const actor = resolveActor(participant?.actorUuid || participant?.actorId);
-  if (!actor) return;
-
-  await ensureActorBodyTraumaStatusStructure(actor);
-
-  const traumaTick = await tickActorBodyTrauma(actor);
-
-  const logEntries = traumaTick.effects.map(effect => ({
-    id: randomId("log"),
-    type: effect.key === "destroyed" ? "condition-state" : "condition-tick",
-    text: effect.logText,
-    timestamp: nowStamp()
-  }));
-
-  state.log = state.log ?? [];
-  for (const entry of logEntries.reverse()) {
-    state.log.unshift(entry);
-  }
-  state.log = state.log.slice(0, 100);
-}
-
 export async function ensureCombatActorBodyStatus(actorOrId) {
   const actor = resolveActor(actorOrId);
   if (!actor) return false;
@@ -521,29 +584,15 @@ async function applyConditionTurnStart(state, participant) {
   const actor = resolveActor(participant?.actorUuid || participant?.actorId);
   if (!actor) return;
 
-  const shock = Number(getActorConditionValue(actor, "shock") || 0);
-
   const updates = {};
   const logEntries = [];
 
-  const damageTick = await tickActorOngoingDamage(actor, {
-    bleeding: !hasActorBodyBleeding(actor)
+  const lifecycleTick = await applyActorTurnStartLifecycleTick(actor, {
+    seconds: DEFAULT_TURN_SECONDS,
+    notifyEmpty: false,
+    createChat: false,
   });
-  for (const effect of damageTick.effects) {
-    logEntries.push({
-      id: randomId("log"),
-      type: "condition-tick",
-      text: effect.logText,
-      timestamp: nowStamp()
-    });
-  }
-
-  const skipConditions = getTurnStartSkipConditionDefinitions()
-    .map(definition => ({
-      ...definition,
-      value: Number(getActorConditionValue(actor, definition.key) || 0),
-    }))
-    .filter(definition => definition.value > 0);
+  const skipConditions = lifecycleTick.skipConditions ?? [];
 
   if (skipConditions.length) {
     participant.remainingSeconds = 0;
@@ -556,12 +605,30 @@ async function applyConditionTurnStart(state, participant) {
       text: `${actor.name} пропускает ход: ${labels}.`,
       timestamp: nowStamp()
     });
-
-    for (const definition of skipConditions) {
-      updates[buildConditionUpdatePath(definition.key)] = Math.max(0, definition.value - DEFAULT_TURN_SECONDS);
-    }
   }
 
+  for (const effect of lifecycleTick.effects ?? []) {
+    if (effect.phase === "duration" && effect.skipsTurn) continue;
+    if (effect.phase === "duration" && !effect.expired) continue;
+    if (effect.phase === "summon" && !effect.expired) continue;
+
+    const isExpiredDuration = effect.phase === "duration" && effect.expired;
+    const isExpiredSummon = effect.phase === "summon" && effect.expired;
+    const logType = effect.key === "destroyed"
+      ? "condition-state"
+      : (isExpiredDuration || isExpiredSummon)
+        ? "condition-expired"
+        : "condition-tick";
+
+    logEntries.push({
+      id: randomId("log"),
+      type: logType,
+      text: effect.logText,
+      timestamp: nowStamp()
+    });
+  }
+
+  const shock = Number(getActorConditionValue(actor, "shock") || 0);
   if (shock > 0) {
     logEntries.push({
       id: randomId("log"),
@@ -569,12 +636,6 @@ async function applyConditionTurnStart(state, participant) {
       text: `${actor.name} находится в шоке (${shock}).`,
       timestamp: nowStamp()
     });
-  }
-
-  for (const key of PREPARED_TURN_START_CONDITIONS) {
-    if (updates[buildConditionUpdatePath(key)] !== undefined) continue;
-    const value = Number(getActorConditionValue(actor, key) || 0);
-    if (value > 0) updates[buildConditionUpdatePath(key)] = Math.max(0, value - DEFAULT_TURN_SECONDS);
   }
 
   // ── Энергия: НЕ восстанавливается автоматически ──────────
@@ -739,10 +800,67 @@ export function getActorPendingAction(actorOrId) {
   return participant?.pendingAction ? deepClone(participant.pendingAction) : null;
 }
 
+export function restoreActorPendingAction(actorOrId, pendingAction, {
+  remainingSeconds = null,
+  awaitingConfirmation = true,
+  log = true,
+  reason = "",
+} = {}) {
+  const state = getCombatStateInternal();
+  if (!state.active) return { ok: false, restored: false, reason: "combat-inactive" };
+
+  const actor = resolveActor(actorOrId);
+  if (!actor || !pendingAction) return { ok: false, restored: false, reason: "missing-actor-or-action" };
+
+  const participant = findParticipantForActorInState(state, actor);
+  if (!participant) return { ok: false, restored: false, reason: "participant-missing" };
+
+  const totalSeconds = normalizeCombatActionSeconds(pendingAction.totalSeconds, {
+    fallback: 0,
+    allowZero: true,
+  });
+  const restoredRemaining = remainingSeconds === null
+    ? normalizeAvailableSeconds(pendingAction.remainingSeconds, 0)
+    : normalizeAvailableSeconds(remainingSeconds, 0);
+  const restoredSpent = restoredRemaining <= 0 && totalSeconds > 0
+    ? totalSeconds
+    : Math.min(totalSeconds, normalizeAvailableSeconds(pendingAction.spentSeconds, Math.max(0, totalSeconds - restoredRemaining)));
+
+  participant.pendingAction = createPendingAction({
+    ...pendingAction,
+    totalSeconds,
+    spentSeconds: restoredSpent,
+    remainingSeconds: restoredRemaining,
+    awaitingConfirmation,
+    actorId: participant.actorId,
+    actorUuid: participant.actorUuid,
+  });
+
+  if (log) {
+    state.log = state.log ?? [];
+    state.log.unshift({
+      id: randomId("log"),
+      type: "pending-action-restore",
+      text: `${participant.actorName}: действие "${participant.pendingAction.label}" возвращено в ожидание${reason ? ` (${reason})` : ""}.`,
+      actorId: participant.actorId,
+      participantId: participant.id,
+      timestamp: nowStamp(),
+    });
+    state.log = state.log.slice(0, 100);
+  }
+
+  saveCombatState(state);
+  return {
+    ok: true,
+    restored: true,
+    pendingAction: deepClone(participant.pendingAction),
+  };
+}
+
 export function getActorRemainingSeconds(actorOrId) {
   const state = getCombatStateInternal();
   const participant = findParticipantForActorInState(state, actorOrId);
-  return Number(participant?.remainingSeconds ?? 0);
+  return normalizeAvailableSeconds(participant?.remainingSeconds, 0);
 }
 
 export function canActorActNow(actorOrId) {
@@ -757,7 +875,7 @@ export function canActorActNow(actorOrId) {
   }
 
   // Проверяем: без сознания — действия недоступны
-  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+  if (getActorConditionValue(actor, "unconscious") > 0) {
     return { ok: false, reason: `${actor.name} без сознания — нужен отдых или помощь.`, remainingSeconds: 0, participant: null };
   }
   // Проверяем: макс. энергия = 0 — полное истощение
@@ -784,12 +902,12 @@ export function canActorActNow(actorOrId) {
     return {
       ok: false,
       reason: "Сейчас не ход этого участника.",
-      remainingSeconds: Number(participant.remainingSeconds ?? 0),
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
       participant: deepClone(participant)
     };
   }
 
-  if (Number(participant.remainingSeconds ?? 0) <= 0) {
+  if (normalizeAvailableSeconds(participant.remainingSeconds, 0) <= 0) {
     return {
       ok: false,
       reason: "У участника не осталось секунд в этом ходу.",
@@ -801,7 +919,7 @@ export function canActorActNow(actorOrId) {
   return {
     ok: true,
     reason: "",
-    remainingSeconds: Number(participant.remainingSeconds ?? 0),
+    remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
     participant: deepClone(participant)
   };
 }
@@ -818,7 +936,7 @@ export function canActorCommitAction(actorOrId) {
   }
 
   // Без сознания или полностью истощён — действия недоступны
-  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+  if (getActorConditionValue(actor, "unconscious") > 0) {
     return { ok: false, reason: `${actor.name} без сознания.`, remainingSeconds: 0, participant: null };
   }
   if (Number(actor.system?.resources?.energy?.max ?? 1) <= 0) {
@@ -826,7 +944,7 @@ export function canActorCommitAction(actorOrId) {
   }
 
   // Проверяем: без сознания — действия недоступны
-  if (Number(actor.system?.conditions?.unconscious ?? 0) > 0) {
+  if (getActorConditionValue(actor, "unconscious") > 0) {
     return { ok: false, reason: `${actor.name} без сознания — нужен отдых или помощь.`, remainingSeconds: 0, participant: null };
   }
   // Проверяем: макс. энергия = 0 — полное истощение
@@ -853,7 +971,7 @@ export function canActorCommitAction(actorOrId) {
     return {
       ok: false,
       reason: "Сейчас не ход этого участника.",
-      remainingSeconds: Number(participant.remainingSeconds ?? 0),
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
       participant: deepClone(participant)
     };
   }
@@ -861,7 +979,7 @@ export function canActorCommitAction(actorOrId) {
   return {
     ok: true,
     reason: "",
-    remainingSeconds: Number(participant.remainingSeconds ?? 0),
+    remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
     participant: deepClone(participant)
   };
 }
@@ -873,10 +991,8 @@ export function isActorActiveTurn(actorOrId) {
   const actor = resolveActor(actorOrId);
   if (!actor) return false;
 
-  const current = getCurrentParticipantFromState(state);
-  if (!current) return false;
-
-  return String(current.actorUuid ?? "") === String(getActorUuid(actor));
+  const participant = findParticipantForActorInState(state, actor);
+  return isParticipantCurrentlyActive(state, participant);
 }
 
 export function getCombatRound() {
@@ -910,6 +1026,11 @@ export function getActorCombatUiState(actorOrId) {
   const summary = getCombatSummary();
   const participant = actor ? findParticipantForActorInState(getCombatStateInternal(), actor) : null;
   const transitionState = getActiveTurnTransitionState();
+  const actorActCheck = actor ? canActorActNow(actor) : { ok: false, reason: "" };
+  const actorCommitCheck = actor ? canActorCommitAction(actor) : { ok: false, reason: "" };
+  const remainingSeconds = normalizeAvailableSeconds(participant?.remainingSeconds, 0);
+  const pendingAction = participant?.pendingAction ? deepClone(participant.pendingAction) : null;
+  const participantUi = participant ? getParticipantUiState(participant) : null;
 
   return {
     active: summary.active,
@@ -920,17 +1041,37 @@ export function getActorCombatUiState(actorOrId) {
     activeParticipantId: summary.activeParticipantId,
     isInCombat: Boolean(participant),
     isActiveTurn: Boolean(participant && isParticipantCurrentlyActive(getCombatStateInternal(), participant)),
-    remainingSeconds: Number(participant?.remainingSeconds ?? 0),
-    maxSeconds: Number(participant?.maxSeconds ?? DEFAULT_TURN_SECONDS),
+    remainingSeconds,
+    maxSeconds: normalizeCombatActionSeconds(participant?.maxSeconds, {
+      fallback: DEFAULT_TURN_SECONDS,
+      min: 1,
+    }),
     side: participant?.side ?? "neutral",
     participantId: participant?.id ?? "",
-    pendingAction: participant?.pendingAction ? deepClone(participant.pendingAction) : null,
-    participant: participant ? getParticipantUiState(participant) : null,
+    pendingAction,
+    pendingActionUi: participantUi?.pendingActionUi ?? null,
+    hasPendingAction: Boolean(pendingAction),
+    pendingActionRemainingSeconds: normalizeAvailableSeconds(pendingAction?.remainingSeconds, 0),
+    pendingActionProgressPct: participantUi?.pendingActionProgressPct ?? 0,
+    pendingActionReady: Boolean(participantUi?.pendingActionReady),
+    pendingActionStatus: participantUi?.pendingActionStatus ?? "",
+    pendingActionStatusClass: participantUi?.pendingActionStatusClass ?? "",
+    pendingActionStatusLabel: participantUi?.pendingActionStatusLabel ?? "",
+    pendingActionAwaitingConfirmation: Boolean(pendingAction?.awaitingConfirmation),
+    canActNow: Boolean(actorActCheck.ok),
+    canCommitAction: Boolean(actorCommitCheck.ok && remainingSeconds > 0 && !pendingAction),
+    canStartNewAction: Boolean(participantUi?.canStartNewAction),
+    canEndTurn: Boolean(participantUi?.canEndTurn),
+    canContinuePendingAction: Boolean(participantUi?.canContinuePendingAction),
+    canCancelPendingAction: Boolean(participantUi?.canCancelPendingAction),
+    actionBlockedReason: actorActCheck.ok ? "" : (actorActCheck.reason || actorCommitCheck.reason || ""),
+    participant: participantUi,
     activeParticipant: summary.activeParticipant ? getParticipantUiState(summary.activeParticipant) : null,
     participants: summary.participants.map(getParticipantUiState),
     log: summary.log,
     canAdvanceTurn: Boolean(transitionState.canAdvance),
-    advanceTurnReason: transitionState.reason || ""
+    advanceTurnReason: transitionState.reason || "",
+    transitionState,
   };
 }
 
@@ -953,10 +1094,10 @@ export function endCombat({ silent = false } = {}) {
   const cleared = clearCombatState();
 
   if (!silent) {
-    ui.notifications?.info("Бой завершён.");
+    globalThis.ui?.notifications?.info?.("Бой завершён.");
   }
 
-  Hooks.callAll("ironHillsCombatEnded", previous);
+  globalThis.Hooks?.callAll?.("ironHillsCombatEnded", previous);
   return cleared;
 }
 
@@ -981,7 +1122,7 @@ export function startCombat(refs = [], options = {}) {
   const participants = sortParticipants(buildCombatParticipantsFromRefs(refs));
 
   if (participants.length < 2) {
-    ui.notifications?.warn("Для боя нужно минимум 2 участника.");
+    globalThis.ui?.notifications?.warn?.("Для боя нужно минимум 2 участника.");
     return null;
   }
 
@@ -1009,8 +1150,8 @@ export function startCombat(refs = [], options = {}) {
   setActiveParticipantByIndex(state, firstIndex >= 0 ? firstIndex : 0);
 
   const saved = saveCombatState(state);
-  ui.notifications?.info(`Бой начат. Участников: ${participants.length}`);
-  Hooks.callAll("ironHillsCombatStarted", deepClone(saved));
+  globalThis.ui?.notifications?.info?.(`Бой начат. Участников: ${participants.length}`);
+  globalThis.Hooks?.callAll?.("ironHillsCombatStarted", deepClone(saved));
 
   return deepClone(saved);
 }
@@ -1109,21 +1250,34 @@ export function spendActorSeconds(actorOrId, seconds, actionData = {}) {
 
   const state = getCombatStateInternal();
   const participant = state.participants.find(entry => entry.id === actorCheck.participant.id);
-  const cost = Math.max(0, Number(seconds ?? 0));
+  if (participant?.pendingAction && !actionData?.allowWithPending) {
+    return {
+      ok: false,
+      reason: "Сначала продолжите или отмените незавершённое длительное действие.",
+      completed: false,
+      pending: true,
+      pendingAction: deepClone(participant.pendingAction),
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
+    };
+  }
+  const cost = normalizeCombatActionSeconds(seconds, {
+    fallback: 0,
+    allowZero: true,
+  });
 
   if (cost <= 0) {
     return {
       ok: true,
       completed: true,
       pending: false,
-      remainingSeconds: Number(participant.remainingSeconds ?? 0)
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0)
     };
   }
 
-  const remaining = Number(participant.remainingSeconds ?? 0);
+  const remaining = normalizeAvailableSeconds(participant.remainingSeconds, 0);
 
   if (remaining >= cost) {
-    participant.remainingSeconds = remaining - cost;
+    participant.remainingSeconds = roundSeconds(remaining - cost);
     participant.hasActed = true;
 
     if (actionData?.label) {
@@ -1140,11 +1294,12 @@ export function spendActorSeconds(actorOrId, seconds, actionData = {}) {
       ok: true,
       completed: true,
       pending: false,
-      remainingSeconds: Number(participant.remainingSeconds ?? 0)
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
+      spentSeconds: cost,
     };
   }
 
-  const leftToFinish = Math.max(0, cost - remaining);
+  const leftToFinish = roundSeconds(Math.max(0, cost - remaining));
   participant.pendingAction = createPendingAction({
     label: actionData?.label || "Длительное действие",
     actionType: actionData?.actionType || actionData?.data?.actionType || "generic",
@@ -1176,7 +1331,8 @@ export function spendActorSeconds(actorOrId, seconds, actionData = {}) {
     completed: false,
     pending: true,
     requiresConfirmation: true,
-    remainingSeconds: Number(participant.remainingSeconds ?? 0),
+    remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
+    spentSeconds: remaining,
     pendingAction: deepClone(participant.pendingAction)
   };
 }
@@ -1214,8 +1370,20 @@ export function requestActionTimeCommit(
     };
   }
 
-  const cost = Math.max(1, Number(totalSeconds ?? 1));
-  const remainingSeconds = Number(actorCheck.remainingSeconds ?? 0);
+  const cost = normalizeCombatActionSeconds(totalSeconds, { fallback: 1 });
+  const remainingSeconds = normalizeAvailableSeconds(actorCheck.remainingSeconds, 0);
+
+  if (remainingSeconds <= 0) {
+    return {
+      ok: false,
+      reason: "У участника не осталось секунд в этом ходу.",
+      committed: false,
+      immediate: false,
+      remainingSeconds,
+      totalSeconds: cost,
+      secondsCost: cost,
+    };
+  }
 
   if (remainingSeconds >= cost) {
     return {
@@ -1223,7 +1391,9 @@ export function requestActionTimeCommit(
       committed: false,
       immediate: true,
       remainingSeconds,
-      totalSeconds: cost
+      remainingAfter: roundSeconds(remainingSeconds - cost),
+      totalSeconds: cost,
+      secondsCost: cost,
     };
   }
 
@@ -1232,7 +1402,7 @@ export function requestActionTimeCommit(
     actionType,
     totalSeconds: cost,
     spentSeconds: remainingSeconds,
-    remainingSeconds: Math.max(0, cost - remainingSeconds),
+    remainingSeconds: roundSeconds(Math.max(0, cost - remainingSeconds)),
     requiresConfirmation: true,
     startedRound: Number(state.round ?? 1),
     startedTurn: Number(state.turn ?? 1),
@@ -1258,8 +1428,10 @@ export function requestActionTimeCommit(
     committed: true,
     immediate: false,
     pendingAction: deepClone(participant.pendingAction),
-    remainingSeconds: Number(participant.remainingSeconds ?? 0),
-    totalSeconds: cost
+    remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0),
+    spentSeconds: remainingSeconds,
+    totalSeconds: cost,
+    secondsCost: cost,
   };
 }
 
@@ -1286,18 +1458,13 @@ export function continuePendingAction(actorOrId) {
     return { ok: false, progressed: false, done: false, reason: "Актёр не найден." };
   }
 
-  const current = getCurrentParticipantFromState(state);
-  if (!current) {
-    return { ok: false, progressed: false, done: false, reason: "Нет активного участника." };
-  }
-
-  if (String(current.actorUuid ?? "") !== String(getActorUuid(actor))) {
-    return { ok: false, progressed: false, done: false, reason: "Продолжить действие можно только в свой активный ход." };
-  }
-
   const participant = findParticipantForActorInState(state, actor);
   if (!participant) {
     return { ok: false, progressed: false, done: false, reason: "Участник не найден." };
+  }
+
+  if (!isParticipantCurrentlyActive(state, participant)) {
+    return { ok: false, progressed: false, done: false, reason: "Продолжить действие можно только в свой активный ход." };
   }
 
   if (!participant.pendingAction) {
@@ -1305,10 +1472,9 @@ export function continuePendingAction(actorOrId) {
   }
 
   const pending = deepClone(participant.pendingAction);
-  const needed = Number(pending.remainingSeconds ?? 0);
-  const remaining = Number(participant.remainingSeconds ?? 0);
+  const progress = resolvePendingActionProgress(pending, participant.remainingSeconds);
 
-  if (needed <= 0) {
+  if (progress.neededSeconds <= 0) {
     participant.pendingAction = null;
     saveCombatState(normalizeCombatState(state));
 
@@ -1316,13 +1482,27 @@ export function continuePendingAction(actorOrId) {
       ok: true,
       progressed: true,
       done: true,
-      action: pending,
-      remainingSeconds: Number(participant.remainingSeconds ?? 0)
+      action: progress.action,
+      spentSeconds: 0,
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0)
     };
   }
 
-  if (remaining >= needed) {
-    participant.remainingSeconds = remaining - needed;
+  if (progress.spentNow <= 0) {
+    return {
+      ok: false,
+      progressed: false,
+      done: false,
+      reason: "У участника не осталось секунд в этом ходу.",
+      action: pending,
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0)
+    };
+  }
+
+  participant.remainingSeconds = progress.remainingTurnSeconds;
+  participant.hasActed = progress.spentNow > 0 || participant.hasActed;
+
+  if (progress.completed) {
     participant.pendingAction = null;
     participant.hasActed = true;
 
@@ -1336,17 +1516,17 @@ export function continuePendingAction(actorOrId) {
       ok: true,
       progressed: true,
       done: true,
-      action: {
-        ...pending,
-        remainingSeconds: 0,
-        spentSeconds: Number(pending.totalSeconds ?? pending.spentSeconds ?? 0)
-      },
-      remainingSeconds: Number(participant.remainingSeconds ?? 0)
+      action: progress.action,
+      spentSeconds: progress.spentNow,
+      remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0)
     };
   }
 
-  participant.pendingAction.spentSeconds = Number(participant.pendingAction.spentSeconds ?? 0) + remaining;
-  participant.pendingAction.remainingSeconds = Math.max(0, needed - remaining);
+  participant.pendingAction = createPendingAction({
+    ...progress.action,
+    actorId: participant.actorId,
+    actorUuid: participant.actorUuid,
+  });
   participant.remainingSeconds = 0;
   participant.hasActed = true;
 
@@ -1361,7 +1541,8 @@ export function continuePendingAction(actorOrId) {
     progressed: true,
     done: false,
     action: deepClone(participant.pendingAction),
-    remainingSeconds: Number(participant.remainingSeconds ?? 0)
+    spentSeconds: progress.spentNow,
+    remainingSeconds: normalizeAvailableSeconds(participant.remainingSeconds, 0)
   };
 }
 
@@ -1398,7 +1579,11 @@ export function cancelPendingAction(actorOrId) {
 }
 
 function resetParticipantTurnState(participant) {
-  participant.remainingSeconds = Number(participant.maxSeconds ?? DEFAULT_TURN_SECONDS);
+  participant.maxSeconds = normalizeCombatActionSeconds(participant.maxSeconds, {
+    fallback: DEFAULT_TURN_SECONDS,
+    min: 1,
+  });
+  participant.remainingSeconds = participant.maxSeconds;
   participant.hasActed = false;
 
   if (participant.pendingAction?.requiresConfirmation) {
@@ -1409,7 +1594,7 @@ function resetParticipantTurnState(participant) {
 export async function advanceRound() {
   const state = getCombatStateInternal();
   if (!state.active) {
-    ui.notifications?.warn("Активного боя нет.");
+    globalThis.ui?.notifications?.warn?.("Активного боя нет.");
     return null;
   }
 
@@ -1433,7 +1618,6 @@ export async function advanceRound() {
     state.participants.find(participant => participant.id === state.activeParticipantId) ?? null;
 
   if (activeParticipant) {
-    await applyLocalLimbTurnStart(state, activeParticipant);
     await applyConditionTurnStart(state, activeParticipant);
     refreshDefeatedFlags(state);
   }
@@ -1451,7 +1635,7 @@ export async function advanceRound() {
 export async function advanceTurn() {
   const state = getCombatStateInternal();
   if (!state.active) {
-    ui.notifications?.warn("Активного боя нет.");
+    globalThis.ui?.notifications?.warn?.("Активного боя нет.");
     return null;
   }
 
@@ -1479,7 +1663,6 @@ export async function advanceTurn() {
   resetParticipantTurnState(next);
   setActiveParticipantByIndex(state, nextIndex);
 
-  await applyLocalLimbTurnStart(state, next);
   await applyConditionTurnStart(state, next);
   refreshDefeatedFlags(state);
 
@@ -1504,20 +1687,20 @@ export async function advanceTurn() {
       : "systems/iron-hills-system/sounds/enemy-turn.ogg"; // ход монстра (GM)
 
     // Используем встроенный звук Foundry если наш файл не существует
-    AudioHelper.play({
+    globalThis.AudioHelper?.play?.({
       src: soundPath,
       volume: 0.6,
       autoplay: true,
       loop: false,
-    }, false).catch(() => {
+    }, false)?.catch?.(() => {
       // Fallback — используем стандартный Foundry notification sound
-      game.audio?.interface?.play?.("notification") ??
-      new Audio("sounds/dice.wav").play().catch(()=>{});
+      globalThis.game?.audio?.interface?.play?.("notification") ??
+      (globalThis.Audio ? new Audio("sounds/dice.wav").play().catch(()=>{}) : null);
     });
 
     // Также уведомление в интерфейсе
     if (isMyTurn) {
-      ui.notifications?.info(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
+      globalThis.ui?.notifications?.info?.(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
     }
   }
 
@@ -1608,8 +1791,18 @@ export function getActiveTurnTransitionState() {
     };
   }
 
-  const remainingSeconds = Number(activeParticipant.remainingSeconds ?? 0);
+  const remainingSeconds = normalizeAvailableSeconds(activeParticipant.remainingSeconds, 0);
   const pendingAction = activeParticipant.pendingAction ?? null;
+  const pendingRemainingSeconds = normalizeAvailableSeconds(pendingAction?.remainingSeconds, 0);
+
+  if (pendingAction && pendingRemainingSeconds <= 0) {
+    return {
+      ok: true,
+      canAdvance: false,
+      reason: "Длительное действие готово к завершению. Завершите или отмените его перед передачей хода.",
+      activeParticipant: deepClone(activeParticipant)
+    };
+  }
 
   if (pendingAction && remainingSeconds > 0) {
     return {
@@ -1666,8 +1859,17 @@ export async function advanceTurnIfReady() {
     };
   }
 
-  const remainingSeconds = Number(activeParticipant.remainingSeconds ?? 0);
+  const remainingSeconds = normalizeAvailableSeconds(activeParticipant.remainingSeconds, 0);
   const pendingAction = activeParticipant.pendingAction ?? null;
+  const pendingRemainingSeconds = normalizeAvailableSeconds(pendingAction?.remainingSeconds, 0);
+
+  if (pendingAction && pendingRemainingSeconds <= 0) {
+    return {
+      ok: false,
+      advanced: false,
+      reason: "Длительное действие готово к завершению. Завершите или отмените его перед передачей хода."
+    };
+  }
 
   if (pendingAction && remainingSeconds > 0) {
     return {
@@ -1740,8 +1942,9 @@ export function forceSetActiveParticipant(participantId) {
   const index = state.participants.findIndex(participant => participant.id === participantId);
   if (index < 0) return null;
 
+  const next = state.participants[index];
   setActiveParticipantByIndex(state, index);
-  resetParticipantTurnState(state.participants[index]);
+  resetParticipantTurnState(next);
   saveCombatState(state);
 
   // ── Звуковое уведомление о начале хода ──────────────────
@@ -1755,15 +1958,15 @@ export function forceSetActiveParticipant(participantId) {
       ? "systems/iron-hills-system/sounds/your-turn.ogg"
       : "systems/iron-hills-system/sounds/enemy-turn.ogg";
 
-    AudioHelper.play({ src: soundSrc, volume: 0.6, autoplay: true, loop: false }, false)
-      .catch(() => {
+    globalThis.AudioHelper?.play?.({ src: soundSrc, volume: 0.6, autoplay: true, loop: false }, false)
+      ?.catch?.(() => {
         // fallback — тихий дефолтный звук интерфейса
-        foundry.audio?.AudioHelper?.play?.({ src: "sounds/notify.wav", volume: 0.5 }, false)
-          .catch(() => {});
+        globalThis.foundry?.audio?.AudioHelper?.play?.({ src: "sounds/notify.wav", volume: 0.5 }, false)
+          ?.catch?.(() => {});
       });
 
     if (isMyTurn) {
-      ui.notifications?.info(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
+      globalThis.ui?.notifications?.info?.(`⚔ Ваш ход, ${next.actorName}!`, { permanent: false });
     }
   }
 
@@ -1874,20 +2077,84 @@ export function getSideLabel(side) {
   return "Нейтрал";
 }
 
+function getPendingActionUiState(pendingAction = null, participant = null) {
+  if (!pendingAction) return null;
+
+  const totalSeconds = normalizeAvailableSeconds(pendingAction.totalSeconds, 0);
+  const remainingSeconds = normalizeAvailableSeconds(pendingAction.remainingSeconds, 0);
+  const spentFallback = Math.max(0, totalSeconds - remainingSeconds);
+  const spentSeconds = Math.min(
+    totalSeconds,
+    normalizeAvailableSeconds(pendingAction.spentSeconds, spentFallback),
+  );
+  const progressPct = totalSeconds > 0
+    ? Math.max(0, Math.min(100, Math.round((spentSeconds / totalSeconds) * 100)))
+    : 100;
+  const ready = remainingSeconds <= 0;
+  const active = Boolean(participant?.active && !participant?.defeated);
+  const turnSeconds = normalizeAvailableSeconds(participant?.remainingSeconds, 0);
+  const canContinue = Boolean(active && (turnSeconds > 0 || ready));
+  const status = ready
+    ? "ready"
+    : pendingAction.awaitingConfirmation
+      ? "awaiting"
+      : "in-progress";
+
+  return {
+    id: pendingAction.id ?? "",
+    label: pendingAction.label || "Длительное действие",
+    actionType: pendingAction.actionType || pendingAction.data?.actionType || "generic",
+    totalSeconds,
+    spentSeconds,
+    remainingSeconds,
+    progressPct,
+    ready,
+    awaitingConfirmation: Boolean(pendingAction.awaitingConfirmation),
+    status,
+    statusClass: `is-${status}`,
+    statusLabel: ready ? "готово" : (pendingAction.awaitingConfirmation ? "ожидает" : "в процессе"),
+    canContinue,
+    canCancel: true,
+  };
+}
+
 export function getParticipantUiState(participant) {
   if (!participant) return null;
+  const remainingSeconds = normalizeAvailableSeconds(participant.remainingSeconds, 0);
+  const maxSeconds = normalizeCombatActionSeconds(participant.maxSeconds, {
+    fallback: DEFAULT_TURN_SECONDS,
+    min: 1,
+  });
+  const pendingAction = participant.pendingAction ? deepClone(participant.pendingAction) : null;
+  const pendingActionUi = getPendingActionUiState(pendingAction, participant);
+  const pendingReady = Boolean(pendingActionUi?.ready);
 
   return {
     ...deepClone(participant),
     name: participant.actorName,
-    secondsLeft: Number(participant.remainingSeconds ?? 0),
-    turnSeconds: Number(participant.maxSeconds ?? DEFAULT_TURN_SECONDS),
+    secondsLeft: remainingSeconds,
+    turnSeconds: maxSeconds,
     sideLabel: getSideLabel(participant.side),
     isActive: Boolean(participant.active),
     isDefeated: Boolean(participant.defeated),
-    hasPendingAction: Boolean(participant.pendingAction),
-    pendingActionLabel: participant.pendingAction?.label || "",
-    pendingActionRemainingSeconds: Number(participant.pendingAction?.remainingSeconds ?? 0)
+    canAct: Boolean(participant.active && !participant.defeated && remainingSeconds > 0 && !pendingAction),
+    canStartNewAction: Boolean(participant.active && !participant.defeated && remainingSeconds > 0 && !pendingAction),
+    canEndTurn: Boolean(participant.active && !participant.defeated && !pendingReady),
+    hasPendingAction: Boolean(pendingAction),
+    pendingAction,
+    pendingActionUi,
+    pendingActionLabel: pendingAction?.label || "",
+    pendingActionTotalSeconds: normalizeAvailableSeconds(pendingAction?.totalSeconds, 0),
+    pendingActionSpentSeconds: normalizeAvailableSeconds(pendingAction?.spentSeconds, 0),
+    pendingActionRemainingSeconds: normalizeAvailableSeconds(pendingAction?.remainingSeconds, 0),
+    pendingActionProgressPct: pendingActionUi?.progressPct ?? 0,
+    pendingActionReady: pendingReady,
+    pendingActionStatus: pendingActionUi?.status ?? "",
+    pendingActionStatusClass: pendingActionUi?.statusClass ?? "",
+    pendingActionStatusLabel: pendingActionUi?.statusLabel ?? "",
+    pendingActionAwaitingConfirmation: Boolean(pendingAction?.awaitingConfirmation),
+    canContinuePendingAction: Boolean(pendingActionUi?.canContinue),
+    canCancelPendingAction: Boolean(pendingActionUi?.canCancel),
   };
 }
 
@@ -1895,13 +2162,17 @@ export function getCombatUiState() {
   const state = getCombatState();
   const participants = state.participants.map(getParticipantUiState);
   const activeParticipant = participants.find(participant => participant.id === state.activeParticipantId) ?? null;
+  const transitionState = getActiveTurnTransitionState();
 
   return {
     ...state,
     turnIndex: Math.max(0, Number(state.turn ?? 1) - 1),
     participants,
     queue: participants,
-    activeParticipant
+    activeParticipant,
+    transitionState,
+    canAdvanceTurn: Boolean(transitionState.canAdvance),
+    advanceTurnReason: transitionState.reason || "",
   };
 }
 

@@ -1,30 +1,39 @@
 import {
   getActionBlockReason,
+  getActorInjuryInfo,
   getDerivedConditionState,
   getEncumbranceInfo,
   grantSkillExp,
 } from "./actor-state-service.mjs";
 import { applyAoeDamageTemplate } from "./aoe-service.mjs";
+import { normalizeAttackMode } from "./combat-attack-mode-service.mjs";
 import {
-  buildCombatTargetPayload,
+  buildCombatActionTargetPayload,
   getPrimaryCombatTargetActor,
   resolveCombatActionTargets,
 } from "./combat-action-target-service.mjs";
+import { createCombatChatMessage } from "./combat-chat-service.mjs";
 import { getCombatActionSeconds } from "./combat-time-service.mjs";
 import { markActorDead } from "./condition-service.mjs";
 import {
   applyTechniqueSupportEffect,
   getTechniqueSupportEnergyCost,
+  validateTechniqueSupportEffect,
 } from "./combat-technique-service.mjs";
 import { castSpellLikeItem } from "./spell-casting-service.mjs";
+import {
+  buildSpellItemSystemData,
+  buildSpellRuntimeData,
+} from "./spell-runtime-service.mjs";
 
 function actionResult({
   ok = true,
   queued = false,
   result = null,
+  summary = null,
   reason = "",
 } = {}) {
-  return { ok, queued, result, reason };
+  return { ok, queued, result, summary, reason };
 }
 
 function cloneData(value) {
@@ -47,10 +56,11 @@ function getVirtualAttackItem({ skillKey = "", actionSeconds = null } = {}) {
 }
 
 export function buildCatalogSpellItem(spell = {}) {
+  const runtimeSystem = buildSpellItemSystemData(spell);
   const system = {
-    ...cloneData(spell),
+    ...runtimeSystem,
     spellId: spell.id ?? spell.spellId ?? "",
-    actionSeconds: numberOr(spell.actionSeconds ?? spell.castTime, 0),
+    actionSeconds: numberOr(spell.actionSeconds ?? spell.castTime ?? spell.system?.actionSeconds ?? spell.system?.castTime, runtimeSystem.actionSeconds),
   };
 
   return {
@@ -85,10 +95,9 @@ export async function castCatalogSpellAction({
   if (!actor || !spell) return actionResult({ ok: false, reason: "missing-spell" });
 
   const item = buildCatalogSpellItem(spell);
-  const spellDamage = numberOr(item.system?.damage, 0);
-  const isUtilitySpell = spellDamage <= 0;
+  const runtime = buildSpellRuntimeData(item);
   const selectedTargets = resolveCombatActionTargets({ targets });
-  if (isUtilitySpell && !item.system?.aoe && !selectedTargets.length) {
+  if (runtime.defaultTargetSelf && !runtime.hasAoe && !selectedTargets.length) {
     selectedTargets.push({ actor });
   }
 
@@ -117,7 +126,7 @@ export async function castCatalogSpellAction({
       totalSeconds: numberOr(item.system.actionSeconds, getCombatActionSeconds("spell", item)),
       payload: {
         spell: serializeCatalogSpell(spell),
-        ...buildCombatTargetPayload(selectedTargets),
+        ...buildCombatActionTargetPayload({ targets: selectedTargets }),
       },
     });
 
@@ -137,6 +146,56 @@ export async function castCatalogSpellAction({
   });
 }
 
+export async function castSpellChoiceAction({
+  actor = null,
+  choice = null,
+  targets = globalThis.game?.user?.targets ?? [],
+  skipTimeCost = false,
+  resolveCombatTimeCost = null,
+  requestHostileAction = null,
+  applySkillExp = null,
+  onLethal = null,
+  afterCast = null,
+} = {}) {
+  if (!actor || !choice) return actionResult({ ok: false, reason: "missing-spell-choice" });
+
+  const selectedTargets = resolveCombatActionTargets({ targets });
+  if (choice.itemId) {
+    const item = actor.items?.get(choice.itemId) ?? null;
+    if (!item) {
+      ui.notifications.warn("Заклинание или свиток не найден в инвентаре.");
+      return actionResult({ ok: false, reason: "missing-item" });
+    }
+
+    return castSpellLikeItem({
+      actor,
+      item,
+      isScroll: Boolean(choice.isScroll ?? item.type === "scroll"),
+      targets: selectedTargets,
+      skipTimeCost,
+      resolveCombatTimeCost,
+      requestHostileAction,
+      applySkillExp: applySkillExp ?? ((skillKey, label) => grantSkillExp(actor, skillKey, label, 1)),
+      onLethal: onLethal ?? (target => markActorDead(target)),
+      afterCast,
+      spellOverrides: choice.spellOverrides ?? null,
+    });
+  }
+
+  const spell = choice.spell ?? choice;
+  return castCatalogSpellAction({
+    actor,
+    spell,
+    targets: selectedTargets,
+    skipTimeCost,
+    resolveCombatTimeCost,
+    requestHostileAction,
+    applySkillExp,
+    onLethal,
+    afterCast,
+  });
+}
+
 export async function performCombatAoeAttack({
   actor = null,
   shape = "circle",
@@ -147,6 +206,7 @@ export async function performCombatAoeAttack({
   baseDamage = 0,
   energyCost = 0,
   skillKey = "unarmed",
+  attackMode: attackModeInput = null,
   label = "AoE атака",
   damageType = "physical",
   ignoreArmor = 0,
@@ -161,11 +221,15 @@ export async function performCombatAoeAttack({
   actionSeconds = null,
   skipTimeCost = false,
   resolveCombatTimeCost = null,
+  onLethal = null,
   afterAction = null,
 } = {}) {
   if (!actor) return actionResult({ ok: false, reason: "missing-actor" });
+  const attackMode = normalizeAttackMode(attackModeInput, { skillKey, technique: { effect } });
 
   const blockReason = getActionBlockReason(actor, "attack", {
+    skillKey,
+    attackMode,
     energyCost,
   });
   if (blockReason) {
@@ -191,18 +255,22 @@ export async function performCombatAoeAttack({
         baseDamage,
         energyCost,
         skillKey,
+        attackMode,
         label,
         damageType,
         ignoreArmor,
         hitBonus,
         skillValueFallback,
-        targetZone,
-        targetZoneMode,
         effect: cloneData(effect),
-        friendlyFire,
-        friendlyFireMode,
         color,
         actionSeconds: secondsCost,
+        ...buildCombatActionTargetPayload({
+          fallbackTargets: [],
+          targetZone,
+          targetZoneMode,
+          friendlyFire,
+          friendlyFireMode,
+        }),
       },
     });
 
@@ -211,6 +279,7 @@ export async function performCombatAoeAttack({
   }
 
   const encumbrance = getEncumbranceInfo(actor);
+  const injuries = getActorInjuryInfo(actor);
   const finalEnergyCost = Math.ceil(Math.max(0, numberOr(energyCost, 0)) * numberOr(encumbrance.energyMultiplier, 1));
   const currentEnergy = numberOr(actor.system?.resources?.energy?.value, 0);
   if (currentEnergy < finalEnergyCost) {
@@ -226,8 +295,10 @@ export async function performCombatAoeAttack({
     color,
     attacker: actor,
     skillKey,
+    attackMode,
     hitBonus,
     skillValueFallback,
+    injuries,
     friendlyFire,
     friendlyFireMode,
     baseDamage,
@@ -239,6 +310,7 @@ export async function performCombatAoeAttack({
     targetZone,
     targetZoneMode,
     effect,
+    onLethal: onLethal ?? (target => markActorDead(target)),
     onTemplatePlaced: async () => actor.update({
       "system.resources.energy.value": Math.max(0, currentEnergy - finalEnergyCost),
     }),
@@ -246,7 +318,7 @@ export async function performCombatAoeAttack({
 
   if (!result?.ok) return actionResult({ ok: false, reason: "aoe-cancelled", result });
   await afterAction?.({ actor, result });
-  return actionResult({ result });
+  return actionResult({ result, summary: result.summary ?? null });
 }
 
 export async function performTechniqueSupportCombatAction({
@@ -258,6 +330,12 @@ export async function performTechniqueSupportCombatAction({
   afterAction = null,
 } = {}) {
   if (!actor || !technique) return actionResult({ ok: false, reason: "missing-technique" });
+
+  const validation = validateTechniqueSupportEffect({ actor, technique, weapon });
+  if (!validation.ok) {
+    ui.notifications.warn(validation.message ?? "РџСЂРёС‘Рј РЅРµР»СЊР·СЏ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ.");
+    return actionResult({ ok: false, reason: validation.reason ?? "invalid-technique-support" });
+  }
 
   const energyCost = getTechniqueSupportEnergyCost(technique);
   const currentEnergy = numberOr(actor.system?.resources?.energy?.value, 0);
@@ -285,17 +363,29 @@ export async function performTechniqueSupportCombatAction({
     if (!timeState?.ok) return actionResult({ ok: false, reason: "time-cost", result: timeState });
   }
 
+  const result = await applyTechniqueSupportEffect({ actor, technique, weapon });
+  if (!result.ok) {
+    ui.notifications.warn(result.lines?.[0] ?? "РџСЂРёС‘Рј РЅРµР»СЊР·СЏ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ.");
+    return actionResult({ ok: false, reason: result.reason ?? "support-effect-failed", result });
+  }
+
   if (energyCost > 0) {
     await actor.update({
       "system.resources.energy.value": Math.max(0, currentEnergy - energyCost),
     });
   }
-
-  const result = await applyTechniqueSupportEffect({ actor, technique });
-  const lines = result.lines?.length ? result.lines.join("<br>") : "Эффект подготовлен.";
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<div style="padding:6px"><b>${actor.name}</b>: ${technique?.icon ?? "⚔"} <b>${label}</b><br>${lines}</div>`,
+  await createCombatChatMessage({
+    actor,
+    title: label,
+    icon: technique?.icon ?? "⚔",
+    rows: [
+      ["Актёр", actor.name],
+      ["Энергия", `-${energyCost}`, energyCost > 0],
+    ],
+    bodyHtml: result.lines?.length
+      ? result.lines.map(line => `<p>${line}</p>`).join("")
+      : "<p>Эффект подготовлен.</p>",
+    className: "ih-combat-support-action",
   });
 
   await afterAction?.({ actor, result });

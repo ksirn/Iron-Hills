@@ -33,9 +33,20 @@ import { TECHNIQUES, getAvailableTechniques } from "./constants/combat-technique
 import { IronHillsContainerSheet } from "./apps/container-sheet.mjs";
 import { IronHillsLootTransfer } from "./apps/loot-transfer-app.mjs";
 import { RACES } from "./constants/races.mjs";
-import { buildCompendiums, initCompendiums, syncWeaponPackFromCatalog, syncArmorPackFromCatalog, syncPotionPackFromCatalog, syncFoodPackFromCatalog, syncNpcPackLootFromProfiles, syncMonsterPackToBestiary } from "./compendium-builder.mjs";
+import {
+  buildCompendiums,
+  getCompendiumBuildPlan,
+  initCompendiums,
+  syncAllCatalogItemPacks,
+  syncWeaponPackFromCatalog,
+  syncArmorPackFromCatalog,
+  syncPotionPackFromCatalog,
+  syncFoodPackFromCatalog,
+  syncNpcPackLootFromProfiles,
+  syncMonsterPackToBestiary,
+} from "./compendium-builder.mjs";
 import { IronHillsCompendiumBrowser } from "./apps/compendium-browser.mjs";
-import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, DRINK_VESSELS } from "./constants/items-catalog.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, DRINK_VESSELS, MEDICAL_CONSUMABLES, CONSUMABLES, THROWABLES } from "./constants/items-catalog.mjs";
 import { IRON_HILLS_POI } from "./constants/world-map.mjs";
 import { IronHillsLauncherApp } from "./apps/launcher-app.mjs";
 import { initToolbar } from "./apps/toolbar-app.mjs";
@@ -99,6 +110,44 @@ import {
   butcherDifficultyForTier,
   findHarvestToolOnActor,
 } from "./services/wilderness-service.mjs";
+import {
+  formatContentValidationReport,
+  validateGeneratedContentSamples,
+  validateIronHillsContent,
+} from "./services/content-validation-service.mjs";
+import {
+  formatContentRepairReport,
+  repairIronHillsContent,
+} from "./services/content-repair-service.mjs";
+import {
+  formatContentPatchPreparationReport,
+  prepareIronHillsContentPatch,
+} from "./services/content-patch-service.mjs";
+import {
+  auditIronHillsCatalogs,
+  formatCatalogReadinessReport,
+} from "./services/catalog-readiness-service.mjs";
+import {
+  auditIronHillsAssets,
+  formatAssetAuditReport,
+} from "./services/content-asset-audit-service.mjs";
+import {
+  checkIronHillsContentReadiness,
+  formatContentReadinessReport,
+} from "./services/content-readiness-service.mjs";
+import {
+  buildIronHillsContentBalanceReport,
+  formatContentBalanceReport,
+} from "./services/content-balance-service.mjs";
+import {
+  formatRuntimeSmokeReport,
+  runIronHillsRuntimeSmoke,
+} from "./services/runtime-smoke-service.mjs";
+import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+} from "./services/combat-chat-service.mjs";
+import { applyDynamicStyleBindings } from "./utils/dynamic-style-bindings.mjs";
 
 async function syncDerivedConditionsCommand(actorRef) {
   const actor =
@@ -119,6 +168,279 @@ function getActorSheetActionOptions() {
     actorSheetClass: IronHillsActorSheet,
     tradeAppClass: TarkovTradeApp,
   };
+}
+
+function logContentValidationReport(report, options = {}) {
+  const text = formatContentValidationReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content validation");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  return text;
+}
+
+async function validateContentCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM может запускать проверку контента.");
+    return null;
+  }
+
+  const report = await validateIronHillsContent(options);
+  logContentValidationReport(report, options);
+
+  const errors = Number(report.counts?.error ?? 0);
+  const warnings = Number(report.counts?.warn ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills content: ${errors} errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0) {
+    ui.notifications.warn(`Iron Hills content: ${warnings} warnings. Details in console.`);
+  } else {
+    ui.notifications.info(`Iron Hills content OK: ${report.itemsChecked} items checked.`);
+  }
+
+  return report;
+}
+
+function validateGeneratedContentCommand(options = {}) {
+  const report = validateGeneratedContentSamples();
+  logContentValidationReport(report, options);
+  return report;
+}
+
+function logContentRepairReport(report, options = {}) {
+  const text = formatContentRepairReport(report, {
+    maxChanges: options.maxChanges ?? 30,
+    maxErrors: options.maxErrors ?? 10,
+    maxFindings: options.maxFindings ?? 20,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content repair");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  return text;
+}
+
+async function repairContentCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM может нормализовать контент.");
+    return null;
+  }
+
+  const report = await repairIronHillsContent(options);
+  logContentRepairReport(report, options);
+
+  const mode = report.apply ? "applied" : "dry-run";
+  if (report.errors?.length) {
+    ui.notifications.error(`Iron Hills content repair ${mode}: ${report.errors.length} errors. Details in console.`);
+  } else if (report.itemsChanged > 0) {
+    const summary = report.apply
+      ? `${report.documentsChanged} documents changed`
+      : `${report.itemsChanged} items need changes`;
+    ui.notifications.warn(`Iron Hills content repair ${mode}: ${summary}. Details in console.`);
+  } else {
+    ui.notifications.info(`Iron Hills content repair ${mode}: no changes needed.`);
+  }
+
+  return report;
+}
+
+function logContentPatchReport(report, options = {}) {
+  const text = formatContentPatchPreparationReport(report, {
+    maxSteps: options.maxSteps ?? 20,
+    maxActions: options.maxActions ?? 5,
+    maxFindings: options.maxFindings ?? 20,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content patch pipeline");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  return text;
+}
+
+async function prepareContentPatchCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM может запускать подготовку контентного патча.");
+    return null;
+  }
+
+  const report = await prepareIronHillsContentPatch(options);
+  logContentPatchReport(report, options);
+
+  const mode = report.apply ? "applied" : "dry-run";
+  const failed = report.steps?.filter(step => step.status === "failed").length ?? 0;
+  const planned = report.steps?.filter(step => step.status === "planned").length ?? 0;
+  const errors =
+    Number(report.summary?.preflightErrors ?? 0) +
+    Number(report.catalog?.counts?.error ?? 0) +
+    Number(report.generatedPackSources?.counts?.error ?? 0) +
+    Number(report.validation?.counts?.error ?? 0) +
+    Number(report.repair?.errors?.length ?? 0) +
+    Number(report.assets?.counts?.error ?? 0);
+  if (failed || errors) {
+    ui.notifications.error(`Iron Hills content patch ${mode}: ${failed} failed steps, ${errors} errors. Details in console.`);
+  } else if (planned) {
+    ui.notifications.warn(`Iron Hills content patch ${mode}: ${planned} mutating steps are planned. Details in console.`);
+  } else {
+    ui.notifications.info(`Iron Hills content patch ${mode}: pipeline completed.`);
+  }
+
+  return report;
+}
+
+function auditCatalogsCommand(options = {}) {
+  const report = auditIronHillsCatalogs();
+  const text = formatCatalogReadinessReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Catalog readiness");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const errors = Number(report.counts?.error ?? 0);
+  const warnings = Number(report.counts?.warn ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills catalogs: ${errors} errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0) {
+    ui.notifications.warn(`Iron Hills catalogs: ${warnings} warnings. Details in console.`);
+  } else {
+    ui.notifications.info(`Iron Hills catalogs OK: ${report.rowsChecked} rows checked.`);
+  }
+
+  return report;
+}
+
+async function auditAssetsCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills asset audit.");
+    return null;
+  }
+
+  const report = await auditIronHillsAssets(options);
+  const text = formatAssetAuditReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+    maxDirectories: options.maxDirectories ?? 12,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Asset audit");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const errors = Number(report.counts?.error ?? 0);
+  const warnings = Number(report.counts?.warn ?? 0);
+  const missingSystemImages = Number(report.summary?.missingSystemImages ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills assets: ${errors} errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0 || missingSystemImages > 0) {
+    ui.notifications.warn(`Iron Hills assets: ${warnings} warnings, ${missingSystemImages} missing system images. Details in console.`);
+  } else {
+    ui.notifications.info(`Iron Hills assets OK: ${report.summary?.imagesChecked ?? 0} image paths checked.`);
+  }
+
+  return report;
+}
+
+async function checkContentReadinessCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills content readiness checks.");
+    return null;
+  }
+
+  const report = await checkIronHillsContentReadiness({
+    ...options,
+    includePackDryRun: Boolean(options.includePackDryRun ?? false),
+    checkFilesystem: Boolean(options.checkFilesystem ?? options.checkAssetFiles ?? false),
+  });
+  const text = formatContentReadinessReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content readiness");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const errors = Number(report.summary?.blockingErrors ?? 0);
+  const warnings = Number(report.summary?.warnings ?? 0);
+  const missingSystemImages = Number(report.summary?.missingSystemImages ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills content readiness: ${errors} blocking errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0 || missingSystemImages > 0 || !report.summary?.packDryRunClean) {
+    ui.notifications.warn(`Iron Hills content readiness: ${warnings} warnings, ${missingSystemImages} missing system images. Details in console.`);
+  } else {
+    ui.notifications.info("Iron Hills content readiness OK.");
+  }
+
+  return report;
+}
+
+function auditContentBalanceCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills content balance checks.");
+    return null;
+  }
+
+  const report = buildIronHillsContentBalanceReport(options);
+  const text = formatContentBalanceReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+    maxTypes: options.maxTypes ?? 16,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content balance");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const errors = Number(report.counts?.error ?? 0);
+  const warnings = Number(report.counts?.warn ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills content balance: ${errors} errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0) {
+    ui.notifications.warn(`Iron Hills content balance: ${warnings} warnings. Details in console.`);
+  } else {
+    ui.notifications.info("Iron Hills content balance OK.");
+  }
+
+  return report;
+}
+
+async function runRuntimeSmokeCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills runtime smoke checks.");
+    return null;
+  }
+
+  const report = await runIronHillsRuntimeSmoke(options);
+  const text = formatRuntimeSmokeReport(report, {
+    maxFindings: options.maxFindings ?? 30,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Runtime smoke");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const errors = Number(report.counts?.error ?? 0);
+  const warnings = Number(report.counts?.warn ?? 0);
+  if (errors > 0) {
+    ui.notifications.error(`Iron Hills runtime smoke: ${errors} errors, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0) {
+    ui.notifications.warn(`Iron Hills runtime smoke: ${warnings} warnings. Details in console.`);
+  } else {
+    ui.notifications.info("Iron Hills runtime smoke OK.");
+  }
+
+  return report;
 }
 
 // Единый init: регистрация настроек, шитов, Handlebars-хелперов.
@@ -219,11 +541,14 @@ Hooks.once("init", () => {
     try {
       const confirmed = await Dialog.confirm({
         title: "Продолжить действие?",
-        content: `
-          <p><b>${actor.name}</b> продолжает действие <b>${action.label || "действие"}</b>.</p>
-          <p>Осталось: <b>${Number(action.remainingSeconds ?? 0)}</b> сек.</p>
-          <p>Продолжить?</p>
-        `
+        content: buildSystemDialogContent({
+          headline: actor.name,
+          status: "Продолжить длительное действие?",
+          rows: [
+            ["Действие", action.label || "действие"],
+            ["Осталось", `${Number(action.remainingSeconds ?? 0)} сек.`],
+          ],
+        })
       });
 
       if (!confirmed) {
@@ -269,6 +594,18 @@ Hooks.once("ready", async () => {
     runOne:  runOneMigration,
     list:    listMigrations,
   };
+  game.ironHills.validateContent = validateContentCommand;
+  game.ironHills.validateGeneratedContent = validateGeneratedContentCommand;
+  game.ironHills.repairContent = repairContentCommand;
+  game.ironHills.prepareContentPatch = prepareContentPatchCommand;
+  game.ironHills.checkContentReadiness = checkContentReadinessCommand;
+  game.ironHills.contentReadiness = checkContentReadinessCommand;
+  game.ironHills.auditCatalogs = auditCatalogsCommand;
+  game.ironHills.auditAssets = auditAssetsCommand;
+  game.ironHills.auditContentBalance = auditContentBalanceCommand;
+  game.ironHills.contentBalance = auditContentBalanceCommand;
+  game.ironHills.runRuntimeSmoke = runRuntimeSmokeCommand;
+  game.ironHills.runtimeSmoke = runRuntimeSmokeCommand;
   void runWorldMigrations();
 
   // GM-команда: прошёл день после смерти — тикаем резерв
@@ -302,12 +639,28 @@ Hooks.once("ready", async () => {
 
         if (newEnRes <= 0 || newMnRes <= 0) {
           await ChatMessage.create({
-            content: `<b style="color:#ef4444">☠ ${actor.name}</b> — резерв души иссяк. Пробуждённый потерян навсегда.`
+            content: buildCombatChatCard({
+              title: actor.name,
+              icon: "☠",
+              status: "Резерв души иссяк",
+              statusClass: "is-danger",
+              notices: [["Итог", "Пробуждённый потерян навсегда"]],
+            })
           });
         } else {
           const daysLeft = Math.min(newEnRes, newMnRes);
           await ChatMessage.create({
-            content: `⏳ <b>${actor.name}</b> — душа угасает. Резерв: ⚡${newEnRes} ✦${newMnRes}. Осталось дней: ~${daysLeft}`
+            content: buildCombatChatCard({
+              title: actor.name,
+              icon: "⏳",
+              status: "Душа угасает",
+              statusClass: "is-warn",
+              rows: [
+                ["Энергия души", newEnRes],
+                ["Мана души", newMnRes],
+                ["Осталось дней", `~${daysLeft}`],
+              ],
+            })
           });
         }
       } catch (err) {
@@ -448,6 +801,14 @@ Hooks.once("ready", async () => {
     }
   });
 
+  Hooks.on("targetToken", () => {
+    try {
+      game.ironHills?.apps?.combatHud?.render?.(true, { focus: false });
+    } catch (err) {
+      console.warn("Iron Hills | HUD targetToken refresh failed", err);
+    }
+  });
+
   Hooks.on("canvasReady", () => {
     ensureDefaultPlayerHud();
   });
@@ -486,7 +847,7 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
   ensureDefaultPlayerHud();
   game.ironHills.pickEntity       = (options) => EntityPickerDialog.pick(options);
   game.ironHills.RACES            = RACES;
-  game.ironHills.ITEMS            = { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, DRINK_VESSELS };
+  game.ironHills.ITEMS            = { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, DRINK_VESSELS, MEDICAL_CONSUMABLES, CONSUMABLES, THROWABLES };
   game.ironHills.grantMonsterLootTo = grantMonsterLootTo;
   game.ironHills.refillDrinkVesselsFromWater = refillActorVessels;
   /** @deprecated макросы: используйте listMonsterLootPoolKeys */
@@ -499,6 +860,8 @@ Hooks.on("updateActor", async (actorDoc, change, options = {}) => {
   game.ironHills.findHarvestToolOnActor = findHarvestToolOnActor;
   game.ironHills.MAP_POI          = IRON_HILLS_POI;
   game.ironHills.buildCompendiums = buildCompendiums;
+  game.ironHills.getCompendiumBuildPlan = getCompendiumBuildPlan;
+  game.ironHills.syncAllCatalogItemPacks = syncAllCatalogItemPacks;
   game.ironHills.syncNpcPackLootFromProfiles = syncNpcPackLootFromProfiles;
   game.ironHills.syncMonsterPackToBestiary = syncMonsterPackToBestiary;
   game.ironHills.syncWeaponPackFromCatalog = syncWeaponPackFromCatalog;
@@ -966,7 +1329,9 @@ function preserveInputFocus(app) {
   app._ironHillsFocusPatched = true;
 }
 
-Hooks.on("renderApplication", (app) => {
+Hooks.on("renderApplication", (app, html) => {
+  applyDynamicStyleBindings(html);
+
   // Применяем только к нашим окнам
   const ourClasses = ["trade-app","travel-app","craft-app","craft-workbench-app",
                       "grid-inventory","party-manager","world-map","world-journal",
@@ -974,6 +1339,10 @@ Hooks.on("renderApplication", (app) => {
   if (ourClasses.some(c => app.options?.classes?.includes(c))) {
     preserveInputFocus(app);
   }
+});
+
+Hooks.on("renderActorSheet", (_app, html) => {
+  applyDynamicStyleBindings(html);
 });
 
 }); // close Hooks.once("ready") L216
@@ -1070,7 +1439,17 @@ Hooks.on("updateActor", async (actor, changes) => {
         updates["system.resources.soul.energyReserve.value"]        = Math.min(resMax, resVal + 1);
         updates["system.resources.soul.energyReserve.trainingAccum"] = accum - threshold;
         await ChatMessage.create({
-          content: `✨ <b>${actor.name}</b> — резерв энергии вырос! (${resVal} → ${Math.min(resMax, resVal + 1)} / ${resMax})`
+          content: buildCombatChatCard({
+            title: actor.name,
+            icon: "✨",
+            status: "Резерв энергии вырос",
+            statusClass: "is-good",
+            rows: [
+              ["Было", resVal],
+              ["Стало", Math.min(resMax, resVal + 1)],
+              ["Максимум", resMax],
+            ],
+          })
         });
       } else {
         updates["system.resources.soul.energyReserve.trainingAccum"] = accum;
@@ -1096,7 +1475,17 @@ Hooks.on("updateActor", async (actor, changes) => {
         updates["system.resources.soul.manaReserve.value"]        = Math.min(resMax, resVal + 1);
         updates["system.resources.soul.manaReserve.trainingAccum"] = accum - threshold;
         await ChatMessage.create({
-          content: `✨ <b>${actor.name}</b> — резерв маны вырос! (${resVal} → ${Math.min(resMax, resVal + 1)} / ${resMax})`
+          content: buildCombatChatCard({
+            title: actor.name,
+            icon: "✨",
+            status: "Резерв маны вырос",
+            statusClass: "is-good",
+            rows: [
+              ["Было", resVal],
+              ["Стало", Math.min(resMax, resVal + 1)],
+              ["Максимум", resMax],
+            ],
+          })
         });
       } else {
         updates["system.resources.soul.manaReserve.trainingAccum"] = accum;
@@ -1253,76 +1642,11 @@ Hooks.once("ready", async () => {
   game.ironHills.restLong  = () => game.ironHills.rest("long");
 
   game.ironHills.openTimeDialog = async () => {
-    // Перенаправляем в WeatherApp — единое место управления временем
-    if (game.user?.isGM) { game.ironHills.openWeather?.(); return; }
-    if (!game.user?.isGM) { ui.notifications.warn("Только GM"); return; }
-
-    const current = game.time?.worldTime ?? 0;
-    const curDays  = Math.floor(current / 86400);
-    const curHours = Math.floor((current % 86400) / 3600);
-
-    return new Promise(resolve => {
-      new Dialog({
-        title: "⏰ Перемотка времени",
-        content: `
-          <form style="font-family:var(--ih-font-ui,system-ui);color:#e8edf5;padding:6px">
-            <p style="color:#6a7d99;font-size:11px;margin-bottom:10px">
-              Текущее время: День ${curDays + 1}, ${curHours}ч
-            </p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6a7d99">
-                Дней
-                <input id="adv-days"  type="number" value="0" min="0"
-                  style="background:#232e42;border:1px solid rgba(120,150,200,0.2);
-                         border-radius:6px;color:#e8edf5;padding:4px 8px;font-size:14px">
-              </label>
-              <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6a7d99">
-                Часов
-                <input id="adv-hours" type="number" value="8" min="0" max="23"
-                  style="background:#232e42;border:1px solid rgba(120,150,200,0.2);
-                         border-radius:6px;color:#e8edf5;padding:4px 8px;font-size:14px">
-              </label>
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button type="button" data-preset="1h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1ч</button>
-              <button type="button" data-preset="4h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">4ч</button>
-              <button type="button" data-preset="8h"  style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">8ч (ночь)</button>
-              <button type="button" data-preset="24h" style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1 день</button>
-              <button type="button" data-preset="168h" style="padding:3px 10px;border-radius:6px;background:#1b2333;border:1px solid rgba(120,150,200,0.2);color:#a8b8d0;cursor:pointer;font-size:10px">1 неделя</button>
-            </div>
-          </form>
-        `,
-        buttons: {
-          advance: {
-            label: "⏩ Перемотать",
-            callback: async (html) => {
-              const days  = Number(html.find("#adv-days").val())  || 0;
-              const hours = Number(html.find("#adv-hours").val()) || 0;
-              const total = days * 24 + hours;
-              if (total <= 0) { ui.notifications.warn("Укажи время"); return; }
-              await game.time.advance(total * 3600);
-              // Тик угасания душ за каждый прошедший день
-              if (days > 0) {
-                for (let d = 0; d < days; d++) await game.ironHills.tickSoulDecay?.();
-              }
-              ui.notifications.info(`⏰ Перемотано на ${days > 0 ? days + "д " : ""}${hours > 0 ? hours + "ч" : ""}`);
-              resolve(total);
-            }
-          },
-          cancel: { label: "Отмена", callback: () => resolve(null) }
-        },
-        render: (html) => {
-          html.find("[data-preset]").on("click", e => {
-            const h = parseInt(e.currentTarget.dataset.preset);
-            const d = Math.floor(h / 24);
-            const rem = h % 24;
-            html.find("#adv-days").val(d);
-            html.find("#adv-hours").val(rem);
-          });
-        },
-        default: "advance",
-      }).render(true);
-    });
+    if (!game.user?.isGM) {
+      ui.notifications.warn("Только GM");
+      return null;
+    }
+    return game.ironHills.openWeather?.() ?? null;
   };
 
   game.ironHills.syncSoulReserve = async (actor) => {

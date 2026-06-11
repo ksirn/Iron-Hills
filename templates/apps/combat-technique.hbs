@@ -18,6 +18,22 @@
     </div>
   </div>
 
+  <div class="ih-ct-target-strip {{#unless hasTargets}}is-empty{{/unless}}">
+    <div class="ih-ct-target-label">Цели</div>
+    {{#if hasTargets}}
+    <div class="ih-ct-target-list">
+      {{#each targetRows}}
+      <span class="ih-ct-target-chip" title="{{name}}">
+        <img src="{{img}}" alt="{{name}}">
+        <b>{{name}}</b>
+      </span>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="ih-ct-target-empty">Обычный и прицельный удар потребуют выбранную цель.</div>
+    {{/if}}
+  </div>
+
   {{!-- Табы --}}
   <div class="ih-ct-tabs">
     <a class="ih-ct-tab {{#if (eq tab 'techniques')}}is-active{{/if}}" data-tab="techniques">⚔ Приёмы</a>
@@ -63,7 +79,7 @@
             · {{lookup ../conditionLabels effect.applyCondition 'icon'}}
             {{lookup ../conditionLabels effect.applyCondition 'label'}}
           {{/if}}
-          {{#if aoeMeta}} | AoE {{aoeMeta}}{{/if}}
+          {{#if aoeMeta}} · AoE: {{aoeMeta}}{{/if}}
         </div>
         <div class="ih-ct-tech-req">Навык {{reqSkill}}+ · Оружие {{reqWeaponTier}}+ ст.</div>
       </div>
@@ -76,10 +92,10 @@
     <div class="ih-ct-section-title muted-text">Недоступно</div>
     {{#each locked}}
     <div class="ih-ct-technique is-locked" title="{{lockReason}}">
-      <span class="ih-ct-tech-icon" style="opacity:0.3">{{icon}}</span>
+      <span class="ih-ct-tech-icon is-muted">{{icon}}</span>
       <div class="ih-ct-tech-info">
-        <div class="ih-ct-tech-name" style="opacity:0.5">{{label}}</div>
-        <div class="ih-ct-tech-req" style="color:var(--ih-hp-crit)">🔒 {{lockReason}}</div>
+        <div class="ih-ct-tech-name is-muted">{{label}}</div>
+        <div class="ih-ct-tech-req is-blocked">🔒 {{lockReason}}</div>
       </div>
     </div>
     {{/each}}

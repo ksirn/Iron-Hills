@@ -9,6 +9,11 @@
 
 // ── Время суток ──────────────────────────────────────────────
 
+import {
+  buildCombatChatCard,
+  buildCombatParagraphs,
+} from "./combat-chat-service.mjs";
+
 export const TIME_PERIODS = [
   // tint — очень тонкий, почти нейтральный. Основной эффект через darkness.
   { name: "Глубокая ночь",  from: 0,  to: 5,  darkness: 0.85, tint: "#000000", globalLight: false, vision: 2,  icon: "🌑" },
@@ -258,10 +263,12 @@ export async function setWeather(weatherId) {
 
   // Chat сообщение
   await ChatMessage.create({
-    content: `<div style="padding:6px;font-family:var(--font-primary)">
-      ${preset.icon} <b>Погода меняется: ${preset.label}</b><br>
-      <span style="color:#6a7d99;font-size:11px">${preset.desc}</span>
-    </div>`
+    content: buildCombatChatCard({
+      title: `Погода меняется: ${preset.label}`,
+      icon: preset.icon,
+      bodyHtml: buildCombatParagraphs([preset.desc]),
+      className: "ih-weather-chat-card",
+    }),
   });
 
   Hooks.callAll("ironHillsWeatherChanged", preset);

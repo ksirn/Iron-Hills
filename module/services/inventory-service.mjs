@@ -148,6 +148,7 @@ export function getEquippedSlotKeys(actor, itemId) {
 export async function clearItemGridPlacement(item) {
   if (!item) return false;
   await item.update({
+    "flags.iron-hills-system.container": null,
     "flags.iron-hills-system.sectionKey": null,
     "flags.iron-hills-system.gridPos": null,
   });
@@ -159,7 +160,9 @@ export function isPendingInventorySection(sectionKey) {
 }
 
 export function isItemGridPlaced(item) {
-  const sectionKey = item?.flags?.["iron-hills-system"]?.sectionKey ?? null;
+  const flags = item?.flags?.["iron-hills-system"] ?? {};
+  if (flags.container) return true;
+  const sectionKey = flags.sectionKey ?? null;
   return !isPendingInventorySection(sectionKey);
 }
 
@@ -168,6 +171,7 @@ export async function moveItemToInventorySection(item, sectionKey, gridPos = nul
   if (isPendingInventorySection(sectionKey)) return clearItemGridPlacement(item);
 
   await item.update({
+    "flags.iron-hills-system.container": null,
     "flags.iron-hills-system.sectionKey": sectionKey,
     "flags.iron-hills-system.gridPos": gridPos ?? null,
   });
@@ -180,9 +184,14 @@ export async function clearContainedItemsForEquipmentSlot(actor, slotKey) {
 
   const updates = [];
   for (const item of liveActor.items) {
-    const sectionKey = item.flags?.["iron-hills-system"]?.sectionKey;
-    if (!sectionKey) continue;
-    if (sectionKey === `${slotKey}_main` || sectionKey.startsWith(`${slotKey}_`)) {
+    const flags = item.flags?.["iron-hills-system"] ?? {};
+    const sectionKey = flags.sectionKey;
+    const containerKey = flags.container;
+    if (
+      sectionKey === `${slotKey}_main` ||
+      sectionKey?.startsWith(`${slotKey}_`) ||
+      containerKey?.startsWith(`${slotKey}_attach_`)
+    ) {
       updates.push(clearItemGridPlacement(item));
     }
   }
@@ -500,8 +509,8 @@ export async function removeQuantityFromItem(actor, item, quantityToRemove) {
   return false;
 }
 
-  const currentQuantity = Math.max(1, Number(liveItem.system?.quantity ?? 1));
-  const removeQty = Math.max(1, Number(quantityToRemove ?? 1));
+  const currentQuantity = getItemQuantity(liveItem);
+  const removeQty = Math.max(1, Math.floor(Number(quantityToRemove ?? 1) || 1));
   const nextQuantity = currentQuantity - removeQty;
 debugLog("removeQuantityFromItem:start", {
   actorId: liveActor.id,

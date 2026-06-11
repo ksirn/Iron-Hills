@@ -3,46 +3,144 @@
  * Диалог выбора и применения заклинания.
  */
 import {
-  SPELLS, SPELLS_BY_SCHOOL, SPELL_SCHOOLS, getAvailableSpells
+  SPELLS_BY_SCHOOL, SPELL_SCHOOLS
 } from "../constants/spells-catalog.mjs";
-import { getTargetPartLabel } from "../services/actor-state-service.mjs";
 import {
-  normalizeAoeConfig,
-  normalizeAoeTargetZone,
-  resolveAoeFriendlyFire,
-  resolveAoeFriendlyFireMode,
-} from "../services/aoe-policy-service.mjs";
+  resolveSpellSchoolSkill,
+} from "../services/actor-state-service.mjs";
+import {
+  buildSpellChoicePayload,
+  buildSpellRuntimeData,
+  getSpellTargetZoneOptions,
+} from "../services/spell-runtime-service.mjs";
+import {
+  formatAoeConfigSummary,
+  formatSpellRuntimeSummary,
+} from "../services/combat-presentation-service.mjs";
+import { getAoeTargetZoneModeLabel } from "../services/aoe-policy-service.mjs";
 
-const BODY_ZONE_KEYS = Object.freeze(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
-const RANDOM_ZONE_OPTION = Object.freeze({ key: "", label: "Случайная зона" });
-const BODY_ZONE_OPTIONS = Object.freeze([
-  RANDOM_ZONE_OPTION,
-  ...BODY_ZONE_KEYS.map(key => ({ key, label: getTargetPartLabel(key) }))
-]);
-
-const AOE_LABELS = Object.freeze({
-  blast: "💥 Все в зоне",
-  pierce: "➡ Первый на пути",
-  sweep: "↔ Слева направо",
-  shards: "💎 Случайные N",
-  chain: "⛓ Цепочка",
-  nova: "🌟 Вокруг кастера"
-});
-
-function getSpellTargetZone(spell) {
-  return normalizeAoeTargetZone(spell?.targetZone)
-    || normalizeAoeTargetZone(spell?.targetPart)
-    || normalizeAoeTargetZone(spell?.effect?.targetZone)
-    || normalizeAoeTargetZone(spell?.effect?.targetPart)
-    || "";
+function itemCollection(actor) {
+  return actor?.items?.filter ? actor.items.filter(() => true) : [];
 }
 
-function getZoneOptions(selectedKey = "") {
-  const selectedZone = normalizeAoeTargetZone(selectedKey) ?? "";
-  return BODY_ZONE_OPTIONS.map(option => ({
-    ...option,
-    selected: option.key === selectedZone
-  }));
+function cleanKey(value) {
+  return String(value ?? "").trim();
+}
+
+function getItemSpellId(item) {
+  return cleanKey(item?.system?.spellId ?? item?.system?.id ?? item?.name);
+}
+
+function getManaValue(actor) {
+  return Number(actor?.system?.resources?.mana?.value ?? 0);
+}
+
+function getMaxMagicSkillValue(actor) {
+  const skills = actor?.system?.skills ?? {};
+  return Math.max(
+    0,
+    ...Object.values(SPELL_SCHOOLS).map(school => Number(resolveSpellSchoolSkill(actor, school.id).value ?? 0)),
+    Number(skills.magic?.value ?? 0),
+    Number(skills.sorcery?.value ?? 0),
+  );
+}
+
+function getSchoolGroup(groups, schoolId = "") {
+  const key = cleanKey(schoolId);
+  if (groups.has(key)) return groups.get(key);
+  const fallbackKey = key || "custom";
+  if (!groups.has(fallbackKey)) {
+    groups.set(fallbackKey, {
+      id: fallbackKey,
+      label: fallbackKey === "custom" ? "Прочее" : fallbackKey,
+      icon: "✦",
+      color: "#a8b8d0",
+      spells: [],
+      hasAny: true,
+    });
+  }
+  return groups.get(fallbackKey);
+}
+
+function resolveSpellLock(actor, runtime, {
+  isScroll = false,
+  manaCur = getManaValue(actor),
+} = {}) {
+  const schoolSkill = resolveSpellSchoolSkill(actor, runtime.school);
+  if (!schoolSkill.skill) return `Нет школы: ${schoolSkill.label || runtime.school || "?"}`;
+
+  const rank = Number(runtime.rank ?? 1);
+  if (!isScroll && Number(schoolSkill.value ?? 0) < rank) {
+    return `Нужен навык ${schoolSkill.skillLabel || schoolSkill.key}: ${rank}`;
+  }
+
+  const manaCost = isScroll ? 0 : Number(runtime.manaCost ?? 0);
+  if (manaCost > manaCur) return `Нужно ${manaCost} маны`;
+  return null;
+}
+
+function buildSpellDialogRow({
+  actor,
+  source,
+  runtime,
+  choiceId,
+  isScroll = false,
+  item = null,
+  manaCur = getManaValue(actor),
+} = {}) {
+  const locked = resolveSpellLock(actor, runtime, { isScroll, manaCur });
+  const targetZoneMode = runtime.targetZoneMode ?? (runtime.targetZone ? "fixed" : "random");
+  const targetZoneRequired = targetZoneMode === "aimed";
+  const targetZone = runtime.targetZone ?? (targetZoneRequired ? "torso" : "");
+  const canChooseTargetZone = runtime.canChooseTargetZone;
+  const canToggleFriendlyFire = Boolean(runtime.aoe);
+  const quantity = Number(item?.system?.quantity ?? 0);
+  const aoeSummary = runtime.aoe
+    ? formatAoeConfigSummary({
+      ...runtime.aoe,
+      friendlyFire: runtime.friendlyFire,
+      friendlyFireMode: runtime.friendlyFireMode,
+      targetZone: runtime.targetZone ?? runtime.attackTargetZone ?? runtime.targetPart,
+      targetZoneMode: runtime.targetZoneMode,
+    }, { compact: true })
+    : "";
+
+  return {
+    id: choiceId,
+    choiceId,
+    itemId: item?.id ?? "",
+    source,
+    sourceLabel: isScroll ? "Свиток" : (source === "item" ? "Книга" : ""),
+    quantity: isScroll && quantity > 1 ? quantity : null,
+    label: runtime.label,
+    desc: runtime.desc,
+    rank: runtime.rank,
+    aoe: runtime.aoe,
+    damage: runtime.damage,
+    effectType: runtime.effectType,
+    manaCost: isScroll ? 0 : runtime.manaCost,
+    energyCost: runtime.energyCost,
+    castTime: runtime.castTime,
+    locked,
+    available: !locked,
+    targetZone,
+    targetZoneMode,
+    targetZoneModeLabel: canChooseTargetZone ? getAoeTargetZoneModeLabel(targetZoneMode) : "",
+    targetZoneRequired,
+    friendlyFire: runtime.friendlyFire,
+    friendlyFireMode: runtime.friendlyFireMode,
+    canChooseTargetZone,
+    canToggleFriendlyFire,
+    bodyZones: canChooseTargetZone
+      ? getSpellTargetZoneOptions(targetZone, {
+          includeRandom: !targetZoneRequired,
+          randomLabel: "Случайная зона",
+        })
+      : [],
+    runtimeSummary: formatSpellRuntimeSummary(runtime, { includeAoe: false }),
+    aoeSummary,
+    aoeLabel: aoeSummary,
+  };
 }
 
 class IronHillsSpellCastApp extends Application {
@@ -52,6 +150,7 @@ class IronHillsSpellCastApp extends Application {
     this._actor    = actor;
     this._targets  = targets;
     this._resolve  = null;
+    this._choices  = new Map();
     this._school   = null; // фильтр по школе
   }
 
@@ -82,68 +181,106 @@ class IronHillsSpellCastApp extends Application {
     const mana       = actor.system?.resources?.mana;
     const manaCur    = Number(mana?.value ?? 0);
     const manaMax    = Number(mana?.max   ?? 0);
-    const magicSkill = Number(actor.system?.skills?.magic?.value
-                           ?? actor.system?.skills?.sorcery?.value ?? 0);
+    const magicSkill = getMaxMagicSkillValue(actor);
+    const ownedItems = itemCollection(actor);
+    const spellItems = ownedItems.filter(item => item.type === "spell");
+    const scrollItems = ownedItems.filter(item => item.type === "scroll");
+    const itemBySpellId = new Map();
+    const usedSpellItemIds = new Set();
+    const groups = new Map(Object.values(SPELL_SCHOOLS).map(school => [
+      school.id,
+      { ...school, spells: [], hasAny: false },
+    ]));
+    let choiceIndex = 0;
+    this._choices = new Map();
 
-    // Все заклинания из предметов персонажа
-    const knownSpells = actor.items?.filter(i => i.type === "spell") ?? [];
-    const knownIds    = new Set(knownSpells.map(i => i.system?.spellId ?? i.name));
+    const registerChoice = (choice) => {
+      const choiceId = `spell-choice-${++choiceIndex}`;
+      this._choices.set(choiceId, choice);
+      return choiceId;
+    };
 
-    // Группируем по школам
-    const schools = Object.values(SPELL_SCHOOLS).map(school => {
-      const spells = (SPELLS_BY_SCHOOL[school.id] ?? []).map(spell => {
-        const aoeConfig = spell.aoe
-          ? normalizeAoeConfig(spell.aoe, { distance: 1 })
-          : null;
-        const known    = knownIds.has(spell.id);
-        const hasRank  = spell.rank <= magicSkill;
-        const hasMana  = spell.manaCost <= manaCur;
-        const locked   = !known ? "unknown"
-                       : !hasRank ? `Нужен навык ${spell.rank}`
-                       : !hasMana ? `Нужно ${spell.manaCost} маны`
-                       : null;
-        const targetZone = getSpellTargetZone(spell);
-        const canChooseTargetZone = Number(spell.damage ?? 0) > 0;
-        const canToggleFriendlyFire = Boolean(aoeConfig);
-        const friendlyFireMode = resolveAoeFriendlyFireMode(
-          spell.aoe?.friendlyFireMode,
-          spell.friendlyFireMode,
-          spell.aoe?.friendlyFire,
-          spell.friendlyFire,
-          "off",
-        );
-        const friendlyFire = Boolean(aoeConfig?.friendlyFire ?? resolveAoeFriendlyFire(spell.friendlyFire, false));
-        return {
-          ...spell,
-          aoe: aoeConfig,
-          locked,
-          available: !locked,
-          targetZone,
-          friendlyFire,
-          friendlyFireMode,
-          canChooseTargetZone,
-          canToggleFriendlyFire,
-          bodyZones: canChooseTargetZone ? getZoneOptions(targetZone) : [],
-          aoeLabel: aoeConfig ? (AOE_LABELS[aoeConfig.type] ?? aoeConfig.type) : "",
-        };
+    for (const item of spellItems) {
+      const spellId = getItemSpellId(item);
+      if (spellId && !itemBySpellId.has(spellId)) itemBySpellId.set(spellId, item);
+    }
+
+    const addRow = ({ source, runtime, item = null, isScroll = false, spell = null }) => {
+      const group = getSchoolGroup(groups, runtime.school);
+      const choiceId = registerChoice(source === "catalog"
+        ? { source, spell }
+        : { source, itemId: item.id, isScroll, spellOverrides: null });
+      group.spells.push(buildSpellDialogRow({
+        actor,
+        source,
+        runtime,
+        choiceId,
+        isScroll,
+        item,
+        manaCur,
+      }));
+      group.hasAny = true;
+    };
+
+    for (const school of Object.values(SPELL_SCHOOLS)) {
+      for (const spell of SPELLS_BY_SCHOOL[school.id] ?? []) {
+        const item = itemBySpellId.get(spell.id);
+        if (!item) continue;
+        usedSpellItemIds.add(item.id);
+        addRow({
+          source: "item",
+          item,
+          runtime: buildSpellRuntimeData(item),
+        });
+      }
+    }
+
+    for (const item of spellItems) {
+      if (usedSpellItemIds.has(item.id)) continue;
+      addRow({
+        source: "item",
+        item,
+        runtime: buildSpellRuntimeData(item),
       });
-      const hasAny = spells.some(s => s.available || s.locked !== "unknown");
-      return { ...school, spells, hasAny };
-    }).filter(s => s.hasAny);
+    }
 
-    // Фильтр по школе
+    for (const item of scrollItems) {
+      addRow({
+        source: "item",
+        item,
+        isScroll: true,
+        runtime: buildSpellRuntimeData(item),
+      });
+    }
+
+    const schools = [...groups.values()]
+      .filter(school => school.hasAny)
+      .map(school => ({
+        ...school,
+        spells: school.spells.sort((a, b) =>
+          Number(a.rank ?? 0) - Number(b.rank ?? 0)
+          || String(a.label ?? "").localeCompare(String(b.label ?? ""))
+        ),
+      }));
+
     const filtered = this._school
       ? schools.filter(s => s.id === this._school)
       : schools;
+
+    const allSchools = [
+      ...Object.values(SPELL_SCHOOLS),
+      ...schools
+        .filter(school => !SPELL_SCHOOLS[school.id])
+        .map(({ id, label, icon, color }) => ({ id, label, icon, color })),
+    ];
 
     return {
       actorName: actor.name,
       manaCur, manaMax, magicSkill,
       schools: filtered,
-      allSchools: Object.values(SPELL_SCHOOLS),
+      allSchools,
       activeSchool: this._school,
       targets: this._targets.map(t => ({ id:t.id, name:t.name })),
-      AOE_LABELS,
     };
   }
 
@@ -162,55 +299,49 @@ class IronHillsSpellCastApp extends Application {
 
     html.find("[data-cast-spell]").on("click", e => {
       const id = e.currentTarget.dataset.castSpell;
-      const spell = SPELLS[id];
-      if (!spell) return;
+      const choice = this._choices.get(id);
+      if (!choice) return;
       if (e.currentTarget.classList.contains("is-locked")) return;
 
-      const chosen = foundry.utils.deepClone(spell);
       const zoneInput = e.currentTarget.querySelector("[data-spell-target-zone]");
       const friendlyFireInput = e.currentTarget.querySelector("[data-spell-friendly-fire]");
-      const targetZone = zoneInput
-        ? (normalizeAoeTargetZone(zoneInput.value) ?? "")
-        : getSpellTargetZone(chosen);
-
-      if (targetZone) {
-        chosen.targetZone = targetZone;
-        chosen.targetPart = chosen.targetPart ?? targetZone;
-        if (chosen.effect && typeof chosen.effect === "object") {
-          chosen.effect = { ...chosen.effect, targetZone };
-        }
-      } else if (zoneInput) {
-        delete chosen.targetZone;
-        delete chosen.targetPart;
-        if (chosen.effect && typeof chosen.effect === "object") {
-          chosen.effect = { ...chosen.effect };
-          delete chosen.effect.targetZone;
-          delete chosen.effect.targetPart;
-        }
+      const choiceOptions = {};
+      if (zoneInput) {
+        choiceOptions.targetZone = zoneInput.value;
+        choiceOptions.targetZoneMode = zoneInput.dataset.spellTargetZoneMode ?? null;
       }
       if (friendlyFireInput) {
         const checked = Boolean(friendlyFireInput.checked);
         const defaultMode = friendlyFireInput.dataset.spellFriendlyFireMode ?? "off";
         const defaultChecked = friendlyFireInput.dataset.spellFriendlyFireDefault === "true";
-        const friendlyFireMode = !checked
+        choiceOptions.friendlyFire = checked;
+        choiceOptions.friendlyFireMode = !checked
           ? (defaultMode === "auto" && !defaultChecked ? "auto" : "off")
           : (defaultMode === "auto" && defaultChecked ? "auto" : "on");
-        chosen.friendlyFire = checked;
-        chosen.friendlyFireMode = friendlyFireMode;
-        if (chosen.aoe && typeof chosen.aoe === "object") {
-          chosen.aoe = { ...chosen.aoe, friendlyFireMode };
-        }
-      } else if (chosen.friendlyFire === undefined) {
-        chosen.friendlyFire = false;
       }
 
-      this._resolve?.({ spell: chosen });
+      const resolve = this._resolve;
+      this._resolve = null;
+
+      if (choice.source === "catalog") {
+        const chosen = buildSpellChoicePayload(choice.spell, choiceOptions);
+        resolve?.({ source: "catalog", spell: chosen });
+      } else {
+        resolve?.({
+          source: "item",
+          itemId: choice.itemId,
+          isScroll: Boolean(choice.isScroll),
+          spellOverrides: choiceOptions,
+        });
+      }
       this.close();
     });
 
     // Отмена
     html.find("[data-cancel]").on("click", () => {
-      this._resolve?.(null);
+      const resolve = this._resolve;
+      this._resolve = null;
+      resolve?.(null);
       this.close();
     });
   }

@@ -7,41 +7,19 @@ import {
   getItemActionType,
   useLegacyPotionEffect,
 } from "./item-effect-service.mjs";
-import { resolveCombatActionTargets } from "./combat-action-target-service.mjs";
+import {
+  buildCombatActionTargetPayload,
+  resolveCombatActionTargetContext,
+  resolveCombatActionTargets,
+} from "./combat-action-target-service.mjs";
+import { getPendingInventoryItemActionConfig } from "../utils/actor-inventory-action-config.mjs";
 
 export function getPendingItemActionConfig(actionType) {
-  const configs = {
-    "use-consumable": {
-      allowedTypes: ["consumable"],
-      missingMessage: "Предмет для продолжения действия не найден.",
-    },
-    food: {
-      allowedTypes: ["food"],
-      missingMessage: "Еда для продолжения действия не найдена.",
-    },
-    potion: {
-      allowedTypes: ["potion"],
-      missingMessage: "Зелье для продолжения действия не найдено.",
-    },
-    "cast-spell": {
-      allowedTypes: ["spell", "scroll"],
-      missingMessage: "Заклинание для продолжения действия не найдено.",
-    },
-    spell: {
-      allowedTypes: ["spell", "scroll"],
-      missingMessage: "Заклинание для продолжения действия не найдено.",
-    },
-    scroll: {
-      allowedTypes: ["scroll"],
-      missingMessage: "Заклинание для продолжения действия не найдено.",
-    },
-    throwable: {
-      allowedTypes: ["throwable"],
-      missingMessage: "Метательный предмет для продолжения действия не найден.",
-    },
-  };
+  return getPendingInventoryItemActionConfig(actionType);
+}
 
-  return configs[actionType] ?? null;
+function notifyWarn(message) {
+  globalThis.ui?.notifications?.warn?.(message);
 }
 
 export function getOwnedItemForUse(actor, itemOrId, missingMessage = "Предмет не найден") {
@@ -50,7 +28,7 @@ export function getOwnedItemForUse(actor, itemOrId, missingMessage = "Предм
     : itemOrId;
 
   if (!item) {
-    ui.notifications.warn(missingMessage);
+    notifyWarn(missingMessage);
     return null;
   }
 
@@ -61,6 +39,51 @@ function shouldRefreshAfterItemEffect(result) {
   return Boolean(result?.changed || result?.consumedItem || result?.consumeItem);
 }
 
+function itemUseOutcome({
+  ok = true,
+  handled = true,
+  queued = false,
+  cancelled = false,
+  result = null,
+  reason = "",
+  timeState = null,
+  summary = null,
+} = {}) {
+  return {
+    ok,
+    handled,
+    queued,
+    cancelled,
+    result,
+    reason,
+    timeState,
+    summary,
+  };
+}
+
+function buildItemUseSummary({ actor = null, item = null, result = null } = {}) {
+  if (!item) return null;
+  const hasResult = result !== undefined && result !== null;
+
+  return {
+    actorId: actor?.id ?? null,
+    actorName: actor?.name ?? "",
+    itemId: item.id ?? null,
+    itemName: item.name ?? "",
+    itemType: item.type ?? "",
+    actionType: getItemActionType(item),
+    ok: result?.ok !== false,
+    handled: hasResult ? Boolean(result?.handled ?? true) : false,
+    cancelled: Boolean(result?.cancelled || result?.canceled),
+    consumedItem: Boolean(result?.consumedItem || result?.consumeItem),
+    changed: Boolean(result?.changed || result?.consumedItem || result?.consumeItem),
+  };
+}
+
+function normalizeItemUseTargets(targets = null) {
+  return resolveCombatActionTargets({ targets });
+}
+
 async function resolveItemUseTime({
   item,
   actionType,
@@ -68,17 +91,46 @@ async function resolveItemUseTime({
   itemId,
   skipTimeCost = false,
   resolveCombatTimeCost = null,
+  targets = null,
+  payload = {},
 } = {}) {
-  if (skipTimeCost) return true;
+  if (skipTimeCost || !resolveCombatTimeCost) {
+    return { ok: true, queued: false, immediate: true, timeState: null };
+  }
 
-  const timeState = await resolveCombatTimeCost?.({
+  const selectedTargets = normalizeItemUseTargets(targets);
+  const timeState = await resolveCombatTimeCost({
     actionType,
     label,
     item,
-    payload: { itemId },
+    payload: {
+      itemId,
+      ...payload,
+      ...buildCombatActionTargetPayload({ targets: selectedTargets }),
+    },
   });
 
-  return Boolean(timeState?.ok) && !timeState?.queued;
+  if (timeState?.queued) {
+    return {
+      ok: true,
+      queued: true,
+      immediate: false,
+      reason: timeState.reason || "queued",
+      timeState,
+    };
+  }
+
+  if (!timeState?.ok) {
+    return {
+      ok: false,
+      queued: false,
+      immediate: false,
+      reason: timeState?.reason || "time-cost",
+      timeState,
+    };
+  }
+
+  return { ok: true, queued: false, immediate: true, timeState };
 }
 
 async function finalizeItemEffect({
@@ -87,8 +139,25 @@ async function finalizeItemEffect({
   result,
   afterRefresh = null,
 } = {}) {
-  if (result?.cancelled) return { handled: true, cancelled: true };
-  if (!result?.handled) return { handled: false, cancelled: false };
+  if (result?.cancelled) {
+    return itemUseOutcome({
+      ok: result.ok !== false,
+      handled: true,
+      cancelled: true,
+      result,
+      reason: result.reason || "cancelled",
+      summary: buildItemUseSummary({ actor, item, result }),
+    });
+  }
+  if (!result?.handled) {
+    return itemUseOutcome({
+      ok: result?.ok !== false,
+      handled: false,
+      result,
+      reason: result?.reason || "unhandled",
+      summary: buildItemUseSummary({ actor, item, result }),
+    });
+  }
 
   if (result.consumeItem) {
     await removeQuantityFromItem(actor, item, 1);
@@ -99,7 +168,14 @@ async function finalizeItemEffect({
     await afterRefresh?.({ actor, item, result });
   }
 
-  return { handled: true, cancelled: false };
+  return itemUseOutcome({
+    ok: result?.ok !== false,
+    handled: true,
+    cancelled: false,
+    result,
+    reason: result?.reason || "",
+    summary: buildItemUseSummary({ actor, item, result }),
+  });
 }
 
 export async function useInventoryEffectItem({
@@ -111,30 +187,53 @@ export async function useInventoryEffectItem({
   labelPrefix,
   skipTimeCost = false,
   resolveCombatTimeCost = null,
+  targets = null,
+  timePayload = {},
   apply = null,
   afterRefresh = null,
 } = {}) {
   const item = actor?.items?.get(itemId);
 
   if (!item || item.type !== expectedType) {
-    ui.notifications.warn(missingMessage);
-    return { result: null, handled: true };
+    notifyWarn(missingMessage);
+    return itemUseOutcome({ ok: false, handled: true, reason: "missing-item" });
   }
 
-  const canUseNow = await resolveItemUseTime({
+  const selectedTargets = normalizeItemUseTargets(targets);
+  const timeState = await resolveItemUseTime({
     item,
     actionType: timeActionType,
     label: `${labelPrefix}: ${item.name}`,
     itemId,
     skipTimeCost,
     resolveCombatTimeCost,
+    targets: selectedTargets,
+    payload: timePayload,
   });
 
-  if (!canUseNow) return { result: null, handled: true };
+  if (timeState.queued) {
+    return itemUseOutcome({
+      queued: true,
+      handled: true,
+      result: timeState.timeState,
+      reason: timeState.reason,
+      timeState: timeState.timeState,
+    });
+  }
 
-  const result = await apply?.({ actor, item });
+  if (!timeState.ok) {
+    return itemUseOutcome({
+      ok: false,
+      handled: true,
+      result: timeState.timeState,
+      reason: timeState.reason,
+      timeState: timeState.timeState,
+    });
+  }
+
+  const result = await apply?.({ actor, item, targets: selectedTargets });
   const finalization = await finalizeItemEffect({ actor, item, result, afterRefresh });
-  return { result, ...finalization };
+  return { ...finalization, result };
 }
 
 export async function useFoodItemFromSheet(actor, itemId, {
@@ -158,6 +257,7 @@ export async function useFoodItemFromSheet(actor, itemId, {
 
 export async function usePotionItemFromSheet(actor, itemId, {
   skipTimeCost = false,
+  targets = null,
   resolveCombatTimeCost = null,
   applyActionTypeItem = null,
   afterRefresh = null,
@@ -172,9 +272,10 @@ export async function usePotionItemFromSheet(actor, itemId, {
     skipTimeCost,
     resolveCombatTimeCost,
     afterRefresh,
-    apply: async ({ actor, item }) => {
+    targets,
+    apply: async ({ actor, item, targets }) => {
       if (getItemActionType(item)) {
-        const actionResult = await applyActionTypeItem?.(actor, item);
+        const actionResult = await applyActionTypeItem?.(actor, item, { targets });
         if (actionResult?.handled) return actionResult;
       }
 
@@ -183,7 +284,7 @@ export async function usePotionItemFromSheet(actor, itemId, {
   });
 
   if (outcome.result && !outcome.result?.handled) {
-    ui.notifications.warn("У зелья не настроен эффект.");
+    notifyWarn("У зелья не настроен эффект.");
   }
 
   return outcome;
@@ -191,6 +292,7 @@ export async function usePotionItemFromSheet(actor, itemId, {
 
 export async function useConsumableItemFromSheet(actor, itemId, {
   skipTimeCost = false,
+  targets = null,
   resolveCombatTimeCost = null,
   applyActionTypeItem = null,
   afterRefresh = null,
@@ -205,11 +307,12 @@ export async function useConsumableItemFromSheet(actor, itemId, {
     skipTimeCost,
     resolveCombatTimeCost,
     afterRefresh,
-    apply: ({ actor, item }) => applyActionTypeItem?.(actor, item),
+    targets,
+    apply: ({ actor, item, targets }) => applyActionTypeItem?.(actor, item, { targets }),
   });
 
   if (outcome.result && !outcome.result?.handled) {
-    ui.notifications.warn("У предмета не настроен actionType.");
+    notifyWarn("У предмета не настроен actionType.");
   }
 
   return outcome;
@@ -228,7 +331,7 @@ export async function useItemByType(actor, itemOrId, {
   if (!item) return false;
 
   if (Array.isArray(allowedTypes) && allowedTypes.length && !allowedTypes.includes(item.type)) {
-    ui.notifications.warn(unsupportedMessage);
+    notifyWarn(unsupportedMessage);
     return false;
   }
 
@@ -238,53 +341,53 @@ export async function useItemByType(actor, itemOrId, {
   };
 
   if (item.type === "food") {
-    await handlers.useFood?.(item.id, handlerOptions);
-    return true;
+    return (await handlers.useFood?.(item.id, handlerOptions)) ?? true;
   }
 
   if (item.type === "spell") {
-    await handlers.castSpell?.({ item, isScroll: false, ...handlerOptions });
-    return true;
+    return (await handlers.castSpell?.({ item, isScroll: false, ...handlerOptions })) ?? true;
   }
 
   if (item.type === "scroll") {
-    await handlers.castSpell?.({ item, isScroll: true, ...handlerOptions });
-    return true;
+    return (await handlers.castSpell?.({ item, isScroll: true, ...handlerOptions })) ?? true;
   }
 
   if (item.type === "potion") {
-    await handlers.usePotion?.(item.id, handlerOptions);
-    return true;
+    return (await handlers.usePotion?.(item.id, handlerOptions)) ?? true;
   }
 
   if (item.type === "throwable") {
-    await handlers.useThrowable?.(item.id, handlerOptions);
-    return true;
+    return (await handlers.useThrowable?.(item.id, handlerOptions)) ?? true;
   }
 
   if (item.type === "consumable") {
-    await handlers.useConsumable?.(item.id, handlerOptions);
-    return true;
+    return (await handlers.useConsumable?.(item.id, handlerOptions)) ?? true;
   }
 
   if (allowWeapon && item.type === "weapon") {
-    await handlers.equipWeapon?.(item.id, "rightHand");
-    return true;
+    return (await handlers.equipWeapon?.(item.id, "rightHand")) ?? true;
   }
 
-  ui.notifications.warn(unsupportedMessage);
+  notifyWarn(unsupportedMessage);
   return false;
 }
 
 export async function resumePendingItemAction(actor, data, config, handlers = {}) {
-  const targets = resolveCombatActionTargets({ targetRefs: data?.targetRefs });
+  const targetContext = resolveCombatActionTargetContext({ payload: data });
+  const actionOptions = {
+    ...(targetContext.targets.length ? { targets: targetContext.targets } : {}),
+    ...(targetContext.spellOverrides ? { spellOverrides: targetContext.spellOverrides } : {}),
+    ...(targetContext.targetZone ? { targetZone: targetContext.targetZone } : {}),
+    ...(targetContext.targetPart ? { targetPart: targetContext.targetPart } : {}),
+    ...(targetContext.targetZoneMode ? { targetZoneMode: targetContext.targetZoneMode } : {}),
+  };
 
   return useItemByType(actor, data?.itemId, {
     skipTimeCost: true,
     allowedTypes: config.allowedTypes,
     missingMessage: config.missingMessage,
     unsupportedMessage: config.missingMessage,
-    actionOptions: targets.length ? { targets } : {},
+    actionOptions,
     handlers,
   });
 }

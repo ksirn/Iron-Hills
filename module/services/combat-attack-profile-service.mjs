@@ -1,4 +1,6 @@
 import { resolveCombatActionTargets } from "./combat-action-target-service.mjs";
+import { normalizeAttackMode } from "./combat-attack-mode-service.mjs";
+import { normalizeDamageType } from "./damage-type-service.mjs";
 import { actorsAreAllies } from "./disposition-service.mjs";
 
 function numberOr(value, fallback = 0) {
@@ -7,9 +9,7 @@ function numberOr(value, fallback = 0) {
 }
 
 export function normalizeAttackDamageType(value) {
-  return String(value ?? "physical").toLowerCase() === "magical"
-    ? "magical"
-    : "physical";
+  return normalizeDamageType(value, { fallback: "physical" });
 }
 
 export function getActorAttackSkillValueFallback(actor) {
@@ -54,14 +54,16 @@ export function buildActorBaseAttackParams(actor, {
   const skillValueFallback = getActorAttackSkillValueFallback(actor);
 
   if (equippedWeapon) {
+    const skillKey = String(equippedWeapon.system?.skill ?? "unarmed");
     return {
       hand,
-      skillKey: String(equippedWeapon.system?.skill ?? "unarmed"),
+      skillKey,
       label: `${labelPrefix}${equippedWeapon.name}`,
       damageType: normalizeAttackDamageType(equippedWeapon.system?.damageType),
       baseDamage: numberOr(equippedWeapon.system?.damage, 1),
       energyCost: numberOr(equippedWeapon.system?.energyCost, 10),
       weapon: equippedWeapon,
+      attackMode: normalizeAttackMode(null, { skillKey, weapon: equippedWeapon }),
       skillValueFallback,
       actionSeconds: numberOr(
         equippedWeapon.system?.actionSeconds ?? equippedWeapon.system?.timeCost,
@@ -73,10 +75,12 @@ export function buildActorBaseAttackParams(actor, {
   const naturalAttack = getPrimaryNaturalAttack(actor);
   const isMonster = actor?.type === "monster";
   const naturalLabel = naturalAttack?.label ?? (isMonster ? `Attack: ${actor?.name ?? ""}` : "Unarmed");
+  const skillKey = String(naturalAttack?.skillKey ?? "unarmed");
+  const rangeOverride = numberOr(naturalAttack?.range, 0) || null;
 
   return {
     hand,
-    skillKey: String(naturalAttack?.skillKey ?? "unarmed"),
+    skillKey,
     label: `${labelPrefix}${naturalLabel}`,
     damageType: normalizeAttackDamageType(naturalAttack?.damageType),
     baseDamage: numberOr(
@@ -90,9 +94,10 @@ export function buildActorBaseAttackParams(actor, {
       isMonster ? 3 : 2
     ),
     weapon: null,
+    attackMode: normalizeAttackMode(naturalAttack?.attackMode, { skillKey, rangeOverride }),
     skillValueFallback,
     actionSeconds: numberOr(naturalAttack?.actionSeconds ?? naturalAttack?.timeCost, 0) || null,
-    rangeOverride: numberOr(naturalAttack?.range, 0) || null,
+    rangeOverride,
   };
 }
 

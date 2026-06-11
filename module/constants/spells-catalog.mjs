@@ -25,6 +25,22 @@ export const SPELL_SCHOOLS = {
   summon:     { id:"summon",     label:"Призыв",   icon:"👻", color:"#44aa88" },
 };
 
+export const SPELL_SCHOOL_KEYS = Object.freeze(Object.keys(SPELL_SCHOOLS));
+
+export const SPELL_SCHOOL_ALIASES = Object.freeze({
+  water: "ice",
+  air: "lightning",
+  life: "light",
+  holy: "light",
+});
+
+export function normalizeSpellSchoolKey(school, { fallback = "" } = {}) {
+  const key = String(school ?? "").trim();
+  if (!key) return fallback;
+  if (SPELL_SCHOOLS[key]) return key;
+  return SPELL_SCHOOL_ALIASES[key] ?? fallback;
+}
+
 export const SPELLS = {
 
   // ══════════════════════════════════════════════════════════
@@ -246,6 +262,24 @@ export const SPELLS = {
     desc:"Изгоняет призванное существо или нежить. Инстант-убийство для слабых.",
     aoe: null,
     effect: { special:"banish" },
+  },
+  astral_binding_circle: {
+    id:"astral_binding_circle", label:"Круг Астральных Оков", school:"summon", rank:9,
+    manaCost:24, castTime:7, damage:45, damageType:"magical",
+    desc:"Высшая печать призыва, которая стягивает существ к границе круга и сковывает их. Каждая цель проходит отдельную проверку.",
+    aoe: { type:"blast", shape:"circle", distance:4, maxTargets:null, friendlyFireMode:"auto", targetZoneMode:"fixed", targetZone:"legs" },
+    effect: { applyCondition:"grappled", conditionDuration:12, conditionChance:0.75 },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ВЕРШИННЫЕ ЗАКЛИНАНИЯ
+  // ═══════════════════════════════════════════════════════════════════
+  heavenfall: {
+    id:"heavenfall", label:"Небесное Падение", school:"light", rank:10,
+    manaCost:32, castTime:10, damage:220, damageType:"holy",
+    desc:"Высшее площадное заклинание света. Каждая цель в зоне проходит отдельную проверку попадания; союзники не задеваются.",
+    aoe: { type:"blast", shape:"circle", distance:6, maxTargets:null, friendlyFireMode:"off", targetZoneMode:"aimed", targetZone:"torso" },
+    effect: { applyCondition:"stunned", conditionDuration:6, conditionChance:0.5 },
   },
 };
 

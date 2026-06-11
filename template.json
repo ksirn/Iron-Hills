@@ -384,7 +384,22 @@
           "exp": 0,
           "expNext": 25
         },
-        "water": {
+        "ice": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "lightning": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "shadow": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "light": {
           "value": 1,
           "exp": 0,
           "expNext": 25
@@ -394,17 +409,12 @@
           "exp": 0,
           "expNext": 25
         },
-        "air": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
-        "life": {
-          "value": 1,
-          "exp": 0,
-          "expNext": 25
-        },
         "mind": {
+          "value": 1,
+          "exp": 0,
+          "expNext": 25
+        },
+        "summon": {
           "value": 1,
           "exp": 0,
           "expNext": 25
@@ -1073,7 +1083,7 @@
     },
     "spell": {
       "spellId": "",
-      "school": "life",
+      "school": "light",
       "rank": 1,
       "manaCost": 0,
       "energyCost": 0,
@@ -1118,11 +1128,15 @@
       "power": 1,
       "value": 0,
       "duration": 0,
+      "effect": "",
       "effectType": "",
       "actionType": "",
       "applicationScope": "global",
       "targetActorMode": "self",
       "targetPart": "",
+      "conditionKey": "",
+      "conditionMode": "",
+      "conditionValueKind": "",
       "gridW": 1,
       "gridH": 1,
       "identified": true,
@@ -1136,7 +1150,7 @@
     },
     "scroll": {
       "spellId": "",
-      "school": "life",
+      "school": "light",
       "rank": 1,
       "manaCost": 0,
       "energyCost": 0,
@@ -1198,10 +1212,16 @@
       "weight": 1,
       "quantity": 1,
       "power": 1,
+      "effect": "",
+      "effectType": "",
       "actionType": "",
       "applicationScope": "targeted",
       "targetActorMode": "selected-or-self",
       "targetPart": "",
+      "conditionKey": "",
+      "conditionMode": "",
+      "conditionValueKind": "",
+      "duration": 0,
       "vesselMax": 0,
       "vesselCurrent": 0,
       "vesselHydrationPerDrink": 0,

@@ -2,7 +2,7 @@
 <form class="ih-is-app" autocomplete="off">
 
   {{!-- Шапка --}}
-  <div class="ih-is-header" style="--quality-color:{{qualityCfg.color}}">
+  <div class="ih-is-header" data-ih-style-quality-color="{{qualityCfg.color}}">
     <div class="ih-is-portrait-wrap">
       <img class="ih-is-portrait" src="{{item.img}}" alt="{{item.name}}">
       <div class="ih-is-type-badge">
@@ -23,7 +23,7 @@
           <select name="system.quality">
             {{#each qualityOpts}}
             <option value="{{key}}" {{#if (eq key ../system.quality)}}selected{{/if}}
-                    style="color:{{color}}">{{label}}</option>
+                    data-ih-style-color="{{color}}">{{label}}</option>
             {{/each}}
           </select>
         </div>
@@ -45,7 +45,7 @@
       </div>
       {{!-- Цена с качеством --}}
       {{#if effectiveValue}}
-      <div class="ih-is-effective-value" style="color:{{qualityCfg.color}}">
+      <div class="ih-is-effective-value" data-ih-style-color="{{qualityCfg.color}}">
         💰 {{effectiveValue}} мед. с учётом качества (×{{qualityCfg.mult}})
       </div>
       {{/if}}
@@ -71,15 +71,16 @@
         <div class="ih-is-field">
           <label>Тип урона</label>
           <select name="system.damageType">
-            <option value="physical" {{#if (eq system.damageType 'physical')}}selected{{/if}}>⚔ Физический</option>
-            <option value="magical"  {{#if (eq system.damageType 'magical')}}selected{{/if}}>✦ Магический</option>
+            {{#each damageTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.damageType)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
           </select>
         </div>
         <div class="ih-is-field narrow">
           <label>Базовый урон</label>
           <input type="number" name="system.damage" value="{{system.damage}}" min="0">
           {{#if qualityDamageBonus}}
-          <span class="ih-is-bonus" style="color:{{qualityCfg.color}}">{{qualityDamageBonus}}</span>
+          <span class="ih-is-bonus" data-ih-style-color="{{qualityCfg.color}}">{{qualityDamageBonus}}</span>
           {{/if}}
         </div>
         <div class="ih-is-field narrow">
@@ -111,14 +112,12 @@
             {{/each}}
           </select>
         </div>
-        <div class="ih-is-field narrow">
-          <label>⚔ Физ. защита</label>
-          <input type="number" name="system.protection.physical" value="{{system.protection.physical}}" min="0">
+        {{#each armorResistanceOptions}}
+        <div class="ih-is-field resist">
+          <label>{{label}}</label>
+          <input type="number" name="system.protection.{{key}}" value="{{value}}" min="0">
         </div>
-        <div class="ih-is-field narrow">
-          <label>✦ Маг. защита</label>
-          <input type="number" name="system.protection.magical" value="{{system.protection.magical}}" min="0">
-        </div>
+        {{/each}}
         <div class="ih-is-field narrow">
           <label>Прочность</label>
           <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0">
@@ -135,8 +134,9 @@
         <div class="ih-is-field">
           <label>Тип урона</label>
           <select name="system.damageType">
-            <option value="physical" {{#if (eq system.damageType 'physical')}}selected{{/if}}>⚔ Физический</option>
-            <option value="magical"  {{#if (eq system.damageType 'magical')}}selected{{/if}}>✦ Магический</option>
+            {{#each damageTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.damageType)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
           </select>
         </div>
         <div class="ih-is-field narrow">
@@ -207,6 +207,15 @@
           </select>
         </div>
         <div class="ih-is-field">
+          <label>Зона AoE</label>
+          <select name="system.aoe.targetZone">
+            <option value="">— авто —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.aoe.targetZone)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
           <label>Friendly fire</label>
           <select name="system.aoe.friendlyFireMode">
             {{#each aoeFriendlyFireOptions}}
@@ -217,6 +226,229 @@
         <div class="ih-is-field narrow">
           <label>Legacy FF</label>
           <input type="checkbox" name="system.friendlyFire" {{checked system.friendlyFire}}>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{!-- ── ЗАКЛИНАНИЕ / СВИТОК ── --}}
+    {{#if isSpell}}
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">✦ Заклинание</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>ID</label>
+          <input type="text" name="system.spellId" value="{{system.spellId}}">
+        </div>
+        <div class="ih-is-field">
+          <label>Школа</label>
+          <select name="system.school">
+            <option value="">— школа —</option>
+            {{#each spellSchoolOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.school)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Ранг</label>
+          <input type="number" name="system.rank" value="{{system.rank}}" min="1" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Мана</label>
+          <input type="number" name="system.manaCost" value="{{system.manaCost}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Энергия</label>
+          <input type="number" name="system.energyCost" value="{{system.energyCost}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Каст, сек</label>
+          <input type="number" name="system.castTime" value="{{system.castTime}}" min="0" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">⚔ Урон и эффект</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Тип урона</label>
+          <select name="system.damageType">
+            {{#each spellDamageTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.damageType)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Тип эффекта</label>
+          <select name="system.effectType">
+            {{#each spellEffectTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.effectType)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Урон</label>
+          <input type="number" name="system.damage" value="{{system.damage}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Сила</label>
+          <input type="number" name="system.power" value="{{system.power}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field">
+          <label>Special</label>
+          <select name="system.effect.special">
+            {{#each spellSpecialOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.effect.special)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Condition</label>
+          <select name="system.effect.applyCondition">
+            {{#each spellConditionOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.effect.applyCondition)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Длит., сек</label>
+          <input type="number" name="system.effect.conditionDuration" value="{{system.effect.conditionDuration}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Шанс</label>
+          <input type="number" name="system.effect.conditionChance" value="{{system.effect.conditionChance}}" min="0" max="1" step="0.05">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Лечение</label>
+          <input type="number" name="system.effect.healAmount" value="{{system.effect.healAmount}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field">
+          <label>Summon</label>
+          <select name="system.effect.summonId">
+            {{#each spellSummonOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.effect.summonId)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Summon, сек</label>
+          <input type="number" name="system.effect.duration" value="{{system.effect.duration}}" min="0" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">🎯 Цели</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Scope</label>
+          <select name="system.applicationScope">
+            {{#each applicationScopeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.applicationScope)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Actor mode</label>
+          <select name="system.targetActorMode">
+            {{#each targetActorModeLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.targetActorMode)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Зона цели</label>
+          <select name="system.targetPart">
+            <option value="">— авто —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.targetPart)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Target zone</label>
+          <select name="system.targetZone">
+            <option value="">— авто —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.targetZone)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Логика зон</label>
+          <select name="system.targetZoneMode">
+            {{#each aoeZoneModeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.targetZoneMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Friendly fire</label>
+          <select name="system.friendlyFireMode">
+            {{#each aoeFriendlyFireOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.friendlyFireMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="ih-is-section">
+      <div class="ih-is-section-title">💥 Область</div>
+      <div class="ih-is-grid">
+        <div class="ih-is-field">
+          <label>Форма</label>
+          <select name="system.aoe.shape">
+            {{#each aoeShapeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.shape)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Логика целей</label>
+          <select name="system.aoe.type">
+            {{#each aoeTypeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.type)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Дистанция</label>
+          <input type="number" name="system.aoe.distance" value="{{system.aoe.distance}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Макс. целей</label>
+          <input type="number" name="system.aoe.maxTargets" value="{{system.aoe.maxTargets}}" min="0" step="1">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Затухание</label>
+          <input type="number" name="system.aoe.chainDecay" value="{{system.aoe.chainDecay}}" min="0" max="1" step="0.05">
+        </div>
+        <div class="ih-is-field">
+          <label>Логика зон</label>
+          <select name="system.aoe.targetZoneMode">
+            {{#each aoeZoneModeOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.targetZoneMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Зона AoE</label>
+          <select name="system.aoe.targetZone">
+            <option value="">— авто —</option>
+            {{#each zoneLabels}}
+            <option value="{{@key}}" {{#if (eq @key ../system.aoe.targetZone)}}selected{{/if}}>{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field">
+          <label>Friendly fire</label>
+          <select name="system.aoe.friendlyFireMode">
+            {{#each aoeFriendlyFireOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.aoe.friendlyFireMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
         </div>
       </div>
     </div>

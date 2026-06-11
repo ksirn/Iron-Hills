@@ -1,12 +1,24 @@
 import { SKILL_GROUPS } from "../constants/skills.mjs";
+import {
+  SPELL_SCHOOL_ALIASES,
+  SPELL_SCHOOL_KEYS,
+  SPELL_SCHOOLS,
+  normalizeSpellSchoolKey,
+} from "../constants/spells-catalog.mjs";
 import { num, clamp } from "../utils/math-utils.mjs";
 import { getExpNext } from "../utils/text-utils.mjs";
 import {
   itemTypeLabel,
   getItemQuickSlotIcon,
   getComputedItemUnitPrice,
-  getComputedItemTotalPrice
+  getComputedItemTotalPrice,
+  getItemEffectLabel
 } from "../utils/item-utils.mjs";
+import {
+  buildInventoryItemActionView,
+  getInventoryItemActionConfig,
+  getInventoryItemActionKeysForItem,
+} from "../utils/actor-inventory-action-config.mjs";
 import {
   getActorCurrency,
   getMerchantWealth,
@@ -19,9 +31,19 @@ import {
   isConditionActive,
 } from "./condition-policy-service.mjs";
 import {
+  getAttackBlockState,
+  normalizeAttackMode,
+} from "./combat-attack-mode-service.mjs";
+import { getDamageResistanceValue } from "./damage-type-service.mjs";
+import {
   getActorBodyTraumaSummary,
   getBodyPartTraumaStatus,
 } from "./body-trauma-service.mjs";
+import {
+  getItemActionType,
+  getItemTargetActorMode,
+} from "./item-effect-service.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 
 export function getHitLocation(rollTotal) {
   const r = Number(rollTotal);
@@ -130,10 +152,7 @@ export function getDamageReduction(armorItem, damageType) {
   const durRatio = durMax > 0 ? Math.max(0, durVal / durMax) : 1;
   const scale    = durRatio >= 0.5 ? 1 : durRatio * 2;
 
-  const base = Number(armorItem.system?.resist ?? armorItem.system?.protection?.physical ?? 0);
-  const baseMag = Number(armorItem.system?.resistMag ?? armorItem.system?.protection?.magical ?? 0);
-  const defenseType = String(damageType ?? "physical").toLowerCase() === "physical" ? "physical" : "magical";
-  const val  = defenseType === "magical" ? baseMag : base;
+  const val = getDamageResistanceValue(armorItem.system ?? {}, damageType);
   return Math.floor(val * scale);
 }
 
@@ -544,15 +563,77 @@ export async function syncDerivedConditionsFromTrauma(actor, options = {}) {
 }
 
 export function getSpellSchoolLabel(school) {
-  const labels = {
-    fire: "Огонь",
-    water: "Вода",
-    earth: "Земля",
-    air: "Воздух",
-    life: "Жизнь",
-    mind: "Разум"
+  const rawKey = String(school ?? "").trim();
+  const normalizedKey = normalizeSpellSchoolKey(rawKey, { fallback: rawKey });
+  const legacyLabels = {
+    water: SPELL_SCHOOLS.ice?.label ?? "Лёд",
+    air: SPELL_SCHOOLS.lightning?.label ?? "Молния",
+    life: SPELL_SCHOOLS.light?.label ?? "Свет",
+    holy: SPELL_SCHOOLS.light?.label ?? "Свет",
+    magic: "Магия",
+    sorcery: "Колдовство",
   };
-  return labels[school] ?? school;
+  return SPELL_SCHOOLS[normalizedKey]?.label
+    ?? legacyLabels[rawKey]
+    ?? rawKey
+    ?? "—";
+}
+
+const SPELL_SCHOOL_SKILL_ALIASES = Object.freeze({
+  ...Object.fromEntries(
+    Object.entries(SPELL_SCHOOL_ALIASES).map(([legacyKey, canonicalKey]) => [legacyKey, [canonicalKey]])
+  ),
+  ice: ["water"],
+  lightning: ["air"],
+  light: ["life", "holy"],
+  holy: ["light", "life"],
+  shadow: ["life", "mind"],
+  summon: ["life", "mind"],
+});
+
+export function resolveSpellSchoolSkill(actor, school) {
+  const rawKey = String(school ?? "").trim();
+  const requestedKey = normalizeSpellSchoolKey(rawKey, { fallback: rawKey });
+  const skills = actor?.system?.skills ?? {};
+  const candidates = [
+    requestedKey,
+    ...(SPELL_SCHOOL_SKILL_ALIASES[requestedKey] ?? []),
+    ...(rawKey && rawKey !== requestedKey ? [rawKey] : []),
+    "magic",
+    "sorcery",
+  ].filter(Boolean);
+
+  const seen = new Set();
+  for (const key of candidates) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const skill = skills?.[key];
+    if (skill) {
+      return {
+        requestedKey,
+        key,
+        skill,
+        value: Number(skill.value ?? 0),
+        label: getSpellSchoolLabel(requestedKey || key),
+        skillLabel: getSpellSchoolLabel(key),
+        aliased: key !== requestedKey,
+      };
+    }
+  }
+
+  return {
+    requestedKey,
+    key: requestedKey,
+    skill: null,
+    value: 0,
+    label: getSpellSchoolLabel(requestedKey),
+    skillLabel: getSpellSchoolLabel(requestedKey),
+    aliased: false,
+  };
+}
+
+export function getSpellSchoolSkill(actor, school) {
+  return resolveSpellSchoolSkill(actor, school).skill;
 }
 
 export function getEffectTypeLabel(effectType) {
@@ -567,7 +648,7 @@ export function getEffectTypeLabel(effectType) {
     curePoison: "Снятие яда"
   };
 
-  return labels[effectType] ?? effectType ?? "—";
+  return labels[effectType] ?? getItemEffectLabel(effectType, { fallback: effectType ?? "—" });
 }
 
 export function getQuickSlotBonusFromItems(actor) {
@@ -725,6 +806,76 @@ export function getThrowableBlockReason(actor, item) {
   return "";
 }
 
+function getSelectedTargetCount(targets = null) {
+  const source = targets ?? globalThis.game?.user?.targets ?? [];
+  if (!source) return 0;
+  const list = source instanceof Set
+    ? [...source]
+    : Array.isArray(source)
+      ? source
+      : (typeof source[Symbol.iterator] === "function" ? Array.from(source) : [source]);
+  return list.filter(target => target?.actor ?? target).length;
+}
+
+function isMissingSelectedTargetReason(reason) {
+  return String(reason ?? "").trim() === "Выберите цель";
+}
+
+export function getInventoryItemActionReason(actor, item, {
+  actionKey = null,
+  targets = null,
+} = {}) {
+  const resolvedActionKey = actionKey ?? getInventoryItemActionKeysForItem(item)[0] ?? "";
+  if (!resolvedActionKey) return "";
+
+  if (resolvedActionKey === "spell") {
+    return getSpellCastBlockReason(actor, item, { isScroll: false });
+  }
+
+  if (resolvedActionKey === "scroll") {
+    return getSpellCastBlockReason(actor, item, { isScroll: true });
+  }
+
+  if (resolvedActionKey === "throwable") {
+    return getThrowableBlockReason(actor, item);
+  }
+
+  if (resolvedActionKey === "potion") {
+    return getActionBlockReason(actor, "potion", { item, targets });
+  }
+
+  if (resolvedActionKey === "consumable") {
+    return getActionBlockReason(actor, "consumable", { item, targets });
+  }
+
+  return "";
+}
+
+export function buildInventoryItemActions(actor, item, { targets = null } = {}) {
+  return getInventoryItemActionKeysForItem(item)
+    .map(actionKey => {
+      const reason = getInventoryItemActionReason(actor, item, { actionKey, targets });
+      return buildInventoryItemActionView(actionKey, {
+        reason,
+        needsTarget: isMissingSelectedTargetReason(reason),
+      });
+    })
+    .filter(Boolean);
+}
+
+export function getActionItemBlockReason(actor, item, { targets = null } = {}) {
+  if (!actor || !item) return "Предмет не найден";
+  const actionType = getItemActionType(item);
+  if (!actionType) return "У предмета не настроено действие";
+
+  const targetActorMode = getItemTargetActorMode(item, "self");
+  if (targetActorMode === "selected-only" && getSelectedTargetCount(targets) <= 0) {
+    return "Выберите цель";
+  }
+
+  return "";
+}
+
 export function getActionBlockReason(actor, actionType, payload = {}) {
   if (!actor) return "Нет актёра";
 
@@ -735,12 +886,19 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
   if (actionType === "attack") {
     const hand = payload.hand ?? null;
     const weapon = payload.weapon ?? null;
+    const attackMode = normalizeAttackMode(payload.attackMode, {
+      skillKey: payload.skillKey ?? weapon?.system?.skill,
+      weapon,
+      technique: payload.technique,
+      rangeOverride: payload.rangeOverride,
+    });
     const baseEnergyCost = Number(payload.energyCost ?? 0);
     const finalEnergyCost = Math.ceil(baseEnergyCost * encumbrance.energyMultiplier);
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
+    const blockState = getAttackBlockState(derivedConditions, attackMode);
 
-    if (!derivedConditions.canMeleeAttack) {
-      return derivedConditions.meleeBlockReason || "Персонаж не может атаковать из-за состояния.";
+    if (!blockState.canAttack) {
+      return blockState.reason || "Персонаж не может атаковать из-за состояния.";
     }
 
     if (weapon?.system?.twoHanded) {
@@ -769,8 +927,8 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     if (!item) return "Заклинание не найдено";
 
     const school = item.system.school;
-    const skill = actor.system.skills?.[school];
-    if (!skill) return `Нет школы магии: ${school}`;
+    const schoolSkill = resolveSpellSchoolSkill(actor, school);
+    if (!schoolSkill.skill) return `Нет школы магии: ${schoolSkill.label || school}`;
 
     const manaCost = Number(item.system.manaCost ?? 0);
     const energyCost = Number(item.system.energyCost ?? 0);
@@ -801,8 +959,8 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     if (!item) return "Свиток не найден";
 
     const school = item.system.school;
-    const skill = actor.system.skills?.[school];
-    if (!skill) return `Нет школы магии: ${school}`;
+    const schoolSkill = resolveSpellSchoolSkill(actor, school);
+    if (!schoolSkill.skill) return `Нет школы магии: ${schoolSkill.label || school}`;
 
     const energyCost = Number(item.system.energyCost ?? 0);
     const currentEnergy = Number(actor.system.resources?.energy?.value ?? 0);
@@ -840,6 +998,16 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     return "";
   }
 
+  if (actionType === "consumable" || actionType === "use-consumable") {
+    return getActionItemBlockReason(actor, payload.item ?? null, { targets: payload.targets ?? null });
+  }
+
+  if (actionType === "potion") {
+    const item = payload.item ?? null;
+    if (!item || !getItemActionType(item)) return "";
+    return getActionItemBlockReason(actor, item, { targets: payload.targets ?? null });
+  }
+
   if (actionType === "quickslot") {
     const slotKey = payload.slotKey ?? "";
     if (!isQuickSlotUnlocked(actor, slotKey)) {
@@ -857,12 +1025,10 @@ export function getActionBlockReason(actor, actionType, payload = {}) {
     }
 
     if (item.type === "food") return "";
-    if (item.type === "potion") return "";
-    if (item.type === "consumable") return "";
+    if (getInventoryItemActionConfig(item.type)) {
+      return getInventoryItemActionReason(actor, item, { targets: payload.targets ?? null });
+    }
     if (item.type === "weapon") return "";
-    if (item.type === "spell") return getActionBlockReason(actor, "spell", { item });
-    if (item.type === "scroll") return getActionBlockReason(actor, "scroll", { item });
-    if (item.type === "throwable") return getActionBlockReason(actor, "throwable", { item });
 
     return "Тип предмета нельзя использовать";
   }
@@ -946,15 +1112,7 @@ export function buildQuickSlotActionStates(actor) {
       continue;
     }
 
-    let reason = "";
-
-    if (item.type === "spell") {
-      reason = getSpellCastBlockReason(actor, item, { isScroll: false });
-    } else if (item.type === "scroll") {
-      reason = getSpellCastBlockReason(actor, item, { isScroll: true });
-    } else if (item.type === "throwable") {
-      reason = getThrowableBlockReason(actor, item);
-    }
+    const reason = getInventoryItemActionReason(actor, item);
 
     result[slotKey] = {
       canUse: !reason,
@@ -965,7 +1123,7 @@ export function buildQuickSlotActionStates(actor) {
   return result;
 }
 
-export function buildGroupedItems(actor) {
+export function buildGroupedItems(actor, { includeUnplaced = false } = {}) {
   const items = Array.from(actor.items ?? []);
   const order = [
     "weapon",
@@ -994,7 +1152,7 @@ export function buildGroupedItems(actor) {
     const secKey = item.flags?.["iron-hills-system"]?.sectionKey ?? null;
     const isEquipped = equippedIds.has(item.id);
 
-    if (!isEquipped && !virtualInventoryTypes.has(item.type) && !isItemGridPlaced(item)) {
+    if (!includeUnplaced && !isEquipped && !virtualInventoryTypes.has(item.type) && !isItemGridPlaced(item)) {
       continue;
     }
 
@@ -1037,21 +1195,23 @@ export function buildGroupedItems(actor) {
           ["weapon", "food", "spell", "scroll", "potion", "throwable", "consumable"].includes(item.type) ||
           Boolean(String(item.system?.actionType ?? "").trim());
 
-        const spellReason =
-          item.type === "spell" ? getSpellCastBlockReason(actor, item, { isScroll: false }) : "";
-
-        const scrollReason =
-          item.type === "scroll" ? getSpellCastBlockReason(actor, item, { isScroll: true }) : "";
-
-        const throwableReason =
-          item.type === "throwable" ? getThrowableBlockReason(actor, item) : "";
+        const inventoryActions = buildInventoryItemActions(actor, item);
+        const actionsByKey = Object.fromEntries(inventoryActions.map(action => [action.key, action]));
+        const potionAction = actionsByKey.potion ?? {};
+        const consumableAction = actionsByKey.consumable ?? {};
+        const throwableAction = actionsByKey.throwable ?? {};
+        const spellAction = actionsByKey.spell ?? {};
+        const scrollAction = actionsByKey.scroll ?? {};
+        const hasInventoryActions = inventoryActions.length > 0;
 
         return {
           id: item.id,
           name: item.name,
+          img: item.img ?? "icons/svg/item-bag.svg",
           kind: itemTypeLabel(item.type),
           icon: getItemQuickSlotIcon(item),
           type: item.type,
+          system: item.system ?? {},
           tier: item.system?.tier ?? "—",
           quantity,
           weight,
@@ -1064,19 +1224,27 @@ export function buildGroupedItems(actor) {
           canEquipLeft: item.type === "weapon",
           canEquipArmor: item.type === "armor",
           canDelete: true,
+          hasInventoryActions,
+          inventoryActions,
 
           canUseFood: item.type === "food",
-          canUsePotion: item.type === "potion",
-          canUseConsumable: item.type === "consumable",
+          canUsePotion: Boolean(potionAction.canUse),
+          canClickPotion: Boolean(potionAction.enabled),
+          potionBlockedReason: potionAction.reason ?? "",
+          potionNeedsTarget: Boolean(potionAction.needsTarget),
+          canUseConsumable: Boolean(consumableAction.canUse),
+          canClickConsumable: Boolean(consumableAction.enabled),
+          consumableBlockedReason: consumableAction.reason ?? "",
+          consumableNeedsTarget: Boolean(consumableAction.needsTarget),
 
-          canUseThrowable: item.type === "throwable" && !throwableReason,
-          throwableBlockedReason: throwableReason,
+          canUseThrowable: Boolean(throwableAction.canUse),
+          throwableBlockedReason: throwableAction.reason ?? "",
 
-          canCastSpell: item.type === "spell" && !spellReason,
-          spellBlockedReason: spellReason,
+          canCastSpell: Boolean(spellAction.canUse),
+          spellBlockedReason: spellAction.reason ?? "",
 
-          canUseScroll: item.type === "scroll" && !scrollReason,
-          scrollBlockedReason: scrollReason,
+          canUseScroll: Boolean(scrollAction.canUse),
+          scrollBlockedReason: scrollAction.reason ?? "",
 
           canAssignQuick,
           quickAssignSlots,
@@ -1317,12 +1485,16 @@ export function buildMagicSummary(actor) {
   const spells = actor.items.filter(i => i.type === "spell");
   const scrolls = actor.items.filter(i => i.type === "scroll");
 
-  const schoolOrder = ["fire", "water", "earth", "air", "life", "mind"];
-  const schools = schoolOrder.map(key => ({
-    key,
-    label: getSpellSchoolLabel(key),
-    value: num(actor.system.skills?.[key]?.value, 1)
-  }));
+  const schools = SPELL_SCHOOL_KEYS.map(key => {
+    const schoolSkill = resolveSpellSchoolSkill(actor, key);
+    return {
+      key,
+      skillKey: schoolSkill.key || key,
+      label: getSpellSchoolLabel(key),
+      value: schoolSkill.skill ? num(schoolSkill.value, 1) : 0,
+      aliased: Boolean(schoolSkill.aliased),
+    };
+  });
 
   return {
     manaValue: num(actor.system.resources?.mana?.value, 0),
@@ -1419,13 +1591,18 @@ export function buildSkillGroups(actor) {
     key: group.key,
     label: group.label,
     skills: group.skills.map(skillDef => {
-      const skillData = actorSkills[skillDef.key] ?? {};
+      const schoolSkill = group.key === "magic"
+        ? resolveSpellSchoolSkill(actor, skillDef.key)
+        : null;
+      const skillData = actorSkills[skillDef.key] ?? schoolSkill?.skill ?? {};
 
       const val     = num(skillData.value, 1);
       const exp     = num(skillData.exp, 0);
       const expNext = num(skillData.expNext, getExpNext(val) ?? 30);
       return {
         key:     skillDef.key,
+        sourceKey: schoolSkill?.key ?? skillDef.key,
+        aliased: Boolean(schoolSkill?.aliased),
         label:   skillDef.label,
         value:   val,
         dieSize: val * 2,
@@ -1468,7 +1645,18 @@ export async function grantSkillExp(actor, skillKey, label = skillKey, amount = 
 
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<b>${actor.name}</b> повышает навык <b>${label}</b> до ступени <b>${newValue}</b>! (куб: d${newValue * 2})`
+      content: buildCombatChatCard({
+        title: "Навык повышен",
+        subtitle: actor.name,
+        icon: "↑",
+        status: `d${newValue * 2}`,
+        statusClass: "is-good",
+        rows: [
+          ["Навык", label],
+          ["Ступень", newValue],
+        ],
+        className: "ih-skill-progress-chat-card",
+      }),
     });
     return;
   }

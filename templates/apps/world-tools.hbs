@@ -33,7 +33,7 @@
               <option value="__new">+ Новый регион...</option>
             </select>
           </label>
-          <div class="ih-wt-new-region" style="display:none">
+          <div class="ih-wt-new-region">
             <label>Название нового региона
               <input type="text" name="settlement-region-new" placeholder="Название региона">
             </label>
@@ -90,12 +90,9 @@
           </label>
           <label>Экономика региона
             <select name="region-economy">
-              <option value="normal">⚖ Норма</option>
-              <option value="boom">📈 Расцвет</option>
-              <option value="shortage">📉 Дефицит</option>
-              <option value="crisis">🔥 Кризис</option>
-              <option value="war">⚔ Война</option>
-              <option value="plague">☠ Чума</option>
+              {{#each economyStates}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
         </div>
@@ -124,13 +121,9 @@
           </label>
           <label>Тип магазина
             <select name="merchant-specialty">
-              <option value="general">🏪 Общая лавка</option>
-              <option value="weaponsmith">⚔ Оружейник</option>
-              <option value="armorsmith">🛡 Бронник</option>
-              <option value="alchemist">⚗ Алхимик</option>
-              <option value="mage">✨ Маг-торговец</option>
-              <option value="jeweler">💎 Ювелир</option>
-              <option value="blackmarket">🌑 Чёрный рынок</option>
+              {{#each merchantTypes}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
           <label>Тир поселения (1-10)
@@ -149,18 +142,14 @@
           </label>
           <label>Состояние экономики
             <select name="merchant-economy">
-              <option value="normal">⚖ Норма</option>
-              <option value="boom">📈 Расцвет (дёшево, много)</option>
-              <option value="shortage">📉 Дефицит (дорого, мало)</option>
-              <option value="crisis">🔥 Кризис</option>
-              <option value="war">⚔ Война</option>
-              <option value="festival">🎉 Праздник</option>
-              <option value="plague">☠ Чума</option>
+              {{#each economyStates}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
           <label>Поселение
-            <div style="display:flex;gap:4px;align-items:center">
-              <input type="text" name="merchant-settlement" placeholder="Или выбрать →" style="flex:1">
+            <div class="ih-wt-picker-row">
+              <input type="text" name="merchant-settlement" placeholder="Или выбрать →">
               <a class="ih-btn ih-btn-small" data-pick-merchant-settlement>📍</a>
             </div>
           </label>
@@ -180,11 +169,9 @@
         <div class="ih-wt-fields">
           <label>Тема
             <select name="container-theme">
-              <option value="bandit">Бандит</option>
-              <option value="ruins">Руины</option>
-              <option value="hunter">Охотник</option>
-              <option value="alchemy">Алхимия</option>
-              <option value="military">Военный</option>
+              {{#each containerThemes}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
           <label>Тир
@@ -215,14 +202,9 @@
         <div class="ih-wt-fields">
           <label>Тип
             <select name="poi-type">
-              <option value="camp">⛺ Лагерь</option>
-              <option value="lair">🐉 Логово</option>
-              <option value="ruins">🏚 Руины</option>
-              <option value="shrine">⛩ Святилище</option>
-              <option value="road">🛣 Дорожная точка</option>
-              <option value="dungeon">⚔ Подземелье</option>
-              <option value="tower">🗼 Башня</option>
-              <option value="cave">🕳 Пещера</option>
+              {{#each poiTypes}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
           <label>Тир опасности (1-10)
@@ -247,14 +229,14 @@
             </select>
           </label>
           <label>Ближайшее поселение
-            <div style="display:flex;gap:4px;align-items:center">
-              <input type="text" name="poi-settlement" placeholder="Или выбрать →" style="flex:1">
+            <div class="ih-wt-picker-row">
+              <input type="text" name="poi-settlement" placeholder="Или выбрать →">
               <a class="ih-btn ih-btn-small" data-pick-poi-settlement>📍</a>
             </div>
           </label>
           <label>Фракция
-            <div style="display:flex;gap:4px;align-items:center">
-              <input type="text" name="poi-faction" placeholder="Или выбрать →" style="flex:1">
+            <div class="ih-wt-picker-row">
+              <input type="text" name="poi-faction" placeholder="Или выбрать →">
               <a class="ih-btn ih-btn-small" data-pick-faction>📋</a>
             </div>
           </label>
@@ -269,7 +251,7 @@
       <div class="ih-wt-card">
         <div class="ih-wt-card-title">⚙ Управление POI</div>
         <div class="ih-wt-fields">
-          <label class="muted-text" style="font-size:11px">
+          <label class="muted-text ih-wt-note">
             Выдели токены POI на сцене или оставь пустым — применится ко всем
           </label>
         </div>
@@ -326,7 +308,7 @@
 
       <div class="ih-wt-card">
         <div class="ih-wt-card-title">📊 Отчёт по фракциям</div>
-        <div class="ih-wt-actions" style="margin-top:8px">
+        <div class="ih-wt-actions ih-wt-actions-spaced">
           <a class="ih-btn" data-action="faction-report">📊 Показать отчёт</a>
         </div>
         {{#if factionReport}}
@@ -449,21 +431,16 @@
 
       <div class="ih-wt-card">
         <div class="ih-wt-card-title">👤 Генератор NPC</div>
-        <p class="muted-text" style="font-size:11px;margin:4px 0 8px">
+        <p class="muted-text ih-wt-note-block">
           Ступень задаёт навыки, лут трупа и карманничество. Компендиум NPC по умолчанию пуст —
           квестовых персонажей сохраняйте вручную.
         </p>
         <div class="ih-wt-fields">
           <label>Специализация
             <select name="npc-role">
-              <option value="villager">🏘 Житель</option>
-              <option value="guard">🛡 Страж</option>
-              <option value="bandit">🗡 Бандит</option>
-              <option value="mage">✨ Маг</option>
-              <option value="crafter">🔨 Ремесленник</option>
-              <option value="hunter">🏹 Охотник</option>
-              <option value="noble">👑 Дворянин</option>
-              <option value="priest">✝ Жрец</option>
+              {{#each npcRoles}}
+              <option value="{{id}}">{{text}}</option>
+              {{/each}}
             </select>
           </label>
           <label>Тир (1-10)
@@ -481,8 +458,8 @@
             </select>
           </label>
           <label>Фракция
-            <div style="display:flex;gap:4px;align-items:center">
-              <input type="text" name="npc-faction" placeholder="Или выбрать →" style="flex:1">
+            <div class="ih-wt-picker-row">
+              <input type="text" name="npc-faction" placeholder="Или выбрать →">
               <a class="ih-btn ih-btn-small" data-pick-faction>📋</a>
             </div>
           </label>
@@ -512,7 +489,7 @@
 
       <div class="ih-wt-card ih-wt-card-wide">
         <div class="ih-wt-card-title">🌍 Глобальный тик мира</div>
-        <p class="muted-text" style="font-size:11px;margin:4px 0 8px">
+        <p class="muted-text ih-wt-note-block">
           Обновляет все поселения, кризисы, стабилизацию, POI, торговцев.
           Рекомендуется раз в игровую неделю.
         </p>
@@ -524,7 +501,7 @@
 
       <div class="ih-wt-card">
         <div class="ih-wt-card-title">📈 Состояние мира</div>
-        <div class="ih-wt-actions" style="margin-top:8px">
+        <div class="ih-wt-actions ih-wt-actions-spaced">
           <a class="ih-btn" data-action="world-status">📊 Показать статус</a>
         </div>
         {{#if worldStatus}}

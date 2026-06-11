@@ -1,6 +1,7 @@
 import {
   addOrExtendActorCondition,
-  getConditionLabel
+  getConditionLabel,
+  refreshActorBodyTraumaStatus,
 } from "./condition-service.mjs";
 import {
   getConditionDefaultMode,
@@ -17,6 +18,13 @@ import { unequipActorSlot } from "./inventory-service.mjs";
 import { getActorToken } from "../utils/item-utils.mjs";
 
 const BODY_PART_KEYS = new Set(["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"]);
+const SUPPORT_SPECIAL_MESSAGES = Object.freeze({
+  reaction_interrupt: "Перехват обрабатывается автоматически перед попаданием, если подготовленный статус активен.",
+  auto_counter_on_hit: "Контрудар обрабатывается автоматически после полученного удара, если подготовленный статус активен.",
+  formation_stance: "Строй действует как подготовленная защитная стойка и учитывается в защите цели.",
+  shield_wall_formation: "Стена щитов действует как подготовленная защитная стойка и учитывается в защите цели.",
+  aim_bonus_3_next_shot: "Прицел сохраняется как подготовленный бонус и расходуется следующим подходящим выстрелом.",
+});
 
 function normalizeChance(value) {
   const chance = Number(value ?? 1);
@@ -94,7 +102,7 @@ function getBleedingStackAmount(duration, valueKind) {
 
 async function applyLocalBleedingCondition(actor, partKey, amount) {
   if (!actor || !BODY_PART_KEYS.has(partKey)) {
-    return { applied: false, key: "bleeding", previous: 0, value: 0, partKey };
+    return { applied: false, key: "bleeding", previous: 0, value: 0, partKey, local: true };
   }
 
   const path = `system.resources.hp.${partKey}.status.minorBleeding`;
@@ -102,7 +110,67 @@ async function applyLocalBleedingCondition(actor, partKey, amount) {
   const next = previous + Math.max(1, Number(amount ?? 1));
   await actor.update({ [path]: next });
   await syncDerivedConditionsFromTrauma(actor, { render: false });
-  return { applied: true, key: "bleeding", previous, value: next, partKey };
+  return {
+    applied: true,
+    key: "bleeding",
+    storageKey: `resources.hp.${partKey}.status.minorBleeding`,
+    previous,
+    value: next,
+    amount: next - previous,
+    partKey,
+    local: true,
+    valueKind: "stack",
+    mode: "add",
+  };
+}
+
+async function applyTargetCondition(actor, key, value, {
+  mode = null,
+  valueKind = null,
+  result = null,
+} = {}) {
+  const conditionKey = normalizeConditionKey(key);
+  if (!actor || !conditionKey) {
+    return { applied: false, key: conditionKey, previous: 0, value: 0 };
+  }
+
+  const resolvedValueKind = valueKind ?? getConditionDefaultValueKind(conditionKey);
+  const resolvedMode = mode ?? getConditionDefaultMode(conditionKey);
+
+  if (conditionKey === "bleeding" && hasBodyHp(actor)) {
+    const partKey = getResultBodyPartKey(result);
+    const stacks = getBleedingStackAmount(value, resolvedValueKind);
+    return applyLocalBleedingCondition(actor, partKey, stacks);
+  }
+
+  return addOrExtendActorCondition(actor, conditionKey, value, {
+    mode: resolvedMode,
+    valueKind: resolvedValueKind,
+  });
+}
+
+function getConditionDelta(applied) {
+  return Math.max(0, Number(applied?.amount ?? 0) || (Number(applied?.value ?? 0) - Number(applied?.previous ?? 0)));
+}
+
+function formatAppliedConditionText(key, value, applied, {
+  label = null,
+  valueKind = null,
+} = {}) {
+  const conditionKey = normalizeConditionKey(key);
+  const conditionLabel = String(label ?? getConditionLabel(conditionKey) ?? conditionKey);
+  const resolvedValueKind = valueKind ?? getConditionDefaultValueKind(conditionKey);
+  const amount = Math.max(1, getConditionDelta(applied) || Number(value ?? 1) || 1);
+  const partSuffix = applied?.local && applied?.partKey
+    ? ` (${getTargetPartLabel(applied.partKey)})`
+    : "";
+
+  if (isOngoingDamageCondition(conditionKey) || resolvedValueKind === "stack") {
+    return `${conditionLabel} +${amount}${partSuffix}`;
+  }
+
+  const duration = Math.max(1, Number(value ?? amount));
+  return `${conditionLabel}${duration > 1 ? ` (${duration}с)` : ""}${partSuffix}`;
 }
 
 function getEquippedItem(actor, slotKey) {
@@ -232,18 +300,22 @@ export function buildStackHitEffect(stacks = []) {
   return conditionStacks.length ? { conditionStacks } : null;
 }
 
-export async function applyConditionStacks(actor, stacks = [], { mode = "add" } = {}) {
+export async function applyConditionStacks(actor, stacks = [], {
+  mode = "add",
+  result = null,
+} = {}) {
   const applied = [];
   for (const stack of normalizeConditionStacks(stacks)) {
     const key = normalizeConditionKey(stack?.key);
     const value = Math.max(0, Number(stack?.value ?? 0));
     if (!actor || !key || !(value > 0)) continue;
 
-    const result = await addOrExtendActorCondition(actor, key, value, {
+    const conditionResult = await applyTargetCondition(actor, key, value, {
       mode: stack.mode ?? mode ?? getConditionDefaultMode(key),
       valueKind: stack.valueKind ?? getConditionDefaultValueKind(key),
+      result,
     });
-    applied.push(result);
+    applied.push(conditionResult);
   }
   return applied;
 }
@@ -262,6 +334,8 @@ export async function healActorBodyPart(actor, locationKey = "torso", amount = 0
     const newHP = Math.min(maxHP, currentHP + healAmount);
 
     if (newHP !== currentHP) await actor.update({ [valuePath]: newHP });
+    await refreshActorBodyTraumaStatus(actor);
+    await syncDerivedConditionsFromTrauma(actor, { render: false });
     return { healed: newHP - currentHP, newHP, locationKey };
   }
 
@@ -282,6 +356,8 @@ async function applySpecialHitEffect({ attacker, target, effect } = {}) {
   if ((!special && !effect?.notes?.length) || !target) return [];
 
   const lines = Array.isArray(effect?.notes) ? [...effect.notes] : [];
+  const supportMessage = SUPPORT_SPECIAL_MESSAGES[special];
+  if (supportMessage) lines.push(supportMessage);
 
   if (special === "disarm_shield") {
     const shield = getEquippedItem(target, "leftHand");
@@ -306,32 +382,12 @@ async function applySpecialHitEffect({ attacker, target, effect } = {}) {
     }
   }
 
-  if (special === "reaction_interrupt") {
-    lines.push("Перехват требует ручного триггера в момент вражеской атаки.");
-  }
-
-  if (special === "auto_counter_on_hit") {
-    lines.push("Контрудар требует ручного триггера после получения удара.");
-  }
-
-  if (special === "formation_stance") {
-    lines.push("Строй требует союзника рядом; автоматическая стойка пока не ведётся.");
-  }
-
-  if (special === "shield_wall_formation") {
-    lines.push("Стена щитов требует союзника рядом; автоматическая формация пока не ведётся.");
-  }
-
   if (special === "passive_no_reload_penalty") {
     lines.push("Пассивный эффект перезарядки; отдельная атака не требуется.");
   }
 
-  if (special === "aim_bonus_3_next_shot") {
-    lines.push("Прицеливание на следующий выстрел пока ведётся вручную.");
-  }
-
   if (special === "choose_zone") {
-    lines.push("Выбор зоны для этого приёма пока выполняется через обычный прицельный удар.");
+    lines.push("Зона поражения выбирается при применении приёма.");
   }
 
   if (special === "maintain_grapple") {
@@ -354,6 +410,7 @@ export async function applyHitEffects({
     html: "",
     condition: null,
     conditions: [],
+    conditionDetails: [],
     lifestealHp: 0,
   };
 
@@ -365,35 +422,30 @@ export async function applyHitEffects({
     const duration = normalizeDuration(effect.conditionDuration);
     const resolvedConditionMode = conditionMode ?? getConditionDefaultMode(conditionKey);
     const resolvedConditionValueKind = conditionValueKind ?? getConditionDefaultValueKind(conditionKey);
-    let conditionTextOverride = null;
-    let applied;
-
-    if (conditionKey === "bleeding" && hasBodyHp(target)) {
-      const partKey = getResultBodyPartKey(result);
-      const stacks = getBleedingStackAmount(duration, resolvedConditionValueKind);
-      applied = await applyLocalBleedingCondition(target, partKey, stacks);
-      conditionTextOverride = `${getConditionLabel(conditionKey)} +${stacks} (${getTargetPartLabel(partKey)})`;
-    } else {
-      applied = await addOrExtendActorCondition(target, conditionKey, duration, {
-        mode: resolvedConditionMode,
-        valueKind: resolvedConditionValueKind,
-      });
-    }
+    const applied = await applyTargetCondition(target, conditionKey, duration, {
+      mode: resolvedConditionMode,
+      valueKind: resolvedConditionValueKind,
+      result,
+    });
 
     outcome.conditions.push(applied);
-    const conditionDelta = Math.max(0, Number(applied?.value ?? 0) - Number(applied?.previous ?? 0));
-    const defaultConditionText = isOngoingDamageCondition(conditionKey)
-      ? `${getConditionLabel(conditionKey)} +${Math.max(1, conditionDelta || 1)}`
-      : `${getConditionLabel(conditionKey)}${duration > 1 ? ` (${duration}с)` : ""}`;
-    conditionTexts.push(conditionTextOverride ?? defaultConditionText);
+    outcome.conditionDetails.push(applied);
+    conditionTexts.push(formatAppliedConditionText(conditionKey, duration, applied, {
+      valueKind: resolvedConditionValueKind,
+    }));
   }
 
   const conditionStacks = normalizeConditionStacks(effect.conditionStacks ?? effect.stacks ?? []);
   if (conditionStacks.length) {
-    const appliedStacks = await applyConditionStacks(target, conditionStacks, { mode: "add" });
+    const appliedStacks = await applyConditionStacks(target, conditionStacks, { mode: "add", result });
     outcome.conditions.push(...appliedStacks);
-    for (const stack of conditionStacks) {
-      conditionTexts.push(`${getStackLabel(stack)} +${stack.value}`);
+    outcome.conditionDetails.push(...appliedStacks);
+    for (let index = 0; index < conditionStacks.length; index += 1) {
+      const stack = conditionStacks[index];
+      conditionTexts.push(formatAppliedConditionText(stack.key, stack.value, appliedStacks[index], {
+        label: getStackLabel(stack),
+        valueKind: stack.valueKind ?? getConditionDefaultValueKind(stack.key),
+      }));
     }
   }
 

@@ -17,10 +17,19 @@ import {
   buildTradeSummary
 } from "../services/actor-state-service.mjs";
 import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+} from "../services/combat-chat-service.mjs";
+import {
   formatExplodingDiceRoll,
   rollExplodingDice
 } from "../services/skill-roll-service.mjs";
 import { debugLog, debugError } from "../utils/debug-utils.mjs";
+import {
+  formatItemActionSummary,
+  formatSpellSchoolRank,
+  getComputedItemUnitPrice,
+} from "../utils/item-utils.mjs";
 
 // ─── Утилиты ────────────────────────────────────────────────
 
@@ -55,16 +64,28 @@ function copperToCoins(copper) {
 }
 
 function itemCategory(item) {
-  if (typeof getItemTradeCategory === "function") return getItemTradeCategory(item);
+  if (typeof getItemTradeCategory === "function") {
+    const category = getItemTradeCategory(item);
+    if (category) return category;
+  }
   const t = item?.type ?? "";
-  if (t === "weapon") return "weapon";
-  if (t === "armor")  return "armor";
-  if (t === "consumable" || item?.system?.actionType?.startsWith("heal")) return "consumable";
-  if (t === "material") return "material";
-  return "misc";
+  if (t === "weapon" || t === "armor" || t === "throwable") return "arms";
+  if (t === "potion" || t === "scroll" || t === "consumable" || item?.system?.actionType?.startsWith("heal")) return "alchemy";
+  if (t === "food" || t === "resource") return "provisions";
+  if (t === "tool") return "tools";
+  if (t === "material") return "materials";
+  if (t === "spell") return "arcane";
+  return "general";
 }
 
 const CATEGORY_LABELS = {
+  arms:      "Оружие и броня",
+  alchemy:   "Алхимия",
+  provisions:"Провизия",
+  tools:     "Инструменты",
+  materials: "Материалы",
+  arcane:    "Магия",
+  general:   "Прочее",
   weapon:     "Оружие",
   armor:      "Броня",
   consumable: "Расходники",
@@ -125,7 +146,7 @@ function addToOffer(s, side, item, qty = 1) {
       qty:       Math.min(qty, maxQty),
       icon:      item.img ?? "icons/svg/item-bag.svg",
       category:  itemCategory(item),
-      basePrice: Number(item.system?.price ?? item.system?.basePrice ?? 0)
+      basePrice: getComputedItemUnitPrice(item)
     });
   }
   s.leftReady  = false;
@@ -195,7 +216,16 @@ class IronHillsTradeApp extends Application {
       if (userId === game.user?.id) {
         Dialog.confirm({
           title: "Запрос торговли",
-          content: `<p style="color:#a8b8d0">${message}</p>`
+          content: buildSystemDialogContent({
+            className: "ih-trade-confirm-dialog",
+            headline: "Запрос торговли",
+            headlineMeta: "подтверждение игрока",
+            status: "Разрешить?",
+            statusClass: "is-warn",
+            notes: [
+              ["Запрос", message],
+            ],
+          }),
         }).then(resolve);
         return;
       }
@@ -406,19 +436,12 @@ class IronHillsTradeApp extends Application {
       if (sys.satiety)    tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
       if (sys.hydration)  tooltipParts.push(`💧 Жажда: +${sys.hydration}`);
       // Зелья
-      if (sys.power && sys.actionType) {
-        const ACTION_LABELS = {
-          healHp:      `❤ Лечение: +${sys.power} HP`,
-          restoreEnergy: `⚡ Энергия: +${sys.power}`,
-          restoreMana:   `💧 Мана: +${sys.power}`,
-          buffStrength:  `💪 Сила: +${sys.power}`,
-          curePoison:    `☠ Лечит яд`,
-          healBleeding:  `🩸 Останавливает кровотечение`,
-        };
-        tooltipParts.push(ACTION_LABELS[sys.actionType] ?? `✦ Сила: ${sys.power}`);
+      {
+        const actionSummary = formatItemActionSummary(sys);
+        if (actionSummary) tooltipParts.push(actionSummary);
       }
       // Заклинания
-      if (sys.school)     tooltipParts.push(`✨ ${sys.school} ранг ${sys.rank ?? 1}`);
+      if (sys.school)     tooltipParts.push(formatSpellSchoolRank(sys));
       if (sys.manaCost)   tooltipParts.push(`💧 Мана: ${sys.manaCost}`);
       if (sys.damage && sys.school) tooltipParts.push(`⚔ Урон: ${sys.damage}`);
       // Материалы
@@ -426,6 +449,7 @@ class IronHillsTradeApp extends Application {
       // Общее
       if (sys.weight)     tooltipParts.push(`⚖ ${sys.weight} кг`);
       const desc = sys.description ?? sys.desc ?? sys.flavor ?? sys.effect ?? "";
+      const unitPrice = getComputedItemUnitPrice(item);
 
       result.push({
         id:            item.id,
@@ -436,12 +460,8 @@ class IronHillsTradeApp extends Application {
         category:      itemCategory(item),
         categoryLabel: CATEGORY_LABELS[itemCategory(item)] ?? "Прочее",
         tier:          Number(item.system?.tier ?? 1),
-        price:         Number(item.system?.price ?? item.system?.basePrice ?? 0),
-        priceFormatted: formatPrice(Number(
-          item.system?.price > 0     ? item.system.price     :
-          item.system?.basePrice > 0 ? item.system.basePrice :
-          item.system?.value  > 0    ? item.system.value     : 0
-        )),
+        price:         unitPrice,
+        priceFormatted: formatPrice(unitPrice),
         side,
         tooltipStats: tooltipParts.join(" · "),
         tooltipDesc:  desc ? String(desc).replace(/<[^>]+>/g, "").slice(0, 120) : "",
@@ -559,8 +579,14 @@ class IronHillsTradeApp extends Application {
 
       const chosen = await Dialog.wait({
         title: "Торговать за другого",
-        content: `<p style="color:#a8b8d0">Выбери персонажа от чьего имени торговать.<br>
-          <small>Этому игроку придёт запрос подтверждения.</small></p>`,
+        content: buildSystemDialogContent({
+          className: "ih-trade-character-dialog",
+          headline: "Торговать за другого",
+          status: "Выберите персонажа",
+          notes: [
+            ["Важно", "этому игроку придёт запрос подтверждения"],
+          ],
+        }),
         buttons,
         default: Object.keys(buttons)[0]
       });
@@ -722,86 +748,68 @@ class IronHillsTradeApp extends Application {
 
       const dlg = new Dialog({
         title: "Поторговаться",
-        content: `<div id="ih-bargain-root" style="
-            background:#141922;
-            border-radius:10px;
-            padding:14px;
-            font-family:'Segoe UI',sans-serif;
-            color:#a8b8d0;
-            display:flex;
-            flex-direction:column;
-            gap:14px;
-          ">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#6a7d99;">Навык торговли</span>
-            <span style="font-size:20px;font-weight:700;color:#5b9cf6;">d${dieSize}</span>
-          </div>
-          ${lowSkillWarn ? `<div style="font-size:11px;color:#f87171;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:6px;padding:6px 10px;">${lowSkillWarn}</div>` : ''}
-
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;">
-              <span style="font-size:12px;color:#6a7d99;">Желаемая скидка</span>
-              <span id="bpct" style="font-size:22px;font-weight:700;color:#e8edf5;">${initialPct}%</span>
+        content: buildSystemDialogContent({
+          className: "ih-bargain-dialog",
+          headline: "Поторговаться",
+          headlineMeta: `навык торговли d${dieSize}`,
+          status: lowSkillWarn || "",
+          statusClass: lowSkillWarn ? "is-danger" : "",
+          bodyHtml: `
+            <div id="ih-bargain-root" class="ih-bargain-body">
+              <div class="ih-bargain-row">
+                <span>Желаемая скидка</span>
+                <b id="bpct">${initialPct}%</b>
+              </div>
+              <input class="ih-bargain-slider" type="range" id="bslider"
+                min="2.5" max="47.5" step="2.5" value="${initialPct}">
+              <div class="ih-bargain-scale">
+                <span>2.5%</span><span>25%</span><span>47.5%</span>
+              </div>
+              <div class="ih-bargain-metrics">
+                <div class="ih-bargain-row">
+                  <span>Порог проверки</span>
+                  <b id="bthresh">${initialThresh}</b>
+                </div>
+                <div class="ih-bargain-row">
+                  <span>Шанс успеха</span>
+                  <b id="bchance" class="is-good">${initialChance}%</b>
+                </div>
+                <div class="ih-bargain-formula">
+                  Бросок <b>1d${dieSize}</b> ≥ <b id="bthresh2">${initialThresh}</b>
+                </div>
+              </div>
             </div>
-            <input type="range" id="bslider"
-              min="2.5" max="47.5" step="2.5" value="${initialPct}"
-              style="width:100%;height:6px;accent-color:#5b9cf6;cursor:pointer;background:#232e42;border-radius:3px;outline:none;border:none;">
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#3d4f68;">
-              <span>2.5%</span><span>25%</span><span>47.5%</span>
-            </div>
-          </div>
-
-          <div style="background:#1b2333;border:1px solid rgba(120,150,200,.16);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#6a7d99;">Порог проверки</span>
-              <span id="bthresh" style="font-size:18px;font-weight:700;color:#e8edf5;">${initialThresh}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:11px;color:#6a7d99;">Шанс успеха</span>
-              <span id="bchance" style="font-size:13px;font-weight:600;color:#4ade80;">${initialChance}%</span>
-            </div>
-            <div style="font-size:11px;color:#6a7d99;">
-              Бросок <b style="color:#5b9cf6;">1d${dieSize}</b> ≥ <b id="bthresh2" style="color:#e8edf5;">${initialThresh}</b>
-            </div>
-          </div>
-        </div>
-        <script>
-          (function() {
-            var die = ${dieSize};
-            var BMAP = {
-              2.5:2, 5:3, 7.5:4, 10:5, 12.5:6, 15:7, 17.5:8, 20:9, 22.5:10,
-              25:11, 27.5:12, 30:13, 32.5:14, 35:15, 37.5:16, 40:17, 42.5:18, 45:19, 47.5:20
-            };
-            function thresh(pct) {
-              var step = Math.round(pct / 2.5) * 2.5;
-              return BMAP[step] || 20;
-            }
-            var slider = document.getElementById('bslider');
-            if (!slider) return;
-            slider.addEventListener('input', function() {
-              var pct = parseInt(this.value);
-              var t   = thresh(pct);
-              var ch  = Math.round(Math.max(0, (die - t + 1) / die * 100));
-              document.getElementById('bpct').textContent    = pct + '%';
-              document.getElementById('bthresh').textContent = t;
-              document.getElementById('bthresh2').textContent = t;
-              var chEl = document.getElementById('bchance');
-              chEl.textContent = ch + '%';
-              chEl.style.color = ch >= 70 ? '#4ade80' : ch >= 40 ? '#facc15' : '#f87171';
-            });
-          })();
-        </script>`,
+          `,
+        }),
         buttons: {
           roll: {
             label: "<i class='fas fa-dice'></i> Бросить!",
             callback: () => {
               const s = document.getElementById('bslider');
-              resolve(s ? parseInt(s.value) : 10);
+              resolve(s ? Number(s.value) : 10);
             }
           },
           cancel: { label: "Отмена", callback: () => resolve(null) }
         },
         default: "roll",
+        render: html => {
+          const slider = html.find?.("#bslider")?.[0] ?? document.getElementById("bslider");
+          if (!slider) return;
+          const update = () => {
+            const pct = Number(slider.value);
+            const thresholdNow = getThreshold(pct);
+            const chance = Math.round(Math.max(0, (dieSize - thresholdNow + 1) / dieSize * 100));
+            html.find?.("#bpct")?.text(`${pct}%`);
+            html.find?.("#bthresh")?.text(thresholdNow);
+            html.find?.("#bthresh2")?.text(thresholdNow);
+            const chanceEl = html.find?.("#bchance");
+            chanceEl?.text(`${chance}%`);
+            chanceEl?.removeClass("is-good is-warn is-danger");
+            chanceEl?.addClass(chance >= 70 ? "is-good" : chance >= 40 ? "is-warn" : "is-danger");
+          };
+          slider.addEventListener("input", update);
+          update();
+        },
         close: () => resolve(null)
       });
       dlg.render(true);
@@ -811,7 +819,7 @@ class IronHillsTradeApp extends Application {
     const desiredDiscount = discountChoice;
     const threshold = getThreshold(desiredDiscount);
 
-    const rollResult = await rollExplodingDice(skillValue);
+    const rollResult = await rollExplodingDice(tradeSkill);
     const result = rollResult.total;
     const rollDisplay = formatExplodingDiceRoll(rollResult, dieSize);
     const rolls = rollResult.rolls ?? [];
@@ -822,32 +830,64 @@ class IronHillsTradeApp extends Application {
 
     this._tradeState.bargainUsed = true;
 
-    let msg = `<b>${character.name}</b> пытается поторговаться `
-            + `(${rollDisplay}, порог: <b>${threshold}</b>).<br>`;
+    const bargainRows = [
+      ["Персонаж", character.name],
+      { label: "Бросок", valueHtml: rollDisplay },
+      ["Порог", threshold],
+      ["Запрошенная скидка", `${desiredDiscount}%`],
+    ];
 
     if (isAnticrit) {
-      msg += `<b style="color:#f87171">💀 Антикрит! Торговец обиделся — сессия торговли закрыта.</b>`;
       // Небольшой штраф к репутации
       const repPath = `system.relations.${getLiveActor(this.merchant)?.name}`;
       await character.update({ [repPath]: Math.max(-100, (character.system?.relations?.[getLiveActor(this.merchant)?.name] ?? 0) - 5) }).catch(() => {});
-      await ChatMessage.create({ content: msg });
+      await ChatMessage.create({
+        content: buildCombatChatCard({
+          title: "Торг",
+          icon: "💀",
+          status: "Антикрит",
+          statusClass: "is-danger",
+          rows: bargainRows,
+          notices: [
+            ["Итог", "торговец обиделся, сессия торговли закрыта"],
+          ],
+          className: "ih-trade-bargain-card",
+        }),
+      });
       this.close();
       return;
     }
+
+    let status = "Провал";
+    let statusClass = "is-warn";
+    let outcome = "торговец не уступает";
 
     if (success) {
       const bonus = isCrit ? desiredDiscount + 10 : desiredDiscount;
       this._tradeState.bargainDiscount = Math.min(50, bonus);
       // Применяем скидку к базовым ценам предметов в инвентаре торговца
-      msg += isCrit
-        ? `<b style="color:#4ade80">✦ Крит! Скидка ${bonus}% получена + небольшой бонус к репутации!</b>`
-        : `<b style="color:#4ade80">✓ Успех! Скидка ${desiredDiscount}%.</b>`;
+      status = isCrit ? "Крит" : "Успех";
+      statusClass = "is-good";
+      outcome = isCrit
+        ? `скидка ${bonus}% получена, небольшой бонус к репутации`
+        : `скидка ${desiredDiscount}%`;
     } else {
       this._tradeState.bargainDiscount = 0;
-      msg += `<span style="color:#a8b8d0">✗ Провал. Торговец не уступает.</span>`;
     }
 
-    await ChatMessage.create({ content: msg });
+    await ChatMessage.create({
+      content: buildCombatChatCard({
+        title: "Торг",
+        icon: "🎲",
+        status,
+        statusClass,
+        rows: bargainRows,
+        notices: [
+          ["Итог", outcome],
+        ],
+        className: "ih-trade-bargain-card",
+      }),
+    });
     this.render(false);
   }
 
@@ -997,13 +1037,17 @@ class IronHillsTradeApp extends Application {
       ].join(", ") || "—";
 
       await ChatMessage.create({
-        content: `
-          <div style="border:1px solid rgba(91,156,246,0.3);border-radius:8px;padding:10px;background:rgba(91,156,246,0.05);">
-            <b>✦ Торговая сделка заключена</b><br>
-            <b>${character.name}</b> отдаёт: ${leftDesc}<br>
-            <b>${merchant.name}</b> отдаёт: ${rightDesc}
-          </div>
-        `
+        content: buildCombatChatCard({
+          title: "Торговая сделка заключена",
+          icon: "✦",
+          status: "обмен",
+          statusClass: "is-good",
+          rows: [
+            [`${character.name} отдаёт`, leftDesc],
+            [`${merchant.name} отдаёт`, rightDesc],
+          ],
+          className: "ih-trade-chat-card",
+        }),
       });
 
       resetState(this._tradeState);

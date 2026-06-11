@@ -95,8 +95,8 @@ function updateTime() {
   const h = Math.floor((w / 3600) % 24);
   const m = Math.floor((w / 60)   % 60);
   const d = Math.floor(w / 86400);
-  el.innerHTML = `<span style="font-size:8px;color:var(--ih-text-2)">День ${d + 1}</span>
-                  <span style="font-size:12px">${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}</span>`;
+  el.innerHTML = `<span class="ih-sb-tv-day">День ${d + 1}</span>
+                  <span class="ih-sb-tv-time">${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}</span>`;
 }
 
 export function initToolbar() {

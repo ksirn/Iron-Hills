@@ -85,16 +85,16 @@
               <div class="ih-trade-inv-name">{{name}}</div>
               <div class="ih-trade-inv-meta">
                 <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
-                <span class="muted-text" style="font-size:10px">Тир {{tier}}</span>
+                <span class="muted-text ih-trade-tier-note">Тир {{tier}}</span>
               </div>
             </div>
             {{!-- Tooltip --}}
             <div class="ih-trade-tooltip">
               <div class="ih-trade-tooltip-header">
-                <img src="{{img}}" width="28" height="28" style="border-radius:4px">
+                <img class="ih-trade-tooltip-img" src="{{img}}" width="28" height="28">
                 <div>
-                  <div style="font-weight:700;font-size:12px">{{name}}</div>
-                  <div class="muted-text" style="font-size:10px">Тир {{tier}} · {{categoryLabel}}</div>
+                  <div class="ih-trade-tooltip-name">{{name}}</div>
+                  <div class="muted-text ih-trade-tooltip-meta">Тир {{tier}} · {{categoryLabel}}</div>
                 </div>
               </div>
               {{#if tooltipStats}}
@@ -295,16 +295,16 @@
               <div class="ih-trade-inv-name">{{name}}</div>
               <div class="ih-trade-inv-meta">
                 <span class="ih-trade-cat-badge cat-{{category}}">{{categoryLabel}}</span>
-                <span class="muted-text" style="font-size:10px">Тир {{tier}}</span>
+                <span class="muted-text ih-trade-tier-note">Тир {{tier}}</span>
               </div>
             </div>
             {{!-- Tooltip --}}
             <div class="ih-trade-tooltip">
               <div class="ih-trade-tooltip-header">
-                <img src="{{img}}" width="28" height="28" style="border-radius:4px">
+                <img class="ih-trade-tooltip-img" src="{{img}}" width="28" height="28">
                 <div>
-                  <div style="font-weight:700;font-size:12px">{{name}}</div>
-                  <div class="muted-text" style="font-size:10px">Тир {{tier}} · {{categoryLabel}}</div>
+                  <div class="ih-trade-tooltip-name">{{name}}</div>
+                  <div class="muted-text ih-trade-tooltip-meta">Тир {{tier}} · {{categoryLabel}}</div>
                 </div>
               </div>
               {{#if tooltipStats}}

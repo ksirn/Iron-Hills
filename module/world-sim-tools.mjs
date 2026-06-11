@@ -1,27 +1,26 @@
-import { NPC_ROLE_PROFILES } from "./constants/npc-profiles.mjs";
-import { MERCHANT_TYPES, ECONOMY_STATES, setSettlementEconomy } from "./services/merchant-service.mjs";
+import {
+  ECONOMY_STATES,
+  MERCHANT_TYPES,
+  generateMerchantActorStockItems,
+  setSettlementEconomy,
+} from "./services/merchant-service.mjs";
 import { EntityPickerDialog } from "./apps/entity-picker.mjs";
 import { randInt, choice, clamp } from "./utils/math-utils.mjs";
 import {
   makeName,
-  buildWeapon,
-  buildArmor,
-  buildFood,
-  buildPotion,
-  buildScroll,
-  buildThrowable,
-  buildConsumable,
-  buildMaterial,
-  buildResource,
-  buildTool,
   randomMerchantStock,
   randomContainerLoot,
-  buildNpcSystem,
-  buildNpcCarryInventoryItems,
+  buildNpcActorData,
+  buildPoiLootItems,
+  buildPoiNpcActorData,
+  buildNpcStartingInventoryItems,
+  getWorldContentOptionData,
   makeSettlementEvent,
   makeSettlementRumor,
   appendSettlementHistory,
   getContextualMerchantStock,
+  WORLD_CONTENT_POI_THEMES,
+  WORLD_CONTENT_POI_TYPES,
 } from "./services/world-content-service.mjs";
 
 const REGION_CRISES = [
@@ -57,33 +56,7 @@ const REGION_CRISES = [
   }
 ];
 
-const POI_TYPES = {
-  camp: {
-    label: "Лагерь",
-    themes: ["bandit", "hunter", "mercenary"],
-    status: ["active", "hidden", "abandoned"]
-  },
-  lair: {
-    label: "Логово",
-    themes: ["beast", "undead", "bandit"],
-    status: ["active", "dangerous", "sealed"]
-  },
-  ruins: {
-    label: "Руины",
-    themes: ["ancient", "forgotten", "cursed"],
-    status: ["silent", "active", "collapsed"]
-  },
-  shrine: {
-    label: "Святилище",
-    themes: ["sacred", "forsaken", "mystic"],
-    status: ["active", "hidden", "defiled"]
-  },
-  road: {
-    label: "Переход",
-    themes: ["bridge", "ford", "watchpost"],
-    status: ["used", "damaged", "blocked"]
-  }
-};
+const POI_TYPES = WORLD_CONTENT_POI_TYPES;
 
 import {
   getSettlements,
@@ -93,9 +66,69 @@ import {
   findFactionByName,
   findSettlementByName,
 } from "./utils/world-helpers.mjs";
+import {
+  buildCombatChatCard,
+  buildCombatParagraphs,
+  buildSystemDialogContent,
+  buildSystemDialogForm,
+  buildSystemDialogInput,
+  escapeCombatHtml,
+} from "./services/combat-chat-service.mjs";
 
 function todayStamp() {
   return new Date().toLocaleString("ru-RU");
+}
+
+function recordOptions(record) {
+  return Object.values(record ?? {}).map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    icon: entry.icon ?? "",
+    text: entry.icon ? `${entry.icon} ${entry.label}` : entry.label,
+  }));
+}
+
+function buildWorldReportRows(rows = []) {
+  const normalized = (Array.isArray(rows) ? rows : [])
+    .filter(row => row && row[0] !== undefined && row[1] !== undefined)
+    .map(([label, value]) => `
+      <div class="ih-world-report-row">
+        <span>${escapeCombatHtml(label)}</span>
+        <b>${escapeCombatHtml(value)}</b>
+      </div>
+    `)
+    .join("");
+
+  return normalized ? `<div class="ih-world-report-rows">${normalized}</div>` : "";
+}
+
+function buildWorldReportBlock(title, rows = [], { bodyHtml = "" } = {}) {
+  return `
+    <section class="ih-world-report-block">
+      <h4>${escapeCombatHtml(title)}</h4>
+      ${buildWorldReportRows(rows)}
+      ${bodyHtml ? `<div class="ih-world-report-body">${bodyHtml}</div>` : ""}
+    </section>
+  `;
+}
+
+function buildWorldReportLines(lines = [], emptyText = "") {
+  const safeLines = (Array.isArray(lines) ? lines : [])
+    .filter(line => line !== undefined && line !== null && String(line).trim() !== "")
+    .map(line => `<p>${escapeCombatHtml(line)}</p>`)
+    .join("");
+
+  if (safeLines) return safeLines;
+  return emptyText ? `<p class="ih-world-report-empty">${escapeCombatHtml(emptyText)}</p>` : "";
+}
+
+function buildWorldReportSection(title, contentHtml = "", emptyText = "") {
+  return `
+    <section class="ih-world-report-section">
+      <h3>${escapeCombatHtml(title)}</h3>
+      ${contentHtml || buildWorldReportLines([], emptyText)}
+    </section>
+  `;
 }
 
 function getMerchantCountForSettlement(settlementName) {
@@ -181,67 +214,33 @@ function computeSettlementEconomy(settlementLike) {
 }
 
 function buildPoiName(poiType, theme, nearestSettlement) {
-  const prefix = {
-    camp: ["Лагерь", "Стоянка", "Схрон"],
-    lair: ["Логово", "Нора", "Гнездо"],
-    ruins: ["Руины", "Развалины", "Заброшка"],
-    shrine: ["Святилище", "Капище", "Алтарь"],
-    road: ["Переправа", "Пост", "Переход"]
+  const typeDef = POI_TYPES[poiType] ?? POI_TYPES.camp;
+  const core = choice(typeDef?.namePrefixes ?? [typeDef?.label ?? "Точка"]);
+  const themeLabel = WORLD_CONTENT_POI_THEMES[theme]?.label ?? theme;
+  return nearestSettlement ? `${core} ${themeLabel} у ${nearestSettlement}` : `${core} ${themeLabel}`;
+}
+
+function normalizeMerchantSpecialtyForStock(specialty) {
+  const key = String(specialty ?? "general").trim();
+  const aliases = {
+    blacksmith: "weaponsmith",
+    hunter: "general",
+    innkeeper: "general",
   };
-
-  const core = choice(prefix[poiType] ?? ["Точка"]);
-  return nearestSettlement ? `${core} ${theme} у ${nearestSettlement}` : `${core} ${theme}`;
+  const normalized = aliases[key] ?? key;
+  return MERCHANT_TYPES[normalized] ? normalized : "general";
 }
 
-function buildPoiLoot(theme, tier) {
-  if (theme === "bandit") return randomContainerLoot("bandit", tier);
-  if (theme === "hunter") return randomContainerLoot("hunter", tier);
-  if (theme === "mystic" || theme === "sacred") {
-    return [
-      buildScroll("Свиток искры", tier, "fire", "damage", 2 + tier, "torso"),
-      buildPotion("Малое зелье маны", tier, "restoreMana", 8 + tier * 2, "torso", randInt(1, 2)),
-      buildMaterial("Лунная пыль", tier, "herbs", randInt(1, 3), 1)
-    ];
+function merchantRestockSeed(merchant, tier, economyStatus) {
+  const worldTime = Number(globalThis.game?.time?.worldTime ?? Date.now() / 1000);
+  const worldDay = Math.floor(worldTime / 86400);
+  const salt = `${merchant?.id ?? merchant?.name ?? "merchant"}:${tier}:${economyStatus}:${worldDay}:${merchant?.items?.size ?? 0}`;
+  let hash = 2166136261;
+  for (let i = 0; i < salt.length; i += 1) {
+    hash ^= salt.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
   }
-  if (theme === "ancient" || theme === "forgotten" || theme === "cursed") {
-    return randomContainerLoot("ruins", tier);
-  }
-  return [
-    buildFood("Сухари", tier, 10, 0, 1, randInt(1, 2)),
-    buildMaterial("Старая верёвка", tier, "fiber", randInt(1, 2), 1)
-  ];
-}
-
-function buildPoiNpcPackage(theme, tier, faction = "") {
-  if (theme === "bandit") {
-    return {
-      name: `Бандит ${makeName()}`,
-      type: "npc",
-      system: buildNpcSystem("bandit", tier, faction)
-    };
-  }
-  if (theme === "hunter") {
-    return {
-      name: `Охотник ${makeName()}`,
-      type: "npc",
-      system: buildNpcSystem("hunter", tier, faction)
-    };
-  }
-  if (theme === "mercenary") {
-    return {
-      name: `Страж ${makeName()}`,
-      type: "npc",
-      system: buildNpcSystem("guard", tier, faction)
-    };
-  }
-  if (theme === "mystic" || theme === "sacred") {
-    return {
-      name: `Мистик ${makeName()}`,
-      type: "npc",
-      system: buildNpcSystem("mage", tier, faction)
-    };
-  }
-  return null;
+  return hash >>> 0;
 }
 
 async function createPoi({
@@ -291,50 +290,16 @@ async function createPoi({
     }
   });
 
-  const loot = buildPoiLoot(finalTheme, tier);
+  const loot = buildPoiLootItems(finalTheme, tier);
   if (loot.length) {
     await actor.createEmbeddedDocuments("Item", loot);
   }
 
-  const npcDoc = buildPoiNpcPackage(finalTheme, tier, faction);
+  const npcDoc = buildPoiNpcActorData(finalTheme, tier, faction);
   if (npcDoc && randInt(1, 100) <= 70) {
-    const npc = await Actor.create(npcDoc);
-
-    if (npc.system.info?.role === "Бандит") {
-      await npc.createEmbeddedDocuments("Item", [
-        buildWeapon("Ржавый нож", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
-        buildThrowable("Метательный нож", tier, 2 + tier, "physical", 0, 0, "torso", randInt(1, 3))
-      ]);
-    }
-
-    if (npc.system.info?.role === "Охотник") {
-      await npc.createEmbeddedDocuments("Item", [
-        buildThrowable("Метательный нож", tier, 2 + tier, "physical", 0, 0, "torso", randInt(2, 4)),
-        buildFood("Вяленое мясо", tier, 18, 0, 1, randInt(1, 2))
-      ]);
-    }
-
-    if (npc.system.info?.role === "Маг") {
-      await npc.createEmbeddedDocuments("Item", [
-        {
-          name: "Искра",
-          type: "spell",
-          system: {
-            tier,
-            quality: "common",
-            weight: 0,
-            quantity: 1,
-            school: "fire",
-            effectType: "damage",
-            damageType: "magical",
-            power: 2 + tier,
-            manaCost: 8,
-            energyCost: 0,
-            targetPart: "torso"
-          }
-        }
-      ]);
-    }
+    const npc = await Actor.create(npcDoc.data);
+    const npcItems = buildNpcStartingInventoryItems(npcDoc.roleKey, tier);
+    if (npcItems.length) await npc.createEmbeddedDocuments("Item", npcItems);
   }
 
   const settlement = findSettlementByName(nearestSettlement);
@@ -357,7 +322,6 @@ export async function restockMerchant(merchant, settlement = null) {
   // Экономика поселения → priceFactor
   const econData = linkedSettlement ? computeSettlementEconomy(linkedSettlement) : null;
   const econStatus = linkedSettlement?.system?.economy?.economyStatus ?? "normal";
-  const { ECONOMY_STATES } = await import("./services/merchant-service.mjs");
   const econState = ECONOMY_STATES[econStatus] ?? ECONOMY_STATES.normal;
 
   const SPECIALTY_PRICE = {
@@ -377,78 +341,35 @@ export async function restockMerchant(merchant, settlement = null) {
 
   // Очищаем старый инвентарь только если торговец пуст или принудительное пополнение
   const currentCount = merchant.items.size;
-  const targetCount  = Math.round((5 + tier * 2) * econState.stockMult);
+  const targetCount  = Math.max(0, Math.round((5 + tier * 2) * econState.stockMult));
+  let added = 0;
 
   if (currentCount < targetCount) {
-    // Берём предметы из компендиума ih-weapons / ih-armor / ih-potions / ih-food / ih-materials
-    const batch = await _buildStockFromCompendium(specialty, tier, targetCount - currentCount, econState);
+    const restock = generateMerchantActorStockItems(
+      normalizeMerchantSpecialtyForStock(specialty),
+      tier,
+      {
+        seed: merchantRestockSeed(merchant, tier, econStatus),
+        settlementId: linkedSettlement?.id ?? null,
+        economyStatus: econStatus,
+        limit: targetCount - currentCount,
+      }
+    );
+    const batch = restock.items;
     if (batch.length) {
-      await merchant.createEmbeddedDocuments("Item", batch);
+      const created = await merchant.createEmbeddedDocuments("Item", batch);
+      added = Array.isArray(created) ? created.length : batch.length;
     }
   }
 
   await merchant.update({
     "system.market.lastRestock":        todayStamp(),
     "system.market.currentPriceFactor": factor,
-    "system.market.stockRating":        clamp(merchant.items.size, 0, 10),
+    "system.market.stockRating":        clamp(currentCount + added, 0, 10),
     "system.economy.economyStatus":     econStatus,
   });
 
-  return { added: Math.max(0, merchant.items.size - currentCount), factor };
-}
-
-/**
- * Получить предметы из компендиумов для пополнения торговца.
- * Фильтрует по тиру и типу магазина.
- */
-async function _buildStockFromCompendium(specialty, tier, count, econState) {
-  // Маппинг специализации → нужные паки
-  const SPECIALTY_PACKS = {
-    weaponsmith: ["ih-weapons", "ih-materials"],
-    armorsmith:  ["ih-armor",   "ih-materials"],
-    alchemist:   ["ih-potions", "ih-materials", "ih-food"],
-    mage:        ["ih-potions", "ih-materials"],
-    jeweler:     ["ih-materials"],
-    blackmarket: ["ih-weapons", "ih-armor", "ih-potions", "ih-materials"],
-    general:     ["ih-weapons", "ih-armor", "ih-potions", "ih-food", "ih-materials", "ih-tools"],
-    blacksmith:  ["ih-weapons", "ih-materials"],
-    hunter:      ["ih-food",    "ih-materials", "ih-tools"],
-    innkeeper:   ["ih-food"],
-  };
-
-  const maxTier = Math.min(10, tier + 1);
-  const packNames = SPECIALTY_PACKS[specialty] ?? SPECIALTY_PACKS.general;
-  const pool = [];
-
-  for (const packName of packNames) {
-    const pack = game.packs.get(`iron-hills-system.${packName}`);
-    if (!pack) continue;
-    const docs = await pack.getDocuments();
-    for (const doc of docs) {
-      const itemTier = Number(doc.system?.tier ?? 1);
-      if (itemTier >= 1 && itemTier <= maxTier) {
-        pool.push(doc);
-      }
-    }
-  }
-
-  if (!pool.length) return [];
-
-  // Случайная выборка с учётом stockMult (при кризисе меньше)
-  const actualCount = Math.max(1, Math.round(count * (econState?.stockMult ?? 1)));
-  const result = [];
-  for (let i = 0; i < actualCount && pool.length; i++) {
-    const doc = pool[Math.floor(Math.random() * pool.length)];
-    const data = doc.toObject();
-    delete data._id;
-    data.system.quantity = Math.max(1, Math.floor(Math.random() * 3) + 1);
-    // Проставляем system.price из system.value (чтобы trade-app показывал цену)
-    if (!data.system.price || data.system.price <= 0) {
-      data.system.price = Number(data.system.value ?? 0);
-    }
-    result.push(data);
-  }
-  return result;
+  return { added, factor };
 }
 
 function getRegionGroups() {
@@ -1057,72 +978,74 @@ async function runWorldWeek() {
     });
   }
 
-  const settlementBody = settlementReports.map(r => `
-    <div style="margin-bottom:10px;">
-      <b>${r.name}</b><br>
-      Население: ${r.nextPopulation}<br>
-      Благополучие: ${r.nextProsperity}<br>
-      Опасность: ${r.nextDanger}<br>
-      Снабжение: ${r.nextSupply}<br>
-      Давление фракции: ${r.factionPressure}<br>
-      Торговцев: ${r.merchantCount}<br>
-      Пути: ${r.routeValue}<br>
-      Торговый баланс: ${r.tradeBalance}<br>
-      Караваны: ${r.caravanTraffic}<br>
-      Стабильность: ${r.stability}<br>
-      Милиция: ${r.militiaPower}<br>
-      Кризис: ${r.activeCrisis || "нет"}<br>
-      Цены — еда: ${r.prices.foodPrice}, материалы: ${r.prices.materialsPrice}, алхимия: ${r.prices.alchemyPrice}, оружие: ${r.prices.armsPrice}, ночлег: ${r.prices.lodgingPrice}<br>
-      Событие: ${r.eventText}<br>
-      Слух: ${r.rumorText}
-    </div>
-  `).join("");
+  const settlementBody = settlementReports.map(r => buildWorldReportBlock(r.name, [
+    ["Население", r.nextPopulation],
+    ["Благополучие", r.nextProsperity],
+    ["Опасность", r.nextDanger],
+    ["Снабжение", r.nextSupply],
+    ["Давление фракции", r.factionPressure],
+    ["Торговцев", r.merchantCount],
+    ["Пути", r.routeValue],
+    ["Торговый баланс", r.tradeBalance],
+    ["Караваны", r.caravanTraffic],
+    ["Стабильность", r.stability],
+    ["Милиция", r.militiaPower],
+    ["Кризис", r.activeCrisis || "нет"],
+    ["Цены", `еда ${r.prices.foodPrice}, материалы ${r.prices.materialsPrice}, алхимия ${r.prices.alchemyPrice}, оружие ${r.prices.armsPrice}, ночлег ${r.prices.lodgingPrice}`],
+    ["Событие", r.eventText],
+    ["Слух", r.rumorText],
+  ])).join("");
 
-  const crisisBody = crisisReports.map(c => `
-    <div style="margin-bottom:6px;">
-      <b>${c.regionName}</b>: кризис "${c.crisis}", затронуто поселений ${c.settlementCount}
-    </div>
-  `).join("");
+  const crisisBody = crisisReports.map(c => buildWorldReportBlock(c.regionName, [
+    ["Кризис", c.crisis],
+    ["Затронуто поселений", c.settlementCount],
+  ])).join("");
 
-  const caravanBody = caravanReports.map(c => `
-    <div style="margin-bottom:6px;">
-      <b>${c.region}</b>: ${c.text}
-    </div>
-  `).join("");
+  const caravanBody = caravanReports.map(c => buildWorldReportBlock(c.region, [
+    ["Событие", c.text],
+  ])).join("");
 
-  const poiBody = [
+  const poiBody = buildWorldReportLines([
     ...poiSpawnReports,
     ...poiDecayReports,
     ...poiEvolutionReports,
     ...poiSuppressionReports,
     ...poiFactionReports,
-    ...removedPois
-  ].map(t => `<div style="margin-bottom:6px;">${t}</div>`).join("");
+    ...removedPois,
+  ], "Новых изменений по POI нет.");
 
-  const merchantBody = merchantReports.map(m => `
-    <div style="margin-bottom:6px;">
-      <b>${m.name}</b>: добавлено товаров ${m.added}, коэффициент цен ${m.factor}
-    </div>
-  `).join("");
+  const merchantBody = merchantReports.map(m => buildWorldReportBlock(m.name, [
+    ["Добавлено товаров", m.added],
+    ["Коэффициент цен", m.factor],
+  ])).join("");
 
-  const stabilizationBody = stabilizationReports.map(t => `<div style="margin-bottom:6px;">${t}</div>`).join("");
+  const stabilizationBody = buildWorldReportLines(
+    stabilizationReports,
+    "Стабилизационных событий не было."
+  );
 
   await ChatMessage.create({
-    content: `
-      <h2>Сводка недели мира</h2>
-      <h3>Поселения</h3>
-      ${settlementBody || "<p>Нет поселений для тика.</p>"}
-      <h3>Стабилизация мира</h3>
-      ${stabilizationBody || "<p>Стабилизационных событий не было.</p>"}
-      <h3>Кризисы региона</h3>
-      ${crisisBody || "<p>На этой неделе новых кризисов нет.</p>"}
-      <h3>Караваны</h3>
-      ${caravanBody || "<p>Караванов не было.</p>"}
-      <h3>POI и конфликты</h3>
-      ${poiBody || "<p>Новых изменений по POI нет.</p>"}
-      <h3>Ресток торговцев</h3>
-      ${merchantBody || "<p>Нет торговцев.</p>"}
-    `
+    content: buildCombatChatCard({
+      title: "Сводка недели мира",
+      icon: "🌍",
+      rows: [
+        ["Поселения", settlementReports.length],
+        ["Кризисы", crisisReports.length],
+        ["Караваны", caravanReports.length],
+        ["POI события", poiSpawnReports.length + poiDecayReports.length + poiEvolutionReports.length + poiSuppressionReports.length + poiFactionReports.length + removedPois.length],
+        ["Торговцы", merchantReports.length],
+      ],
+      bodyHtml: `
+        <div class="ih-world-report">
+          ${buildWorldReportSection("Поселения", settlementBody, "Нет поселений для тика.")}
+          ${buildWorldReportSection("Стабилизация мира", stabilizationBody)}
+          ${buildWorldReportSection("Кризисы региона", crisisBody, "На этой неделе новых кризисов нет.")}
+          ${buildWorldReportSection("Караваны", caravanBody, "Караванов не было.")}
+          ${buildWorldReportSection("POI и конфликты", poiBody)}
+          ${buildWorldReportSection("Ресток торговцев", merchantBody, "Нет торговцев.")}
+        </div>
+      `,
+    })
   });
 
   return {
@@ -1183,6 +1106,7 @@ class IronHillsWorldToolsV5 extends Application {
     const settlements = getSettlements().map(a => ({ id: a.id, name: a.name }));
     const factions    = getFactions().map(a => ({ id: a.id, name: a.name }));
     const regions     = [...new Set(getSettlements().map(s => s.system.info?.region || "Iron Hills"))];
+    const worldOptions = getWorldContentOptionData();
 
     // Статус мира для вкладки Симуляция
     const worldStatus = getSettlements().map(s => ({
@@ -1206,6 +1130,11 @@ class IronHillsWorldToolsV5 extends Application {
       factions,
       regions,
       pois,
+      merchantTypes: recordOptions(MERCHANT_TYPES),
+      economyStates: recordOptions(ECONOMY_STATES),
+      containerThemes: worldOptions.containerThemes,
+      poiTypes: worldOptions.poiTypes,
+      npcRoles: worldOptions.npcRoles,
       worldStatus:   this._showWorldStatus ? worldStatus : null,
       factionReport: this._showFactionReport ? buildFactionReport() : null,
     };
@@ -1223,19 +1152,23 @@ class IronHillsWorldToolsV5 extends Application {
     let mapCol = null, mapRow = null;
     const mapChoice = await Dialog.confirm({
       title:   "Разместить на карте?",
-      content: `<p style="color:#a8b8d0">Привязать <b>${name}</b> к тайлу на глобальной карте?</p>`
+      content: buildSystemDialogContent({
+        headline: name,
+        status: "Привязать поселение к тайлу на глобальной карте?",
+      })
     });
 
     if (mapChoice) {
       // Открываем пикер тайла
       const colStr = await Dialog.wait({
         title: "Координаты тайла",
-        content: `<div style="font-family:'Segoe UI',sans-serif;color:#a8b8d0;padding:4px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>Колонка (0-9)<br><input id="tile-col" type="number" min="0" max="9" value="5"
-            style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:5px;border-radius:6px;"></label>
-          <label>Ряд (0-9)<br><input id="tile-row" type="number" min="0" max="9" value="5"
-            style="width:100%;background:#1b2333;border:1px solid rgba(120,150,200,0.3);color:#e8edf5;padding:5px;border-radius:6px;"></label>
-        </div>`,
+        content: buildSystemDialogContent({
+          status: "Укажите координаты тайла на глобальной карте.",
+          formHtml: buildSystemDialogForm([
+            buildSystemDialogInput({ id: "tile-col", type: "number", label: "Колонка (0-9)", value: 5, min: 0, max: 9 }),
+            buildSystemDialogInput({ id: "tile-row", type: "number", label: "Ряд (0-9)", value: 5, min: 0, max: 9 }),
+          ], { className: "ih-system-dialog-form-2col" }),
+        }),
         buttons: {
           ok: {
             label: "Разместить",
@@ -1329,83 +1262,11 @@ class IronHillsWorldToolsV5 extends Application {
     const factionActor = this._pickedFaction ?? null;
     const faction = factionActor?.name ?? html.find("[name='npc-faction']").val() ?? "";
 
-    const profile = NPC_ROLE_PROFILES[role] ?? NPC_ROLE_PROFILES.villager;
-    const actor = await Actor.create({
-      name: `${profile.label} ${makeName()}`,
-      type: "npc",
-      system: buildNpcSystem(role, tier, faction)
-    });
+    const npcDoc = buildNpcActorData(role, tier, faction);
+    const actor = await Actor.create(npcDoc.data);
 
-    if (role === "guard") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildWeapon("Служебный меч", tier, { skill: "sword", damage: 2 + tier, weight: 3 }),
-        buildArmor("Стёганка стражи", tier, "torso", 1 + tier, 0, 4)
-      ]);
-    }
-
-    if (role === "bandit") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildWeapon("Ржавый нож", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
-        buildThrowable("Метательный нож", tier, 2 + tier, "physical", 0, 0, "torso", randInt(1, 3))
-      ]);
-    }
-
-    if (role === "mage") {
-      await actor.createEmbeddedDocuments("Item", [
-        {
-          name: "Искра",
-          type: "spell",
-          system: {
-            tier,
-            quality: "common",
-            weight: 0,
-            quantity: 1,
-            school: "fire",
-            effectType: "damage",
-            damageType: "magical",
-            power: 2 + tier,
-            manaCost: 8,
-            energyCost: 0,
-            targetPart: "torso"
-          }
-        }
-      ]);
-    }
-
-    if (role === "crafter") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildWeapon("Рабочий молот", tier, { skill: "mace", damage: 2 + tier, weight: 4 }),
-      ]);
-    }
-
-    if (role === "hunter") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildWeapon("Охотничий лук", tier, {
-          skill: "bow",
-          damage: 2 + tier,
-          weight: 2,
-          energyCost: 8 + tier,
-          range: 8,
-        }),
-        buildWeapon("Разделочный нож", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
-      ]);
-    }
-
-    if (role === "noble") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildWeapon("Кортик чести", tier, { skill: "knife", damage: 1 + tier, weight: 1 }),
-      ]);
-    }
-
-    if (role === "priest") {
-      await actor.createEmbeddedDocuments("Item", [
-        buildPotion("Флакон благодати", tier, "healHP", 6 + tier * 2, "torso", 2),
-      ]);
-    }
-
-    const carryExtras = buildNpcCarryInventoryItems(role, tier);
-    if (carryExtras.length)
-      await actor.createEmbeddedDocuments("Item", carryExtras);
+    const startingItems = buildNpcStartingInventoryItems(npcDoc.roleKey, tier);
+    if (startingItems.length) await actor.createEmbeddedDocuments("Item", startingItems);
 
     ui.notifications.info(`Создан NPC: ${actor.name}`);
   }
@@ -1516,7 +1377,11 @@ class IronHillsWorldToolsV5 extends Application {
     await appendSettlementHistory(settlement, "rumors", rumor, 12);
 
     await ChatMessage.create({
-      content: `<h3>Слух: ${settlement.name}</h3><p>${rumor}</p>`
+      content: buildCombatChatCard({
+        title: `Слух: ${settlement.name}`,
+        icon: "💬",
+        bodyHtml: buildCombatParagraphs([rumor]),
+      })
     });
 
     ui.notifications.info(`Слух для ${settlement.name} добавлен`);
@@ -1534,23 +1399,28 @@ class IronHillsWorldToolsV5 extends Application {
     const result = await tickSettlement(settlement);
 
     await ChatMessage.create({
-      content: `
-        <h3>Недельный тик: ${result.name}</h3>
-        <p><b>Население:</b> ${result.nextPopulation}</p>
-        <p><b>Благополучие:</b> ${result.nextProsperity}</p>
-        <p><b>Опасность:</b> ${result.nextDanger}</p>
-        <p><b>Снабжение:</b> ${result.nextSupply}</p>
-        <p><b>Давление фракции:</b> ${result.factionPressure}</p>
-        <p><b>Торговцев:</b> ${result.merchantCount}</p>
-        <p><b>Пути:</b> ${result.routeValue}</p>
-        <p><b>Торговый баланс:</b> ${result.tradeBalance}</p>
-        <p><b>Караваны:</b> ${result.caravanTraffic}</p>
-        <p><b>Стабильность:</b> ${result.stability}</p>
-        <p><b>Милиция:</b> ${result.militiaPower}</p>
-        <p><b>Кризис:</b> ${result.activeCrisis || "нет"}</p>
-        <p><b>Событие:</b> ${result.eventText}</p>
-        <p><b>Слух:</b> ${result.rumorText}</p>
-      `
+      content: buildCombatChatCard({
+        title: `Недельный тик: ${result.name}`,
+        icon: "🏘",
+        rows: [
+          ["Население", result.nextPopulation],
+          ["Благополучие", result.nextProsperity],
+          ["Опасность", result.nextDanger],
+          ["Снабжение", result.nextSupply],
+          ["Давление фракции", result.factionPressure],
+          ["Торговцев", result.merchantCount],
+          ["Пути", result.routeValue],
+          ["Торговый баланс", result.tradeBalance],
+          ["Караваны", result.caravanTraffic],
+          ["Стабильность", result.stability],
+          ["Милиция", result.militiaPower],
+          ["Кризис", result.activeCrisis || "нет"],
+        ],
+        notices: [
+          ["Событие", result.eventText],
+          ["Слух", result.rumorText],
+        ],
+      })
     });
 
     ui.notifications.info(`Тик для ${settlement.name} завершён`);
@@ -1574,7 +1444,14 @@ class IronHillsWorldToolsV5 extends Application {
     }
 
     await ChatMessage.create({
-      content: `<h3>Ресток торговцев</h3><p>Торговцев обновлено: ${merchants.length}</p><p>Добавлено позиций: ${totalAdded}</p>`
+      content: buildCombatChatCard({
+        title: "Ресток торговцев",
+        icon: "🪙",
+        rows: [
+          ["Торговцев обновлено", merchants.length],
+          ["Добавлено позиций", totalAdded],
+        ],
+      })
     });
 
     ui.notifications.info(`Ресток завершён. Добавлено позиций: ${totalAdded}`);
@@ -1583,18 +1460,19 @@ class IronHillsWorldToolsV5 extends Application {
   async _showFactionReport() {
     const report = buildFactionReport();
 
-    const body = report.map(r => `
-      <div style="margin-bottom:8px;">
-        <b>${r.settlement}</b><br>
-        Фракция: ${r.faction}<br>
-        Power: ${r.power}<br>
-        Wealth: ${r.wealth}<br>
-        Pressure: ${r.pressure}
-      </div>
-    `).join("");
+    const body = report.map(r => buildWorldReportBlock(r.settlement, [
+      ["Фракция", r.faction],
+      ["Power", r.power],
+      ["Wealth", r.wealth],
+      ["Pressure", r.pressure],
+    ])).join("");
 
     await ChatMessage.create({
-      content: `<h3>Отчёт по влиянию фракций</h3>${body || "<p>Нет поселений.</p>"}`
+      content: buildCombatChatCard({
+        title: "Отчёт по влиянию фракций",
+        icon: "⚖",
+        bodyHtml: `<div class="ih-world-report">${buildWorldReportSection("Поселения", body, "Нет поселений.")}</div>`,
+      })
     });
 
     ui.notifications.info("Отчёт по фракциям отправлен в чат");
@@ -1614,7 +1492,15 @@ class IronHillsWorldToolsV5 extends Application {
     }
 
     await ChatMessage.create({
-      content: `<h3>Кризис региона</h3><p><b>${report.regionName}</b>: ${report.crisis}</p><p>Затронуто поселений: ${report.settlementCount}</p>`
+      content: buildCombatChatCard({
+        title: "Кризис региона",
+        icon: "🔥",
+        rows: [
+          ["Регион", report.regionName],
+          ["Кризис", report.crisis],
+          ["Затронуто поселений", report.settlementCount],
+        ],
+      })
     });
 
     ui.notifications.info(`Кризис "${report.crisis}" применён к региону ${report.regionName}`);
@@ -1624,17 +1510,23 @@ class IronHillsWorldToolsV5 extends Application {
     const regionName = html.find("[name='region-select']").val() || null;
     const reports = await simulateCaravans(regionName);
 
-    const body = reports.map(r => `<p><b>${r.region}</b>: ${r.text}</p>`).join("");
+    const body = reports.map(r => buildWorldReportBlock(r.region, [
+      ["Событие", r.text],
+    ])).join("");
 
     await ChatMessage.create({
-      content: `<h3>Караваны</h3>${body || "<p>Маршрутов для караванов не найдено.</p>"}`
+      content: buildCombatChatCard({
+        title: "Караваны",
+        icon: "🧭",
+        bodyHtml: `<div class="ih-world-report">${buildWorldReportSection("Маршруты", body, "Маршрутов для караванов не найдено.")}</div>`,
+      })
     });
 
     ui.notifications.info(`Караваны прогнаны: ${reports.length}`);
   }
 
   async _generatePoi(html) {
-    const region = html.find("[name='region-select']").val() || "";
+    const region = html.find("[name='poi-region']").val() || html.find("[name='region-select']").val() || "";
     const poiType = html.find("[name='poi-type']").val() || "camp";
     const tier = Number(html.find("[name='poi-tier']").val() || 1);
     const nearestSettlement = html.find("[name='poi-settlement']").val() || "";
@@ -1654,14 +1546,22 @@ class IronHillsWorldToolsV5 extends Application {
     });
 
     await ChatMessage.create({
-      content: `<h3>Новый POI</h3><p><b>${actor.name}</b></p><p>Тип: ${actor.system.info.poiType}</p><p>Регион: ${actor.system.info.region}</p>`
+      content: buildCombatChatCard({
+        title: "Новый POI",
+        icon: "📍",
+        rows: [
+          ["Название", actor.name],
+          ["Тип", actor.system.info.poiType],
+          ["Регион", actor.system.info.region],
+        ],
+      })
     });
 
     ui.notifications.info(`Создан POI: ${actor.name}`);
   }
 
   async _generatePoiPack(html) {
-    const region = html.find("[name='region-select']").val() || "";
+    const region = html.find("[name='poi-region']").val() || html.find("[name='region-select']").val() || "";
     const tier = Number(html.find("[name='poi-tier']").val() || 1);
     const settlements = getSettlements().filter(s => (s.system.info?.region || "") === region);
     if (!settlements.length) {
@@ -1687,14 +1587,19 @@ class IronHillsWorldToolsV5 extends Application {
     }
 
     await ChatMessage.create({
-      content: `<h3>Пакет POI региона</h3>${created.map(n => `<p>${n}</p>`).join("")}`
+      content: buildCombatChatCard({
+        title: "Пакет POI региона",
+        icon: "📍",
+        rows: [["Создано", created.length]],
+        bodyHtml: buildWorldReportLines(created),
+      })
     });
 
     ui.notifications.info(`Создано POI: ${created.length}`);
   }
 
   async _generateRegionalThreat(html) {
-    const region = html.find("[name='region-select']").val() || "";
+    const region = html.find("[name='poi-region']").val() || html.find("[name='region-select']").val() || "";
     const settlements = getSettlements().filter(s => (s.system.info?.region || "") === region);
     if (!settlements.length) {
       ui.notifications.warn("В регионе нет поселений");
@@ -1721,7 +1626,11 @@ class IronHillsWorldToolsV5 extends Application {
     });
 
     await ChatMessage.create({
-      content: `<h3>Региональная угроза</h3><p>${text}</p>`
+      content: buildCombatChatCard({
+        title: "Региональная угроза",
+        icon: "⚠",
+        bodyHtml: buildCombatParagraphs([text]),
+      })
     });
 
     ui.notifications.info(`Создана региональная угроза: ${actor.name}`);
@@ -1732,14 +1641,18 @@ class IronHillsWorldToolsV5 extends Application {
     const reports = await stabilizeRegion(region);
 
     await ChatMessage.create({
-      content: `<h3>Стабилизация региона</h3>${reports.length ? reports.map(r => `<p>${r}</p>`).join("") : "<p>Регион не найден.</p>"}`
+      content: buildCombatChatCard({
+        title: "Стабилизация региона",
+        icon: "🛠",
+        bodyHtml: buildWorldReportLines(reports, "Регион не найден."),
+      })
     });
 
     ui.notifications.info(`Стабилизация региона завершена: ${reports.length}`);
   }
 
   async _evolvePois(html) {
-    const region = html.find("[name='region-select']").val() || "";
+    const region = html.find("[name='poi-region']").val() || html.find("[name='region-select']").val() || "";
     const pois = getPois().filter(p => !region || (p.system.info?.region || "") === region);
     const reports = [];
 
@@ -1758,7 +1671,11 @@ class IronHillsWorldToolsV5 extends Application {
     reports.push(...removed);
 
     await ChatMessage.create({
-      content: `<h3>Эволюция POI</h3>${reports.length ? reports.map(r => `<p>${r}</p>`).join("") : "<p>Изменений не произошло.</p>"}`
+      content: buildCombatChatCard({
+        title: "Эволюция POI",
+        icon: "📍",
+        bodyHtml: buildWorldReportLines(reports, "Изменений не произошло."),
+      })
     });
 
     ui.notifications.info(`Эволюция POI завершена: ${reports.length}`);
@@ -2043,11 +1960,16 @@ export async function applyWorldImpact(settlementName, impact = {}, reason = "")
   if (impact.supply)     parts.push(`Снаб. ${impact.supply > 0 ? "+" : ""}${impact.supply}`);
 
   await ChatMessage.create({
-    content: `<div style="padding:6px;font-family:var(--font-primary)">
-      🌍 <b>${settlementName}</b> — последствия: ${parts.join(", ")}<br>
-      Экономика: <b>${ECON[newStatus] ?? newStatus}</b>
-      ${reason ? `<br><i style="color:#a8b8d0">${reason}</i>` : ""}
-    </div>`
+    content: buildCombatChatCard({
+      title: "Последствия в мире",
+      icon: "🌍",
+      rows: [
+        ["Поселение", settlementName],
+        ["Последствия", parts.join(", ") || "без числовых изменений"],
+        ["Экономика", ECON[newStatus] ?? newStatus],
+      ],
+      notices: reason ? [["Причина", reason]] : [],
+    })
   });
 }
 

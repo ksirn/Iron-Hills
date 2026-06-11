@@ -1,4 +1,6 @@
 import { coinsToCopper, currencyUpdateData } from "../utils/currency.mjs";
+import { formatItemActionSummary, getSpellSchoolDisplay } from "../utils/item-utils.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 
 /**
  * Iron Hills — Identification Service (PATCH 30)
@@ -37,7 +39,10 @@ export const IDENTIFY_ASPECTS = {
     reveal: (item) => {
       const sys = item.system;
       const parts = [];
-      if (sys.actionType) parts.push(`Эффект: ${sys.actionType}`);
+      {
+        const actionSummary = formatItemActionSummary(sys, { includeIcon: false });
+        if (actionSummary) parts.push(actionSummary);
+      }
       if (sys.power)      parts.push(`Сила: ${sys.power}`);
       if (sys.effect)     parts.push(String(sys.effect).replace(/<[^>]+>/g,"").slice(0,60));
       return parts.join(" · ") || "Нет алхимических свойств";
@@ -51,7 +56,7 @@ export const IDENTIFY_ASPECTS = {
     reveal: (item) => {
       const sys = item.system;
       const parts = [];
-      if (sys.school)   parts.push(`Школа: ${sys.school}`);
+      if (sys.school)   parts.push(`Школа: ${getSpellSchoolDisplay(sys.school).label}`);
       if (sys.rank)     parts.push(`Ранг: ${sys.rank}`);
       if (sys.manaCost) parts.push(`Мана: ${sys.manaCost}`);
       if (sys.damage && sys.school) parts.push(`Урон: ${sys.damage}`);
@@ -148,17 +153,29 @@ export async function attemptIdentify(actor, item, aspect) {
   const diceResult = Math.ceil(Math.random() * 6);
   const total      = diceResult + skillVal;
   const success    = total >= dc;
+  const revealText = success ? cfg.reveal(item) : "";
 
   // Сообщение в чат
   await ChatMessage.create({
-    content: `<div style="padding:6px">
-      ${success ? "✅" : "❌"}
-      <b>${actor.name}</b> — ${cfg.label} предмета
-      <i style="color:#a8b8d0">${getVisibleName(item)}</i><br>
-      Бросок: <b>${diceResult}</b> + навык <b>${skillVal}</b> = <b>${total}</b>
-      vs DC <b>${dc}</b> — ${success ? "Успех!" : "Провал"}
-      ${success ? `<br><span style="color:#4ade80">${cfg.reveal(item)}</span>` : ""}
-    </div>`,
+    content: buildCombatChatCard({
+      title: "Идентификация",
+      subtitle: getVisibleName(item),
+      icon: success ? "+" : "!",
+      status: success ? "Успех" : "Провал",
+      statusClass: success ? "is-good" : "is-danger",
+      rows: [
+        ["Персонаж", actor.name],
+        ["Аспект", cfg.label],
+        ["Предмет", getVisibleName(item)],
+        ["Бросок", `${diceResult} + ${skillVal} = ${total}`],
+        ["DC", dc],
+        ["Открыто", revealText, success],
+      ],
+      notices: [
+        ["Скрыто", "провал виден только GM", !success],
+      ],
+      className: "ih-system-chat-card ih-identification-chat-card",
+    }),
     whisper: success ? [] : ChatMessage.getWhisperRecipients("GM"),
   });
 

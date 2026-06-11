@@ -1,4 +1,5 @@
 import { EntityPickerDialog } from "../apps/entity-picker.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 
 export function relationTierForScore(score) {
   if (score >= 80) return "ally";
@@ -27,7 +28,17 @@ export async function changeRelationScoreForActor(characterActor, relationId, ch
   });
 
   await ChatMessage.create({
-    content: `📊 Репутация <b>${characterActor.name}</b> у <b>${relationActor.system.info?.targetName}</b>: ${current > 0 ? "+" : ""}${current} → ${newScore > 0 ? "+" : ""}${newScore}`
+    content: buildCombatChatCard({
+      title: "Репутация",
+      icon: "📊",
+      rows: [
+        ["Персонаж", characterActor.name],
+        ["Цель", relationActor.system.info?.targetName ?? relationActor.name],
+        ["Было", `${current > 0 ? "+" : ""}${current}`],
+        ["Стало", `${newScore > 0 ? "+" : ""}${newScore}`],
+      ],
+      className: "ih-reputation-chat-card",
+    }),
   });
 
   render?.(false);

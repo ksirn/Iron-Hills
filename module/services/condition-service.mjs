@@ -12,6 +12,9 @@ import {
   buildActorRestProfile,
   DEFAULT_BODY_TRAUMA_STATUS,
   getActorBodyTraumaSummary,
+  getBodyPartHpNode as readBodyPartHpNode,
+  getBodyPartStatusBool as readBodyPartStatusBool,
+  getBodyPartStatusValue as readBodyPartStatusValue,
   LEGACY_TRAUMA_FRACTURE_PART_KEYS,
 } from "./body-trauma-service.mjs";
 import {
@@ -19,9 +22,25 @@ import {
   getConditionDefaultValueKind,
   getConditionLabel as getPolicyConditionLabel,
   getConditionStorageKey,
+  getTurnStartDecayConditionKeys,
+  getTurnStartSkipConditionDefinitions,
   normalizeConditionAmount as normalizePolicyConditionAmount,
   normalizeConditionKey,
 } from "./condition-policy-service.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
+
+const SYSTEM_ID = "iron-hills-system";
+const DEFAULT_TURN_SECONDS = 6;
+const FULL_REST_EXTRA_CLEAR_CONDITIONS = Object.freeze([
+  "silencedUntil",
+  "slowPenalty",
+]);
+const FULL_REST_PERSISTENT_CONDITIONS = new Set([
+  "bleeding",
+  "poison",
+  "burning",
+  "shock",
+]);
 
 export function getActorConditionValue(actor, key) {
   const raw = actor?.system?.conditions?.[getConditionStorageKey(key)];
@@ -82,7 +101,7 @@ function hasBodyHp(actor) {
 }
 
 function getBodyPartHpNode(actor, partKey) {
-  return actor?.system?.resources?.hp?.[partKey] ?? null;
+  return readBodyPartHpNode(actor, partKey);
 }
 
 function getDefaultBodyPartStatus() {
@@ -94,20 +113,11 @@ function buildBodyPartStatusPath(partKey, key) {
 }
 
 function getBodyPartStatusValue(actor, partKey, key) {
-  const raw = actor?.system?.resources?.hp?.[partKey]?.status?.[key];
-
-  if (typeof raw === "number") return raw;
-  if (typeof raw === "boolean") return raw ? 1 : 0;
-  if (raw && typeof raw === "object") {
-    if (typeof raw.value === "number") return raw.value;
-    if (typeof raw.active === "boolean") return raw.active ? 1 : 0;
-  }
-
-  return 0;
+  return readBodyPartStatusValue(actor, partKey, key);
 }
 
 function getBodyPartStatusBool(actor, partKey, key) {
-  return Boolean(getBodyPartStatusValue(actor, partKey, key));
+  return readBodyPartStatusBool(actor, partKey, key);
 }
 
 function getBodyPartHpValue(actor, partKey) {
@@ -143,8 +153,7 @@ export async function ensureActorBodyTraumaStatusStructure(actor) {
     if (
       LEGACY_FRACTURE_PART_KEYS.has(partKey) &&
       actor.system?.conditions?.fractures?.[partKey] &&
-      !merged.fracture &&
-      !merged.splinted
+      !merged.fracture
     ) {
       merged.fracture = true;
       changed = true;
@@ -197,7 +206,11 @@ function getMedicalPower(power) {
 }
 
 function getMedicalTargetActor(targetActor) {
-  return getPersistentActor(targetActor) ?? targetActor ?? null;
+  try {
+    return getPersistentActor(targetActor) ?? targetActor ?? null;
+  } catch {
+    return targetActor ?? null;
+  }
 }
 
 function getMedicalItemName(item) {
@@ -209,11 +222,11 @@ function medicalResult({ ok = true, handled = true, consumeItem = false } = {}) 
 }
 
 function notifyMedicalWarn(message) {
-  ui.notifications.warn(message);
+  globalThis.ui?.notifications?.warn?.(message);
 }
 
 function notifyMedicalInfo(message) {
-  ui.notifications.info(message);
+  globalThis.ui?.notifications?.info?.(message);
 }
 
 async function finalizeActorTraumaState(actor) {
@@ -245,10 +258,29 @@ async function createMedicalChat(sourceActor, targetActor, item, lines, {
   const itemName = getMedicalItemName(item);
   const body = Array.isArray(lines) ? lines.filter(Boolean).join("<br>") : String(lines ?? "");
 
+  if (typeof ChatMessage === "undefined") return false;
+
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-    content: `<b>${actorName}</b> ${verb} <b>${itemName}</b> ${targetPreposition} <b>${targetName}</b><br>${body}`,
+    content: buildCombatChatCard({
+      title: "Медицина",
+      subtitle: `${actorName} ${verb} ${itemName}`,
+      icon: "+",
+      status: "Лечение",
+      statusClass: "is-good",
+      rows: [
+        ["Исполнитель", actorName],
+        ["Цель", targetName],
+        ["Предмет", itemName],
+        ["Действие", targetPreposition],
+      ],
+      bodyHtml: body
+        ? body.split(/<br\s*\/?>/i).filter(Boolean).map(line => `<p>${line}</p>`).join("")
+        : "",
+      className: "ih-combat-medical-card",
+    }),
   });
+  return true;
 }
 
 function missingMedicalTargetResult() {
@@ -313,6 +345,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
 
   if (actionType === "tourniquet") {
     const currentMajor = Math.max(0, Number(status?.majorBleeding ?? 0));
+    const alreadyTourniquet = getBodyPartStatusBool(targetActor, targetPart, "tourniquet");
 
     if (currentMajor <= 0) {
       notifyMedicalWarn(`${partLabel}: нет сильного кровотечения.`);
@@ -323,30 +356,31 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
       return medicalResult({ consumeItem: false });
     }
 
-    const nextMajor = Math.max(0, currentMajor - amount);
-    await updateActorTraumaState(targetActor, {
-      [buildBodyPartStatusPath(targetPart, "majorBleeding")]: nextMajor,
-      [buildBodyPartStatusPath(targetPart, "tourniquet")]: nextMajor > 0,
-    });
+    if (alreadyTourniquet) {
+      notifyMedicalWarn(`${partLabel}: жгут уже наложен.`);
+      await finalizeActorTraumaState(targetActor);
+      return medicalResult({ consumeItem: false });
+    }
 
-    const resultLine = nextMajor > 0
-      ? "Наложен жгут"
-      : "Сильное кровотечение остановлено";
+    await updateActorTraumaState(targetActor, {
+      [buildBodyPartStatusPath(targetPart, "majorBleeding")]: currentMajor,
+      [buildBodyPartStatusPath(targetPart, "tourniquet")]: true,
+    });
 
     await createMedicalChat(sourceActor, targetActor, item, [
       partLabel,
-      `Сильное кровотечение уменьшено на ${currentMajor - nextMajor}`,
-      resultLine,
+      `Сильное кровотечение пережато: ${currentMajor}`,
+      "Рана требует последующей обработки",
     ], { verb: "накладывает" });
 
     return medicalResult({ consumeItem: true });
   }
 
   if (actionType === "splint") {
-    const hadFracture = Boolean(status?.fracture);
-    const alreadySplinted = Boolean(status?.splinted);
+    const hadFracture = getBodyPartStatusBool(targetActor, targetPart, "fracture");
+    const alreadySplinted = getBodyPartStatusBool(targetActor, targetPart, "splinted");
 
-    if (!hadFracture && alreadySplinted) {
+    if (alreadySplinted) {
       notifyMedicalWarn(`${partLabel} уже стабилизирована.`);
       return medicalResult({ consumeItem: false });
     }
@@ -358,7 +392,7 @@ export async function applyMedicalActionToBodyPart(sourceActor, targetActor, ite
 
     const updates = {
       [buildBodyPartStatusPath(targetPart, "splinted")]: true,
-      [buildBodyPartStatusPath(targetPart, "fracture")]: false,
+      [buildBodyPartStatusPath(targetPart, "fracture")]: true,
     };
 
     if (LEGACY_FRACTURE_PART_KEYS.has(targetPart)) {
@@ -451,12 +485,18 @@ async function restoreBoundedActorResource(sourceActor, targetActor, item, resou
   const current = Number(targetActor.system?.resources?.[resourceKey]?.value ?? 0);
   const max = Number(targetActor.system?.resources?.[resourceKey]?.max ?? maxFallback);
   const next = Math.min(max, current + getMedicalPower(power));
+  const restored = Math.max(0, next - current);
+
+  if (restored <= 0) {
+    notifyMedicalWarn(`${label} уже на максимуме.`);
+    return medicalResult({ consumeItem: false });
+  }
 
   await targetActor.update({
     [`system.resources.${resourceKey}.value`]: next,
   });
 
-  await createMedicalChat(sourceActor, targetActor, item, `${label} восстановлена на ${next - current}`);
+  await createMedicalChat(sourceActor, targetActor, item, `${label} восстановлена на ${restored}`);
   return medicalResult({ consumeItem: true });
 }
 
@@ -477,6 +517,13 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
     const current = Number(resources.energy?.value ?? 0);
     const nextMax = Math.min(baseMax, currentMax + amount);
     const nextCurrent = Math.min(nextMax, current + amount);
+    const restoredMax = Math.max(0, nextMax - currentMax);
+    const restoredCurrent = Math.max(0, nextCurrent - current);
+
+    if (restoredMax <= 0 && restoredCurrent <= 0) {
+      notifyMedicalWarn("Максимум энергии уже восстановлен.");
+      return medicalResult({ consumeItem: false });
+    }
 
     await targetActor.update({
       "system.resources.energy.max": nextMax,
@@ -499,9 +546,52 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
     return restoreBoundedActorResource(sourceActor, targetActor, item, "satiety", "Сытость", power, { maxFallback: 100 });
   }
 
+  if (actionType === "apply-condition") {
+    const conditionKey = String(
+      item?.system?.conditionKey
+        ?? item?.system?.condition
+        ?? item?.system?.applyCondition
+        ?? ""
+    ).trim();
+    if (!conditionKey) {
+      notifyMedicalWarn("Condition is not configured for this item.");
+      return medicalResult({ consumeItem: false });
+    }
+
+    const rawConditionAmount = Number(
+      item?.system?.duration
+        ?? item?.system?.conditionValue
+        ?? item?.system?.conditionDuration
+        ?? power
+        ?? 1
+    );
+    const conditionAmount = Number.isFinite(rawConditionAmount) && rawConditionAmount > 0
+      ? rawConditionAmount
+      : 1;
+    const result = await addOrExtendActorCondition(targetActor, conditionKey, conditionAmount, {
+      mode: String(item?.system?.conditionMode ?? "").trim() || null,
+      valueKind: String(item?.system?.conditionValueKind ?? "").trim() || null,
+    });
+
+    await createMedicalChat(
+      sourceActor,
+      targetActor,
+      item,
+      `Condition ${getConditionLabel(conditionKey)}: ${result.previous} -> ${result.value}`
+    );
+    return medicalResult({ consumeItem: true });
+  }
+
   if (actionType === "cure-poison") {
+    const currentPoison = Math.max(0, Number(getActorConditionValue(targetActor, "poison") || 0));
+
+    if (currentPoison <= 0) {
+      notifyMedicalWarn("Яд не найден.");
+      return medicalResult({ consumeItem: false });
+    }
+
     await targetActor.update({ "system.conditions.poison": 0 });
-    await createMedicalChat(sourceActor, targetActor, item, "Яд нейтрализован");
+    await createMedicalChat(sourceActor, targetActor, item, `Яд нейтрализован: ${currentPoison} -> 0`);
     return medicalResult({ consumeItem: true });
   }
 
@@ -559,20 +649,27 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
     const updates = {};
     let stopped = 0;
 
-    for (const partKey of BODY_PART_KEYS) {
-      if (!hp?.[partKey]) continue;
-      const currentMinor = Math.max(0, Number(hp?.[partKey]?.status?.minorBleeding ?? 0));
-      if (currentMinor <= 0) continue;
-      stopped += currentMinor;
-      updates[buildBodyPartStatusPath(partKey, "minorBleeding")] = 0;
+    if (hasBodyHp(targetActor)) {
+      for (const partKey of BODY_PART_KEYS) {
+        if (!hp?.[partKey]) continue;
+        const currentMinor = Math.max(0, Number(hp?.[partKey]?.status?.minorBleeding ?? 0));
+        if (currentMinor <= 0) continue;
+        stopped += currentMinor;
+        updates[buildBodyPartStatusPath(partKey, "minorBleeding")] = 0;
+      }
+    } else {
+      stopped = Math.max(0, Number(getActorConditionValue(targetActor, "bleeding") || 0));
+      if (stopped > 0) updates[buildConditionUpdatePath("bleeding")] = 0;
     }
 
     if (!stopped) {
+      if (hasBodyHp(targetActor)) await finalizeActorTraumaState(targetActor);
       notifyMedicalWarn("Малых кровотечений не найдено.");
       return medicalResult({ consumeItem: false });
     }
 
-    await updateActorTraumaState(targetActor, updates);
+    if (hasBodyHp(targetActor)) await updateActorTraumaState(targetActor, updates);
+    else await targetActor.update(updates);
     await createMedicalChat(sourceActor, targetActor, item, `Малые кровотечения остановлены: ${stopped}`);
     return medicalResult({ consumeItem: true });
   }
@@ -583,38 +680,46 @@ export async function applyMedicalActionGlobally(sourceActor, targetActor, item,
     let stopped = 0;
     let cleanedTourniquets = 0;
 
-    for (const partKey of BODY_PART_KEYS) {
-      if (!hp?.[partKey]) continue;
-      const status = hp?.[partKey]?.status ?? {};
-      const currentMinor = Math.max(0, Number(status.minorBleeding ?? 0));
-      const currentMajor = Math.max(0, Number(status.majorBleeding ?? 0));
-      const hasTourniquet = Boolean(status.tourniquet);
+    if (hasBodyHp(targetActor)) {
+      for (const partKey of BODY_PART_KEYS) {
+        if (!hp?.[partKey]) continue;
+        const status = hp?.[partKey]?.status ?? {};
+        const currentMinor = Math.max(0, Number(status.minorBleeding ?? 0));
+        const currentMajor = Math.max(0, Number(status.majorBleeding ?? 0));
+        const hasTourniquet = Boolean(status.tourniquet);
 
-      if (currentMinor > 0) {
-        stopped += currentMinor;
-        updates[buildBodyPartStatusPath(partKey, "minorBleeding")] = 0;
+        if (currentMinor > 0) {
+          stopped += currentMinor;
+          updates[buildBodyPartStatusPath(partKey, "minorBleeding")] = 0;
+        }
+        if (currentMajor > 0) {
+          stopped += currentMajor;
+          updates[buildBodyPartStatusPath(partKey, "majorBleeding")] = 0;
+        }
+        if (hasTourniquet) {
+          cleanedTourniquets += 1;
+          updates[buildBodyPartStatusPath(partKey, "tourniquet")] = false;
+        }
       }
-      if (currentMajor > 0) {
-        stopped += currentMajor;
-        updates[buildBodyPartStatusPath(partKey, "majorBleeding")] = 0;
-      }
-      if (hasTourniquet) {
-        cleanedTourniquets += 1;
-        updates[buildBodyPartStatusPath(partKey, "tourniquet")] = false;
-      }
+    } else {
+      stopped = Math.max(0, Number(getActorConditionValue(targetActor, "bleeding") || 0));
+      if (stopped > 0) updates[buildConditionUpdatePath("bleeding")] = 0;
     }
 
     if (!stopped) {
       if (Object.keys(updates).length) {
-        await updateActorTraumaState(targetActor, updates);
+        if (hasBodyHp(targetActor)) await updateActorTraumaState(targetActor, updates);
+        else await targetActor.update(updates);
         notifyMedicalInfo("Лишние жгуты сняты, активных кровотечений нет.");
       } else {
+        if (hasBodyHp(targetActor)) await finalizeActorTraumaState(targetActor);
         notifyMedicalWarn("Активных кровотечений не найдено.");
       }
       return medicalResult({ consumeItem: false });
     }
 
-    await updateActorTraumaState(targetActor, updates);
+    if (hasBodyHp(targetActor)) await updateActorTraumaState(targetActor, updates);
+    else await targetActor.update(updates);
     await createMedicalChat(
       sourceActor,
       targetActor,
@@ -645,13 +750,18 @@ async function applyConditionDamage(actor, locationKey, damage, { onLethal = nul
   return applyDamageToBodyPart(actor, locationKey, damage, { onLethal });
 }
 
-async function rollBurningLocation() {
-  const roll = await new Roll("1d20").evaluate();
-  const rolledZone = getHitLocation(roll.total);
+async function rollBurningLocation({ rollLocation = null } = {}) {
+  const rollTotal = typeof rollLocation === "function"
+    ? Number(await rollLocation())
+    : typeof Roll !== "undefined"
+      ? Number((await new Roll("1d20").evaluate()).total)
+      : Math.floor(Math.random() * 20) + 1;
+  const rolledZone = getHitLocation(rollTotal);
   return {
     rolledZone,
     damageKey: resolveDamageHpKey(rolledZone) ?? rolledZone,
     label: getHitLabel(rolledZone),
+    rollTotal,
   };
 }
 
@@ -671,6 +781,7 @@ export async function tickActorOngoingDamage(actor, {
   burning = true,
   decrement = true,
   onLethal = null,
+  rollLocation = null,
 } = {}) {
   if (!actor) return { changed: false, effects: [], updates: {} };
 
@@ -679,6 +790,7 @@ export async function tickActorOngoingDamage(actor, {
 
   const addEffect = (effect) => {
     const normalized = {
+      phase: "ongoing",
       ...effect,
       chatHtml: effect.chatHtml ?? effectChatLine(effect),
       logText: effect.logText ?? effectLogText(actor, effect),
@@ -717,7 +829,7 @@ export async function tickActorOngoingDamage(actor, {
   const burningValue = Math.max(0, Number(getActorConditionValue(actor, "burning") || 0));
   if (burning && burningValue > 0) {
     const location = hasBodyHp(actor)
-      ? await rollBurningLocation()
+      ? await rollBurningLocation({ rollLocation })
       : { rolledZone: "", damageKey: "", label: "" };
     const result = await applyConditionDamage(actor, location.damageKey || "torso", burningValue, { onLethal });
     addEffect({
@@ -735,10 +847,15 @@ export async function tickActorOngoingDamage(actor, {
     await actor.update(updates);
   }
 
+  const traumaStatus = hasBodyHp(actor) && effects.length
+    ? await finalizeActorTraumaState(actor)
+    : null;
+
   return {
-    changed: effects.length > 0 || Object.keys(updates).length > 0,
+    changed: effects.length > 0 || Object.keys(updates).length > 0 || Boolean(traumaStatus?.changed),
     effects,
     updates,
+    traumaStatus,
   };
 }
 
@@ -753,6 +870,7 @@ export async function tickActorBodyTrauma(actor, {
 
   const addEffect = (effect) => {
     effects.push({
+      phase: "trauma",
       ...effect,
       chatHtml: effect.chatHtml ?? effectChatLine(effect),
       logText: effect.logText ?? effectLogText(actor, effect),
@@ -830,57 +948,506 @@ export async function tickActorBodyTrauma(actor, {
   };
 }
 
-export function buildConditionTickChatHtml(actor, effects) {
-  return `<h3>Эффекты: ${actor?.name ?? ""}</h3>${effects.map(e => e.chatHtml).join("")}`;
+function stripConditionHtml(value = "") {
+  return String(value ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export async function applyActorConditionTick(actor, {
-  onLethal = null,
-  notifyEmpty = true,
-  createChat = true,
+function getConditionEffectTone(effect = {}) {
+  const key = normalizeConditionKey(effect.key);
+  if (effect.phase === "summon" && effect.expired) return "is-danger";
+  if (effect.key === "destroyed" || key === "burning" || key === "bleeding" || key === "poison") return "is-danger";
+  if (Number(effect.damage ?? 0) > 0) return "is-danger";
+  if (effect.expired) return "is-good";
+  if (effect.skipsTurn) return "is-warn";
+  return "";
+}
+
+function getConditionEffectLabel(effect = {}) {
+  const base = effect.label || getConditionLabel(effect.key) || "Эффект";
+  return effect.locationLabel ? `${base}: ${effect.locationLabel}` : base;
+}
+
+function getConditionEffectValue(effect = {}) {
+  if (effect.phase === "duration") {
+    const parts = [`${effect.previous ?? 0} -> ${effect.value ?? 0}`];
+    if (effect.expired) parts.push("истёк");
+    if (effect.skipsTurn) parts.push("пропуск хода");
+    return parts.join(" · ");
+  }
+
+  if (effect.phase === "summon") {
+    const parts = [`${effect.previous ?? 0} -> ${effect.value ?? 0} сек.`];
+    if (effect.expired) parts.push("исчезает");
+    return parts.join(" · ");
+  }
+
+  const damage = Number(effect.damage ?? 0);
+  if (damage > 0) {
+    return [
+      `-${damage} HP`,
+      effect.remainingHP !== undefined ? `осталось ${effect.remainingHP}` : "",
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (effect.remainingHP !== undefined) return `HP: ${effect.remainingHP}`;
+  if (effect.logText) return effect.logText;
+  if (effect.chatHtml) return stripConditionHtml(effect.chatHtml);
+  return "изменён";
+}
+
+export function buildConditionTickChatData(actor, effects = [], {
+  skipConditions = [],
+  seconds = DEFAULT_TURN_SECONDS,
+} = {}) {
+  const list = Array.isArray(effects) ? effects.filter(Boolean) : [];
+  const totalDamage = list.reduce((sum, effect) => sum + Math.max(0, Number(effect.damage ?? 0)), 0);
+  const expiredCount = list.filter(effect => effect.expired).length;
+  const skipList = Array.isArray(skipConditions) && skipConditions.length
+    ? skipConditions
+    : list
+        .filter(effect => effect.skipsTurn && Number(effect.previous ?? 0) > 0)
+        .map(effect => ({
+          key: effect.key,
+          label: effect.skipLabel || effect.label,
+          value: effect.previous,
+          nextValue: effect.value,
+        }));
+
+  return {
+    title: "Эффекты хода",
+    subtitle: actor?.name ?? "",
+    icon: "!",
+    status: list.length ? "Обработано" : "Нет эффектов",
+    statusClass: list.length ? "is-warn" : "is-muted",
+    badges: [
+      { label: `${list.length} эффект(ов)`, className: list.length ? "is-warn" : "is-muted" },
+      { label: `-${totalDamage} HP`, className: "is-danger", visible: totalDamage > 0 },
+      { label: `${expiredCount} истекло`, className: "is-good", visible: expiredCount > 0 },
+      { label: `${skipList.length} пропуск`, className: "is-danger", visible: skipList.length > 0 },
+      { label: `${Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS))} сек.`, className: "is-muted" },
+    ],
+    rows: list.map(effect => ({
+      label: getConditionEffectLabel(effect),
+      value: getConditionEffectValue(effect),
+      className: getConditionEffectTone(effect),
+    })),
+    notices: skipList.map(condition => ({
+      label: "Пропуск хода",
+      value: `${condition.label || getConditionLabel(condition.key)}: ${condition.value ?? 0} -> ${condition.nextValue ?? 0}`,
+      className: "is-danger",
+    })),
+  };
+}
+
+export function buildConditionTickChatHtml(actor, effects, options = {}) {
+  const data = buildConditionTickChatData(actor, effects, options);
+  return buildCombatChatCard({
+    ...data,
+    className: "ih-combat-lifecycle-card",
+  });
+}
+
+function conditionDecayChatLine(effect) {
+  const suffix = effect.expired ? " (истёк)" : "";
+  return `<p><b>${effect.label}:</b> ${effect.previous} -> ${effect.value}${suffix}</p>`;
+}
+
+function conditionDecayLogText(actor, effect) {
+  if (effect.expired) return `${actor.name}: ${effect.label} истекает.`;
+  return `${actor.name}: ${effect.label} ${effect.previous} -> ${effect.value}.`;
+}
+
+export function buildActorTurnStartConditionTick(actor, {
+  seconds = DEFAULT_TURN_SECONDS,
+} = {}) {
+  const step = Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS));
+  const skipDefinitions = getTurnStartSkipConditionDefinitions();
+  const skipKeySet = new Set(skipDefinitions.map(definition => normalizeConditionKey(definition.key)));
+  const skipLabelByKey = Object.fromEntries(
+    skipDefinitions.map(definition => [normalizeConditionKey(definition.key), definition.label])
+  );
+  const updates = {};
+  const effects = [];
+
+  for (const rawKey of getTurnStartDecayConditionKeys()) {
+    const key = normalizeConditionKey(rawKey);
+    const previous = Math.max(0, Number(getActorConditionValue(actor, key) || 0));
+    if (previous <= 0) continue;
+
+    const next = Math.max(0, previous - step);
+    const effect = {
+      phase: "duration",
+      key,
+      label: getConditionLabel(key),
+      previous,
+      value: next,
+      delta: previous - next,
+      expired: next <= 0,
+      skipsTurn: skipKeySet.has(key),
+      skipLabel: skipLabelByKey[key] ?? "",
+    };
+    effect.chatHtml = conditionDecayChatLine(effect);
+    effect.logText = conditionDecayLogText(actor, effect);
+    effects.push(effect);
+    updates[buildConditionUpdatePath(key)] = next;
+  }
+
+  const skipConditions = effects
+    .filter(effect => effect.skipsTurn && effect.previous > 0)
+    .map(effect => ({
+      key: effect.key,
+      label: effect.skipLabel || effect.label,
+      value: effect.previous,
+      nextValue: effect.value,
+    }));
+
+  return {
+    changed: effects.length > 0,
+    effects,
+    skipConditions,
+    updates,
+    seconds: step,
+  };
+}
+
+export async function tickActorTurnStartConditions(actor, {
+  seconds = DEFAULT_TURN_SECONDS,
 } = {}) {
   if (!actor) {
     return {
       changed: false,
       effects: [],
-      traumaTick: null,
-      conditionTick: null,
+      skipConditions: [],
+      updates: {},
+      seconds: Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS)),
     };
   }
 
-  const traumaTick = await tickActorBodyTrauma(actor, { onLethal });
-  const conditionTick = await tickActorOngoingDamage(actor, {
-    bleeding: !hasActorBodyBleeding(actor),
-    onLethal,
-  });
+  const tick = buildActorTurnStartConditionTick(actor, { seconds });
+  if (Object.keys(tick.updates).length) {
+    await actor.update(tick.updates);
+  }
+  return tick;
+}
+
+function getActorSummonFlag(actor) {
+  const direct = actor?.flags?.[SYSTEM_ID]?.summoned;
+  if (direct && typeof direct === "object") return direct;
+
+  const fromGetter = actor?.getFlag?.(SYSTEM_ID, "summoned");
+  if (fromGetter && typeof fromGetter === "object") return fromGetter;
+
+  return null;
+}
+
+export function getActorSummonState(actor) {
+  const state = getActorSummonFlag(actor);
+  return state ? { ...state } : null;
+}
+
+export function isActorSummoned(actor) {
+  return Boolean(getActorSummonFlag(actor));
+}
+
+function getSummonRemainingSeconds(state) {
+  const parsed = Number(state?.remaining ?? state?.duration ?? 0);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function buildSummonStateUpdate(state, previousRemaining, nextRemaining) {
+  const previousTotal = Number(state?.totalDuration ?? state?.initialDuration ?? 0);
+  const safeTotal = Number.isFinite(previousTotal)
+    ? Math.max(previousTotal, previousRemaining, nextRemaining)
+    : Math.max(previousRemaining, nextRemaining);
+
+  return {
+    ...state,
+    totalDuration: safeTotal,
+    remaining: nextRemaining,
+    duration: nextRemaining,
+    expired: nextRemaining <= 0,
+  };
+}
+
+function summonLifecycleChatLine(actor, effect) {
+  if (effect.expired) {
+    return `<p><b>Призыв:</b> ${actor?.name ?? "существо"} исчезает.</p>`;
+  }
+  return `<p><b>Призыв:</b> ${actor?.name ?? "существо"} ${effect.previous} -> ${effect.value} сек.</p>`;
+}
+
+function summonLifecycleLogText(actor, effect) {
+  if (effect.expired) return `${actor?.name ?? "Призванное существо"} исчезает: время призыва истекло.`;
+  return `${actor?.name ?? "Призванное существо"}: призыв ${effect.previous} -> ${effect.value} сек.`;
+}
+
+export function buildActorSummonLifecycleTick(actor, {
+  seconds = DEFAULT_TURN_SECONDS,
+} = {}) {
+  const step = Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS));
+  const state = getActorSummonFlag(actor);
+  if (!actor || !state) {
+    return {
+      changed: false,
+      effects: [],
+      updates: {},
+      expired: false,
+      previous: 0,
+      value: 0,
+      seconds: step,
+    };
+  }
+
+  const previous = getSummonRemainingSeconds(state);
+  const wasExpired = Boolean(state.expired);
+  if (wasExpired && previous <= 0) {
+    return {
+      changed: false,
+      effects: [],
+      updates: {},
+      expired: true,
+      previous,
+      value: 0,
+      seconds: step,
+      state: { ...state },
+    };
+  }
+
+  const next = Math.max(0, previous - step);
+  const nextState = buildSummonStateUpdate(state, previous, next);
+  const effect = {
+    phase: "summon",
+    key: "summoned",
+    label: "Призыв",
+    summonId: String(state.summonId ?? ""),
+    casterId: String(state.casterId ?? ""),
+    casterName: String(state.casterName ?? ""),
+    previous,
+    value: next,
+    delta: previous - next,
+    expired: next <= 0,
+  };
+  effect.chatHtml = summonLifecycleChatLine(actor, effect);
+  effect.logText = summonLifecycleLogText(actor, effect);
+
+  return {
+    changed: true,
+    effects: [effect],
+    updates: {
+      [`flags.${SYSTEM_ID}.summoned`]: nextState,
+    },
+    expired: effect.expired,
+    previous,
+    value: next,
+    seconds: step,
+    state: nextState,
+  };
+}
+
+async function deleteSummonedActorTokens(actor) {
+  const actorId = String(actor?.id ?? "");
+  if (!actorId) return 0;
+
+  const placeables = globalThis.canvas?.tokens?.placeables ?? [];
+  let deleted = 0;
+  for (const token of placeables) {
+    const tokenActorId = String(token?.actor?.id ?? token?.document?.actorId ?? "");
+    if (tokenActorId !== actorId) continue;
+
+    const document = token?.document ?? token;
+    if (typeof document?.delete !== "function") continue;
+
+    await document.delete();
+    deleted += 1;
+  }
+
+  return deleted;
+}
+
+export async function expireSummonedActor(actor, {
+  deleteTokens = true,
+  deleteActor = false,
+} = {}) {
+  if (!actor || !isActorSummoned(actor)) {
+    return { ok: false, changed: false, reason: "not-summoned" };
+  }
+
+  const updates = {
+    [`flags.${SYSTEM_ID}.summoned.expired`]: true,
+    [`flags.${SYSTEM_ID}.summoned.remaining`]: 0,
+    [`flags.${SYSTEM_ID}.summoned.duration`]: 0,
+  };
+  const hp = actor.system?.resources?.hp ?? {};
+  if (hp.value !== undefined) {
+    updates["system.resources.hp.value"] = 0;
+  } else if (hp.torso?.value !== undefined) {
+    updates["system.resources.hp.torso.value"] = 0;
+  }
+  if (actor.system?.conditions) {
+    updates["system.conditions.unconscious"] = Math.max(
+      Number(actor.system.conditions.unconscious ?? 0),
+      DEFAULT_TURN_SECONDS,
+    );
+  }
+
+  await actor.update(updates);
+
+  const deletedTokens = deleteTokens ? await deleteSummonedActorTokens(actor) : 0;
+  let actorDeleted = false;
+  if (deleteActor && typeof actor.delete === "function") {
+    await actor.delete();
+    actorDeleted = true;
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    deletedTokens,
+    actorDeleted,
+    updates,
+  };
+}
+
+export async function tickActorSummonLifecycle(actor, {
+  seconds = DEFAULT_TURN_SECONDS,
+  expireSummons = true,
+  deleteExpiredSummonTokens = true,
+  deleteExpiredSummonActors = false,
+} = {}) {
+  const tick = buildActorSummonLifecycleTick(actor, { seconds });
+  if (!actor || !tick.changed) return tick;
+
+  if (Object.keys(tick.updates).length) {
+    await actor.update(tick.updates);
+  }
+
+  if (tick.expired && expireSummons) {
+    tick.expiration = await expireSummonedActor(actor, {
+      deleteTokens: deleteExpiredSummonTokens,
+      deleteActor: deleteExpiredSummonActors,
+    });
+  }
+
+  return tick;
+}
+
+function emptyLifecycleTick(seconds = DEFAULT_TURN_SECONDS) {
+  return {
+    changed: false,
+    effects: [],
+    skipConditions: [],
+    traumaTick: null,
+    conditionTick: null,
+    durationTick: null,
+    summonTick: null,
+    preRefresh: null,
+    finalStatus: null,
+    seconds: Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS)),
+  };
+}
+
+export function isActorSoulDead(actor) {
+  return Boolean(actor?.system?.resources?.soulReserve?.isDead);
+}
+
+export async function applyActorTurnStartLifecycleTick(actor, {
+  seconds = DEFAULT_TURN_SECONDS,
+  onLethal = null,
+  notifyEmpty = true,
+  createChat = true,
+  rollLocation = null,
+  expireSummons = true,
+  deleteExpiredSummonTokens = true,
+  deleteExpiredSummonActors = false,
+} = {}) {
+  if (!actor) return emptyLifecycleTick(seconds);
+
+  const step = Math.max(1, Number(seconds ?? DEFAULT_TURN_SECONDS));
+  const lethalHandler = onLethal ?? (target => markActorDead(target));
+
+  await ensureActorBodyTraumaStatusStructure(actor);
+  const preRefresh = await finalizeActorTraumaState(actor);
+  const actorAlreadyDead = isActorSoulDead(actor);
+
+  const traumaTick = actorAlreadyDead
+    ? { changed: false, effects: [], updates: {} }
+    : await tickActorBodyTrauma(actor, { onLethal: lethalHandler });
+  const conditionTick = actorAlreadyDead
+    ? { changed: false, effects: [], updates: {} }
+    : await tickActorOngoingDamage(actor, {
+        bleeding: !hasActorBodyBleeding(actor),
+        onLethal: lethalHandler,
+        rollLocation,
+      });
+  const durationTick = actorAlreadyDead
+    ? { changed: false, effects: [], skipConditions: [], updates: {}, seconds: step }
+    : await tickActorTurnStartConditions(actor, { seconds: step });
+  const summonTick = actorAlreadyDead
+    ? { changed: false, effects: [], updates: {}, expired: false, seconds: step }
+    : await tickActorSummonLifecycle(actor, {
+        seconds: step,
+        expireSummons,
+        deleteExpiredSummonTokens,
+        deleteExpiredSummonActors,
+      });
+  const finalStatus = hasBodyHp(actor)
+    ? await finalizeActorTraumaState(actor)
+    : null;
   const effects = [
     ...(traumaTick.effects ?? []),
     ...(conditionTick.effects ?? []),
+    ...(durationTick.effects ?? []),
+    ...(summonTick.effects ?? []),
   ];
+  const skipConditions = durationTick.skipConditions ?? [];
 
   if (!effects.length) {
-    if (notifyEmpty) ui.notifications.info("Активных эффектов нет");
+    if (notifyEmpty) globalThis.ui?.notifications?.info?.("Активных эффектов нет");
     return {
-      changed: false,
+      changed: Boolean(preRefresh?.changed || finalStatus?.changed),
       effects,
+      skipConditions,
       traumaTick,
       conditionTick,
+      durationTick,
+      summonTick,
+      preRefresh,
+      finalStatus,
+      seconds: step,
     };
   }
 
-  if (createChat) {
+  if (createChat && typeof ChatMessage !== "undefined") {
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
-      content: buildConditionTickChatHtml(actor, effects),
+      content: buildConditionTickChatHtml(actor, effects, {
+        skipConditions,
+        seconds: step,
+      }),
     });
   }
 
   return {
     changed: true,
     effects,
+    skipConditions,
     traumaTick,
     conditionTick,
+    durationTick,
+    summonTick,
+    preRefresh,
+    finalStatus,
+    seconds: step,
   };
+}
+
+export async function applyActorConditionTick(actor, options = {}) {
+  return applyActorTurnStartLifecycleTick(actor, options);
 }
 
 export async function markActorDead(actor) {
@@ -898,15 +1465,25 @@ export async function markActorDead(actor) {
     "system.resources.soulReserve.daysSinceDeath": 1,
   });
 
-  await ChatMessage.create({
-    content: `
-      <div style="border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px;background:rgba(239,68,68,0.06);">
-        <b>☠ ${actor.name} погиб.</b><br>
-        Резерв души начинает угасать по 1 единице в день.<br>
-        <small>Воскресите персонажа пока резерв маны и энергии не иссяк.</small>
-      </div>
-    `,
-  });
+  if (typeof ChatMessage !== "undefined") {
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: `${actor.name} погиб`,
+        icon: "!",
+        status: "Смерть",
+        statusClass: "is-danger",
+        badges: [
+          { label: "soul reserve", className: "is-danger" },
+        ],
+        rows: [
+          ["Резерв души", "-1 в день"],
+          ["Окно спасения", "пока резерв маны и энергии не иссяк"],
+        ],
+        className: "ih-combat-death-card",
+      }),
+    });
+  }
 
   return { ok: true, changed: true };
 }
@@ -921,6 +1498,9 @@ export async function reviveActor(actor, quality = 1) {
   const updates = {
     "system.resources.soulReserve.isDead": false,
     "system.resources.soulReserve.daysSinceDeath": 0,
+    "system.conditions.unconscious": 0,
+    "system.conditions.stunned": 0,
+    "system.conditions.sleeping": 0,
   };
 
   for (const partKey of BODY_PART_KEYS) {
@@ -931,6 +1511,7 @@ export async function reviveActor(actor, quality = 1) {
   }
 
   await actor.update(updates);
+  await finalizeActorTraumaState(actor);
 
   const qualityLabel = normalizedQuality >= 8
     ? "Отличное"
@@ -938,13 +1519,25 @@ export async function reviveActor(actor, quality = 1) {
       ? "Хорошее"
       : "Слабое";
 
-  await ChatMessage.create({
-    content: `
-      <b>✦ ${actor.name} воскрешён.</b> Качество: ${qualityLabel} (ступень ${normalizedQuality})<br>
-      HP восстановлено на ${Math.round(hpRestorePct * 100)}%.
-      ${normalizedQuality <= 3 ? "<br><small>⚠ Персонаж ослаблен — могут быть дебафы.</small>" : ""}
-    `,
-  });
+  if (typeof ChatMessage !== "undefined") {
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: `${actor.name} воскрешён`,
+        icon: "*",
+        status: qualityLabel,
+        statusClass: normalizedQuality <= 3 ? "is-warn" : "is-good",
+        rows: [
+          ["Качество", `${qualityLabel} (${normalizedQuality})`],
+          ["HP восстановлено", `${Math.round(hpRestorePct * 100)}%`],
+        ],
+        notices: [
+          ["Осложнения", "персонаж ослаблен, возможны дебафы", normalizedQuality <= 3],
+        ],
+        className: "ih-combat-revive-card",
+      }),
+    });
+  }
 
   return { ok: true, changed: true };
 }
@@ -965,7 +1558,18 @@ export async function cureActorDisease(actor, diseaseKey) {
   const { DISEASES } = await import("../constants/diseases.mjs");
   const def = DISEASES[diseaseKey];
   await ChatMessage.create({
-    content: `✅ <b>${actor.name}</b> вылечен от: <b>${def?.label ?? diseaseKey}</b>`,
+    content: buildCombatChatCard({
+      title: "Болезнь вылечена",
+      subtitle: actor.name,
+      icon: "+",
+      status: "Готово",
+      statusClass: "is-good",
+      rows: [
+        ["Персонаж", actor.name],
+        ["Болезнь", def?.label ?? diseaseKey],
+      ],
+      className: "ih-combat-cure-card",
+    }),
     speaker: ChatMessage.getSpeaker({ actor }),
   });
 
@@ -979,8 +1583,10 @@ function restResult({
   shortRest = false,
   fullRest = false,
   profile = null,
+  growth = null,
+  clearedConditions = [],
 } = {}) {
-  return { ok, changed, reason, shortRest, fullRest, profile };
+  return { ok, changed, reason, shortRest, fullRest, profile, growth, clearedConditions };
 }
 
 function fullRestBlockReason(profile) {
@@ -991,6 +1597,37 @@ function fullRestBlockReason(profile) {
     return "Нельзя полноценно отдохнуть: персонаж горит.";
   }
   return "";
+}
+
+function getFullRestClearConditionKeys() {
+  const keys = new Set([
+    ...getTurnStartDecayConditionKeys(),
+    ...FULL_REST_EXTRA_CLEAR_CONDITIONS,
+  ]);
+
+  for (const key of FULL_REST_PERSISTENT_CONDITIONS) {
+    keys.delete(key);
+  }
+
+  return [...keys];
+}
+
+function applyFullRestConditionRecovery(actor, updates) {
+  const cleared = [];
+
+  for (const key of getFullRestClearConditionKeys()) {
+    const previous = Math.max(0, Number(getActorConditionValue(actor, key) || 0));
+    if (previous <= 0) continue;
+
+    updates[buildConditionUpdatePath(key)] = 0;
+    cleared.push({
+      key,
+      label: getConditionLabel(key),
+      previous,
+    });
+  }
+
+  return cleared;
 }
 
 async function applyEnergyGrowthFromRest(actor, updates, profile) {
@@ -1034,26 +1671,22 @@ async function applyEnergyGrowthFromRest(actor, updates, profile) {
   };
 }
 
-function buildRestChatLines(profile, growth = null) {
-  const lines = [
-    `Энергия: ${profile.currentEnergy} -> ${profile.nextEnergy} / ${profile.nextEnergyMax}`,
-    `Мана: ${profile.currentMana} -> ${profile.nextMana} / ${profile.maxMana}`,
+function buildRestChatRows(profile, growth = null, { fullRest = false, clearedConditions = [] } = {}) {
+  return [
+    ["Энергия", `${profile.currentEnergy} -> ${profile.nextEnergy} / ${profile.nextEnergyMax}`],
+    ["Мана", `${profile.currentMana} -> ${profile.nextMana} / ${profile.maxMana}`],
+    ["Макс. энергия", `+${profile.recoveredEnergyMax}`, profile.recoveredEnergyMax > 0],
+    [
+      "Давление травм",
+      `кровь ${profile.bleeding}, живот ${profile.abdomenEnergyPenalty}, общий ${profile.energyRecoveryPenalty}`,
+      profile.bleeding > 0 || profile.abdomenEnergyPenalty > 0 || profile.energyRecoveryPenalty > 0,
+    ],
+    ["Опыт выносливости", `+${growth?.xpGained ?? 0} (${growth?.xpAfter ?? 0}/${growth?.threshold ?? 0})`, Number(growth?.xpGained ?? 0) > 0],
+    ["Рост энергии", `база ${growth?.newBaseMax}`, Boolean(growth?.grew)],
+    ["Очищено состояний", clearedConditions.map(condition => condition.label).join(", "), fullRest && clearedConditions.length > 0],
+    ["Яд", `${profile.poison} -> ${Math.max(0, Number(profile.poison ?? 0) - 1)}`, fullRest],
+    ["Шок после травм", Number(profile.summary?.traumaShock ?? 0), fullRest],
   ];
-
-  if (profile.recoveredEnergyMax > 0) {
-    lines.push(`Восстановление максимума энергии: +${profile.recoveredEnergyMax}`);
-  }
-  if (profile.bleeding > 0 || profile.abdomenEnergyPenalty > 0 || profile.energyRecoveryPenalty > 0) {
-    lines.push(`Давление травм: кровотечение ${profile.bleeding}, живот ${profile.abdomenEnergyPenalty}, общий штраф ${profile.energyRecoveryPenalty}`);
-  }
-  if (growth?.xpGained > 0) {
-    lines.push(`Опыт выносливости: +${growth.xpGained} (${growth.xpAfter}/${growth.threshold})`);
-  }
-  if (growth?.grew) {
-    lines.push(`Базовый максимум энергии вырос до ${growth.newBaseMax}`);
-  }
-
-  return lines;
 }
 
 export async function applyActorShortRest(actor) {
@@ -1062,7 +1695,7 @@ export async function applyActorShortRest(actor) {
   }
 
   await ensureActorBodyTraumaStatusStructure(actor);
-  await refreshActorBodyTraumaStatus(actor);
+  await finalizeActorTraumaState(actor);
 
   const profile = buildActorRestProfile(actor, "short");
   const updates = {
@@ -1073,13 +1706,24 @@ export async function applyActorShortRest(actor) {
   const growth = await applyEnergyGrowthFromRest(actor, updates, profile);
 
   await actor.update(updates);
+  await finalizeActorTraumaState(actor);
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<b>${actor.name}</b> делает короткий отдых.<br>${buildRestChatLines(profile, growth).join("<br>")}`,
-  });
+  if (typeof ChatMessage !== "undefined") {
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: "Короткий отдых",
+        subtitle: actor.name,
+        icon: "+",
+        status: "Восстановление",
+        statusClass: "is-good",
+        rows: buildRestChatRows(profile, growth),
+        className: "ih-combat-rest-card ih-combat-short-rest",
+      }),
+    });
+  }
 
-  return restResult({ changed: true, shortRest: true, profile });
+  return restResult({ changed: true, shortRest: true, profile, growth });
 }
 
 export async function applyActorFullRest(actor) {
@@ -1088,14 +1732,14 @@ export async function applyActorFullRest(actor) {
   }
 
   await ensureActorBodyTraumaStatusStructure(actor);
-  await refreshActorBodyTraumaStatus(actor);
+  await finalizeActorTraumaState(actor);
 
   const profile = buildActorRestProfile(actor, "full");
   const currentPoison = Number(profile.poison ?? 0);
 
   if (profile.blocked) {
     const reason = fullRestBlockReason(profile);
-    ui.notifications.warn(reason);
+    globalThis.ui?.notifications?.warn?.(reason);
     return restResult({ ok: false, reason, profile });
   }
 
@@ -1107,13 +1751,25 @@ export async function applyActorFullRest(actor) {
     "system.conditions.shock": Number(profile.summary?.traumaShock ?? 0),
     "system.conditions.poison": Math.max(0, currentPoison - 1),
   };
+  const clearedConditions = applyFullRestConditionRecovery(actor, updates);
   const growth = await applyEnergyGrowthFromRest(actor, updates, profile);
   await actor.update(updates);
+  await finalizeActorTraumaState(actor);
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content: `<b>${actor.name}</b> делает полный отдых.<br>${buildRestChatLines(profile, growth).join("<br>")}<br>Яд: ${profile.poison} -> ${Math.max(0, profile.poison - 1)}<br>Шок после травм: ${Number(profile.summary?.traumaShock ?? 0)}`,
-  });
+  if (typeof ChatMessage !== "undefined") {
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: "Полный отдых",
+        subtitle: actor.name,
+        icon: "+",
+        status: "Восстановление",
+        statusClass: "is-good",
+        rows: buildRestChatRows(profile, growth, { fullRest: true, clearedConditions }),
+        className: "ih-combat-rest-card ih-combat-full-rest",
+      }),
+    });
+  }
 
-  return restResult({ changed: true, fullRest: true, profile });
+  return restResult({ changed: true, fullRest: true, profile, growth, clearedConditions });
 }

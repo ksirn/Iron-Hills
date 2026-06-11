@@ -27,7 +27,7 @@
   {{!-- Статус экономики --}}
   <div class="ih-shop-economy">
     <span class="ih-shop-econ-status">{{economy.icon}} {{economy.label}}</span>
-    <span class="muted-text" style="font-size:10px">{{economy.desc}}</span>
+    <span class="muted-text ih-shop-econ-desc">{{economy.desc}}</span>
     {{#if isGM}}
     <div class="ih-shop-econ-btns">
       {{#each economyStates}}
@@ -41,7 +41,7 @@
   {{!-- Фильтр по тиру --}}
   {{#if tiers.length}}
   <div class="ih-shop-tier-filter">
-    <span class="muted-text" style="font-size:10px">Тир:</span>
+    <span class="muted-text ih-shop-tier-label">Тир:</span>
     {{#each tiers}}
     <a class="ih-chip {{#if (eq this ../filterTier)}}is-active{{/if}}"
        data-filter-tier="{{this}}">{{this}}</a>
@@ -59,7 +59,8 @@
           Тир {{tier}}
           {{#if damage}} · ⚔ {{damage}}{{/if}}
           {{#if skill}} · {{skill}}{{/if}}
-          {{#if school}} · {{school}} ранг {{rank}}{{/if}}
+          {{#if schoolLabel}} · {{schoolLabel}} ранг {{rank}}{{/if}}
+          {{#if actionLabel}} · {{actionLabel}}{{/if}}
           {{#if protection}} · 🛡 {{protection.physical}}{{/if}}
           · ⚖ {{weight}} кг
           {{#if qty}} · ×{{qty}}{{/if}}
@@ -71,7 +72,7 @@
         </span>
         {{#if ../hasBuyer}}
         <a class="ih-btn ih-btn-small {{#unless canAfford}}ih-btn-disabled{{/unless}}"
-           data-buy="{{@index}}">Купить</a>
+           data-buy="{{stockIndex}}">Купить</a>
         {{/if}}
       </div>
     </div>

@@ -12,7 +12,9 @@ import {
   formatExplodingDiceRoll,
   rollExplodingDice
 } from "../services/skill-roll-service.mjs";
+import { buildCombatChatCard } from "../services/combat-chat-service.mjs";
 import { addItemToActorOrStack } from "../services/trade-service.mjs";
+import { buildAlchemyResultItemData } from "../utils/alchemy-result-data.mjs";
 
 const MAX_REAGENTS = 4;
 
@@ -202,8 +204,21 @@ class IronHillsAlchemyApp extends Application {
       });
 
       await ChatMessage.create({
-        content: `💥 <b>${actor.name}</b> — <b>ВЗРЫВ!</b> при попытке зельеварения!<br>
-          Летучесть: ${mixResult.totalVolatility} → урон торсу: <b>${explosionDmg}</b>`,
+        content: buildCombatChatCard({
+          title: "Зельеварение",
+          subtitle: actor.name,
+          icon: "!",
+          status: "Взрыв",
+          statusClass: "is-danger",
+          rows: [
+            ["Летучесть", mixResult.totalVolatility],
+            ["Урон торсу", explosionDmg],
+          ],
+          notices: [
+            ["Результат", "реакция сорвалась, выбранный набор сброшен", true],
+          ],
+          className: "ih-system-chat-card ih-alchemy-chat-card ih-alchemy-explosion-card",
+        }),
         speaker: ChatMessage.getSpeaker({ actor })
       });
 
@@ -238,14 +253,31 @@ class IronHillsAlchemyApp extends Application {
       });
     }
 
-    let chatContent = `<div style="border:1px solid rgba(167,139,250,0.3);border-radius:8px;
-      padding:10px;background:rgba(167,139,250,0.04);">
-      <b>⚗ Зельеварение</b><br>
-      Алхимия д${dieSize} · Бросок: <b>${formatExplodingDiceRoll(rollResult, dieSize)}</b> · Порог: ${threshold}`;
+    const alchemyRows = [
+      ["Алхимик", actor.name],
+      ["Куб", `d${dieSize}`],
+      ["Бросок", formatExplodingDiceRoll(rollResult, dieSize)],
+      ["Порог", threshold],
+      ["Перевес", margin >= 0 ? `+${margin}` : margin],
+      ["Летучесть", mixResult.totalVolatility],
+    ];
 
     if (!success) {
-      chatContent += `<br><span style="color:#f87171">✗ Провал — реагенты потрачены впустую.</span></div>`;
-      await ChatMessage.create({ content: chatContent, speaker: ChatMessage.getSpeaker({ actor }) });
+      await ChatMessage.create({
+        content: buildCombatChatCard({
+          title: "Зельеварение",
+          subtitle: actor.name,
+          icon: "!",
+          status: "Провал",
+          statusClass: "is-danger",
+          rows: alchemyRows,
+          notices: [
+            ["Реагенты", "потрачены впустую", true],
+          ],
+          className: "ih-system-chat-card ih-alchemy-chat-card ih-alchemy-failed-card",
+        }),
+        speaker: ChatMessage.getSpeaker({ actor }),
+      });
       this._selected = [];
       this.render(false);
       return;
@@ -260,59 +292,36 @@ class IronHillsAlchemyApp extends Application {
     const r   = mixResult.rule.result;
     const tier = Number(tool.system?.tier ?? 1);
     const resultPower = Math.max(1, Math.floor(mixResult.power + qBonus));
-    const sys = {
-      tier,
-      quality,
-      quantity:  1,
-      weight:    0.5,
-      power:     resultPower,
-      effectType: r.effectType ?? "",
-      actionScope: "single",
-      targetActorMode: "targeted",
-      targetPart: "torso",
-    };
-
-    if (r.type === "throwable") {
-      const aoeDistance = Math.max(1, Math.min(3, Math.ceil(resultPower / 4)));
-      Object.assign(sys, {
-        weight: 0.6,
-        effectType: "damage",
-        damageType: r.damageType ?? "magical",
-        actionScope: "area",
-        applicationScope: "area",
-        targetActorMode: "area",
-        targetZone: "",
-        energyCost: 8 + tier,
-        friendlyFire: false,
-        friendlyFireMode: "auto",
-        aoe: {
-          type: "blast",
-          shape: "circle",
-          distance: aoeDistance,
-          maxTargets: null,
-          chainDecay: 1,
-          targetZoneMode: "random",
-          friendlyFireMode: "auto",
-        },
-        appliesPoison: Number(r.appliesPoison ?? 0),
-        appliesBurning: Number(r.appliesBurning ?? (r.effectType === "burn" ? Math.max(1, Math.ceil(resultPower / 3)) : 0)),
-      });
+    const resultItemData = buildAlchemyResultItemData({
+      ...mixResult,
+      power: resultPower,
+      hydration: mixResult.hydration ? Math.floor(mixResult.hydration + qBonus) : 0,
+      satiety: mixResult.satiety ? Math.floor(mixResult.satiety + qBonus) : 0,
+    }, { tier, quality });
+    if (!resultItemData) {
+      ui.notifications.warn("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР±СЂР°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚ Р°Р»С…РёРјРёРё.");
+      return;
     }
 
-    if (mixResult.hydration) sys.hydration = Math.floor(mixResult.hydration + qBonus);
-    if (mixResult.satiety)   sys.satiety   = Math.floor(mixResult.satiety + qBonus);
+    await addItemToActorOrStack(actor, resultItemData);
 
-    await addItemToActorOrStack(actor, {
-      name:   r.name, type: r.type,
-      img:    r.type === "throwable" ? "icons/commodities/materials/bowl-powder-red.webp" : "icons/svg/potion.svg",
-      system: sys,
+    await ChatMessage.create({
+      content: buildCombatChatCard({
+        title: "Зельеварение",
+        subtitle: actor.name,
+        icon: "+",
+        status: qLabel,
+        statusClass: "is-good",
+        rows: [
+          ...alchemyRows,
+          ["Получено", resultItemData.name ?? r.name],
+          ["Качество", qLabel],
+          ["Сила", resultItemData.system?.power ?? resultPower],
+        ],
+        className: "ih-system-chat-card ih-alchemy-chat-card ih-alchemy-success-card",
+      }),
+      speaker: ChatMessage.getSpeaker({ actor }),
     });
-
-    chatContent += `<br><span style="color:#4ade80">✓ Успех! Получено: <b>${r.name}</b></span>`;
-    chatContent += `<br>Качество: <b>${qLabel}</b> · Сила: ${sys.power}`;
-    chatContent += `</div>`;
-
-    await ChatMessage.create({ content: chatContent, speaker: ChatMessage.getSpeaker({ actor }) });
 
     // Опыт
     await grantSkillExp(actor, "alchemy", r.name);

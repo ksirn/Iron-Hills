@@ -127,7 +127,7 @@ export const MONSTER_BESTIARY = {
     mana: 6,
     armor: { physical: 2, magical: 1 },
     combat: cb(2),
-    skills: { life: 1 },
+    skills: { light: 1 },
     desc: "Сгусток гриба и камня живёт у малых узлов маны под шахтой.",
   },
 
@@ -253,7 +253,7 @@ export const MONSTER_BESTIARY = {
     mana: 26,
     armor: { physical: 9, magical: 15 },
     combat: cb(5),
-    skills: { water: 2, knife: 3 },
+    skills: { ice: 2, knife: 3 },
     desc: "Слякотный хищник фарватеров и промоин.",
   },
   gorge_stone_lurker: {
@@ -409,7 +409,7 @@ export const MONSTER_BESTIARY = {
     mana: 22,
     armor: { physical: 30, magical: 20 },
     combat: cb(8),
-    skills: { air: 3, axe: 5 },
+    skills: { lightning: 3, axe: 5 },
     desc: "Статуя времен старых шахт‑святынь, пробуждена бурей.",
   },
 

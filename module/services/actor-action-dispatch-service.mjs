@@ -4,7 +4,7 @@ import {
   resumePendingItemAction,
   useItemByType,
 } from "./actor-item-use-service.mjs";
-import { resolveCombatActionTargets } from "./combat-action-target-service.mjs";
+import { resolveCombatActionTargetContext } from "./combat-action-target-service.mjs";
 import {
   castCatalogSpellAction,
   performCombatAoeAttack,
@@ -27,6 +27,7 @@ export async function useActorItemByType(actor, itemOrId, {
   skipTimeCost = false,
   allowWeapon = false,
   allowedTypes = null,
+  actionOptions = {},
   missingMessage = "Предмет не найден",
   unsupportedMessage = "Этот тип предмета пока нельзя использовать",
   handlers = {},
@@ -37,6 +38,7 @@ export async function useActorItemByType(actor, itemOrId, {
     allowedTypes,
     missingMessage,
     unsupportedMessage,
+    actionOptions,
     handlers: buildItemUseHandlers(handlers),
   });
 }
@@ -52,9 +54,11 @@ export async function resumeActorPendingItemAction(actor, data, config, handlers
 
 export async function useActorQuickSlot(actor, slotKey, {
   skipTimeCost = false,
+  targets = null,
+  actionOptions = {},
   handlers = {},
 } = {}) {
-  const reason = getActionBlockReason(actor, "quickslot", { slotKey });
+  const reason = getActionBlockReason(actor, "quickslot", { slotKey, targets });
 
   if (reason) {
     ui.notifications.warn(reason);
@@ -73,13 +77,80 @@ export async function useActorQuickSlot(actor, slotKey, {
     skipTimeCost,
     allowWeapon: true,
     unsupportedMessage: "Этот тип предмета пока нельзя использовать из быстрого слота",
+    actionOptions: {
+      ...(targets ? { targets } : {}),
+      ...actionOptions,
+    },
     handlers,
   });
 }
 
+export function normalizePendingExecutionResult(result, {
+  actionType = "generic",
+  defaultOk = true,
+} = {}) {
+  if (result === false) {
+    return { ok: false, handled: true, actionType, reason: "handler-returned-false", result };
+  }
+
+  if (result && typeof result === "object") {
+    if (result.queued) {
+      return {
+        ok: false,
+        queued: true,
+        handled: Boolean(result.handled ?? true),
+        actionType,
+        reason: result.reason || "queued-during-pending-execution",
+        result,
+      };
+    }
+    if (result.cancelled || result.canceled) {
+      return {
+        ok: false,
+        cancelled: true,
+        handled: Boolean(result.handled ?? true),
+        actionType,
+        reason: result.reason || "cancelled",
+        result,
+      };
+    }
+    if (result.ok === false) {
+      return {
+        ok: false,
+        handled: Boolean(result.handled ?? true),
+        actionType,
+        reason: result.reason || "failed",
+        result,
+      };
+    }
+  }
+
+  if (result === undefined || result === null) {
+    return { ok: Boolean(defaultOk), handled: false, actionType, result };
+  }
+
+  return { ok: true, handled: true, actionType, result };
+}
+
+async function executePendingBranch(actionType, fn) {
+  try {
+    const result = await fn();
+    return normalizePendingExecutionResult(result, { actionType });
+  } catch (err) {
+    console.error("Iron Hills | pending combat action failed", err);
+    return {
+      ok: false,
+      handled: true,
+      actionType,
+      reason: "handler-error",
+      error: String(err?.message ?? err),
+    };
+  }
+}
+
 export function buildAttackPayloadFromPendingAction(actor, data = {}) {
   const weapon = data.weaponId ? actor?.items?.get(data.weaponId) : null;
-  const targets = resolveCombatActionTargets({ targetRefs: data.targetRefs });
+  const targetContext = resolveCombatActionTargetContext({ payload: data });
 
   return {
     hand: data.hand ?? null,
@@ -98,10 +169,12 @@ export function buildAttackPayloadFromPendingAction(actor, data = {}) {
       5
     ),
     weapon,
+    attackMode: data.attackMode ?? null,
     hitBonus: Number(data.hitBonus ?? 0),
     ignoreArmor: Number(data.ignoreArmor ?? 0),
-    targetZone: data.targetZone ?? null,
-    aimed: Boolean(data.aimed ?? false),
+    targetZone: targetContext.targetZone ?? null,
+    targetZoneMode: targetContext.targetZoneMode ?? null,
+    aimed: Boolean(targetContext.aimed ?? false),
     technique: data.technique ?? null,
     applyCondition: data.applyCondition ?? null,
     conditionDuration: Number(data.conditionDuration ?? 0),
@@ -112,7 +185,7 @@ export function buildAttackPayloadFromPendingAction(actor, data = {}) {
     actionSeconds: Number(data.actionSeconds ?? 0) || null,
     autoTargetHostile: Boolean(data.autoTargetHostile ?? false),
     useExplodingDice: Boolean(data.useExplodingDice ?? true),
-    targets,
+    targets: targetContext.targets,
     skipTimeCost: true,
   };
 }
@@ -138,8 +211,9 @@ export async function executeActorPendingCombatAction(actor, pendingAction, {
       return { ok: false, reason: "missing-attack-handler" };
     }
 
-    await performAttack(buildAttackPayloadFromPendingAction(actor, data));
-    return { ok: true, handled: true, actionType };
+    return executePendingBranch(actionType, () =>
+      performAttack(buildAttackPayloadFromPendingAction(actor, data))
+    );
   }
 
   if (actionType === "quickslot") {
@@ -149,50 +223,50 @@ export async function executeActorPendingCombatAction(actor, pendingAction, {
       return { ok: false, reason: "missing-quickslot" };
     }
 
-    await useActorQuickSlot(actor, slotKey, {
+    const targetContext = resolveCombatActionTargetContext({ payload: data });
+    return executePendingBranch(actionType, () => useActorQuickSlot(actor, slotKey, {
       skipTimeCost: true,
+      targets: targetContext.targets,
       handlers,
-    });
-    return { ok: true, handled: true, actionType };
+    }));
   }
 
   if (actionType === "catalog-spell") {
-    const targets = resolveCombatActionTargets({ targetRefs: data.targetRefs });
-    const result = await castCatalogSpellAction({
+    const targetContext = resolveCombatActionTargetContext({ payload: data });
+    return executePendingBranch(actionType, () => castCatalogSpellAction({
       actor,
       spell: data.spell,
-      targets,
+      targets: targetContext.targets,
       skipTimeCost: true,
       applySkillExp: (skillKey, label) => grantSkillExp(actor, skillKey, label, 1),
       onLethal: target => markActorDead(target),
-    });
-    return { ok: Boolean(result?.ok ?? true), handled: true, actionType, result };
+    }));
   }
 
   if (actionType === "aoe-attack") {
-    const result = await performCombatAoeAttack({
+    return executePendingBranch(actionType, () => performCombatAoeAttack({
       actor,
       ...data,
       skipTimeCost: true,
-    });
-    return { ok: Boolean(result?.ok ?? true), handled: true, actionType, result };
+      onLethal: target => markActorDead(target),
+    }));
   }
 
   if (actionType === "technique-support") {
     const weapon = data.weaponId ? actor?.items?.get(data.weaponId) : null;
-    const result = await performTechniqueSupportCombatAction({
+    return executePendingBranch(actionType, () => performTechniqueSupportCombatAction({
       actor,
       technique: data.technique,
       weapon,
       skipTimeCost: true,
-    });
-    return { ok: Boolean(result?.ok ?? true), handled: true, actionType, result };
+    }));
   }
 
   const pendingItemConfig = getPendingItemActionConfig(actionType);
   if (pendingItemConfig) {
-    await resumeActorPendingItemAction(actor, data, pendingItemConfig, handlers);
-    return { ok: true, handled: true, actionType };
+    return executePendingBranch(actionType, () =>
+      resumeActorPendingItemAction(actor, data, pendingItemConfig, handlers)
+    );
   }
 
   ui.notifications.info(`Действие "${pendingAction.label || "действие"}" завершено.`);

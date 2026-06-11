@@ -12,9 +12,41 @@ import {
   buildMonsterHarvestEmbeddedItemData,
   monsterActorHasHarvestLootItems,
 } from "../utils/monster-harvest-items.mjs";
+import { drinkVesselToItemData } from "../utils/catalog-item-data.mjs";
 import { grantSkillExp } from "./actor-state-service.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 import { recalculateActorWeight } from "./inventory-service.mjs";
 import { addItemToActorOrStack, transferItemQuantityBetweenActors } from "./trade-service.mjs";
+
+function listWildernessNames(names = [], fallback = "ничего") {
+  const list = Array.isArray(names) ? names.filter(Boolean) : [];
+  return list.length ? list.join(", ") : fallback;
+}
+
+async function createWildernessChatMessage(actor, {
+  title = "Поход",
+  subtitle = "",
+  icon = "+",
+  status = "",
+  statusClass = "",
+  rows = [],
+  notices = [],
+  className = "",
+} = {}) {
+  return ChatMessage.create({
+    speaker: actor ? ChatMessage.getSpeaker({ actor }) : undefined,
+    content: buildCombatChatCard({
+      title,
+      subtitle,
+      icon,
+      status,
+      statusClass,
+      rows,
+      notices,
+      className: `ih-system-chat-card ih-wilderness-chat-card ${className}`,
+    }),
+  });
+}
 
 function npcHasEmbeddedLoot(actor) {
   return (actor?.items?.size ?? 0) > 0;
@@ -338,11 +370,20 @@ export async function grantLootLines(actor, lines, meta = {}) {
       : "";
 
   if (names.length) {
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div><b>${actor.name}</b> получает добычу: ${names.join(", ")}.${
-        tag ? `<br><span style="opacity:0.72;font-size:11px;">${tag}</span>` : ""
-      }</div>`,
+    await createWildernessChatMessage(actor, {
+      title: "Добыча",
+      subtitle: actor.name,
+      icon: "+",
+      status: "Получено",
+      statusClass: "is-good",
+      rows: [
+        ["Получатель", actor.name],
+        ["Предметы", listWildernessNames(names)],
+      ],
+      notices: [
+        ["Источник", tag, Boolean(tag)],
+      ],
+      className: "ih-wilderness-loot-card",
     });
   }
 
@@ -434,11 +475,19 @@ export async function pickpocketNpc(actor, targetNpc, opts = {}) {
 
   if (gmBypass) {
     const names = await transferAllEmbeddedInventoryTo(actor, targetNpc);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><i>GM:</i> карманничество без проверки — <b>${vName}</b> (инвентарь листа)${
-        names.length ? ` — ${names.join(", ")}` : ""
-      }</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Карманничество",
+      subtitle: vName,
+      icon: "+",
+      status: "GM",
+      statusClass: "is-warn",
+      rows: [
+        ["Карманник", actor.name],
+        ["Цель", vName],
+        ["Режим", "без проверки"],
+        ["Добыча", listWildernessNames(names, "ничего")],
+      ],
+      className: "ih-wilderness-pickpocket-card ih-wilderness-gm-card",
     });
     await markPocketsLootedIfApplicable(targetNpc, names);
     return { names, outcome: "gm_bypass", dc };
@@ -450,7 +499,7 @@ export async function pickpocketNpc(actor, targetNpc, opts = {}) {
     return { names: [], outcome: "no_skill", dc };
   }
 
-  const lineRoll = `<b>${res.total}</b> (1d${res.die} vs DC ${res.dc})`;
+  const lineRoll = `${res.total} (1d${res.die} vs DC ${res.dc})`;
   let names = [];
   let outcome = "fail";
 
@@ -458,27 +507,55 @@ export async function pickpocketNpc(actor, targetNpc, opts = {}) {
     names = await grantPickpocketLoot({});
     outcome = "full";
     await grantSkillExp(actor, "stealth", "Скрытность — карманничество", 4);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Карманник:</b> ${actor.name} — удача ${lineRoll}; у <b>${vName}</b> пропадает: ${
-        names.length ? names.join(", ") : "ничего ценного"
-      }.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Карманничество",
+      subtitle: vName,
+      icon: "+",
+      status: "Успех",
+      statusClass: "is-good",
+      rows: [
+        ["Карманник", actor.name],
+        ["Цель", vName],
+        ["Бросок", lineRoll],
+        ["Добыча", listWildernessNames(names, "ничего ценного")],
+      ],
+      className: "ih-wilderness-pickpocket-card ih-wilderness-success-card",
     });
   } else if (res.partial) {
     names = await grantPickpocketLoot({ partial: true });
     outcome = "partial";
     await grantSkillExp(actor, "stealth", "Скрытность — карманничество", 2);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Карманник:</b> ${actor.name} — на грани ${lineRoll}; у <b>${vName}</b> уводится: ${
-        names.length ? names.join(", ") : "почти ничего"
-      }.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Карманничество",
+      subtitle: vName,
+      icon: "+",
+      status: "Частично",
+      statusClass: "is-warn",
+      rows: [
+        ["Карманник", actor.name],
+        ["Цель", vName],
+        ["Бросок", lineRoll],
+        ["Добыча", listWildernessNames(names, "почти ничего")],
+      ],
+      className: "ih-wilderness-pickpocket-card ih-wilderness-partial-card",
     });
   } else {
     await grantSkillExp(actor, "stealth", "Скрытность — карманничество", 1);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Карманник пойман на глазу:</b> ${actor.name} ${lineRoll} — <b>${vName}</b> замечает попытку.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Карманничество",
+      subtitle: vName,
+      icon: "!",
+      status: "Провал",
+      statusClass: "is-danger",
+      rows: [
+        ["Карманник", actor.name],
+        ["Цель", vName],
+        ["Бросок", lineRoll],
+      ],
+      notices: [
+        ["Последствие", "цель замечает попытку", true],
+      ],
+      className: "ih-wilderness-pickpocket-card ih-wilderness-failed-card",
     });
   }
 
@@ -524,11 +601,18 @@ export async function harvestMonsterCarcass(actor, monsterActorOrTable, opts = {
   // ── NPC: только содержимое листа, без навыков и таблиц ──
   if (carcassDoc?.type === "npc") {
     const names = await transferAllEmbeddedInventoryTo(actor, carcassDoc);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Обыск:</b> ${actor.name} обшаривает <b>${monName}</b>. ${
-        names.length ? `Забирает: ${names.join(", ")}.` : "Подходящих вещей не находит."
-      }</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Обыск",
+      subtitle: monName,
+      icon: "+",
+      status: names.length ? "Найдено" : "Пусто",
+      statusClass: names.length ? "is-good" : "is-muted",
+      rows: [
+        ["Ищет", actor.name],
+        ["Цель", monName],
+        ["Добыча", listWildernessNames(names, "подходящих вещей нет")],
+      ],
+      className: "ih-wilderness-search-card",
     });
     await markCarcassLootedIfApplicable(carcassDoc, names, { force: true });
     return { names, outcome: "npc_inventory", dc };
@@ -544,9 +628,19 @@ export async function harvestMonsterCarcass(actor, monsterActorOrTable, opts = {
 
   if (gmBypass) {
     const names = await grantMonsterHarvestFromCarcass(actor, carcassDoc, { gmBypass: true });
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><i>GM:</i> разделка без проверки — <b>${monName}</b>${names.length ? ` — ${names.join(", ")}` : ""}</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Разделка",
+      subtitle: monName,
+      icon: "+",
+      status: "GM",
+      statusClass: "is-warn",
+      rows: [
+        ["Охотник", actor.name],
+        ["Туша", monName],
+        ["Режим", "без проверки"],
+        ["Добыча", listWildernessNames(names, "ничего")],
+      ],
+      className: "ih-wilderness-harvest-card ih-wilderness-gm-card",
     });
     await markCarcassLootedIfApplicable(carcassDoc, names);
     return { names, outcome: "gm_bypass", dc };
@@ -555,9 +649,18 @@ export async function harvestMonsterCarcass(actor, monsterActorOrTable, opts = {
   const tool = findHarvestToolOnActor(actor);
   if (!tool) {
     ui.notifications.warn("Нужен инструмент разделки («Набор разделки туши» или «Скрутка полевого мясника») в инвентаре.");
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>${actor.name}</b> не может разделать <b>${monName}</b> — нет набора разделки.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Разделка",
+      subtitle: monName,
+      icon: "!",
+      status: "Нет инструмента",
+      statusClass: "is-danger",
+      rows: [
+        ["Охотник", actor.name],
+        ["Туша", monName],
+        ["Нужно", "набор разделки или скрутка полевого мясника"],
+      ],
+      className: "ih-wilderness-harvest-card ih-wilderness-no-tool-card",
     });
     return { names: [], outcome: "no_tool", dc };
   }
@@ -570,7 +673,7 @@ export async function harvestMonsterCarcass(actor, monsterActorOrTable, opts = {
 
   const res = await rollSurvivalButcher(actor, tool, dc);
   const inner = `1d${res.die}${res.toolBonus > 0 ? ` + ${res.toolBonus}` : ""}`;
-  const lineRoll = `<b>${res.total}</b> (${inner} vs DC ${res.dc})`;
+  const lineRoll = `${res.total} (${inner} vs DC ${res.dc})`;
 
   let names = [];
   let outcome = "fail";
@@ -579,23 +682,55 @@ export async function harvestMonsterCarcass(actor, monsterActorOrTable, opts = {
     names = await grantMonsterHarvestFromCarcass(actor, carcassDoc, { partialHarvest: false });
     outcome = "full";
     await grantSkillExp(actor, "survival", "Выживание — разделка", 4);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Разделка:</b> ${actor.name} — удача ${lineRoll}; добыча с <b>${monName}</b> богаче.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Разделка",
+      subtitle: monName,
+      icon: "+",
+      status: "Успех",
+      statusClass: "is-good",
+      rows: [
+        ["Охотник", actor.name],
+        ["Туша", monName],
+        ["Бросок", lineRoll],
+        ["Добыча", listWildernessNames(names, "ничего")],
+      ],
+      className: "ih-wilderness-harvest-card ih-wilderness-success-card",
     });
   } else if (res.partial) {
     names = await grantMonsterHarvestFromCarcass(actor, carcassDoc, { partialHarvest: true });
     outcome = "partial";
     await grantSkillExp(actor, "survival", "Выживание — разделка", 2);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Разделка:</b> ${actor.name} — средне ${lineRoll}; с <b>${monName}</b> уходит лишь часть трофеев.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Разделка",
+      subtitle: monName,
+      icon: "+",
+      status: "Частично",
+      statusClass: "is-warn",
+      rows: [
+        ["Охотник", actor.name],
+        ["Туша", monName],
+        ["Бросок", lineRoll],
+        ["Добыча", listWildernessNames(names, "часть трофеев")],
+      ],
+      className: "ih-wilderness-harvest-card ih-wilderness-partial-card",
     });
   } else {
     await grantSkillExp(actor, "survival", "Выживание — разделка", 1);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<p><b>Разделка провалена:</b> ${actor.name} ${lineRoll} — <b>${monName}</b> порчена или ускользает.</p>`,
+    await createWildernessChatMessage(actor, {
+      title: "Разделка",
+      subtitle: monName,
+      icon: "!",
+      status: "Провал",
+      statusClass: "is-danger",
+      rows: [
+        ["Охотник", actor.name],
+        ["Туша", monName],
+        ["Бросок", lineRoll],
+      ],
+      notices: [
+        ["Последствие", "добыча испорчена или ускользает", true],
+      ],
+      className: "ih-wilderness-harvest-card ih-wilderness-failed-card",
     });
   }
 
@@ -689,50 +824,7 @@ export function monsterRowToActorData(row) {
 export function buildDrinkVesselItemData(vesselCatalogId, { initialCharges } = {}) {
   const v = DRINK_VESSELS[String(vesselCatalogId ?? "")];
   if (!v) return null;
-  const max = Math.max(1, Number(v.vesselMax ?? 1));
-  const filled = Math.min(
-    max,
-    Math.max(
-      0,
-      initialCharges !== undefined && initialCharges !== null
-        ? Number(initialCharges)
-        : max
-    )
-  );
-  const img = `systems/iron-hills-system/icons/items/consumables/${v.id}.webp`;
-
-  const baseWt = Number(v.weight ?? 0.35);
-  const hydratedExtra = filled * 0.02;
-
-  return {
-    name: v.label,
-    type: "consumable",
-    img,
-    flags: {
-      "iron-hills-system": {
-        catalogId: v.id,
-        kind: "drink_vessel",
-      },
-    },
-    system: {
-      tier: Number(v.tier ?? 1),
-      quality: "common",
-      weight: baseWt + hydratedExtra,
-      quantity: 1,
-      power: Number(v.vesselHydrationPerDrink ?? 10),
-      actionType: "drink-vessel",
-      applicationScope: "global",
-      targetActorMode: "self",
-      vesselMax: max,
-      vesselCurrent: filled,
-      vesselHydrationPerDrink: Number(v.vesselHydrationPerDrink ?? 0),
-      vesselSatietyPerDrink: Number(v.vesselSatietyPerDrink ?? 0),
-      vesselLiquidLabel: String(v.vesselLiquidLabel ?? "Вода"),
-      gridW: 1,
-      gridH: 2,
-      value: Number(v.value ?? 4),
-    },
-  };
+  return drinkVesselToItemData(v, { initialCharges });
 }
 
 /**

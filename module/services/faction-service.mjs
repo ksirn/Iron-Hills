@@ -7,6 +7,7 @@
  */
 
 import { clamp } from "../utils/math-utils.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 
 // ─── Уровни репутации ───────────────────────────────────────────
 
@@ -138,14 +139,19 @@ export async function changeReputation(character, faction, delta, reason = "") {
   // Сообщение если изменился уровень репутации
   if (prevLvl.id !== nextLvl.id) {
     await ChatMessage.create({
-      content: `<div style="padding:6px">
-        ${nextLvl.color
-          ? `<span style="color:${nextLvl.color}">●</span>`
-          : "●"}
-        <b>${character.name}</b> ↔ <b>${factionActor.name}</b>:
-        ${prevLvl.label} → ${nextLvl.label}
-        ${reason ? `<br><span style="color:#a8b8d0;font-size:10px">${reason}</span>` : ""}
-      </div>`
+      content: buildCombatChatCard({
+        title: "Репутация изменилась",
+        icon: "●",
+        status: nextLvl.label,
+        rows: [
+          ["Персонаж", character.name],
+          ["Фракция", factionActor.name],
+          ["Было", prevLvl.label],
+          ["Стало", nextLvl.label],
+        ],
+        notices: reason ? [["Причина", reason]] : [],
+        className: "ih-reputation-chat-card",
+      }),
     });
   }
 

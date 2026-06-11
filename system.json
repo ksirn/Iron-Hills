@@ -229,8 +229,15 @@
     },
     {
       "name": "ih-consumables",
-      "label": "Iron Hills — Расходники (фляги)",
+      "label": "Iron Hills — Расходники",
       "path": "packs/consumables",
+      "type": "Item",
+      "system": "iron-hills-system"
+    },
+    {
+      "name": "ih-throwables",
+      "label": "Iron Hills — Метательные расходники",
+      "path": "packs/throwables",
       "type": "Item",
       "system": "iron-hills-system"
     }

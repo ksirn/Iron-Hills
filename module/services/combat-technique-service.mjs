@@ -1,9 +1,11 @@
 import { normalizeAoeConfig } from "./aoe-policy-service.mjs";
+import { normalizeAttackMode } from "./combat-attack-mode-service.mjs";
 import { getCombatParticipantByActor } from "./combat-flow-service.mjs";
 import {
   applyPreparedTechniqueEffect,
   consumePreparedAttackBonus as consumePreparedAttackBonusState,
   isSupportTechniqueSpecial,
+  validatePreparedTechniqueEffect,
 } from "./combat-prepared-state-service.mjs";
 import { num } from "../utils/math-utils.mjs";
 
@@ -17,6 +19,29 @@ export function getTechniqueHitBonus(effect = {}) {
   return Number(effect?.hitBonus ?? effect?.hitPenalty ?? 0) + specialBonus;
 }
 
+function getTargetZoneChoiceKey(targetZoneChoice = null) {
+  if (!targetZoneChoice) return null;
+  return targetZoneChoice?.key ?? targetZoneChoice ?? null;
+}
+
+function getTargetZoneChoiceLabel(targetZoneChoice = null) {
+  return targetZoneChoice?.label ?? "";
+}
+
+function getTargetZoneChoiceHitMod(targetZoneChoice = null) {
+  return Number(targetZoneChoice?.hitMod ?? 0);
+}
+
+function getTargetZoneChoiceDamageMultiplier(targetZoneChoice = null) {
+  return Math.max(0, Number(targetZoneChoice?.damageMult ?? 1) || 1);
+}
+
+export function techniqueRequiresTargetZoneChoice(technique = null) {
+  const effect = technique?.effect ?? {};
+  if (effect?.aoe) return false;
+  return effect?.special === "choose_zone" || effect?.targetZoneMode === "aimed";
+}
+
 export function isTechniqueSupportAction(technique = null) {
   const special = String(technique?.effect?.special ?? "").trim();
   return isSupportTechniqueSpecial(special);
@@ -26,12 +51,16 @@ export function getTechniqueSupportEnergyCost(technique = null) {
   return Math.max(0, Number(technique?.energyCost ?? 0));
 }
 
-export async function applyTechniqueSupportEffect({ actor = null, technique = null } = {}) {
-  return applyPreparedTechniqueEffect({ actor, technique });
+export function validateTechniqueSupportEffect({ actor = null, technique = null, weapon = null } = {}) {
+  return validatePreparedTechniqueEffect({ actor, technique, weapon });
 }
 
-export async function consumePreparedAttackBonus(actor, { skillKey = "" } = {}) {
-  return consumePreparedAttackBonusState(actor, { skillKey });
+export async function applyTechniqueSupportEffect({ actor = null, technique = null, weapon = null } = {}) {
+  return applyPreparedTechniqueEffect({ actor, technique, weapon });
+}
+
+export async function consumePreparedAttackBonus(actor, { skillKey = "", weapon = null } = {}) {
+  return consumePreparedAttackBonusState(actor, { skillKey, weapon });
 }
 
 function getActorTorsoHpRatio(actor) {
@@ -162,10 +191,15 @@ export function buildTechniqueAttackParams({
 } = {}) {
   const effect = technique?.effect ?? {};
   const damageContext = getTechniqueDamageContext(effect, { attacker, target });
-  const damageMultiplier = damageContext.multiplier;
-  const chosenZone = targetZoneChoice?.key ?? targetZoneChoice ?? null;
-  const labelSuffix = targetZoneChoice?.label ? ` -> ${targetZoneChoice.label}` : "";
+  const damageMultiplier = damageContext.multiplier * getTargetZoneChoiceDamageMultiplier(targetZoneChoice);
+  const chosenZone = getTargetZoneChoiceKey(targetZoneChoice);
+  const labelSuffix = getTargetZoneChoiceLabel(targetZoneChoice) ? ` -> ${getTargetZoneChoiceLabel(targetZoneChoice)}` : "";
   const defaultConditionDuration = effect.special === "knockback_1" ? 6 : 0;
+  const skillKey = baseParams.skillKey ?? technique?.skill ?? "";
+  const rangeOverride = damageContext.rangeOverride;
+  const attackModeInput = effect.attackMode ?? (
+    effect.special || rangeOverride ? null : baseParams.attackMode
+  );
 
   return {
     ...baseParams,
@@ -173,13 +207,20 @@ export function buildTechniqueAttackParams({
     baseDamage: Math.round(Number(baseParams.baseDamage ?? 1) * damageMultiplier),
     energyCost: Number(baseParams.energyCost ?? 0) + Number(technique?.energyCost ?? 0),
     ignoreArmor: effect.ignoreArmor ?? 0,
-    hitBonus: getTechniqueHitBonus(effect),
+    hitBonus: getTechniqueHitBonus(effect) + getTargetZoneChoiceHitMod(targetZoneChoice),
     targetZone: chosenZone ?? effect.targetZone ?? null,
+    targetZoneMode: chosenZone ? "fixed" : (effect.targetZoneMode ?? null),
     technique,
     applyCondition: effect.applyCondition ?? null,
     conditionDuration: effect.conditionDuration ?? defaultConditionDuration,
     conditionChance: effect.conditionChance ?? 1.0,
     effectNotes: damageContext.notes,
-    rangeOverride: damageContext.rangeOverride,
+    rangeOverride,
+    attackMode: normalizeAttackMode(attackModeInput, {
+      skillKey,
+      weapon: baseParams.weapon,
+      technique,
+      rangeOverride,
+    }),
   };
 }

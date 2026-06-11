@@ -5,11 +5,18 @@
 import {
   getTargetPartLabel,
 } from "./actor-state-service.mjs";
+import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+  buildSystemDialogSelect,
+} from "./combat-chat-service.mjs";
 import { resolveSingleAttack } from "./combat-attack-service.mjs";
 import { calculateHitChance } from "./combat-hit-context-service.mjs";
 import { applyHitEffects, healActorBodyPart } from "./hit-effect-service.mjs";
 import { actorsAreAllies } from "./disposition-service.mjs";
+import { isHealingDamageType } from "./damage-type-service.mjs";
 import {
+  BODY_ZONE_KEYS,
   buildAoeTargetZonePolicy,
   filterAoeTargetsByPolicy,
   findAoeActorToken,
@@ -17,9 +24,12 @@ import {
   getAoeTargetToken,
   normalizeAoeConfig,
   resolveAoeTargetZone,
-  resolveAoeTargetZoneForTarget,
+  resolveAoeTargetZoneDetails,
   wantsAlliedAoeTargets,
 } from "./aoe-policy-service.mjs";
+import { buildAoeChatData } from "./combat-presentation-service.mjs";
+
+const AOE_CHAT_TEMPLATE = "systems/iron-hills-system/templates/chat/aoe.hbs";
 
 // Конфигурация AoE типов
 export const AOE_TYPES = {
@@ -45,6 +55,350 @@ export const AOE_TYPES = {
   },
 };
 
+const AOE_AIMABLE_ZONE_KEYS = BODY_ZONE_KEYS.filter(key => key !== "shield");
+
+function notifyAoeInfo(message) {
+  globalThis.ui?.notifications?.info?.(message);
+}
+
+function getSafeMathRandom() {
+  return Math.random();
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isHarmfulAoeEffect({ damageType = "physical", effect = null, baseDamage = 0 } = {}) {
+  if (isHealingDamageType(damageType) || wantsAlliedAoeTargets(effect)) return false;
+  if (effect?.special === "heal") return false;
+  if (effect?.applyCondition) return true;
+  return toNumber(baseDamage, 0) > 0;
+}
+
+function resolveAoeApplicationPolicy({
+  damageType = "physical",
+  effect = null,
+  baseDamage = 0,
+  applyInjuries = null,
+  wearArmor = false,
+  shieldIntercept = null,
+} = {}) {
+  const harmful = isHarmfulAoeEffect({ damageType, effect, baseDamage });
+  return {
+    harmful,
+    applyInjuries: Boolean(applyInjuries ?? harmful),
+    wearArmor: Boolean(wearArmor),
+    shieldIntercept: Boolean(shieldIntercept ?? false),
+  };
+}
+
+export function createAoeSummary({
+  results = [],
+  totalTargets = 0,
+  candidates = 0,
+  selectedTargets = 0,
+  alliesSpared = 0,
+  friendlyFire = false,
+  friendlyFireMode = "off",
+  targetPolicy = "enemies",
+  targetZoneMode = "random",
+  targetZone = null,
+  aoeType = "blast",
+} = {}) {
+  const hits = results.filter(result => result.hit !== false);
+  const misses = results.filter(result => result.hit === false);
+  const allyResults = results.filter(result => result.ally);
+  const enemyResults = results.filter(result => !result.ally);
+  const allyHits = hits.filter(result => result.ally);
+  const enemyHits = hits.filter(result => !result.ally);
+  const killCount = results.filter(result => result.targetKilled).length;
+  const damageTotal = results.reduce((sum, result) => sum + toNumber(result.damage ?? result.finalDamage, 0), 0);
+  const healingTotal = results.reduce((sum, result) => sum + toNumber(result.healed, 0), 0);
+  const amountTotal = results.reduce((sum, result) => sum + toNumber(result.amount, 0), 0);
+  const conditionCount = results.filter(result => result.condition).length;
+  const zoneKeys = [...new Set(results.map(result => result.zoneKey).filter(Boolean))];
+  const hitZoneKeys = [...new Set(hits.map(result => result.zoneKey).filter(Boolean))];
+  return {
+    totalTargets,
+    candidates,
+    selectedTargets,
+    resultCount: results.length,
+    hitCount: hits.length,
+    missCount: misses.length,
+    enemyCount: enemyResults.length,
+    allyCount: allyResults.length,
+    enemiesHit: enemyHits.length,
+    alliesHit: allyHits.length,
+    alliesSpared,
+    skippedByPolicy: alliesSpared,
+    damageTotal,
+    healingTotal,
+    amountTotal,
+    conditionCount,
+    killCount,
+    zoneKeys,
+    hitZoneKeys,
+    friendlyFire,
+    friendlyFireMode,
+    friendlyFireRisk: Boolean(friendlyFire && allyResults.length > 0),
+    friendlyFireHit: allyHits.length > 0,
+    targetPolicy,
+    targetZoneMode,
+    targetZone,
+    targetZoneLabel: targetZone ? getTargetPartLabel(targetZone) : "",
+    aoeType,
+    resultClass: allyHits.length > 0
+      ? "is-friendly-fire"
+      : killCount > 0
+        ? "is-lethal"
+        : damageTotal > 0
+          ? "is-damage"
+          : healingTotal > 0
+            ? "is-healing"
+            : hits.length > 0
+              ? "is-effect"
+              : "is-empty",
+  };
+}
+
+export function attachAoeSummary(results, summary = {}) {
+  if (!Array.isArray(results)) return results;
+  Object.defineProperty(results, "summary", {
+    value: summary,
+    configurable: true,
+    enumerable: false,
+    writable: true,
+  });
+  return results;
+}
+
+export function getAoeResultSummary(results) {
+  return Array.isArray(results) ? (results.summary ?? createAoeSummary({ results })) : {};
+}
+
+export function createAoeOutcome({
+  ok = true,
+  cancelled = false,
+  template = null,
+  targets = [],
+  results = [],
+  reason = "",
+  summary = null,
+} = {}) {
+  const resolvedSummary = summary ?? getAoeResultSummary(results);
+  return {
+    ok,
+    cancelled,
+    template,
+    targets,
+    results,
+    summary: resolvedSummary,
+    reason,
+  };
+}
+
+function buildAoeZoneOptions() {
+  return AOE_AIMABLE_ZONE_KEYS.map(key => ({
+    value: key,
+    label: getTargetPartLabel(key),
+  }));
+}
+
+async function promptAoeTargetZone({
+  label = "AoE",
+  defaultZone = "torso",
+} = {}) {
+  if (!globalThis.Dialog) return defaultZone;
+
+  return new Promise(resolve => {
+    const dialog = new Dialog({
+      title: `${label}: зона поражения`,
+      content: buildSystemDialogContent({
+        className: "ih-aoe-zone-dialog",
+        headline: label,
+        headlineMeta: "зона поражения",
+        status: "Выберите зону",
+        rows: [
+          ["Режим", "прицельная зона"],
+        ],
+        formHtml: buildSystemDialogSelect({
+          name: "targetZone",
+          label: "Зона поражения",
+          options: buildAoeZoneOptions(),
+          selectedValue: defaultZone,
+        }),
+      }),
+      buttons: {
+        ok: {
+          label: "Выбрать",
+          callback: html => resolve(html.find?.('[name="targetZone"]')?.val?.() ?? defaultZone),
+        },
+        cancel: {
+          label: "Отмена",
+          callback: () => resolve(null),
+        },
+      },
+      default: "ok",
+      close: () => resolve(null),
+    });
+
+    dialog.render(true);
+  });
+}
+
+async function resolveRuntimeAoeConfig({
+  config,
+  effect = null,
+  label = "AoE",
+} = {}) {
+  const zonePolicy = buildAoeTargetZonePolicy({
+    targetZone: config.targetZone,
+    effect,
+    aoe: config,
+    mode: config.targetZoneMode,
+  });
+
+  if (!zonePolicy.requiresChoice) {
+    return { ok: true, config, zonePolicy };
+  }
+
+  const chosenZone = await promptAoeTargetZone({
+    label,
+    defaultZone: zonePolicy.zone ?? "torso",
+  });
+
+  if (!chosenZone) {
+    return { ok: false, cancelled: true, config, zonePolicy };
+  }
+
+  const resolvedConfig = {
+    ...config,
+    targetZone: chosenZone,
+    targetZoneMode: "fixed",
+  };
+
+  return {
+    ok: true,
+    config: resolvedConfig,
+    zonePolicy: buildAoeTargetZonePolicy({
+      targetZone: chosenZone,
+      effect,
+      aoe: resolvedConfig,
+      mode: resolvedConfig.targetZoneMode,
+    }),
+  };
+}
+
+
+export async function applyAoeUtilityTemplate({
+  caster = null,
+  attacker = caster,
+  shape = "circle",
+  distance = 1,
+  label = "AoE effect",
+  color = "#8888ff",
+  skillKey = "magic",
+  attackMode = null,
+  weapon = null,
+  hitBonus = 0,
+  skillValueFallback = null,
+  injuries = null,
+  effect = null,
+  power = 0,
+  aoeType = "blast",
+  maxTargets = null,
+  chainDecay = 1,
+  targetZone = null,
+  targetZoneMode = null,
+  friendlyFire = false,
+  friendlyFireMode = null,
+  createChat = true,
+  onTemplatePlaced = null,
+  rng = getSafeMathRandom,
+  cleanupDelay = 3000,
+} = {}) {
+  const config = normalizeAoeConfig({
+    shape,
+    distance,
+    type: aoeType,
+    maxTargets,
+    chainDecay,
+    friendlyFireMode: friendlyFireMode ?? friendlyFire,
+    friendlyFire,
+    effect,
+    damageType: wantsAlliedAoeTargets(effect) ? "healing" : "magical",
+    targetZone,
+    targetZoneMode,
+  }, {
+    shape: "circle",
+    distance: 1,
+    type: "blast",
+    chainDecay: 1,
+    friendlyFire: false,
+  });
+  const runtime = await resolveRuntimeAoeConfig({ config, effect, label });
+  if (!runtime.ok) {
+    return createAoeOutcome({
+      ok: false,
+      cancelled: true,
+      reason: "target-zone-cancelled",
+      results: attachAoeSummary([], createAoeSummary({ aoeType: config.type })),
+    });
+  }
+  const resolvedConfig = runtime.config;
+
+  const templateResult = await placeAoeTemplate({
+    aoeType: resolvedConfig.shape,
+    distance: resolvedConfig.distance,
+    label,
+    color,
+    attacker,
+    skillKey,
+    attackMode,
+    weapon,
+    hitBonus,
+    skillValueFallback,
+    injuries,
+    friendlyFire: resolvedConfig.friendlyFire,
+  });
+
+  if (!templateResult) {
+    return createAoeOutcome({
+      ok: false,
+      cancelled: true,
+      reason: "template-cancelled",
+      results: attachAoeSummary([], createAoeSummary({ aoeType: resolvedConfig.type })),
+    });
+  }
+
+  const { template, targets } = templateResult;
+
+  try {
+    await onTemplatePlaced?.(templateResult);
+    const results = await applyAoeUtilityEffect({
+      attacker,
+      targets,
+      effect,
+      power,
+      label,
+      aoeType: resolvedConfig.type,
+      maxTargets: resolvedConfig.maxTargets,
+      chainDecay: resolvedConfig.chainDecay,
+      targetZone: resolvedConfig.targetZone,
+      targetZoneMode: resolvedConfig.targetZoneMode,
+      friendlyFire: resolvedConfig.friendlyFire,
+      friendlyFireMode: resolvedConfig.friendlyFireMode,
+      createChat,
+      rng,
+    });
+
+    return createAoeOutcome({ template, targets, results });
+  } finally {
+    await removeAoeTemplate(template, cleanupDelay);
+  }
+}
 
 /**
  * Рассчитать шанс попадания атакующего по цели.
@@ -52,6 +406,8 @@ export const AOE_TYPES = {
  * @returns {{ pct:number, color:string, threshold:number, dieSize:number }}
  */
 export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus = 0, skillValueFallback = null, {
+  attackMode = null,
+  weapon = null,
   targetToken = null,
   surroundCount = 0,
   encumbrance = null,
@@ -61,6 +417,8 @@ export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus =
     skillKey,
     hitBonus,
     skillValueFallback,
+    attackMode,
+    weapon,
     surroundCount,
     targetToken,
     encumbrance,
@@ -82,6 +440,8 @@ export function calcHitChance(attacker, target, skillKey = "unarmed", hitBonus =
  * Показать плашки шанса попадания над токенами в зоне
  */
 export function showHitChanceOverlays(tokens, attacker, skillKey, hitBonus = 0, {
+  attackMode = null,
+  weapon = null,
   friendlyFire = false,
   skillValueFallback = null,
   encumbrance = null,
@@ -111,6 +471,8 @@ export function showHitChanceOverlays(tokens, attacker, skillKey, hitBonus = 0, 
       fillColor = "#7d9aff";
     } else {
       const chance = calcHitChance(attacker, actor, skillKey, hitBonus, skillValueFallback, {
+        attackMode,
+        weapon,
         targetToken: token,
         encumbrance,
         injuries,
@@ -157,8 +519,8 @@ export function removeHitChanceOverlays() {
  * Разместить MeasuredTemplate на сцене и вернуть список попавших токенов.
  * GM кликает куда поставить, игрок видит зону.
  */
-export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4444", attacker = null, skillKey = "unarmed", hitBonus = 0, skillValueFallback = null, injuries = null, friendlyFire = null }) {
-  if (!canvas?.scene) return null;
+export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4444", attacker = null, skillKey = "unarmed", attackMode = null, weapon = null, hitBonus = 0, skillValueFallback = null, injuries = null, friendlyFire = null }) {
+  if (!globalThis.canvas?.scene) return null;
 
   const config = normalizeAoeConfig({
     shape: aoeType,
@@ -215,7 +577,7 @@ export async function placeAoeTemplate({ aoeType, distance, label, color = "#ff4
         lastX = pos.x; lastY = pos.y;
         const inZone = getTokensInPreviewTemplate(template);
         if (attacker && inZone.length) {
-          showHitChanceOverlays(inZone, attacker, skillKey, hitBonus, { friendlyFire: config.friendlyFire, skillValueFallback, injuries });
+          showHitChanceOverlays(inZone, attacker, skillKey, hitBonus, { attackMode, weapon, friendlyFire: config.friendlyFire, skillValueFallback, injuries });
         } else {
           removeHitChanceOverlays();
         }
@@ -358,6 +720,8 @@ export async function applyAoeDamageTemplate({
   label = "AoE атака",
   color = "#ff4444",
   skillKey = "unarmed",
+  attackMode = null,
+  weapon = null,
   hitBonus = 0,
   skillValueFallback = null,
   injuries = null,
@@ -372,7 +736,14 @@ export async function applyAoeDamageTemplate({
   targetZone = null,
   targetZoneMode = null,
   effect = null,
+  onLethal = null,
   onTemplatePlaced = null,
+  dieRoller = null,
+  applyInjuries = null,
+  wearArmor = false,
+  shieldIntercept = null,
+  createChat = true,
+  rng = getSafeMathRandom,
   cleanupDelay = 3000,
 } = {}) {
   const config = normalizeAoeConfig({
@@ -394,25 +765,50 @@ export async function applyAoeDamageTemplate({
     chainDecay: 1,
     friendlyFire: false,
   });
+  const runtime = await resolveRuntimeAoeConfig({ config, effect, label });
+  if (!runtime.ok) {
+    return createAoeOutcome({
+      ok: false,
+      cancelled: true,
+      reason: "target-zone-cancelled",
+      results: attachAoeSummary([], createAoeSummary({ aoeType: config.type })),
+    });
+  }
+  const resolvedConfig = runtime.config;
 
   const templateResult = await placeAoeTemplate({
-    aoeType: config.shape,
-    distance: config.distance,
+    aoeType: resolvedConfig.shape,
+    distance: resolvedConfig.distance,
     label,
     color,
     attacker,
     skillKey,
+    attackMode,
+    weapon,
     hitBonus,
     skillValueFallback,
     injuries,
-    friendlyFire: config.friendlyFire,
+    friendlyFire: resolvedConfig.friendlyFire,
   });
 
   if (!templateResult) {
-    return { ok: false, cancelled: true, template: null, targets: [], results: [] };
+    return createAoeOutcome({
+      ok: false,
+      cancelled: true,
+      reason: "template-cancelled",
+      results: attachAoeSummary([], createAoeSummary({ aoeType: resolvedConfig.type })),
+    });
   }
 
   const { template, targets } = templateResult;
+  const applicationPolicy = resolveAoeApplicationPolicy({
+    damageType,
+    effect,
+    baseDamage,
+    applyInjuries,
+    wearArmor,
+    shieldIntercept,
+  });
 
   try {
     await onTemplatePlaced?.(templateResult);
@@ -421,21 +817,31 @@ export async function applyAoeDamageTemplate({
       targets,
       baseDamage,
       skillKey,
+      attackMode,
+      weapon,
       damageType,
       ignoreArmor,
       label,
-      aoeType: config.type,
-      maxTargets: config.maxTargets,
-      chainDecay: config.chainDecay,
+      aoeType: resolvedConfig.type,
+      maxTargets: resolvedConfig.maxTargets,
+      chainDecay: resolvedConfig.chainDecay,
       hitBonus,
       skillValueFallback,
       injuries,
-      targetZone,
+      targetZone: resolvedConfig.targetZone,
+      targetZoneMode: resolvedConfig.targetZoneMode,
       effect,
-      friendlyFire: config.friendlyFire,
-      aoeConfig: config,
+      onLethal,
+      dieRoller,
+      applyInjuries: applicationPolicy.applyInjuries,
+      wearArmor: applicationPolicy.wearArmor,
+      shieldIntercept: applicationPolicy.shieldIntercept,
+      createChat,
+      rng,
+      friendlyFire: resolvedConfig.friendlyFire,
+      aoeConfig: resolvedConfig,
     });
-    return { ok: true, cancelled: false, template, targets, results };
+    return createAoeOutcome({ template, targets, results });
   } finally {
     await removeAoeTemplate(template, cleanupDelay);
   }
@@ -444,7 +850,10 @@ export async function applyAoeDamageTemplate({
 /**
  * Отфильтровать цели по типу AoE
  */
-export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker, { excludeAttacker = true } = {}) {
+export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker, {
+  excludeAttacker = true,
+  rng = getSafeMathRandom,
+} = {}) {
   const config = normalizeAoeConfig({ type: aoeType, maxTargets }, { type: "blast" });
   // Убираем самого атакующего (для nova)
   let filtered = targets.filter(t => {
@@ -479,7 +888,10 @@ export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker, {
       break;
     case "shards":
       // Случайные N из зоны — тасуем
-      filtered = filtered.sort(() => Math.random() - 0.5);
+      filtered = filtered
+        .map((target, index) => ({ target, index, roll: Number(rng?.() ?? Math.random()) }))
+        .sort((a, b) => (a.roll - b.roll) || (a.index - b.index))
+        .map(entry => entry.target);
       break;
     case "chain":
       // Ближайшие N к атакующему по цепочке
@@ -514,31 +926,49 @@ export function filterTargetsByAoeType(targets, aoeType, maxTargets, attacker, {
 export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
     damageType = "physical", ignoreArmor = 0, label = "AoE атака",
     aoeType = "blast", maxTargets = null, chainDecay = 1.0,
-    hitBonus = 0, skillValueFallback = null, targetZone = null,
-    injuries = null, effect = null, friendlyFire = false, aoeConfig: aoeConfigInput = null }) {
+    attackMode = null, weapon = null,
+    hitBonus = 0, skillValueFallback = null, targetZone = null, targetZoneMode = null,
+    injuries = null, effect = null, onLethal = null, dieRoller = null,
+    applyInjuries = null, wearArmor = false, shieldIntercept = null,
+    createChat = true, rng = getSafeMathRandom,
+    friendlyFire = false, friendlyFireMode = null,
+    aoeConfig: aoeConfigInput = null }) {
 
   if (!targets?.length) {
-    ui.notifications.info("Никто не попал в зону атаки");
-    return [];
+    notifyAoeInfo("Никто не попал в зону атаки");
+    return attachAoeSummary([], createAoeSummary({ aoeType }));
   }
 
   const aoeConfig = aoeConfigInput ?? normalizeAoeConfig({
     type: aoeType,
     maxTargets,
     chainDecay,
+    friendlyFireMode: friendlyFireMode ?? friendlyFire,
     friendlyFire,
     damageType,
     effect,
     targetZone,
+    targetZoneMode,
   }, {
     type: "blast",
     chainDecay: 1,
+  });
+  const runtime = await resolveRuntimeAoeConfig({ config: aoeConfig, effect, label });
+  if (!runtime.ok) return attachAoeSummary([], createAoeSummary({ aoeType }));
+  const resolvedAoeConfig = runtime.config;
+  const applicationPolicy = resolveAoeApplicationPolicy({
+    damageType,
+    effect,
+    baseDamage,
+    applyInjuries,
+    wearArmor,
+    shieldIntercept,
   });
 
   // Фильтр «свои/чужие»
   const policyResult = filterAoeTargetsByPolicy(targets, {
     attacker,
-    friendlyFire: aoeConfig.friendlyFire,
+    friendlyFire: resolvedAoeConfig.friendlyFire,
     effect,
     purpose: "damage",
   });
@@ -546,40 +976,44 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
   const alliesSpared = policyResult.skipped;
 
   // Фильтруем по типу AoE (slice/sort/exclude самого атакующего для nova и др.)
-  const filtered = filterTargetsByAoeType(candidates, aoeConfig.type, aoeConfig.maxTargets, attacker);
+  const filtered = filterTargetsByAoeType(candidates, resolvedAoeConfig.type, resolvedAoeConfig.maxTargets, attacker, {
+    rng,
+  });
   if (!filtered.length) {
     if (alliesSpared > 0) {
-      ui.notifications.info(`Под зону попали только союзники (${alliesSpared}) — атака не применена.`);
+      notifyAoeInfo(`Под зону попали только союзники (${alliesSpared}) — атака не применена.`);
     } else {
-      ui.notifications.info("Цели не попали под атаку");
+      notifyAoeInfo("Цели не попали под атаку");
     }
-    return [];
+    return attachAoeSummary([], createAoeSummary({
+      totalTargets: targets.length,
+      candidates: candidates.length,
+      selectedTargets: 0,
+      alliesSpared: resolvedAoeConfig.friendlyFire ? 0 : alliesSpared,
+      friendlyFire: resolvedAoeConfig.friendlyFire,
+      friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+      targetPolicy: policyResult.policy,
+      targetZoneMode: runtime.zonePolicy?.mode,
+      targetZone: runtime.zonePolicy?.zone,
+      aoeType: resolvedAoeConfig.type,
+    }));
   }
 
   const results = [];
   let curDmg    = baseDamage;
 
-  const zonePolicy = buildAoeTargetZonePolicy({
-    targetZone: resolveAoeTargetZone(targetZone, aoeConfig.targetZone),
-    effect,
-    aoe: aoeConfig,
-    mode: aoeConfig.targetZoneMode,
-  });
+  const zonePolicy = runtime.zonePolicy;
 
   for (let index = 0; index < filtered.length; index++) {
     const targetRef = filtered[index];
     const target = getAoeTargetActor(targetRef);
     if (!target) continue;
     const targetToken = getAoeTargetToken(targetRef);
-    const resolvedTargetZone = resolveAoeTargetZoneForTarget(zonePolicy, targetRef, index);
+    const zoneDetails = resolveAoeTargetZoneDetails(zonePolicy, targetRef);
+    const resolvedTargetZone = zoneDetails.zone;
 
-    // Каждая цель — отдельный single-attack без интерактивного взрыва кубов.
-    // Для AoE отключаем побочные эффекты, которые усложнили бы баланс:
-    //   - applyInjuries: false  → без переломов/кровотечения/шока
-    //   - wearWeapon:    false  → AoE-источник (заклинание/осколок) не имеет прочности
-    //   - wearArmor:     false  → защита цели не изнашивается каждой каплей AoE
-    //   - spendEnergy:   false  → энергия списывается caster'ом до этого
-    //   - targetZone: null → каждая цель получает отдельную случайную зону
+    // Resolve each AoE target as a separate single-target attack. Energy and weapon
+    // wear stay outside this step; injuries, armor wear, shields and dice are caller policy.
     const result = await resolveSingleAttack({
       attacker,
       target,
@@ -587,7 +1021,8 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
       baseDamage:    Math.round(curDmg),
       damageType,
       energyCost:    0,
-      weapon:        null,
+      weapon,
+      attackMode,
       hitBonus,
       ignoreArmor,
       injuries,
@@ -597,9 +1032,11 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
       targetToken,
       spendEnergy:   false,
       wearWeapon:    false,
-      wearArmor:     false,
-      applyInjuries: false,
-      shieldIntercept: false,
+      wearArmor: applicationPolicy.wearArmor,
+      applyInjuries: applicationPolicy.applyInjuries,
+      shieldIntercept: applicationPolicy.shieldIntercept,
+      dieRoller: dieRoller ?? undefined,
+      onLethal,
     });
     if (!result) continue;
 
@@ -611,51 +1048,78 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
     });
 
     results.push({
+      index,
       actorId:   target.id,
       actorUuid: target.uuid,
+      tokenId:   targetToken?.id ?? targetToken?.document?.id ?? null,
       name:      target.name,
       ally:      attacker ? actorsAreAllies(attacker, target) : false,
+      targetPolicy: policyResult.policy,
+      friendlyFire: resolvedAoeConfig.friendlyFire,
+      friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+      aoeType:   resolvedAoeConfig.type,
       hit:       result.hit,
       roll:      result.effectiveRoll,
+      rollTotal: result.rollTotal,
+      dieSize:   result.dieSize,
       threshold: result.threshold,
       margin:    result.margin,
+      rawDamage: result.rawDamage,
+      finalDamage: result.finalDamage,
       zone:      result.locationLabel,
       zoneKey:   result.locationKey,
       zoneMode:  zonePolicy.mode,
+      zoneSource: zoneDetails.source,
       damage:    result.finalDamage,
       armor:     result.reduction,
+      hitContext: result.hitContext ?? null,
+      defenseContext: result.defenseContext ?? null,
+      metrics: {
+        distanceFromOrigin: getAoeMetric(targetRef, "distanceFromOrigin", null),
+        projectionFromOrigin: getAoeMetric(targetRef, "projectionFromOrigin", null),
+        sideFromOrigin: getAoeMetric(targetRef, "sideFromOrigin", null),
+      },
+      targetKilled: Boolean(result.targetKilled),
       condition:  hitEffects.condition,
+      conditionDetails: hitEffects.conditionDetails ?? [],
+      effectLines: hitEffects.lines ?? [],
     });
 
-    if (aoeConfig.type === "chain") curDmg *= (aoeConfig.chainDecay ?? 0.8);
+    if (resolvedAoeConfig.type === "chain") curDmg *= (resolvedAoeConfig.chainDecay ?? 0.8);
   }
 
-  const typeLabels = {
-    blast: "💥", pierce: "➡", sweep: "↔", shards: "💎", chain: "⛓", nova: "🌟",
-  };
-
-  const content = await renderTemplate(
-    "systems/iron-hills-system/templates/chat/aoe.hbs",
-    {
-      label,
-      icon:         typeLabels[aoeConfig.type] ?? "💥",
-      aoeType:      aoeConfig.type,
-      friendlyFire: aoeConfig.friendlyFire,
-      friendlyFireMode: aoeConfig.friendlyFireMode,
-      targetZoneMode: zonePolicy.mode,
-      targetZoneLabel: zonePolicy.zone ? getTargetPartLabel(zonePolicy.zone) : "случайная для каждой цели",
-      totalCount:   filtered.length,
-      hitCount:     results.filter(r => r.hit).length,
-      alliesHit:    results.filter(r => r.ally && r.hit).length,
-      alliesSpared: aoeConfig.friendlyFire ? 0 : alliesSpared,
-      results,
-    },
-  );
-
-  await ChatMessage.create({
-    speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,
-    content,
+  const summary = createAoeSummary({
+    results,
+    totalTargets: targets.length,
+    candidates: candidates.length,
+    selectedTargets: filtered.length,
+    alliesSpared: resolvedAoeConfig.friendlyFire ? 0 : alliesSpared,
+    friendlyFire: resolvedAoeConfig.friendlyFire,
+    friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+    targetPolicy: policyResult.policy,
+    targetZoneMode: zonePolicy.mode,
+    targetZone: zonePolicy.zone,
+    aoeType: resolvedAoeConfig.type,
   });
+  attachAoeSummary(results, summary);
+
+  if (createChat && globalThis.ChatMessage?.create && typeof globalThis.renderTemplate === "function") {
+    const content = await renderTemplate(AOE_CHAT_TEMPLATE, buildAoeChatData({
+      label,
+      results,
+      summary,
+      aoeConfig: resolvedAoeConfig,
+      zonePolicy,
+      damageType,
+      baseDamage,
+      isUtility: false,
+    }));
+
+    await ChatMessage.create({
+      speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,
+      content,
+    });
+  }
 
   return results;
 }
@@ -674,51 +1138,79 @@ export async function applyAoeUtilityEffect({
   maxTargets = null,
   chainDecay = 1.0,
   targetZone = null,
+  targetZoneMode = null,
   friendlyFire = false,
+  friendlyFireMode = null,
+  createChat = true,
+  rng = getSafeMathRandom,
 } = {}) {
   if (!targets?.length) {
-    ui.notifications.info("Никто не попал в зону эффекта");
-    return [];
+    notifyAoeInfo("Никто не попал в зону эффекта");
+    return attachAoeSummary([], createAoeSummary({ aoeType }));
   }
 
   const aoeConfig = normalizeAoeConfig({
     type: aoeType,
     maxTargets,
     chainDecay,
+    friendlyFireMode: friendlyFireMode ?? friendlyFire,
     friendlyFire,
     effect,
     damageType: wantsAlliedAoeTargets(effect) ? "healing" : "magical",
+    targetZone,
+    targetZoneMode,
   }, {
     type: "blast",
     chainDecay: 1,
   });
+  const runtime = await resolveRuntimeAoeConfig({ config: aoeConfig, effect, label });
+  if (!runtime.ok) return attachAoeSummary([], createAoeSummary({ aoeType }));
+  const resolvedAoeConfig = runtime.config;
+  const zonePolicy = runtime.zonePolicy;
   const wantsAllies = wantsAlliedAoeTargets(effect);
   const policyResult = filterAoeTargetsByPolicy(targets, {
     attacker,
-    friendlyFire: aoeConfig.friendlyFire,
+    friendlyFire: resolvedAoeConfig.friendlyFire,
     effect,
     purpose: "utility",
   });
   const candidates = policyResult.targets;
   const spared = policyResult.skipped;
 
-  const filtered = filterTargetsByAoeType(candidates, aoeConfig.type, aoeConfig.maxTargets, attacker, {
+  const filtered = filterTargetsByAoeType(candidates, resolvedAoeConfig.type, resolvedAoeConfig.maxTargets, attacker, {
     excludeAttacker: !wantsAllies,
+    rng,
   });
 
   if (!filtered.length) {
-    ui.notifications.info("Цели не попали под эффект");
-    return [];
+    notifyAoeInfo("Цели не попали под эффект");
+    return attachAoeSummary([], createAoeSummary({
+      totalTargets: targets.length,
+      candidates: candidates.length,
+      selectedTargets: 0,
+      alliesSpared: resolvedAoeConfig.friendlyFire ? 0 : spared,
+      friendlyFire: resolvedAoeConfig.friendlyFire,
+      friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+      targetPolicy: policyResult.policy,
+      targetZoneMode: zonePolicy?.mode,
+      targetZone: zonePolicy?.zone,
+      aoeType: resolvedAoeConfig.type,
+    }));
   }
 
-  const resolvedTargetZone = resolveAoeTargetZone(targetZone, effect?.targetZone, effect?.targetPart) ?? "torso";
   const baseAmount = getAoeUtilityAmount(effect, power);
   const results = [];
   let currentAmount = baseAmount;
 
-  for (const targetRef of filtered) {
+  for (let index = 0; index < filtered.length; index++) {
+    const targetRef = filtered[index];
     const target = getAoeTargetActor(targetRef);
     if (!target) continue;
+    const zoneDetails = resolveAoeTargetZoneDetails(zonePolicy, targetRef);
+    const resolvedTargetZone =
+      zoneDetails.zone
+      ?? resolveAoeTargetZone(targetZone, effect?.targetZone, effect?.targetPart)
+      ?? "torso";
 
     let line = "";
     let amount = Math.max(0, Math.round(currentAmount));
@@ -743,31 +1235,70 @@ export async function applyAoeUtilityEffect({
     }
 
     results.push({
+      index,
       actorId: target.id,
       actorUuid: target.uuid,
       name: target.name,
+      ally: attacker ? actorsAreAllies(attacker, target) : false,
+      targetPolicy: policyResult.policy,
+      friendlyFire: resolvedAoeConfig.friendlyFire,
+      friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+      aoeType: resolvedAoeConfig.type,
+      hit: true,
+      zone: getTargetPartLabel(resolvedTargetZone),
+      zoneKey: resolvedTargetZone,
+      zoneMode: zonePolicy?.mode ?? "random",
+      zoneSource: zoneDetails.source,
       amount,
       healed,
       condition,
       line,
     });
 
-    if (aoeConfig.type === "chain") currentAmount *= (aoeConfig.chainDecay ?? 1);
+    if (resolvedAoeConfig.type === "chain") currentAmount *= (resolvedAoeConfig.chainDecay ?? 1);
   }
 
-  const content = `
-    <div style="padding:6px;font-family:var(--font-primary)">
-      ✨ <b>${label}</b><br>
-      Целей: <b>${filtered.length}</b>${spared > 0 ? ` · пропущено: ${spared}` : ""}
-      <br>
-      ${results.map(r => `✓ ${r.name}: ${r.line}`).join("<br>")}
-    </div>
-  `;
-
-  await ChatMessage.create({
-    speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,
-    content,
+  const summary = createAoeSummary({
+    results,
+    totalTargets: targets.length,
+    candidates: candidates.length,
+    selectedTargets: filtered.length,
+    alliesSpared: resolvedAoeConfig.friendlyFire ? 0 : spared,
+    friendlyFire: resolvedAoeConfig.friendlyFire,
+    friendlyFireMode: resolvedAoeConfig.friendlyFireMode,
+    targetPolicy: policyResult.policy,
+    targetZoneMode: zonePolicy?.mode,
+    targetZone: zonePolicy?.zone,
+    aoeType: resolvedAoeConfig.type,
   });
+  attachAoeSummary(results, summary);
+
+  if (createChat && globalThis.ChatMessage?.create) {
+    const chatData = buildAoeChatData({
+      label,
+      icon: "✨",
+      results,
+      summary,
+      aoeConfig: resolvedAoeConfig,
+      zonePolicy,
+      damageType: wantsAlliedAoeTargets(effect) ? "healing" : "magical",
+      baseDamage: baseAmount,
+      isUtility: true,
+    });
+    const content = typeof globalThis.renderTemplate === "function"
+      ? await renderTemplate(AOE_CHAT_TEMPLATE, chatData)
+      : buildCombatChatCard({
+        title: label,
+        icon: "✨",
+        rows: chatData.results.map(r => [`${r.statusIcon} ${r.name}`, r.outcome]),
+        className: "ih-aoe-chat-card",
+      });
+
+    await ChatMessage.create({
+      speaker: attacker ? ChatMessage.getSpeaker({ actor: attacker }) : undefined,
+      content,
+    });
+  }
 
   return results;
 }

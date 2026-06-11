@@ -63,13 +63,13 @@
         <div class="ih-wm-route-transport muted-text">{{routeInfo.transportLabel}}</div>
       </div>
       {{#if canTravel}}
-      <a class="ih-btn ih-btn-primary" data-confirm-travel style="width:100%;justify-content:center;margin-top:8px;">
+      <a class="ih-btn ih-btn-primary ih-wm-sidebar-btn is-confirm" data-confirm-travel>
         ✓ Подтвердить
       </a>
       {{else if isGM}}
-      <div class="muted-text" style="font-size:11px;margin-top:4px;">Нажми на тайл чтобы проложить маршрут</div>
+      <div class="muted-text ih-wm-route-hint">Нажми на тайл чтобы проложить маршрут</div>
       {{else}}
-      <div class="muted-text" style="font-size:11px;margin-top:4px;">Ожидание подтверждения GM</div>
+      <div class="muted-text ih-wm-route-hint">Ожидание подтверждения GM</div>
       {{/if}}
       {{else}}
       <div class="ih-wm-blocked">⛔ Путь заблокирован для выбранного транспорта</div>
@@ -80,7 +80,7 @@
     {{!-- Войти в локацию --}}
     {{#if activeGroup}}
     <div class="ih-wm-section">
-      <a class="ih-btn" data-enter-location style="width:100%;justify-content:center;">
+      <a class="ih-btn ih-wm-sidebar-btn" data-enter-location>
         🚪 Войти в локацию
       </a>
     </div>
@@ -90,7 +90,7 @@
     <div class="ih-wm-section ih-wm-legend">
       <div class="ih-wm-section-title">Рельеф</div>
       {{!-- Легенда генерируется из tiles на клиенте --}}
-      <div class="ih-wm-legend-hint muted-text" style="font-size:10px;">
+      <div class="ih-wm-legend-hint muted-text">
         Клик — выбрать цель<br>
         Ещё клик — сбросить
       </div>
@@ -100,9 +100,10 @@
 
   {{!-- ── Карта ── --}}
   <div class="ih-wm-map-wrap">
-    <div class="ih-wm-tooltip" style="display:none;"></div>
+    <div class="ih-wm-tooltip"></div>
     <div class="ih-wm-map"
-         style="width:{{mapW}}px; height:{{mapH}}px;">
+         data-ih-style-width-px="{{mapW}}"
+         data-ih-style-height-px="{{mapH}}">
 
       {{#each region.tiles}}
       <div class="ih-wm-tile
@@ -112,9 +113,11 @@
                   {{#if isPoi}}is-poi{{/if}}"
            data-col="{{col}}" data-row="{{row}}"
            title="{{#if label}}{{label}} — {{/if}}{{terrainLabel}}"
-           style="left:{{x}}px; top:{{y}}px;
-                  width:{{size}}px; height:{{size}}px;
-                  background:{{terrainColor}};">
+           data-ih-style-left-px="{{x}}"
+           data-ih-style-top-px="{{y}}"
+           data-ih-style-width-px="{{size}}"
+           data-ih-style-height-px="{{size}}"
+           data-ih-style-background="{{terrainColor}}">
 
         {{!-- Иконка рельефа --}}
         <span class="ih-wm-tile-icon">{{terrainIcon}}</span>

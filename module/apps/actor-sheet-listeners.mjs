@@ -30,7 +30,7 @@ import {
   unequipArmorForActorSheet,
   unequipHandForActorSheet,
   updateActiveEffectsTickForActorSheet,
-  useItemByTypeForActorSheet,
+  useInventoryActionForActorSheet,
   useQuickSlotForActorSheet,
 } from "../services/actor-sheet-orchestration-service.mjs";
 
@@ -86,33 +86,15 @@ function bindEquipmentControls(sheet, html, options) {
     assignQuickSlotForActorSheet(sheet, event.currentTarget.dataset.itemId, event.currentTarget.dataset.slotKey)
   );
   bindClick(html, "[data-clear-quickslot]", event => clearQuickSlotForActorSheet(sheet, event.currentTarget.dataset.slotKey));
-  bindClick(html, "[data-use-quickslot]", event => useQuickSlotForActorSheet(sheet, event.currentTarget.dataset.slotKey, {}, options));
+  bindClick(html, "[data-use-quickslot]", event => useQuickSlotForActorSheet(sheet, event.currentTarget.dataset.slotKey, {
+    targets: globalThis.game?.user?.targets ?? [],
+  }, options));
   bindClick(html, "[data-delete-item]", event => deleteOwnedItemForActorSheet(sheet, event.currentTarget.dataset.itemId, options));
 }
 
 function bindItemUseControls(sheet, html, options) {
-  bindClick(html, "[data-consume-food]", event => useItemByTypeForActorSheet(sheet, event.currentTarget.dataset.itemId, {
-    allowedTypes: ["food"],
-    missingMessage: "РџСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµ СЏРІР»СЏРµС‚СЃСЏ РµРґРѕР№",
-    unsupportedMessage: "РџСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµ СЏРІР»СЏРµС‚СЃСЏ РµРґРѕР№",
-  }, options));
-
-  bindClick(html, "[data-use-potion]", event => useItemByTypeForActorSheet(sheet, event.currentTarget.dataset.itemId, {
-    allowedTypes: ["potion"],
-    missingMessage: "Р—РµР»СЊРµ РЅРµ РЅР°Р№РґРµРЅРѕ",
-    unsupportedMessage: "Р—РµР»СЊРµ РЅРµ РЅР°Р№РґРµРЅРѕ",
-  }, options));
-
-  bindClick(html, "[data-use-consumable]", event => useItemByTypeForActorSheet(sheet, event.currentTarget.dataset.itemId, {
-    allowedTypes: ["consumable"],
-    missingMessage: "Р Р°СЃС…РѕРґРЅРёРє РЅРµ РЅР°Р№РґРµРЅ",
-    unsupportedMessage: "Р Р°СЃС…РѕРґРЅРёРє РЅРµ РЅР°Р№РґРµРЅ",
-  }, options));
-
-  bindClick(html, "[data-use-throwable]", event => useItemByTypeForActorSheet(sheet, event.currentTarget.dataset.itemId, {
-    allowedTypes: ["throwable"],
-    missingMessage: "РњРµС‚Р°С‚РµР»СЊРЅС‹Р№ РїСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ",
-    unsupportedMessage: "РњРµС‚Р°С‚РµР»СЊРЅС‹Р№ РїСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ",
+  bindClick(html, "[data-item-action]", event => useInventoryActionForActorSheet(sheet, event.currentTarget.dataset.itemAction, event.currentTarget.dataset.itemId, {
+    targets: globalThis.game?.user?.targets ?? [],
   }, options));
 }
 

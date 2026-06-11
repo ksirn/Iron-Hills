@@ -1,3 +1,9 @@
+import {
+  formatItemActionSummary,
+  formatSpellSchoolRank,
+} from "../utils/item-utils.mjs";
+import { buildSystemDialogContent } from "../services/combat-chat-service.mjs";
+
 /**
  * Iron Hills — Compendium Browser
  * Кастомный браузер компендиумов с фильтрами по тиру и типу.
@@ -121,9 +127,18 @@ class IronHillsCompendiumBrowser extends Application {
       details.push(`🛡 Физ: ${s.protection?.physical ?? 0}`);
       if (s.protection?.magical) details.push(`✦ Маг: ${s.protection.magical}`);
       details.push(`📍 Слот: ${s.slot ?? "—"}`);
-    } else if (doc.type === "potion") {
-      details.push(`💊 Эффект: ${s.effect ?? "—"}`);
-      details.push(`💪 Сила: ${s.power ?? "—"}`);
+    } else if (doc.type === "potion" || doc.type === "consumable") {
+      const actionSummary = formatItemActionSummary(s, { includeIcon: false });
+      details.push(`💊 ${actionSummary || "Эффект: —"}`);
+    } else if (doc.type === "throwable") {
+      const actionSummary = formatItemActionSummary(s, { includeIcon: false });
+      details.push(`🪓 ${actionSummary || `Урон: ${s.power ?? "—"}`}`);
+      if (s.energyCost) details.push(`⚡ Энергия: ${s.energyCost}`);
+    } else if (doc.type === "spell" || doc.type === "scroll") {
+      if (s.school) details.push(formatSpellSchoolRank(s, { includeIcon: true }));
+      const actionSummary = formatItemActionSummary(s, { includeIcon: false });
+      if (actionSummary) details.push(`✦ ${actionSummary}`);
+      if (s.manaCost) details.push(`✦ Мана: ${s.manaCost}`);
     } else if (doc.type === "food") {
       details.push(`🍖 Сытость: +${s.satiety ?? 0}`);
       details.push(`💧 Жажда: +${s.hydration ?? 0}`);
@@ -271,7 +286,19 @@ class IronHillsCompendiumBrowser extends Application {
       if (!doc) return;
       const ok = await Dialog.confirm({
         title:   "Удалить из компендиума",
-        content: `<p>Удалить <b>${doc.name}</b>? Отменить нельзя.</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-compendium-confirm-dialog",
+          headline: doc.name,
+          headlineMeta: "компендиум",
+          status: "Удалить запись?",
+          statusClass: "is-danger",
+          rows: [
+            ["Действие", "удаление"],
+          ],
+          notes: [
+            ["Важно", "отменить нельзя"],
+          ],
+        }),
         defaultYes: false,
       });
       if (!ok) return;
@@ -373,7 +400,13 @@ class IronHillsCompendiumBrowser extends Application {
       if (!doc) return;
       const confirmed = await Dialog.confirm({
         title: "Удалить запись?",
-        content:`<p>Удалить <b>${doc.name}</b> из компендиума?</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-compendium-confirm-dialog",
+          headline: doc.name,
+          headlineMeta: "компендиум",
+          status: "Удалить запись?",
+          statusClass: "is-danger",
+        }),
       });
       if (!confirmed) return;
       await doc.delete();

@@ -8,6 +8,7 @@ import {
   getAvailableTechniques,
   CONDITION_LABELS,
 } from "../constants/combat-techniques.mjs";
+import { formatAoeConfigSummary } from "../services/combat-presentation-service.mjs";
 import { getTechniqueAoeConfig } from "../services/combat-technique-service.mjs";
 
 // Зоны тела для прицельного удара
@@ -38,7 +39,16 @@ function techniqueViewModel(technique) {
   const aoe = getTechniqueAoeConfig(technique.effect);
   return {
     ...technique,
-    aoeMeta: `${aoe.type}/${aoe.shape} ${aoe.distance} | FF ${aoe.friendlyFireMode} | Zone ${aoe.targetZoneMode}`,
+    aoeMeta: formatAoeConfigSummary(aoe, { compact: true }),
+  };
+}
+
+function targetViewModel(target) {
+  if (!target) return null;
+  return {
+    id: target.id ?? target.uuid ?? target.name,
+    name: target.name ?? "Цель",
+    img: target.img ?? "icons/svg/mystery-man.svg",
   };
 }
 
@@ -111,6 +121,7 @@ class IronHillsCombatTechniqueApp extends Application {
       skill, skillVal,
       dieSize: Math.min(20, skillVal * 2),
     };
+    const targetRows = (this._targets ?? []).map(targetViewModel).filter(Boolean);
 
     return {
       actorName:   actor?.name ?? "?",
@@ -126,7 +137,13 @@ class IronHillsCombatTechniqueApp extends Application {
       canAim,
       aimZones:    AIM_ZONES,
       aimReq:      AIM_REQ,
-      targets:     this._targets.map(t => ({ id: t.id, name: t.name, img: t.img })),
+      targets:     targetRows,
+      targetRows,
+      hasTargets:  targetRows.length > 0,
+      targetCount: targetRows.length,
+      targetSummary: targetRows.length
+        ? targetRows.map(row => row.name).slice(0, 3).join(", ")
+        : "Цель не выбрана",
       conditionLabels: CONDITION_LABELS,
     };
   }

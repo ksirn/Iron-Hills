@@ -7,7 +7,7 @@
 
   <div class="ih-pi-header">
     <span>📥 Получено предметов: <b>{{count}}</b></span>
-    <span class="muted-text" style="font-size:10px">
+    <span class="muted-text ih-pi-note">
       Перетащи в инвентарь · ПКМ = выбросить
     </span>
   </div>
@@ -16,13 +16,17 @@
   <div class="ih-pi-grid-wrap">
     <div class="ih-pi-grid ih-gi-canvas"
          data-sec-key="pending"
-         style="width:{{gridW}}px; height:{{gridH}}px; position:relative;">
+         data-ih-style-width-px="{{gridW}}"
+         data-ih-style-height-px="{{gridH}}">
 
       {{!-- Ячейки --}}
       {{#each cells}}
       <div class="ih-gi-cell"
            data-col="{{col}}" data-row="{{row}}"
-           style="left:{{x}}px; top:{{y}}px; width:{{size}}px; height:{{size}}px;">
+           data-ih-style-left-px="{{x}}"
+           data-ih-style-top-px="{{y}}"
+           data-ih-style-width-px="{{size}}"
+           data-ih-style-height-px="{{size}}">
       </div>
       {{/each}}
 
@@ -33,8 +37,10 @@
            data-item-id="{{itemId}}"
            data-sec-key="pending"
            title="{{name}} ({{w}}×{{h}}) · ПКМ выбросить"
-           style="left:{{cssLeft}}px; top:{{cssTop}}px;
-                  width:{{cssW}}px; height:{{cssH}}px;">
+           data-ih-style-left-px="{{cssLeft}}"
+           data-ih-style-top-px="{{cssTop}}"
+           data-ih-style-width-px="{{cssW}}"
+           data-ih-style-height-px="{{cssH}}">
         <img class="ih-gi-item-img" src="{{img}}" alt="{{name}}">
         <span class="ih-gi-item-name">{{name}}</span>
         {{#if qty}}<span class="ih-gi-item-qty">×{{qty}}</span>{{/if}}
@@ -47,7 +53,7 @@
   <div class="ih-pi-footer">
     <a class="ih-btn ih-btn-primary" data-auto-place-all>✨ Разместить автоматически</a>
     <a class="ih-btn" data-open-inventory>🎒 Открыть инвентарь</a>
-    <span class="muted-text" style="font-size:10px">
+    <span class="muted-text ih-pi-note">
       ⚠ Нельзя закрыть пока не распределено
     </span>
   </div>

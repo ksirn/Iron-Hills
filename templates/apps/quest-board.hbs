@@ -42,7 +42,7 @@
     {{#each quests}}
     <div class="ih-qb-quest status-{{status}}">
 
-      <div class="ih-qb-quest-icon" style="color:{{statusColor}}">{{statusIcon}}</div>
+      <div class="ih-qb-quest-icon" data-ih-style-color="{{statusColor}}">{{statusIcon}}</div>
 
       <div class="ih-qb-quest-body">
         <div class="ih-qb-quest-header">
@@ -68,8 +68,8 @@
         {{#if hasGroups}}
         <div class="ih-qb-groups">
           {{#each assignedGroups}}
-          <span class="ih-qb-group-tag" style="border-color:{{color}}">
-            <span style="color:{{color}}">●</span> {{label}}
+          <span class="ih-qb-group-tag" data-ih-style-border-color="{{color}}">
+            <span class="ih-qb-group-dot" data-ih-style-color="{{color}}">●</span> {{label}}
             {{#if ../isGM}}
             <a class="ih-icon-btn tiny" data-unassign-group
                data-quest-id="{{../id}}" data-group-id="{{id}}">✕</a>
@@ -99,7 +99,7 @@
     {{/each}}
     {{else}}
     <div class="ih-qb-empty">
-      <div style="font-size:36px;opacity:0.2">📋</div>
+      <div class="ih-qb-empty-icon">📋</div>
       {{#if isGM}}
       <div>Нет заданий</div>
       <div class="muted-text">Создай вручную или через World Journal → 📋 Квест</div>

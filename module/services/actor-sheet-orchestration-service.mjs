@@ -1,5 +1,9 @@
 import { getPersistentActor } from "../utils/actor-utils.mjs";
 import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+} from "./combat-chat-service.mjs";
+import {
   executeActorPendingCombatAction,
   useActorItemByType,
   useActorQuickSlot,
@@ -54,8 +58,9 @@ import {
   performUniversalSkillRoll,
   rollExplodingDice,
 } from "./skill-roll-service.mjs";
-import { resolveCombatActionTargets } from "./combat-action-target-service.mjs";
+import { resolveCombatActionTargetContext } from "./combat-action-target-service.mjs";
 import { buildActorBaseAttackParams } from "./combat-attack-profile-service.mjs";
+import { getInventoryItemActionConfig } from "../utils/actor-inventory-action-config.mjs";
 
 function renderSheet(sheet, force = false) {
   sheet?.render?.(force);
@@ -173,6 +178,8 @@ export async function useItemByTypeForActorSheet(sheet, itemOrId, {
   skipTimeCost = false,
   allowWeapon = false,
   allowedTypes = null,
+  targets = null,
+  actionOptions = {},
   missingMessage = "РџСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ",
   unsupportedMessage = "Р­С‚РѕС‚ С‚РёРї РїСЂРµРґРјРµС‚Р° РїРѕРєР° РЅРµР»СЊР·СЏ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ",
 } = {}, options = {}) {
@@ -182,8 +189,53 @@ export async function useItemByTypeForActorSheet(sheet, itemOrId, {
     allowedTypes,
     missingMessage,
     unsupportedMessage,
+    actionOptions: {
+      ...(targets ? { targets } : {}),
+      ...actionOptions,
+    },
     handlers: getItemUseHandlersForActorSheet(sheet, options),
   });
+}
+
+export async function useInventoryActionForActorSheet(sheet, actionKey, itemOrId, {
+  skipTimeCost = false,
+  targets = null,
+  actionOptions = {},
+} = {}, options = {}) {
+  const config = getInventoryItemActionConfig(actionKey);
+  if (!config) {
+    globalThis.ui?.notifications?.warn?.("Действие предмета не настроено.");
+    return false;
+  }
+
+  const actor = getActorForSheet(sheet);
+  const item = typeof itemOrId === "string"
+    ? actor?.items?.get(itemOrId)
+    : itemOrId;
+
+  if (!item || !config.itemTypes.includes(item.type)) {
+    globalThis.ui?.notifications?.warn?.(config.missingMessage);
+    return false;
+  }
+
+  if (config.spellLike) {
+    return castSpellLikeForActorSheet(sheet, {
+      item,
+      isScroll: config.isScroll,
+      skipTimeCost,
+      targets,
+      spellOverrides: actionOptions.spellOverrides ?? null,
+    }, options);
+  }
+
+  return useItemByTypeForActorSheet(sheet, item, {
+    skipTimeCost,
+    allowedTypes: config.itemTypes,
+    targets,
+    actionOptions,
+    missingMessage: config.missingMessage,
+    unsupportedMessage: config.missingMessage,
+  }, options);
 }
 
 export async function executePendingCombatActionForActorSheet(sheet, pendingAction, options = {}) {
@@ -289,30 +341,34 @@ export async function useFoodForActorSheet(sheet, itemId, {
 
 export async function usePotionForActorSheet(sheet, itemId, {
   skipTimeCost = false,
+  targets = null,
 } = {}, options = {}) {
   const actor = getActorForSheet(sheet);
 
   return useActorSheetPotion(actor, itemId, {
     skipTimeCost,
+    targets,
     resolveCombatTimeCost: (args) => resolveCombatTimeCostForActorSheet(sheet, args),
-    applyActionTypeItem: (sourceActor, item) => applyActionTypeItemForActorSheet(sourceActor, item),
+    applyActionTypeItem: (sourceActor, item, actionOptions) => applyActionTypeItemForActorSheet(sourceActor, item, actionOptions),
     afterRefresh: () => refreshItemUseUisForActorSheet(sheet, actor, options),
   });
 }
 
-export async function applyActionTypeItemForActorSheet(sourceActor, item) {
-  return applyActorSheetActionTypeItem(sourceActor, item);
+export async function applyActionTypeItemForActorSheet(sourceActor, item, actionOptions = {}) {
+  return applyActorSheetActionTypeItem(sourceActor, item, actionOptions);
 }
 
 export async function useConsumableForActorSheet(sheet, itemId, {
   skipTimeCost = false,
+  targets = null,
 } = {}, options = {}) {
   const actor = getActorForSheet(sheet);
 
   return useActorSheetConsumable(actor, itemId, {
     skipTimeCost,
+    targets,
     resolveCombatTimeCost: (args) => resolveCombatTimeCostForActorSheet(sheet, args),
-    applyActionTypeItem: (sourceActor, item) => applyActionTypeItemForActorSheet(sourceActor, item),
+    applyActionTypeItem: (sourceActor, item, actionOptions) => applyActionTypeItemForActorSheet(sourceActor, item, actionOptions),
     afterRefresh: () => refreshItemUseUisForActorSheet(sheet, actor, options),
   });
 }
@@ -322,6 +378,7 @@ export async function castSpellLikeForActorSheet(sheet, {
   isScroll = false,
   skipTimeCost = false,
   targets = null,
+  spellOverrides = null,
 } = {}, options = {}) {
   const actor = getActorForSheet(sheet);
 
@@ -336,12 +393,16 @@ export async function castSpellLikeForActorSheet(sheet, {
     applySkillExp: (skillKey, label) => applySkillExpForActorSheet(sheet, skillKey, label),
     onLethal: (target) => markActorDeadForActorSheet(target),
     afterCast: () => refreshItemUseUisForActorSheet(sheet, actor, options),
+    spellOverrides,
   });
 }
 
 export async function useThrowableForActorSheet(sheet, itemId, {
   skipTimeCost = false,
   targets = null,
+  targetZone = null,
+  targetPart = null,
+  targetZoneMode = null,
 } = {}, options = {}) {
   const actor = getActorForSheet(sheet);
 
@@ -350,6 +411,9 @@ export async function useThrowableForActorSheet(sheet, itemId, {
     itemId,
     skipTimeCost,
     targets,
+    targetZone,
+    targetPart,
+    targetZoneMode,
     resolveCombatTimeCost: (args) => resolveCombatTimeCostForActorSheet(sheet, args),
     requestHostileAction: (label) => requestGmHostileActionForActorSheet(sheet, label),
     applySkillExp: (skillKey, label) => applySkillExpForActorSheet(sheet, skillKey, label),
@@ -366,9 +430,13 @@ export async function updateActiveEffectsTickForActorSheet(sheet) {
 
 export async function useQuickSlotForActorSheet(sheet, slotKey, {
   skipTimeCost = false,
+  targets = null,
+  actionOptions = {},
 } = {}, options = {}) {
   return useActorQuickSlot(getActorForSheet(sheet), slotKey, {
     skipTimeCost,
+    targets,
+    actionOptions,
     handlers: getItemUseHandlersForActorSheet(sheet, options),
   });
 }
@@ -447,8 +515,10 @@ export async function performAttackForActorSheet(sheet, {
   weapon = null,
   skipTimeCost = false,
   hitBonus = 0,
+  attackMode = null,
   ignoreArmor = 0,
   targetZone = null,
+  targetZoneMode = null,
   aimed = false,
   technique = null,
   applyCondition = null,
@@ -474,8 +544,10 @@ export async function performAttackForActorSheet(sheet, {
     skipTimeCost,
     targets,
     hitBonus,
+    attackMode,
     ignoreArmor,
     targetZone,
+    targetZoneMode,
     aimed,
     technique,
     applyCondition,
@@ -564,7 +636,13 @@ export async function addDiseaseForActorSheet(sheet, actor = getActorForSheet(sh
 
   const chosen = await Dialog.wait({
     title: "Р—Р°СЂР°Р·РёС‚СЊ Р±РѕР»РµР·РЅСЊСЋ",
-    content: `<p style="color:#a8b8d0">Р’С‹Р±РµСЂРё Р±РѕР»РµР·РЅСЊ РґР»СЏ <b>${actor.name}</b>:</p>`,
+    content: buildSystemDialogContent({
+      className: "ih-disease-dialog",
+      headline: actor.name,
+      headlineMeta: "Р±РѕР»РµР·РЅСЊ",
+      status: "Р’С‹Р±РµСЂРёС‚Рµ Р±РѕР»РµР·РЅСЊ",
+      statusClass: "is-warn",
+    }),
     buttons,
     default: Object.keys(buttons)[0],
   });
@@ -577,7 +655,17 @@ export async function addDiseaseForActorSheet(sheet, actor = getActorForSheet(sh
 
   const definition = DISEASES[chosen];
   await ChatMessage.create({
-    content: `${definition.icon} <b>${actor.name}</b> Р·Р°СЂР°Р¶С‘РЅ: <b>${definition.label}</b> (РёРЅРєСѓР±Р°С†РёСЏ)`,
+    content: buildCombatChatCard({
+      title: "Р—Р°СЂР°Р¶РµРЅРёРµ",
+      subtitle: actor.name,
+      icon: definition.icon,
+      status: "РёРЅРєСѓР±Р°С†РёСЏ",
+      statusClass: "is-warn",
+      rows: [
+        ["Р‘РѕР»РµР·РЅСЊ", definition.label],
+      ],
+      className: "ih-disease-chat-card",
+    }),
   });
 
   renderSheet(sheet, false);
@@ -587,13 +675,17 @@ export async function addDiseaseForActorSheet(sheet, actor = getActorForSheet(sh
 export async function executePendingPayloadForActorSheet(sheet, payload = {}, options = {}) {
   const actor = getActorForSheet(sheet);
   const actionType = payload.actionType;
-  const targets = resolveCombatActionTargets({
-    targets: payload.targets,
-    targetRefs: payload.targetRefs,
-  });
+  const targetContext = resolveCombatActionTargetContext({ payload });
+  const targets = targetContext.targets;
 
   if (actionType === "attack") {
-    await performAttackForActorSheet(sheet, { ...payload, targets }, options);
+    await performAttackForActorSheet(sheet, {
+      ...payload,
+      targets,
+      targetZone: targetContext.targetZone ?? payload.targetZone ?? null,
+      targetZoneMode: targetContext.targetZoneMode ?? payload.targetZoneMode ?? null,
+      aimed: targetContext.aimed || Boolean(payload.aimed),
+    }, options);
     return { ok: true, handled: true, actionType };
   }
 
@@ -604,18 +696,24 @@ export async function executePendingPayloadForActorSheet(sheet, payload = {}, op
         item,
         isScroll: actionType === "scroll",
         targets,
+        spellOverrides: targetContext.spellOverrides ?? payload.spellOverrides ?? null,
       }, options);
     }
     return { ok: true, handled: Boolean(item), actionType };
   }
 
   if (actionType === "throwable") {
-    await useThrowableForActorSheet(sheet, payload.itemId, { targets }, options);
+    await useThrowableForActorSheet(sheet, payload.itemId, {
+      targets,
+      targetZone: targetContext.targetZone ?? payload.targetZone ?? null,
+      targetPart: targetContext.targetPart ?? payload.targetPart ?? null,
+      targetZoneMode: targetContext.targetZoneMode ?? payload.targetZoneMode ?? null,
+    }, options);
     return { ok: true, handled: true, actionType };
   }
 
   if (actionType === "potion") {
-    await usePotionForActorSheet(sheet, payload.itemId, {}, options);
+    await usePotionForActorSheet(sheet, payload.itemId, { targets }, options);
     return { ok: true, handled: true, actionType };
   }
 
@@ -625,7 +723,7 @@ export async function executePendingPayloadForActorSheet(sheet, payload = {}, op
   }
 
   if (actionType === "consumable") {
-    await useConsumableForActorSheet(sheet, payload.itemId, {}, options);
+    await useConsumableForActorSheet(sheet, payload.itemId, { targets }, options);
     return { ok: true, handled: true, actionType };
   }
 

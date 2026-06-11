@@ -14,12 +14,14 @@
 import { debugLog } from "./utils/debug-utils.mjs";
 import { STARTER_RECIPE_IDS } from "./constants/craft-knowledge.mjs";
 import { MONSTER_BESTIARY } from "./constants/monster-bestiary.mjs";
+import { SPELL_SCHOOL_KEYS, normalizeSpellSchoolKey } from "./constants/spells-catalog.mjs";
 import { getMonsterHarvestDropLines } from "./constants/monster-loot-pools.mjs";
 import { syncNpcPackLootFromProfiles } from "./compendium-builder.mjs";
 import {
   buildMonsterHarvestEmbeddedItemData,
   monsterActorHasHarvestLootItems,
 } from "./utils/monster-harvest-items.mjs";
+import { normalizeItemActionSystem } from "./utils/item-runtime-normalization.mjs";
 
 const SETTING_KEY = "schemaState";
 const SETTING_NS  = "iron-hills-system";
@@ -187,34 +189,40 @@ async function migrateUnifiedTargetingForItem(item) {
 
   const system = item.system ?? {};
   const updates = {};
+  const normalizedSystem = { ...system };
+  const legacyMedicalAction = String(system.medicalAction ?? "").trim();
+  if (legacyMedicalAction && !String(normalizedSystem.effectType ?? normalizedSystem.effect ?? "").trim()) {
+    normalizedSystem.effectType = legacyMedicalAction;
+  }
+  if (legacyMedicalAction && !String(normalizedSystem.actionType ?? "").trim()) {
+    normalizedSystem.actionType = legacyMedicalAction;
+  }
+  normalizeItemActionSystem(normalizedSystem, {
+    type: item.type,
+    targetPart: item.type === "consumable" ? "" : "torso",
+  });
 
   if (system.actionType === undefined) {
-    updates["system.actionType"] = "";
+    updates["system.actionType"] = normalizedSystem.actionType ?? "";
   }
   if (system.applicationScope === undefined ||
       system.applicationScope === null ||
       system.applicationScope === "") {
-    updates["system.applicationScope"] = item.type === "potion" ? "global" : "targeted";
+    updates["system.applicationScope"] = normalizedSystem.applicationScope ?? (item.type === "potion" ? "global" : "targeted");
   }
   if (system.targetPart === undefined || system.targetPart === null) {
-    updates["system.targetPart"] = "";
+    updates["system.targetPart"] = normalizedSystem.targetPart ?? "";
   }
 
-  const currentActionType = String(system.actionType ?? "").trim();
-  const legacyMedicalAction = String(system.medicalAction ?? "").trim();
-  const legacyEffectType = String(system.effectType ?? "").trim();
+  for (const key of ["effect", "effectType", "actionType", "applicationScope", "targetActorMode", "targetPart"]) {
+    if (normalizedSystem[key] !== undefined && normalizedSystem[key] !== system[key]) {
+      updates[`system.${key}`] = normalizedSystem[key];
+    }
+  }
 
-  if (!currentActionType) {
-    if (legacyMedicalAction) {
-      updates["system.actionType"] = legacyMedicalAction;
-    } else if (legacyEffectType) {
-      if (legacyEffectType === "reduceBleeding") updates["system.actionType"] = "bandage";
-      else if (legacyEffectType === "restoreEnergy") updates["system.actionType"] = "restore-energy";
-      else if (legacyEffectType === "restoreMana") updates["system.actionType"] = "restore-mana";
-      else if (legacyEffectType === "healHP") updates["system.actionType"] = "heal-body";
-      else if (legacyEffectType === "heal") {
-        updates["system.actionType"] = system.targetPart ? "heal-part" : "heal-body";
-      }
+  for (const key of ["conditionKey", "conditionMode", "conditionValueKind", "duration"]) {
+    if (normalizedSystem[key] !== undefined && normalizedSystem[key] !== system[key]) {
+      updates[`system.${key}`] = normalizedSystem[key];
     }
   }
 
@@ -369,6 +377,94 @@ async function migrateSkillTaxonomy() {
       console.error("Iron Hills | migration:skill-taxonomy world item", item?.name, err);
     }
   }
+}
+
+// Canonical magic schools are the spell catalog keys. Legacy keys stay readable,
+// but actors get canonical skill nodes so future exp goes to the visible skills.
+const CANONICAL_MAGIC_SKILL_ALIASES = Object.freeze({
+  ice: ["water"],
+  lightning: ["air"],
+  light: ["life", "holy"],
+  shadow: ["life", "mind"],
+  summon: ["life", "mind"],
+});
+
+function mergeSkillNodes(nodes) {
+  const validNodes = nodes.filter(Boolean);
+  const merged = {
+    value: 1,
+    exp: 0,
+    expNext: 25,
+  };
+
+  for (const node of validNodes) {
+    merged.value = Math.max(merged.value, Number(node.value ?? 1));
+    merged.exp = Math.max(merged.exp, Number(node.exp ?? 0));
+    merged.expNext = Math.max(merged.expNext, Number(node.expNext ?? 25));
+  }
+
+  return merged;
+}
+
+function skillNodeChanged(current, next) {
+  if (!current) return true;
+  return Number(current.value ?? 1) !== Number(next.value ?? 1)
+    || Number(current.exp ?? 0) !== Number(next.exp ?? 0)
+    || Number(current.expNext ?? 25) !== Number(next.expNext ?? 25);
+}
+
+async function migrateSpellItemSchoolsInCollection(items, context = {}) {
+  for (const item of items ?? []) {
+    try {
+      if (item.type !== "spell" && item.type !== "scroll") continue;
+      const current = String(item.system?.school ?? "").trim();
+      const normalized = normalizeSpellSchoolKey(current, { fallback: current });
+      if (!normalized || normalized === current) continue;
+      await item.update({ "system.school": normalized });
+      debugLog("migrations:canonical-magic-school/item", {
+        ...context,
+        item: item.name,
+        from: current,
+        to: normalized,
+      });
+    } catch (err) {
+      console.error("Iron Hills | migration:canonical-magic-school item", context?.actor, item?.name, err);
+    }
+  }
+}
+
+async function migrateCanonicalMagicSkills2026() {
+  for (const actor of game.actors ?? []) {
+    try {
+      const skills = actor.system?.skills;
+      if (skills) {
+        const updates = {};
+
+        for (const key of SPELL_SCHOOL_KEYS) {
+          const aliases = CANONICAL_MAGIC_SKILL_ALIASES[key] ?? [];
+          const merged = mergeSkillNodes([
+            skills[key],
+            ...aliases.map(alias => skills[alias]),
+          ]);
+
+          if (skillNodeChanged(skills[key], merged)) {
+            updates[`system.skills.${key}`] = merged;
+          }
+        }
+
+        if (Object.keys(updates).length) {
+          await actor.update(updates);
+          debugLog("migrations:canonical-magic-school/actor-skills", { actor: actor.name });
+        }
+      }
+
+      await migrateSpellItemSchoolsInCollection(actor.items, { actor: actor.name });
+    } catch (err) {
+      console.error("Iron Hills | migration:canonical-magic-school actor", actor?.name, err);
+    }
+  }
+
+  await migrateSpellItemSchoolsInCollection(game.items, { actor: null });
 }
 
 /** Старый шаблон HP (10/30/25/20×4) → распределение как в бою (35/85/70/60×2/65×2). */
@@ -549,6 +645,7 @@ const MIGRATIONS = [
   { id: "2026-01-unified-targeting",      run: migrateUnifiedTargeting,       label: "unified targeting" },
   { id: "2026-01-soul-reserve-max-sync",  run: migrateSoulReserveMaxSync,     label: "soulReserve max sync" },
   { id: "2026-04-skill-taxonomy",         run: migrateSkillTaxonomy,          label: "skill taxonomy unification" },
+  { id: "2026-06-canonical-magic-schools", run: migrateCanonicalMagicSkills2026, label: "canonical magic schools" },
   { id: "2026-04-body-hp-tarkov",         run: migrateBodyPartHpTarkov2026,   label: "character/NPC limb HP totals" },
   { id: "2026-04-unarmed-scale",          run: migrateUnarmedDamageScale2026, label: "unarmedDamage legacy scale" },
   { id: "2026-04-craft-knowledge-starter",  run: migrateCraftKnowledgeStarter,  label: "craft knownRecipeIds starter" },

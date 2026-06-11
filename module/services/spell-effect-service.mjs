@@ -1,14 +1,31 @@
 import { getTargetPartLabel } from "./actor-state-service.mjs";
-import { applyAoeDamageTemplate, applyAoeUtilityEffect, placeAoeTemplate, removeAoeTemplate } from "./aoe-service.mjs";
+import { applyAoeDamageTemplate, applyAoeUtilityTemplate } from "./aoe-service.mjs";
 import {
   normalizeAoeConfig,
   resolveAoeFriendlyFireMode,
 } from "./aoe-policy-service.mjs";
+import { buildCombatRows } from "./combat-chat-service.mjs";
 import { formatAttackChatHtml, resolveSingleAttack } from "./combat-attack-service.mjs";
-import { addOrExtendActorCondition } from "./condition-service.mjs";
+import { isShieldBlockableDamageType, normalizeDamageType } from "./damage-type-service.mjs";
+import { addOrExtendActorCondition, isActorSummoned } from "./condition-service.mjs";
 import { applyHitEffects, healActorBodyPart } from "./hit-effect-service.mjs";
 import { unequipActorSlot } from "./inventory-service.mjs";
-import { buildChatSectionRow } from "../utils/text-utils.mjs";
+import { getActorToken } from "../utils/item-utils.mjs";
+
+const SYSTEM_ID = "iron-hills-system";
+const UNDEAD_MARKERS = Object.freeze([
+  "undead",
+  "skeleton",
+  "skeletal",
+  "zombie",
+  "wraith",
+  "ghoul",
+  "necrom",
+  "нежит",
+  "скелет",
+  "зомби",
+  "призрак",
+]);
 
 function num(value, fallback = 0) {
   const parsed = Number(value);
@@ -24,7 +41,7 @@ function rollBonus(roll, threshold) {
 }
 
 function rowsToHtml(rows) {
-  return rows.map(([label, value]) => buildChatSectionRow(label, value)).join("");
+  return buildCombatRows(rows);
 }
 
 async function restoreResource(actor, resourceKey, amount) {
@@ -39,11 +56,240 @@ function getEffectType(effectType, effect) {
   const explicit = String(effectType ?? "").trim();
   if (explicit) return explicit;
   if (effect?.special === "heal") return "heal";
+  if (effect?.special) return String(effect.special).trim();
   return "";
 }
 
 function normalizeSpellDamageType(damageType) {
-  return String(damageType ?? "magical").toLowerCase() === "physical" ? "physical" : "magical";
+  return normalizeDamageType(damageType, { fallback: "magical" });
+}
+
+function hasMarker(value, markers = UNDEAD_MARKERS) {
+  const text = String(value ?? "").toLowerCase();
+  return Boolean(text && markers.some(marker => text.includes(marker)));
+}
+
+function getActorTags(actor) {
+  const raw = actor?.system?.info?.tags ?? actor?.system?.tags ?? "";
+  if (Array.isArray(raw)) return raw.join(" ");
+  return String(raw ?? "");
+}
+
+export function isUndeadActor(actor) {
+  if (!actor) return false;
+  const info = actor.system?.info ?? {};
+  return [
+    actor.name,
+    actor.type,
+    info.role,
+    info.race,
+    info.faction,
+    info.bestiaryId,
+    info.desc,
+    getActorTags(actor),
+  ].some(value => hasMarker(value));
+}
+
+function getActorTier(actor, fallback = 1) {
+  const tier = num(actor?.system?.info?.tier ?? actor?.system?.tier, fallback);
+  return Math.max(1, Math.round(tier || fallback));
+}
+
+function getSpellDamageMultiplier({ target = null, effect = null } = {}) {
+  const special = String(effect?.special ?? "").trim();
+  if (special === "double_vs_undead" && isUndeadActor(target)) return 2;
+  return 1;
+}
+
+function getSummonLabel(effect = null) {
+  const summonId = String(effect?.summonId ?? "summon").trim();
+  const labels = {
+    skeleton: "Призванный скелет",
+  };
+  return labels[summonId] ?? `Призванное существо (${summonId})`;
+}
+
+function buildSummonedActorData({
+  caster = null,
+  effect = null,
+  power = 0,
+  roll = null,
+} = {}) {
+  const summonId = String(effect?.summonId ?? "summon").trim() || "summon";
+  const duration = Math.max(6, num(effect?.duration, 18));
+  const tier = Math.max(1, Math.min(5, num(effect?.tier, 0) || Math.ceil((num(power, 0) + rollBonus(roll, 4)) / 3) || 1));
+  const hp = 18 + tier * 8;
+  const energy = 10 + tier * 2;
+  const label = getSummonLabel(effect);
+
+  return {
+    name: label,
+    type: "monster",
+    img: effect?.img || "icons/svg/skull.svg",
+    system: {
+      resources: {
+        hp: { value: hp, max: hp },
+        armor: { physical: tier, magical: 0 },
+        energy: { value: energy, max: energy, baseMax: energy },
+        mana: { value: 0, max: 0, baseMax: 0 },
+      },
+      combat: {
+        baseThreshold: 3 + tier,
+        unarmedDamage: 8 + tier * 4,
+        unarmedSkill: 2 + tier,
+        attackSkill: 2 + tier,
+      },
+      info: {
+        role: "summon",
+        tier,
+        faction: caster?.name ?? "",
+        desc: `Призвано заклинанием ${caster?.name ?? "кастера"}.`,
+        lootPool: "",
+        lootTable: "",
+        bestiaryId: summonId,
+        tags: summonId === "skeleton" ? "summoned undead skeleton" : "summoned",
+      },
+      conditions: {
+        stunned: 0,
+        poison: 0,
+        burning: 0,
+        silencedUntil: 0,
+        slowPenalty: 0,
+        feared: 0,
+        fleeing: 0,
+        hasted: 0,
+        slowed: 0,
+        unconscious: 0,
+        exposed: 0,
+        pushed: 0,
+        prone: 0,
+        shield_lost: 0,
+        armor_cracked: 0,
+      },
+    },
+    flags: {
+      [SYSTEM_ID]: {
+        summoned: {
+          summonId,
+          casterId: caster?.id ?? "",
+          casterName: caster?.name ?? "",
+          duration,
+          remaining: duration,
+          totalDuration: duration,
+          createdRound: Number(globalThis.game?.combat?.round ?? 0) || null,
+          createdTurn: Number(globalThis.game?.combat?.turn ?? 0) || null,
+        },
+      },
+    },
+  };
+}
+
+async function placeSummonedToken(actor, caster = null) {
+  const scene = globalThis.canvas?.scene;
+  if (!scene?.createEmbeddedDocuments || !actor?.id) return { placed: false, reason: "no-active-scene" };
+
+  const casterToken = getActorToken(caster);
+  const casterDoc = casterToken?.document ?? casterToken ?? null;
+  const gridSize = Math.max(1, num(globalThis.canvas?.grid?.size, 100));
+  const x = num(casterDoc?.x, 0) + gridSize;
+  const y = num(casterDoc?.y, 0);
+  const disposition = num(casterDoc?.disposition ?? caster?.prototypeToken?.disposition, 1);
+
+  const created = await scene.createEmbeddedDocuments("Token", [{
+    name: actor.name,
+    actorId: actor.id,
+    actorLink: true,
+    img: actor.img,
+    x,
+    y,
+    width: 1,
+    height: 1,
+    disposition,
+  }]);
+
+  return { placed: created?.length > 0, tokens: created ?? [] };
+}
+
+async function applySummonEffect({
+  caster = null,
+  effect = null,
+  power = 0,
+  roll = null,
+} = {}) {
+  const data = buildSummonedActorData({ caster, effect, power, roll });
+  const duration = data.flags?.[SYSTEM_ID]?.summoned?.duration ?? num(effect?.duration, 18);
+
+  if (!globalThis.Actor?.create) {
+    return {
+      created: false,
+      placed: false,
+      label: data.name,
+      duration,
+      reason: "actor-api-unavailable",
+    };
+  }
+
+  const actor = await Actor.create(data, { renderSheet: false });
+  const placement = await placeSummonedToken(actor, caster);
+  return {
+    created: Boolean(actor),
+    placed: Boolean(placement.placed),
+    actor,
+    label: actor?.name ?? data.name,
+    duration,
+    reason: placement.reason ?? "",
+  };
+}
+
+async function markActorBanishDefeated(target, markActorDead = null) {
+  if (markActorDead) {
+    await markActorDead(target);
+    return "marked-dead";
+  }
+
+  if (target?.type === "monster" && target.system?.resources?.hp?.value !== undefined) {
+    await target.update({ "system.resources.hp.value": 0 });
+    return "monster-hp-zero";
+  }
+
+  if (target?.system?.resources?.hp?.torso?.value !== undefined) {
+    await target.update({ "system.resources.hp.torso.value": 0 });
+    return "torso-zero";
+  }
+
+  await addOrExtendActorCondition(target, "unconscious", 60, {
+    mode: "max",
+    valueKind: "duration",
+  });
+  return "unconscious";
+}
+
+async function applyBanishEffect({
+  target = null,
+  power = 0,
+  roll = null,
+  markActorDead = null,
+} = {}) {
+  const summoned = isActorSummoned(target);
+  const undead = isUndeadActor(target);
+  const tier = getActorTier(target, 1);
+  const force = Math.max(1, num(power, 0) + Math.max(0, rollTotal(roll) - 4));
+  const tierLimit = summoned ? 99 : Math.max(1, Math.ceil(force / 2));
+
+  if (!summoned && !undead) {
+    return { eligible: false, destroyed: false, summoned, undead, tier, force, tierLimit };
+  }
+
+  if (tier <= tierLimit) {
+    const defeatMode = await markActorBanishDefeated(target, markActorDead);
+    return { eligible: true, destroyed: true, summoned, undead, tier, force, tierLimit, defeatMode };
+  }
+
+  await addOrExtendActorCondition(target, "stunned", 6, {
+    mode: "add",
+    valueKind: "duration",
+  });
+  return { eligible: true, destroyed: false, stunned: true, summoned, undead, tier, force, tierLimit };
 }
 
 export async function applySingleTargetSpellDamage({
@@ -60,51 +306,65 @@ export async function applySingleTargetSpellDamage({
   injuries = null,
   shieldIntercept = null,
   onLethal = null,
+  dieRoller = null,
+  renderHtml = true,
 } = {}) {
   const normalizedDamageType = normalizeSpellDamageType(damageType);
+  const damageMultiplier = getSpellDamageMultiplier({ target, effect });
+  const scaledBaseDamage = Math.round(num(baseDamage, 0) * damageMultiplier);
 
   const result = await resolveSingleAttack({
     attacker: caster,
     target,
     skillKey,
-    baseDamage,
+    baseDamage: scaledBaseDamage,
     damageType: normalizedDamageType,
     energyCost: 0,
     weapon: null,
+    attackMode: "cast",
     hitBonus,
     ignoreArmor,
     targetZone,
     spendEnergy: false,
     wearWeapon: false,
     wearArmor: true,
-    shieldIntercept: shieldIntercept ?? (normalizedDamageType === "physical"),
+    shieldIntercept: shieldIntercept ?? isShieldBlockableDamageType(normalizedDamageType),
     injuries,
     onLethal,
+    dieRoller: dieRoller ?? undefined,
   });
 
   if (!result) {
     return { ok: false, result: null, attackHtml: "", effectHtml: "", html: "" };
   }
 
-  const attackHtml = await formatAttackChatHtml({
-    label,
-    skillKey,
-    attacker: caster,
-    target,
-    result,
-  });
-  const effectHtml = (await applyHitEffects({
+  const attackHtml = renderHtml && typeof globalThis.renderTemplate === "function"
+    ? await formatAttackChatHtml({
+      label,
+      skillKey,
+      attacker: caster,
+      target,
+      result,
+    })
+    : "";
+  const effectOutcome = await applyHitEffects({
     attacker: caster,
     target,
     result,
     effect,
-  })).html;
+  });
+  const multiplierHtml = damageMultiplier > 1
+    ? rowsToHtml([["Модификатор", `x${damageMultiplier} по нежити`]])
+    : "";
+  const effectHtml = multiplierHtml + effectOutcome.html;
 
   return {
     ok: true,
     result,
     attackHtml,
     effectHtml,
+    effectOutcome,
+    damageMultiplier,
     html: attackHtml + effectHtml,
   };
 }
@@ -119,20 +379,35 @@ export async function applyAoeSpellEffect({
   skillValueFallback = null,
   injuries = null,
   friendlyFire = null,
+  friendlyFireMode = null,
   baseDamage = 0,
   damageType = "magical",
   effect = null,
   power = 0,
   targetZone = null,
+  targetZoneMode = null,
+  onLethal = null,
+  dieRoller = null,
+  createChat = true,
   onTemplatePlaced = null,
   cleanupDelay = 3000,
 } = {}) {
+  const rawAoe = aoe && typeof aoe === "object" ? aoe : {};
+  const resolvedFriendlyFireMode = resolveAoeFriendlyFireMode(
+    friendlyFireMode,
+    friendlyFire,
+    rawAoe.friendlyFireMode,
+    rawAoe.friendlyFire,
+    Number(baseDamage ?? 0) > 0 ? "auto" : "off",
+  );
   const aoeConfig = normalizeAoeConfig({
-    ...(aoe && typeof aoe === "object" ? aoe : {}),
-    friendlyFireMode: resolveAoeFriendlyFireMode(friendlyFire, aoe?.friendlyFireMode, aoe?.friendlyFire, false),
+    ...rawAoe,
+    friendlyFireMode: resolvedFriendlyFireMode,
+    friendlyFire,
     damageType,
     effect,
     targetZone,
+    targetZoneMode,
   }, {
     shape: "circle",
     type: "blast",
@@ -148,6 +423,7 @@ export async function applyAoeSpellEffect({
       label,
       color,
       skillKey,
+      attackMode: "cast",
       hitBonus,
       skillValueFallback,
       injuries,
@@ -158,52 +434,42 @@ export async function applyAoeSpellEffect({
       aoeType: aoeConfig.type,
       maxTargets: aoeConfig.maxTargets,
       chainDecay: aoeConfig.chainDecay,
-      targetZone,
+      targetZone: aoeConfig.targetZone ?? targetZone,
       targetZoneMode: aoeConfig.targetZoneMode,
       effect,
+      onLethal,
+      dieRoller,
+      createChat,
       onTemplatePlaced,
       cleanupDelay,
     });
   }
 
-  const templateResult = await placeAoeTemplate({
-    aoeType: aoeConfig.shape,
+  return applyAoeUtilityTemplate({
+    caster,
+    attacker: caster,
+    shape: aoeConfig.shape,
     distance: aoeConfig.distance,
     label,
     color,
-    attacker: caster,
     skillKey,
+    attackMode: "cast",
     hitBonus,
     skillValueFallback,
     injuries,
+    effect,
+    power: effect?.healAmount ?? power,
+    aoeType: aoeConfig.type,
+    maxTargets: aoeConfig.maxTargets,
+    chainDecay: aoeConfig.chainDecay,
+    targetZone: aoeConfig.targetZone ?? targetZone,
+    targetZoneMode: aoeConfig.targetZoneMode,
     friendlyFire: aoeConfig.friendlyFire,
+    friendlyFireMode: aoeConfig.friendlyFireMode,
+    createChat,
+    onTemplatePlaced,
+    cleanupDelay,
   });
-
-  if (!templateResult) {
-    return { ok: false, cancelled: true, results: [], template: null, targets: [] };
-  }
-
-  const { template, targets } = templateResult;
-
-  try {
-    await onTemplatePlaced?.(templateResult);
-
-    const results = await applyAoeUtilityEffect({
-      attacker: caster,
-      targets,
-      effect,
-      power: effect?.healAmount ?? power,
-      aoeType: aoeConfig.type,
-      maxTargets: aoeConfig.maxTargets,
-      chainDecay: aoeConfig.chainDecay,
-      targetZone,
-      label,
-      friendlyFire: aoeConfig.friendlyFire,
-    });
-    return { ok: true, cancelled: false, results, template, targets };
-  } finally {
-    await removeAoeTemplate(template, cleanupDelay);
-  }
 }
 
 export async function applySingleTargetSpellUtilityEffect({
@@ -222,7 +488,7 @@ export async function applySingleTargetSpellUtilityEffect({
   const rows = [];
   let extraHtml = "";
 
-  if (!target) return { handled: false, html: "", effectType: type };
+  if (!target) return { ok: false, handled: false, html: "", effectType: type };
 
   const appendHitEffect = async () => {
     if (!effect?.applyCondition) return false;
@@ -238,7 +504,36 @@ export async function applySingleTargetSpellUtilityEffect({
 
   if (!type || effect?.special === "buff" || effect?.special === "debuff") {
     const handled = await appendHitEffect();
-    if (handled) return { handled: true, html: extraHtml + rowsToHtml(rows), effectType: type };
+    if (handled) return { ok: true, handled: true, html: extraHtml + rowsToHtml(rows), effectType: type };
+  }
+
+  if (type === "summon") {
+    const summon = await applySummonEffect({ caster, effect, power, roll });
+    rows.push(
+      ["Эффект", "Призыв"],
+      ["Существо", summon.label],
+      ["Длительность", `${summon.duration} сек.`],
+      ["Размещение", summon.placed ? "токен создан" : (summon.created ? "актёр создан" : "недоступно вне Foundry")],
+    );
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, summon };
+  }
+
+  if (type === "banish") {
+    const banish = await applyBanishEffect({ target, power, roll, markActorDead });
+    rows.push(
+      ["Эффект", "Изгнание"],
+      ["Цель", target.name],
+      ["Сила", banish.force],
+      ["Порог тира", banish.tierLimit],
+    );
+    if (!banish.eligible) {
+      rows.push(["Результат", "цель не является призванной или нежитью"]);
+    } else if (banish.destroyed) {
+      rows.push(["Результат", "цель изгнана"]);
+    } else {
+      rows.push(["Результат", "цель слишком сильна, наложено оглушение"]);
+    }
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, banish };
   }
 
   if (type === "heal") {
@@ -250,7 +545,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено HP", healed],
       ["Текущее HP", result.newHP],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, heal: result };
   }
 
   if (type === "restoreEnergy") {
@@ -261,7 +556,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено", restored],
       ["Энергия цели", next],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored, next } };
   }
 
   if (type === "restoreMana") {
@@ -272,13 +567,13 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено", restored],
       ["Мана цели", next],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "mana", restored, next } };
   }
 
   if (type === "curePoison") {
     await target.update({ "system.conditions.poison": 0 });
     rows.push(["Эффект", "Нейтрализация яда"]);
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "cureDisease") {
@@ -292,7 +587,7 @@ export async function applySingleTargetSpellUtilityEffect({
     } else {
       rows.push(["Эффект", "Активных болезней нет"]);
     }
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "stimulant") {
@@ -303,7 +598,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Энергия", `+${boost}`],
       ["Энергия цели", next],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored: boost, next } };
   }
 
   if (type === "stun") {
@@ -316,7 +611,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Оглушение"],
       ["Длительность", `${durationTurns} ход(а)`],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "disarm") {
@@ -340,7 +635,7 @@ export async function applySingleTargetSpellUtilityEffect({
         ["Результат", `Провал (${rollTotal(roll)} < ${threshold})`],
       );
     }
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "silence") {
@@ -353,7 +648,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Безмолвие"],
       ["Длительность", `${duration} сек.`],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "slow") {
@@ -366,7 +661,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Замедление"],
       ["Штраф инициативы", `-${penalty}`],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "fear") {
@@ -381,7 +676,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Длительность", `${durationTurns} ход(а)`],
       ["Штрафы", "-3 атака, -3 защита"],
     );
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
   if (type === "reserveDrain") {
@@ -418,8 +713,8 @@ export async function applySingleTargetSpellUtilityEffect({
         ["Осталось", next],
       );
     }
-    return { handled: true, html: rowsToHtml(rows), effectType: type };
+    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
   }
 
-  return { handled: false, html: "", effectType: type };
+  return { ok: false, handled: false, html: "", effectType: type };
 }

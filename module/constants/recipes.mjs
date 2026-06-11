@@ -4,208 +4,83 @@
  * difficulty = порог навыка (1-20 соответствует ступени 1-10).
  */
 
-import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, DRINK_VESSELS } from "./items-catalog.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, DRINK_VESSELS, CONSUMABLES, THROWABLES } from "./items-catalog.mjs";
+import {
+  armorToItemData,
+  consumableToItemData,
+  drinkVesselToItemData,
+  foodToItemData,
+  materialToItemData,
+  potionToItemData,
+  throwableToItemData,
+  weaponToItemData,
+} from "../utils/catalog-item-data.mjs";
+
+function withRecipeCatalogId(itemData, catalogId) {
+  return {
+    ...itemData,
+    catalogId,
+    flags: {
+      ...(itemData.flags ?? {}),
+      "iron-hills-system": {
+        ...(itemData.flags?.["iron-hills-system"] ?? {}),
+        catalogId,
+      },
+    },
+  };
+}
 
 /** Готовый результат-предмет типа material из каталога MATERIALS по id. */
 function materialResult(id, qty = 1) {
   const m = MATERIALS[id];
   if (!m) throw new Error(`Unknown material id: ${id}`);
   const q = Math.max(1, Number(qty) || 1);
-  const uw = Number(m.weight ?? 1);
-  const uv = Number(m.value ?? 0);
-  return {
-    type: "material",
-    name: m.label,
-    img: `systems/iron-hills-system/icons/items/materials/${id}.webp`,
-    catalogId: id,
-    system: {
-      tier: m.tier,
-      category: m.category,
-      weight: uw * q,
-      quantity: q,
-      gridW: 1,
-      gridH: 1,
-      value: uv * q,
-      quality: "common",
-    },
-  };
+  return withRecipeCatalogId(materialToItemData(m, { quantity: q }), id);
 }
-
-const ARMOR_SLOT_GRID = {
-  head: { w: 2, h: 2 }, torso: { w: 2, h: 3 }, leftArm: { w: 1, h: 2 }, rightArm: { w: 1, h: 2 },
-  legs: { w: 2, h: 3 }, leftHand: { w: 2, h: 2 }, rightHand: { w: 2, h: 2 },
-  neck: { w: 1, h: 1 }, ringLeft: { w: 1, h: 1 }, ringRight: { w: 1, h: 1 },
-  belt: { w: 2, h: 1 }, backpack: { w: 2, h: 3 },
-};
-
-const DEFAULT_ARMOR_COVERS = {
-  head: ["head"],
-  torso: ["torso"],
-  legs: ["leftLeg", "rightLeg"],
-  leftArm: ["leftArm"],
-  rightArm: ["rightArm"],
-  neck: ["neck"],
-  leftHand: ["leftArm", "torso"],
-  rightHand: ["rightArm", "torso"],
-};
 
 /** Результат из каталога WEAPONS. */
 function weaponResult(id) {
   const w = WEAPONS[id];
   if (!w) throw new Error(`Unknown weapon id: ${id}`);
-  const IMG = {
-    sword: "icons/weapons/swords/sword-shortsword.webp",
-    axe: "icons/weapons/axes/axe-battle.webp",
-    spear: "icons/weapons/polearms/spear.webp",
-    knife: "icons/weapons/daggers/dagger.webp",
-    mace: "icons/weapons/maces/mace.webp",
-    flail: "icons/weapons/flails/flail.webp",
-    bow: "icons/weapons/bows/shortbow.webp",
-    crossbow: "icons/weapons/crossbows/crossbow.webp",
-    throwing: "icons/weapons/thrown/javelin.webp",
-    exotic: "icons/weapons/staves/staff.webp",
-  };
-  const defaultImg = IMG[w.skill] ?? "icons/weapons/swords/sword-shortsword.webp";
-  const sys = {
-    tier: w.tier,
-    damage: w.damage,
-    damageType: w.damageType ?? "physical",
-    skill: w.skill,
-    weight: w.weight ?? 2,
-    twoHanded: w.twoHanded ?? false,
-    energyCost: w.energyCost ?? 8,
-    value: w.value ?? 10,
-    gridW: w.gridW ?? 1,
-    gridH: w.gridH ?? 2,
-    range: w.range ?? 1,
-  };
-  if (w.affixes && typeof w.affixes === "object") {
-    sys.affixes = structuredClone(w.affixes);
-  }
-  return {
-    type: "weapon",
-    name: w.label,
-    img: w.img ?? defaultImg,
-    catalogId: id,
-    system: sys,
-  };
+  return withRecipeCatalogId(weaponToItemData(w), id);
 }
 
 /** Результат из каталога ARMORS (protection как в компендиуме). */
 function armorResult(id) {
   const a = ARMORS[id];
   if (!a) throw new Error(`Unknown armor id: ${id}`);
-  const resistRaw = a.resist ?? { physical: a.tier ?? 0, magical: 0 };
-  const resist = structuredClone(resistRaw);
-  if (typeof resist === "object" && resist !== null) delete resist.img;
-  const conventionArmorImg = `systems/iron-hills-system/icons/items/armor/${id}.webp`;
-  const sg = ARMOR_SLOT_GRID[a.slot] ?? { w: 2, h: 2 };
-  const phys = Number(resist?.physical ?? 0);
-  const mag = Number(resist?.magical ?? 0);
-  const sys = {
-    tier: a.tier,
-    slot: a.slot,
-    weight: a.weight ?? 3,
-    value: a.value ?? 20,
-    gridW: sg.w,
-    gridH: sg.h,
-    protection: { physical: phys, magical: mag },
-    covers: DEFAULT_ARMOR_COVERS[a.slot] ?? ["torso"],
-  };
-  if (a.affixes && typeof a.affixes === "object") {
-    sys.affixes = structuredClone(a.affixes);
-  }
-  return {
-    type: "armor",
-    name: a.label,
-    img: a.img ?? conventionArmorImg,
-    catalogId: id,
-    system: sys,
-  };
+  return withRecipeCatalogId(armorToItemData(a), id);
 }
 
 function potionResult(id) {
   const p = POTIONS[id];
   if (!p) throw new Error(`Unknown potion id: ${id}`);
   const convention = `systems/iron-hills-system/icons/items/potions/${id}.webp`;
-  return {
-    type: "potion",
-    name: p.label,
-    img: p.img ?? convention,
-    catalogId: id,
-    system: {
-      tier: p.tier,
-      effect: p.effect,
-      power: p.power,
-      weight: p.weight ?? 0.3,
-      scope: "single",
-      target: "self",
-      zone: "torso",
-      value: p.value ?? 20,
-    },
-  };
+  return withRecipeCatalogId(potionToItemData({ ...p, img: p.img ?? convention }), id);
 }
 
 function foodResult(id) {
   const f = FOOD[id];
   if (!f) throw new Error(`Unknown food id: ${id}`);
-  const sys = {
-    tier: f.tier ?? 1,
-    satiety: f.satiety ?? 0,
-    hydration: f.hydration ?? 0,
-    weight: f.weight ?? 0.5,
-    value: f.value ?? 2,
-    gridW: f.gridW ?? 1,
-    gridH: f.gridH ?? 1,
-  };
-  if (f.bonus && typeof f.bonus === "object") {
-    sys.bonus = structuredClone(f.bonus);
-  }
-  return {
-    type: "food",
-    name: f.label,
-    catalogId: id,
-    system: sys,
-  };
+  return withRecipeCatalogId(foodToItemData(f), id);
 }
 
 function drinkVesselResult(catalogId) {
   const v = DRINK_VESSELS[catalogId];
   if (!v) throw new Error(`Unknown drink vessel id: ${catalogId}`);
-  const max = Math.max(1, Number(v.vesselMax ?? 1));
-  const baseWt = Number(v.weight ?? 0.35);
-  const filled = max;
-  const hyd = Number(v.vesselHydrationPerDrink ?? 0);
-  return {
-    type: "consumable",
-    name: v.label,
-    img: `systems/iron-hills-system/icons/items/consumables/${v.id}.webp`,
-    catalogId: v.id,
-    flags: {
-      "iron-hills-system": {
-        catalogId: v.id,
-        kind: "drink_vessel",
-      },
-    },
-    system: {
-      tier: Number(v.tier ?? 1),
-      quality: "common",
-      weight: baseWt + filled * 0.02,
-      quantity: 1,
-      power: hyd,
-      actionType: "drink-vessel",
-      applicationScope: "global",
-      targetActorMode: "self",
-      vesselMax: max,
-      vesselCurrent: filled,
-      vesselHydrationPerDrink: hyd,
-      vesselSatietyPerDrink: Number(v.vesselSatietyPerDrink ?? 0),
-      vesselLiquidLabel: String(v.vesselLiquidLabel ?? "Вода"),
-      gridW: 1,
-      gridH: 2,
-      value: Number(v.value ?? 4),
-    },
-  };
+  return withRecipeCatalogId(drinkVesselToItemData(v), v.id);
+}
+
+function consumableResult(catalogId) {
+  const c = CONSUMABLES[catalogId];
+  if (!c) throw new Error(`Unknown consumable id: ${catalogId}`);
+  return withRecipeCatalogId(consumableToItemData(c), c.id);
+}
+
+function throwableResult(catalogId) {
+  const t = THROWABLES[catalogId];
+  if (!t) throw new Error(`Unknown throwable id: ${catalogId}`);
+  return withRecipeCatalogId(throwableToItemData(t), t.id);
 }
 
 export const CRAFT_RECIPES = {
@@ -312,6 +187,48 @@ export const CRAFT_RECIPES = {
       { catalogMaterialId:"herb_healing", quantity:2 },
     ],
     result: potionResult("antidote_weak"),
+  },
+  antiseptic_wash_craft: {
+    id:"antiseptic_wash_craft", label:"Антисептический раствор",
+    skillKey:"alchemy", difficulty:3,
+    tool:{ craftType:"alchemy", tier:1 },
+    ingredients:[
+      { catalogMaterialId:"herb_common", quantity:2 },
+      { catalogMaterialId:"oil_flask", quantity:1 },
+    ],
+    result: consumableResult("antiseptic_wash"),
+  },
+  clean_dressing_craft: {
+    id:"clean_dressing_craft", label:"Чистая повязка",
+    skillKey:"crafting", difficulty:3,
+    tool:{ craftType:"crafting", tier:1 },
+    ingredients:[
+      { catalogMaterialId:"cloth", quantity:1 },
+      { catalogMaterialId:"herb_healing", quantity:1 },
+    ],
+    result: consumableResult("clean_dressing"),
+  },
+  clay_shrapnel_pot_craft: {
+    id:"clay_shrapnel_pot_craft", label:"Глиняный осколочный горшок",
+    skillKey:"alchemy", difficulty:4,
+    tool:{ craftType:"alchemy", tier:1 },
+    ingredients:[
+      { catalogMaterialId:"stone", quantity:1 },
+      { catalogMaterialId:"flint", quantity:2 },
+      { catalogMaterialId:"cloth", quantity:1 },
+    ],
+    result: throwableResult("clay_shrapnel_pot"),
+  },
+  fire_oil_flask_craft: {
+    id:"fire_oil_flask_craft", label:"Фляга горючего масла",
+    skillKey:"alchemy", difficulty:5,
+    tool:{ craftType:"alchemy", tier:1 },
+    ingredients:[
+      { catalogMaterialId:"oil_flask", quantity:2 },
+      { catalogMaterialId:"cloth", quantity:1 },
+      { catalogMaterialId:"coal", quantity:1 },
+    ],
+    result: throwableResult("fire_oil_flask"),
   },
 
   // Готовка 1ст.
@@ -459,6 +376,50 @@ export const CRAFT_RECIPES = {
     ],
     result: potionResult("mana_potion"),
   },
+  field_suture_roll_craft: {
+    id:"field_suture_roll_craft", label:"Полевая шовная скрутка",
+    skillKey:"crafting", difficulty:7,
+    tool:{ craftType:"crafting", tier:2 },
+    ingredients:[
+      { catalogMaterialId:"fine_cloth", quantity:1 },
+      { catalogMaterialId:"beast_sinew_spool", quantity:1 },
+      { catalogMaterialId:"herb_healing", quantity:1 },
+    ],
+    result: consumableResult("field_suture_roll"),
+  },
+  clotting_powder_craft: {
+    id:"clotting_powder_craft", label:"Свёртывающий порошок",
+    skillKey:"alchemy", difficulty:7,
+    tool:{ craftType:"alchemy", tier:2 },
+    ingredients:[
+      { catalogMaterialId:"root_bitter", quantity:1 },
+      { catalogMaterialId:"wisp_moth_powder", quantity:1 },
+      { catalogMaterialId:"cloth", quantity:1 },
+    ],
+    result: consumableResult("clotting_powder"),
+  },
+  venom_glass_vial_craft: {
+    id:"venom_glass_vial_craft", label:"Стеклянная ядовитая склянка",
+    skillKey:"alchemy", difficulty:8,
+    tool:{ craftType:"alchemy", tier:2 },
+    ingredients:[
+      { catalogMaterialId:"poison_fang", quantity:1 },
+      { catalogMaterialId:"glass", quantity:1 },
+      { catalogMaterialId:"mushroom_bog", quantity:1 },
+    ],
+    result: throwableResult("venom_glass_vial"),
+  },
+  thunderstone_craft: {
+    id:"thunderstone_craft", label:"Громовой камень",
+    skillKey:"alchemy", difficulty:10,
+    tool:{ craftType:"alchemy", tier:2 },
+    ingredients:[
+      { catalogMaterialId:"mana_stone", quantity:1 },
+      { catalogMaterialId:"quartz", quantity:2 },
+      { catalogMaterialId:"flint", quantity:1 },
+    ],
+    result: throwableResult("thunderstone"),
+  },
 
   // ══════════════════════════════════════════════
   // СТУПЕНЬ 3 — мастерские рецепты
@@ -496,6 +457,50 @@ export const CRAFT_RECIPES = {
       { catalogMaterialId:"quartz", quantity:1 },
     ],
     result: potionResult("greater_heal"),
+  },
+  bone_pin_splint_craft: {
+    id:"bone_pin_splint_craft", label:"Шина с костяными фиксаторами",
+    skillKey:"crafting", difficulty:10,
+    tool:{ craftType:"crafting", tier:2 },
+    ingredients:[
+      { catalogMaterialId:"hardwood", quantity:1 },
+      { catalogMaterialId:"fang_shard", quantity:2 },
+      { catalogMaterialId:"fine_cloth", quantity:1 },
+    ],
+    result: consumableResult("bone_pin_splint"),
+  },
+  painkiller_draught_craft: {
+    id:"painkiller_draught_craft", label:"Обезболивающий глоток",
+    skillKey:"alchemy", difficulty:12,
+    tool:{ craftType:"alchemy", tier:3 },
+    ingredients:[
+      { catalogMaterialId:"root_bitter", quantity:2 },
+      { catalogMaterialId:"monster_gland", quantity:1 },
+      { catalogMaterialId:"flower_moon", quantity:1 },
+    ],
+    result: consumableResult("painkiller_draught"),
+  },
+  frostburst_flask_craft: {
+    id:"frostburst_flask_craft", label:"Склянка морозного разрыва",
+    skillKey:"alchemy", difficulty:13,
+    tool:{ craftType:"alchemy", tier:3 },
+    ingredients:[
+      { catalogMaterialId:"flower_moon", quantity:2 },
+      { catalogMaterialId:"glass", quantity:1 },
+      { catalogMaterialId:"quartz", quantity:2 },
+    ],
+    result: throwableResult("frostburst_flask"),
+  },
+  blessed_water_globe_craft: {
+    id:"blessed_water_globe_craft", label:"Сфера освящённой воды",
+    skillKey:"alchemy", difficulty:13,
+    tool:{ craftType:"alchemy", tier:3 },
+    ingredients:[
+      { catalogMaterialId:"spirit_bloom", quantity:1 },
+      { catalogMaterialId:"glass", quantity:1 },
+      { catalogMaterialId:"mana_stone", quantity:1 },
+    ],
+    result: throwableResult("blessed_water_globe"),
   },
 
   // ══════════════════════════════════════════════
@@ -644,6 +649,106 @@ export const CRAFT_RECIPES = {
       { catalogMaterialId:"enchant_dust", quantity:2 },
     ],
     result: materialResult("arcane_mesh"),
+  },
+
+  battle_stimulant_craft: {
+    id:"battle_stimulant_craft", label:"Боевой стимулятор",
+    skillKey:"alchemy", difficulty:15,
+    tool:{ craftType:"alchemy", tier:4 },
+    ingredients:[
+      { catalogMaterialId:"monster_gland", quantity:2 },
+      { catalogMaterialId:"predator_resin_mass", quantity:1 },
+      { catalogMaterialId:"mana_stone", quantity:1 },
+    ],
+    result: consumableResult("battle_stimulant"),
+  },
+
+  field_trauma_pack_craft: {
+    id:"field_trauma_pack_craft", label:"Полевой травмпакет",
+    skillKey:"crafting", difficulty:15,
+    tool:{ craftType:"crafting", tier:4 },
+    ingredients:[
+      { catalogMaterialId:"fine_cloth", quantity:3 },
+      { catalogMaterialId:"spider_silk", quantity:1 },
+      { catalogMaterialId:"herb_healing", quantity:3 },
+      { catalogMaterialId:"predator_resin_mass", quantity:1 },
+    ],
+    result: consumableResult("field_trauma_pack"),
+  },
+
+  restoration_ampoule_craft: {
+    id:"restoration_ampoule_craft", label:"Восстановительная ампула",
+    skillKey:"alchemy", difficulty:16,
+    tool:{ craftType:"alchemy", tier:5 },
+    ingredients:[
+      { catalogMaterialId:"spirit_bloom", quantity:2 },
+      { catalogMaterialId:"phoenix_feather", quantity:1 },
+      { catalogMaterialId:"glass", quantity:1 },
+    ],
+    result: consumableResult("restoration_ampoule"),
+  },
+
+  master_surgery_pack_craft: {
+    id:"master_surgery_pack_craft", label:"Мастерский хирургический комплект",
+    skillKey:"crafting", difficulty:18,
+    tool:{ craftType:"crafting", tier:5 },
+    ingredients:[
+      { catalogMaterialId:"spider_silk", quantity:2 },
+      { catalogMaterialId:"hardened_steel", quantity:1 },
+      { catalogMaterialId:"phoenix_feather", quantity:1 },
+      { catalogMaterialId:"artisans_resin", quantity:1 },
+    ],
+    result: consumableResult("master_surgery_pack"),
+  },
+
+  dragonfire_bomb_craft: {
+    id:"dragonfire_bomb_craft", label:"Драконья огненная бомба",
+    skillKey:"alchemy", difficulty:18,
+    tool:{ craftType:"alchemy", tier:6 },
+    ingredients:[
+      { catalogMaterialId:"dragon_blood", quantity:1 },
+      { catalogMaterialId:"oil_flask", quantity:3 },
+      { catalogMaterialId:"glass", quantity:2 },
+      { catalogMaterialId:"enchant_dust", quantity:1 },
+    ],
+    result: throwableResult("dragonfire_bomb"),
+  },
+
+  void_splinter_grenade_craft: {
+    id:"void_splinter_grenade_craft", label:"Граната осколков Пустоты",
+    skillKey:"alchemy", difficulty:20,
+    tool:{ craftType:"alchemy", tier:7 },
+    ingredients:[
+      { catalogMaterialId:"void_crystal", quantity:2 },
+      { catalogMaterialId:"abyss_lichen", quantity:1 },
+      { catalogMaterialId:"arcane_mesh", quantity:1 },
+    ],
+    result: throwableResult("void_splinter_grenade"),
+  },
+
+  sunburst_phial_craft: {
+    id:"sunburst_phial_craft", label:"Фиал солнечной вспышки",
+    skillKey:"alchemy", difficulty:22,
+    tool:{ craftType:"alchemy", tier:8 },
+    ingredients:[
+      { catalogMaterialId:"star_shard", quantity:1 },
+      { catalogMaterialId:"god_tears", quantity:1 },
+      { catalogMaterialId:"glass", quantity:2 },
+    ],
+    result: throwableResult("sunburst_phial"),
+  },
+
+  genesis_star_bomb_craft: {
+    id:"genesis_star_bomb_craft", label:"Звёздная бомба Генезиса",
+    skillKey:"alchemy", difficulty:24,
+    tool:{ craftType:"alchemy", tier:9 },
+    ingredients:[
+      { catalogMaterialId:"star_heart", quantity:1 },
+      { catalogMaterialId:"epoch_seed", quantity:1 },
+      { catalogMaterialId:"arcane_mesh", quantity:2 },
+      { catalogMaterialId:"god_tears", quantity:1 },
+    ],
+    result: throwableResult("genesis_star_bomb"),
   },
 
   laminate_genesis_weave: {

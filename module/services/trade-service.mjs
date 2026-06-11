@@ -4,6 +4,7 @@ import {
   buildItemStackSignatureFromData,
   buildItemStackSignature,
   getItemQuickSlotIcon,
+  getItemQuantity,
   itemTypeLabel,
   isStackable
 } from "../utils/item-utils.mjs";
@@ -302,7 +303,7 @@ function isAvailablePendingStack(actor, item) {
 }
 
 export async function addItemToActorOrStack(actor, itemData, options = {}) {
-  const quantity = Math.max(1, Number(itemData.system?.quantity ?? 1));
+  const quantity = getItemQuantity(itemData);
   const {
     stackIntoPlaced = false,
     forcePending = true,
@@ -318,7 +319,7 @@ export async function addItemToActorOrStack(actor, itemData, options = {}) {
   );
 
   if (existing) {
-    const currentQty = Math.max(1, Number(existing.system?.quantity ?? 1));
+    const currentQty = getItemQuantity(existing);
     await existing.update({
       "system.quantity": currentQty + quantity
     });
@@ -350,7 +351,7 @@ debugLog("transferItemQuantityBetweenActors:start", {
     throw new Error("Не найден целевой actor");
   }
 
-  const qty = Math.max(1, Number(quantity ?? 1));
+  const qty = cleanTradeQuantity(quantity);
   const liveItem = getPersistentItemFromActor(sourceActor, itemRef) ?? getLiveItemFromActor(sourceActor, itemRef);
 
   if (!liveItem) {
@@ -362,7 +363,7 @@ debugLog("transferItemQuantityBetweenActors:start", {
     throw new Error("Исходный предмет не найден у источника");
   }
 
-  const currentQty = Math.max(1, Number(liveItem.system?.quantity ?? 1));
+  const currentQty = getItemQuantity(liveItem);
   if (currentQty < qty) {
     throw new Error("Недостаточно количества предмета для передачи");
   }
@@ -423,6 +424,11 @@ function normalizeTradeCoins(coins) {
   return Math.max(0, coinsToCopper(coins ?? 0));
 }
 
+function cleanTradeQuantity(value) {
+  const quantity = Math.floor(Number(value ?? 1));
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+}
+
 function resolveTradeActor(actorRef) {
   return getPersistentActor(actorRef) ?? getLiveActor(actorRef) ?? actorRef ?? null;
 }
@@ -434,7 +440,7 @@ function normalizeTradeOffer(actor, entries) {
     const itemId = typeof entry === "string"
       ? entry
       : (entry.itemId ?? entry.id ?? entry.item?.id ?? "");
-    const qty = Math.max(1, Number(entry?.qty ?? entry?.quantity ?? 1));
+    const qty = cleanTradeQuantity(entry?.qty ?? entry?.quantity ?? 1);
     const itemIds = Array.isArray(entry?.itemIds)
       ? entry.itemIds.filter(Boolean)
       : Array.isArray(entry?.ids)
@@ -460,7 +466,7 @@ function normalizeTradeOffer(actor, entries) {
     for (const item of candidateItems) {
       if (remaining <= 0) break;
 
-      const available = Math.max(1, Number(item.system?.quantity ?? 1));
+      const available = getItemQuantity(item);
       const take = Math.min(available, remaining);
       if (take <= 0) continue;
 
@@ -663,7 +669,7 @@ export function buildMerchantStockView(merchantActor, characterActor = null) {
     .map(item => {
       const unitBasePrice = getComputedItemUnitPrice(item);
       const tradeBuyPrice = getMerchantBuyPriceForItem(item, merchantActor, characterActor);
-      const quantity = Math.max(1, Number(item.system?.quantity ?? 1));
+      const quantity = getItemQuantity(item);
       const specialtyModifier = getMerchantSpecialtyModifier(item, merchantActor);
       const settlementModifier = getSettlementEconomicModifier(item, merchantActor);
 
@@ -714,7 +720,7 @@ export function buildCharacterSellView(characterActor, merchantActor = null) {
     .map(item => {
       const unitBasePrice = getComputedItemUnitPrice(item);
       const tradeSellPrice = getMerchantSellPriceForItem(item, merchantActor, characterActor);
-      const quantity = Math.max(1, Number(item.system?.quantity ?? 1));
+      const quantity = getItemQuantity(item);
       const specialtyModifier = merchantActor ? getMerchantSpecialtyModifier(item, merchantActor) : 1;
       const settlementModifier = merchantActor ? getSettlementEconomicModifier(item, merchantActor) : 1;
       const priceState = getSellPriceState(unitBasePrice, tradeSellPrice);

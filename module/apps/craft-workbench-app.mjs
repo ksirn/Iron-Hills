@@ -17,6 +17,7 @@ import {
   finalizeWorkbenchFailedRoll,
 } from "../services/craft-workbench-service.mjs";
 import { grantSkillExp } from "../services/actor-state-service.mjs";
+import { buildCombatChatCard } from "../services/combat-chat-service.mjs";
 import { performUniversalSkillRoll } from "../services/skill-roll-service.mjs";
 import { getQualityLabel } from "../services/world-content-service.mjs";
 import { getItemQuantity } from "../utils/item-utils.mjs";
@@ -293,10 +294,22 @@ class IronHillsCraftWorkbenchApp extends Application {
       await consumeWorkbenchNoRecipeSalvage(actor, merged);
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `
-          <div style="border:1px solid rgba(248,113,113,0.25);border-radius:8px;padding:10px;background:rgba(248,113,113,0.05);">
-            <b>⚒ Эксперимент (${CRAFT_WORKBENCH_SKILL_LABELS[skillKey] ?? skillKey})</b><br>
-            Комбинация не подходит ни под одну известную выкройку под этим ремеслом — материалы в основном сгублены; у самой мелкой стопки осталась единица.</div>`,
+        content: buildCombatChatCard({
+          title: "Ремесленный эксперимент",
+          subtitle: CRAFT_WORKBENCH_SKILL_LABELS[skillKey] ?? skillKey,
+          icon: "!",
+          status: "Нет рецепта",
+          statusClass: "is-danger",
+          rows: [
+            ["Мастер", actor.name],
+            ["Навык", CRAFT_WORKBENCH_SKILL_LABELS[skillKey] ?? skillKey],
+            ["Компонентов", merged.length],
+          ],
+          notices: [
+            ["Материалы", "комбинация не подходит ни под одну известную выкройку; у самой мелкой стопки осталась единица", true],
+          ],
+          className: "ih-system-chat-card ih-craft-chat-card ih-craft-no-recipe-card",
+        }),
       });
       this._bowl = [];
       this.render(false);
@@ -321,17 +334,31 @@ class IronHillsCraftWorkbenchApp extends Application {
     const rollTotal = rollResult.total;
 
     const success = rollTotal >= recipe.difficulty;
-
-    let chatContent = `
-      <div style="border:1px solid rgba(91,156,246,0.3);border-radius:8px;padding:10px;background:rgba(91,156,246,0.04);">
-        <b>⚒ Ремесло: ${recipe.label}</b><br>
-        Навык: ${CRAFT_WORKBENCH_SKILL_LABELS[skillKey] ?? skillKey} · д${dieSize} · бросок <b>${rollTotal}</b> · порог ${recipe.difficulty}
-    `;
+    const craftRows = [
+      ["Мастер", actor.name],
+      ["Навык", CRAFT_WORKBENCH_SKILL_LABELS[skillKey] ?? skillKey],
+      ["Куб", `d${dieSize}`],
+      ["Бросок", rollTotal],
+      ["Порог", recipe.difficulty],
+    ];
 
     if (!success) {
       await finalizeWorkbenchFailedRoll(actor, merged);
-      chatContent += `<br><span style="color:#f87171">✗ Не удалось собрать качественно — материалы потеряны, остаются лишь мелкие обрезки (сырое волокно ×1).</span></div>`;
-      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: chatContent });
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: buildCombatChatCard({
+          title: `Ремесло: ${recipe.label}`,
+          subtitle: actor.name,
+          icon: "!",
+          status: "Провал",
+          statusClass: "is-danger",
+          rows: craftRows,
+          notices: [
+            ["Материалы", "потеряны; остаются лишь мелкие обрезки (сырое волокно x1)", true],
+          ],
+          className: "ih-system-chat-card ih-craft-chat-card ih-craft-failed-card",
+        }),
+      });
       await grantSkillExp(actor, skillKey, recipe.label);
       const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
       await PendingItemsApp?.openIfNeeded?.(actor);
@@ -342,10 +369,25 @@ class IronHillsCraftWorkbenchApp extends Application {
 
     const { margin, quality } = await finalizeWorkbenchSuccess(actor, recipe, merged, rollTotal, tool);
     const ql = getQualityLabel(quality);
-    chatContent += `<br><span style="color:#4ade80">✓ Готово! Перевес: +${margin}</span>`;
-    chatContent += `<br>Качество: <b>${ql}</b> — если рецепт был новым, он добавлен в «Изученные рецепты».`;
-    chatContent += `</div>`;
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: chatContent });
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: buildCombatChatCard({
+        title: `Ремесло: ${recipe.label}`,
+        subtitle: actor.name,
+        icon: "+",
+        status: ql,
+        statusClass: "is-good",
+        rows: [
+          ...craftRows,
+          ["Перевес", `+${margin}`],
+          ["Качество", ql],
+        ],
+        notices: [
+          ["Рецепт", "если рецепт был новым, он добавлен в изученные", true],
+        ],
+        className: "ih-system-chat-card ih-craft-chat-card ih-craft-success-card",
+      }),
+    });
 
     await grantSkillExp(actor, skillKey, recipe.label);
 

@@ -19,7 +19,13 @@ import {
   moveItemToInventorySection,
   unequipActorSlot
 } from "../services/inventory-service.mjs";
-import { isStackable } from "../utils/item-utils.mjs";
+import { buildSystemDialogContent } from "../services/combat-chat-service.mjs";
+import {
+  formatItemActionSummary,
+  formatSpellSchoolRank,
+  getItemQuantity,
+  isStackable,
+} from "../utils/item-utils.mjs";
 
 // Реэкспорт канонической функции — для обратной совместимости с прежним публичным API.
 // Все новые потребители должны импортировать напрямую из services/actor-state-service.mjs.
@@ -55,6 +61,27 @@ function findGridInventoryApp(actor) {
   ) ?? null;
 }
 
+function getInventoryFlags(item) {
+  return item?.flags?.["iron-hills-system"] ?? {};
+}
+
+function isMountedAttachment(item, actor = null) {
+  if (item?.type !== "attachment") return false;
+  const containerKey = String(getInventoryFlags(item).container ?? "");
+  if (!/^(belt|torso|backpack)_attach_[^_]+$/.test(containerKey)) return false;
+  if (!actor) return true;
+
+  return getAttachmentMountTargets(actor, item, { includeOccupied: true }).some(target =>
+    target.key === containerKey &&
+    target.occupiedBy?.id === item.id
+  );
+}
+
+function isPendingIgnoredItem(item, actor = null) {
+  if (item?.type === "spell") return true;
+  return isMountedAttachment(item, actor);
+}
+
 function getAutoPlaceItemPriority(item) {
   const typePriority = {
     backpack: 0,
@@ -81,7 +108,7 @@ function sortItemsForAutoPlacement(items) {
 
 /** Геометрия силуэта (пиксели) — синхронно с CELL инвентарной сетки */
 function getInventoryItemGridSize(item) {
-  const f = item.flags?.["iron-hills-system"] ?? {};
+  const f = getInventoryFlags(item);
   const rotated = !!f.rotated;
   const bw = Number(item.system?.gridW ?? 1);
   const bh = Number(item.system?.gridH ?? 1);
@@ -92,10 +119,95 @@ function getInventoryItemGridSize(item) {
   };
 }
 
+function getMountedAttachmentForKey(actor, mountKey) {
+  if (!actor || !mountKey) return null;
+  return Array.from(actor.items ?? []).find(item =>
+    item.type === "attachment" &&
+    getInventoryFlags(item).container === mountKey
+  ) ?? null;
+}
+
+function getAttachmentCarrierSlotKeys(item) {
+  const attachTo = String(item?.system?.attachesTo ?? "").trim();
+  if (["belt", "torso", "backpack"].includes(attachTo)) return [attachTo];
+  return ["belt", "torso", "backpack"];
+}
+
+function getAttachmentMountTargets(actor, item, { includeOccupied = false } = {}) {
+  if (!actor || item?.type !== "attachment") return [];
+
+  const equip = actor.system?.equipment ?? {};
+  const targets = [];
+
+  for (const slotKey of getAttachmentCarrierSlotKeys(item)) {
+    const carrierId = equip[slotKey];
+    const carrier = carrierId ? actor.items.get(carrierId) : null;
+    if (!carrier) continue;
+
+    const slots = Array.isArray(carrier.system?.attachmentSlots) ? carrier.system.attachmentSlots : [];
+    for (const slotDef of slots) {
+      const key = String(slotDef?.key ?? "").trim();
+      if (!key) continue;
+      const mountKey = `${slotKey}_attach_${key}`;
+      const mounted = getMountedAttachmentForKey(actor, mountKey);
+      if (mounted && mounted.id !== item.id && !includeOccupied) continue;
+      targets.push({
+        key: mountKey,
+        slotKey,
+        carrier,
+        slotDef,
+        occupiedBy: mounted,
+        label: `${carrier.name}: ${slotDef.label ?? key}`,
+      });
+    }
+  }
+
+  return targets;
+}
+
+function findFreeAttachmentMount(actor, item) {
+  return getAttachmentMountTargets(actor, item, { includeOccupied: false })[0] ?? null;
+}
+
+async function clearAttachmentSectionItems(actor, mountKey) {
+  if (!actor || !mountKey) return;
+  const sectionKey = `${mountKey}_items`;
+  const updates = [];
+  for (const item of actor.items ?? []) {
+    if (getInventoryFlags(item).sectionKey === sectionKey) {
+      updates.push(clearItemGridPlacement(item));
+    }
+  }
+  await Promise.all(updates);
+}
+
+async function mountAttachment(actor, item, mount) {
+  if (!actor || !item || !mount?.key) return false;
+  await clearAttachmentSectionItems(actor, getInventoryFlags(item).container);
+  await item.update({
+    "flags.iron-hills-system.container": mount.key,
+    "flags.iron-hills-system.sectionKey": null,
+    "flags.iron-hills-system.gridPos": null,
+  });
+  return true;
+}
+
+async function unmountAttachment(actor, item) {
+  if (!actor || item?.type !== "attachment") return false;
+  await clearAttachmentSectionItems(actor, getInventoryFlags(item).container);
+  await clearItemGridPlacement(item);
+  return true;
+}
+
 function explainAutoPlaceForItem(actor, item, conts = null) {
   if (!actor || !item) return { ok: false, text: "Предмет не найден", statusClass: "bad" };
 
-  const qty = Math.max(1, Number(item.system?.quantity ?? 1));
+  if (item.type === "attachment") {
+    const mount = findFreeAttachmentMount(actor, item);
+    if (mount) return { ok: true, text: `Auto: ${mount.label}`, statusClass: "ok" };
+  }
+
+  const qty = getItemQuantity(item);
   const equip = actor.system?.equipment ?? {};
   const compatibleSlots = getCompatibleEquipmentSlots(item);
 
@@ -514,16 +626,34 @@ function buildContainers(actor) {
   const bagItem = equip.backpack ? actor.items.get(equip.backpack) : null;
   if (bagItem) {
     const cfg  = bagItem.system;
+    const sections = [{
+      key: "backpack_main", label: bagItem.name,
+      cols: cfg?.containerSlots?.cols ?? 5,
+      rows: cfg?.containerSlots?.rows ?? 6,
+      allowedTypes: null, maxItemW: null, maxItemH: null,
+      accessSeconds: cfg?.accessSeconds ?? 3,
+    }];
+    const attachSlots = Array.isArray(cfg?.attachmentSlots) ? cfg.attachmentSlots : [];
+    for (const as of attachSlots) {
+      const ai = allItems.find(i => getF(i).container === `backpack_attach_${as.key}`);
+      if (ai?.type === "attachment") {
+        sections.push({
+          key: `backpack_attach_${as.key}_items`,
+          label: ai.system?.addsLabel ?? ai.name,
+          cols: ai.system?.addsSlots?.cols ?? 3,
+          rows: ai.system?.addsSlots?.rows ?? 2,
+          allowedTypes:  Array.isArray(ai.system?.allowedTypes)  ? ai.system.allowedTypes  : null,
+          allowedSkills: Array.isArray(ai.system?.allowedSkills) ? ai.system.allowedSkills : null,
+          maxItemW: null, maxItemH: null,
+          accessSeconds: ai.system?.accessSeconds ?? 2,
+          sourceItemId: ai.id,
+        });
+      }
+    }
     containers.push({
       key: "backpack", label: "Рюкзак", icon: "🎒",
       sourceItemId: bagItem.id,
-      sections: [{
-        key: "backpack_main", label: bagItem.name,
-        cols: cfg?.containerSlots?.cols ?? 5,
-        rows: cfg?.containerSlots?.rows ?? 6,
-        allowedTypes: null, maxItemW: null, maxItemH: null,
-        accessSeconds: cfg?.accessSeconds ?? 3,
-      }],
+      sections,
     });
   }
 
@@ -537,6 +667,7 @@ function buildContainers(actor) {
         .filter(i => {
           const f = getF(i);
           if (f.sectionKey !== sec.key) return false;
+          if (isMountedAttachment(i, actor)) return false;
           if (Object.values(equip).includes(i.id)) return false;
           // Фильтр по навыку (для ножен, крюков и т.д.)
           if (sec.allowedSkills?.length && i.system?.skill) {
@@ -589,7 +720,7 @@ function buildContainers(actor) {
   const unassigned = allItems.filter(i => {
     const f = getF(i);
     return !assigned.has(i.id) && !Object.values(equip).includes(i.id)
-      && !["spell","attachment"].includes(i.type);
+      && !isPendingIgnoredItem(i, actor);
   });
 
     return containers;
@@ -610,7 +741,7 @@ function getPendingItemsForActor(actor, containers = null) {
   return liveActor.items.filter(i =>
     !assigned.has(i.id) &&
     !Object.values(equip).includes(i.id) &&
-    !["spell","attachment"].includes(i.type)
+    !isPendingIgnoredItem(i, liveActor)
   );
 }
 
@@ -715,8 +846,11 @@ class IronHillsGridInventoryApp extends Application {
           if (s.protection?.physical) parts.push(`🛡 Защита: ${s.protection.physical}`);
           if (s.satiety)              parts.push(`🍖 Сытость: +${s.satiety}`);
           if (s.hydration)            parts.push(`💧 Жажда: +${s.hydration}`);
-          if (s.power && s.actionType) parts.push(`✦ Сила: ${s.power}`);
-          if (s.school)               parts.push(`✨ ${s.school} ранг ${s.rank??1}`);
+          {
+            const actionSummary = formatItemActionSummary(s);
+            if (actionSummary) parts.push(actionSummary);
+          }
+          if (s.school)               parts.push(formatSpellSchoolRank(s));
           if (s.weight)               parts.push(`⚖ ${s.weight} кг`);
           const desc = s.description ?? s.desc ?? "";
           if (desc) parts.push(String(desc).replace(/<[^>]+>/g,"").slice(0,80));
@@ -739,6 +873,8 @@ class IronHillsGridInventoryApp extends Application {
           cols:      sec.cols,
           rows:      sec.rows,
           accessSeconds: sec.accessSeconds,
+          sourceItemId:  sec.sourceItemId ?? "",
+          sourceItemName: sec.sourceItemId ? (actor.items.get(sec.sourceItemId)?.name ?? "") : "",
           allowedLabel:  sec.allowedTypes?.join(", ") ?? null,
           pocketMode:    !!sec.pocketMode,
           isActive:      sec.key === this._activeSec,
@@ -794,13 +930,11 @@ class IronHillsGridInventoryApp extends Application {
       if (sys.protection?.physical) tooltipParts.push(`🛡 Защита: ${sys.protection.physical}`);
       if (sys.satiety)              tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
       if (sys.hydration)            tooltipParts.push(`💧 Жажда: +${sys.hydration}`);
-      if (sys.power && sys.actionType) {
-        const ACT = { healHp:"❤ Лечение", restoreEnergy:"⚡ Энергия",
-                      restoreMana:"💧 Мана", curePoison:"☠ Лечит яд",
-                      healBleeding:"🩸 Кровотечение" };
-        tooltipParts.push(`${ACT[sys.actionType]??`✦ Эффект`}: +${sys.power}`);
+      {
+        const actionSummary = formatItemActionSummary(sys);
+        if (actionSummary) tooltipParts.push(actionSummary);
       }
-      if (sys.school)               tooltipParts.push(`✨ ${sys.school} ранг ${sys.rank??1}`);
+      if (sys.school)               tooltipParts.push(formatSpellSchoolRank(sys));
       if (sys.weight)               tooltipParts.push(`⚖ ${sys.weight} кг`);
       const desc = sys.description ?? sys.desc ?? "";
       if (desc) tooltipParts.push(String(desc).replace(/<[^>]+>/g,"").slice(0,80));
@@ -817,7 +951,7 @@ class IronHillsGridInventoryApp extends Application {
       itemId:  p.item.id, name: p.item.name,
       img:     p.item.img ?? "icons/svg/item-bag.svg",
       type:    p.item.type, tier: p.item.system?.tier ?? 1,
-      qty:     p.item.system?.quantity ?? 1,
+      qty:     getItemQuantity(p.item),
       w:p.w, h:p.h, col:p.col, row:p.row, rotated:p.rotated,
       durPct, durClass,
       isBroken: (p.item.system?.durability?.value ?? 1) <= 0,
@@ -830,7 +964,7 @@ class IronHillsGridInventoryApp extends Application {
 
   _mapPendingItem(item, conts = null) {
     const { w, h } = getInventoryItemGridSize(item);
-    const qty = Math.max(1, Number(item.system?.quantity ?? 1));
+    const qty = getItemQuantity(item);
     const placement = explainAutoPlaceForItem(this.actor, item, conts);
 
     return {
@@ -1008,6 +1142,18 @@ class IronHillsGridInventoryApp extends Application {
       this._ctxMenu(e.currentTarget.dataset.itemId, e.currentTarget.dataset.secKey);
     });
 
+    html.find(".ih-gi-sec-header[data-source-item-id]").on("contextmenu", async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      await this._confirmUnmountAttachment(e.currentTarget.dataset.sourceItemId);
+    });
+
+    html.find("[data-unmount-attachment]").on("click", async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      await this._confirmUnmountAttachment(e.currentTarget.dataset.itemId);
+    });
+
     // ПКМ на слот экипировки — контекстное меню
     html.find(".ih-gi-equip-slot.has-item").on("contextmenu", async e => {
       e.preventDefault();
@@ -1046,7 +1192,11 @@ class IronHillsGridInventoryApp extends Application {
 
       const choice = await Dialog.wait({
         title:   item.name,
-        content: `<p style="margin:4px 0;color:#a8b8d0;font-size:12px">${item.name}</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-inventory-action-dialog",
+          headline: item.name,
+          headlineMeta: "экипировка",
+        }),
         buttons: {
           unequip: { label: "↩ Снять",            callback: () => "unequip" },
 
@@ -1106,7 +1256,16 @@ class IronHillsGridInventoryApp extends Application {
 
       const drop = await Dialog.confirm({
         title: "Выбросить на землю?",
-        content: `<p>Выбросить <b>${item.name}</b> на землю?</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-inventory-confirm-dialog",
+          headline: "Выбросить на землю?",
+          status: "Подтверждение",
+          statusClass: "is-warn",
+          rows: [
+            ["Предмет", item.name],
+            ["Действие", "выбросить на землю"],
+          ],
+        }),
         defaultYes: false,
       });
       if (!drop) return;
@@ -1115,6 +1274,34 @@ class IronHillsGridInventoryApp extends Application {
       this.render(false);
       _refreshPendingApp(this.actor);
     });
+  }
+
+  async _confirmUnmountAttachment(itemId) {
+    if (!itemId) return false;
+    const item = this.actor.items.get(itemId);
+    if (!item || item.type !== "attachment") return false;
+
+    const ok = await Dialog.confirm({
+      title: item.name,
+      content: buildSystemDialogContent({
+        className: "ih-inventory-confirm-dialog",
+        headline: item.name,
+        headlineMeta: "крепление",
+        status: "Снять крепление?",
+        statusClass: "is-warn",
+        rows: [
+          ["Действие", "снять крепление"],
+          ["Содержимое", "отправить в pending"],
+        ],
+      }),
+      defaultYes: false,
+    });
+    if (!ok) return false;
+
+    await unmountAttachment(toWorldActor(this.actor), item);
+    this.render(false);
+    _refreshPendingApp(this.actor);
+    return true;
   }
 
   async _moveToPending(data) {
@@ -1208,6 +1395,15 @@ class IronHillsGridInventoryApp extends Application {
     const slotMeta = EQUIPMENT_SLOT_DEFS.find(s => s.key === slot);
     const slotCfg = getCompatibleEquipmentSlots(item).find(s => s.key === slot);
     if (!slotCfg) {
+      if (item.type === "attachment") {
+        const mount = getAttachmentMountTargets(actorDoc, item).find(target => target.slotKey === slot);
+        if (mount) {
+          await mountAttachment(actorDoc, item, mount);
+          this.render(false);
+          _refreshPendingApp(this.actor);
+          return;
+        }
+      }
       ui.notifications.warn(`В "${slotMeta?.label ?? slot}" нельзя надеть ${item.name}`); return;
     }
 
@@ -1239,8 +1435,19 @@ class IronHillsGridInventoryApp extends Application {
     if (!placed) {
       const drop = await Dialog.confirm({
         title:   `${worldItem.name} не влезает`,
-        content: `<p>В рюкзаках и карманах нет места для <b>${worldItem.name}</b>.</p>
-                  <p>Выбросить на землю?</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-inventory-confirm-dialog",
+          headline: `${worldItem.name} не влезает`,
+          status: "Нет свободного места",
+          statusClass: "is-danger",
+          rows: [
+            ["Предмет", worldItem.name],
+            ["Проблема", "нет места в рюкзаках и карманах"],
+          ],
+          notes: [
+            ["Вариант", "выбросить на землю"],
+          ],
+        }),
         yes:     () => true,
         no:      () => false,
         defaultYes: false,
@@ -1273,6 +1480,14 @@ class IronHillsGridInventoryApp extends Application {
   async _quickEquip(itemId) {
     const item = this.actor.items.get(itemId);
     if (!item) return;
+
+    const mounted = await IronHillsGridInventoryApp._tryAutoMountAttachment(this.actor, item);
+    if (mounted) {
+      this.render(false);
+      _refreshPendingApp(this.actor);
+      return;
+    }
+
     const compat = getCompatibleEquipmentSlots(item);
     if (!compat.length) return;
     const equip  = this.actor.system?.equipment ?? {};
@@ -1294,6 +1509,9 @@ class IronHillsGridInventoryApp extends Application {
       const liveItem = target.items.get(item.id);
       if (!liveItem) continue;
 
+      const mounted = await IronHillsGridInventoryApp._tryAutoMountAttachment(target, liveItem);
+      if (mounted) continue;
+
       const equipped = await IronHillsGridInventoryApp._tryAutoEquip(target, liveItem);
       if (equipped) continue;
 
@@ -1306,7 +1524,7 @@ class IronHillsGridInventoryApp extends Application {
 
   /** Попытка разместить один предмет в свободную ячейку */
   static async _autoPlaceItem(actor, item, conts) {
-    const f  = item.flags?.["iron-hills-system"] ?? {};
+    const f  = getInventoryFlags(item);
     const rt = !!f.rotated;
     const w  = rt ? (item.system?.gridH ?? 1) : (item.system?.gridW ?? 1);
     const h  = rt ? (item.system?.gridW ?? 1) : (item.system?.gridH ?? 1);
@@ -1333,8 +1551,16 @@ class IronHillsGridInventoryApp extends Application {
 
 
   /** Попытка надеть предмет в подходящий свободный слот экипировки */
+  static async _tryAutoMountAttachment(actor, item) {
+    if (item?.type !== "attachment") return false;
+    const target = toWorldActor(actor);
+    const mount = findFreeAttachmentMount(target, item);
+    if (!mount) return false;
+    return mountAttachment(target, item, mount);
+  }
+
   static async _tryAutoEquip(actor, item) {
-    const qty = Number(item.system?.quantity ?? 1);
+    const qty = getItemQuantity(item);
     if (qty > 1) return false;
 
     const equip = actor.system?.equipment ?? {};
@@ -1355,6 +1581,13 @@ class IronHillsGridInventoryApp extends Application {
   async _autoPlace(itemId) {
     const item  = this.actor.items.get(itemId);
     if (!item) return;
+
+    const mounted = await IronHillsGridInventoryApp._tryAutoMountAttachment(this.actor, item);
+    if (mounted) {
+      this.render(false);
+      _refreshPendingApp(this.actor);
+      return;
+    }
 
     const equipped = await IronHillsGridInventoryApp._tryAutoEquip(this.actor, item);
     if (equipped) {
@@ -1381,6 +1614,19 @@ class IronHillsGridInventoryApp extends Application {
     const equipBtns = {};
     for (const s of getCompatibleEquipmentSlots(item))
       equipBtns[s.key] = { label:`${s.icon} → ${s.label}`, callback:()=>s.key };
+
+    const mountBtns = {};
+    if (item.type === "attachment") {
+      for (const mount of getAttachmentMountTargets(this.actor, item)) {
+        mountBtns[`mount:${mount.key}`] = {
+          label: `+ ${mount.label}`,
+          callback: () => `mount:${mount.key}`,
+        };
+      }
+      if (isMountedAttachment(item, this.actor)) {
+        mountBtns.unmount = { label: "Unmount attachment", callback: () => "unmount" };
+      }
+    }
 
     const moveBtns = {};
     const conts = buildContainers(this.actor);
@@ -1428,9 +1674,13 @@ class IronHillsGridInventoryApp extends Application {
 
     const choice = await Dialog.wait({
       title: item.name,
-      content:`<p style="color:#a8b8d0;font-family:'Segoe UI',sans-serif">${item.name} · ст.${item.system?.tier??1}</p>`,
+      content: buildSystemDialogContent({
+        className: "ih-inventory-action-dialog",
+        headline: item.name,
+        headlineMeta: `ст.${item.system?.tier ?? 1}`,
+      }),
       buttons:{
-        ...equipBtns, ...moveBtns,
+        ...equipBtns, ...mountBtns, ...moveBtns,
         rotate:{ label:"↺ Повернуть", callback:()=>"rotate" },
         ...( ["weapon","armor","tool"].includes(item.type) && Number(item.system?.durability?.value??100) < Number(item.system?.durability?.max??100)
           ? { repair: { label:`🔨 Починить (${repairCostDisplay} мед.)`, callback:()=>"repair" } } : {} ),
@@ -1470,10 +1720,31 @@ class IronHillsGridInventoryApp extends Application {
     if (choice==="ground")        {
       await game.ironHills.dropToGround?.([item], this.actor)
          ?? ui.notifications.warn("dropToGround не доступен");
-      this.render(false); return;
+      this.render(false); _refreshPendingApp(this.actor); return;
     }
-    if (choice==="delete")        { await item.delete(); this.render(false); return; }
-    if (choice.startsWith("move:")){ const t=choice.replace("move:",""); await moveItemToInventorySection(item, t, null); this.render(false); return; }
+    if (choice==="delete")        { await item.delete(); this.render(false); _refreshPendingApp(this.actor); return; }
+    if (choice === "unmount") {
+      await unmountAttachment(toWorldActor(this.actor), item);
+      this.render(false);
+      _refreshPendingApp(this.actor);
+      return;
+    }
+    if (choice.startsWith("mount:")) {
+      const mountKey = choice.replace("mount:", "");
+      const worldActor = toWorldActor(this.actor);
+      const mount = getAttachmentMountTargets(worldActor, item).find(t => t.key === mountKey);
+      if (mount) await mountAttachment(worldActor, item, mount);
+      this.render(false);
+      _refreshPendingApp(this.actor);
+      return;
+    }
+    if (choice.startsWith("move:")){
+      const t=choice.replace("move:","");
+      await moveItemToInventorySection(item, t, null);
+      this.render(false);
+      _refreshPendingApp(this.actor);
+      return;
+    }
     await this._onEquipDrop(choice, { dataTransfer:{getData:()=>JSON.stringify({itemId})} });
   }
 

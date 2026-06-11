@@ -52,6 +52,7 @@ const CONDITION_DEFINITIONS = Object.freeze({
     valueKind: "duration",
     mode: "max",
     skipsTurn: true,
+    tickOnTurnStart: true,
     display: true,
     sort: 50,
   },
@@ -62,6 +63,8 @@ const CONDITION_DEFINITIONS = Object.freeze({
     category: "control",
     valueKind: "duration",
     mode: "max",
+    skipsTurn: true,
+    tickOnTurnStart: true,
     display: true,
     sort: 55,
   },
@@ -182,6 +185,7 @@ const CONDITION_DEFINITIONS = Object.freeze({
     valueKind: "duration",
     mode: "max",
     skipsTurn: true,
+    tickOnTurnStart: true,
     display: true,
     sort: 140,
   },
@@ -445,7 +449,7 @@ export function getActiveConditionEntries(conditions = {}, options = {}) {
 
 export function getTurnStartDecayConditionKeys() {
   return Object.entries(CONDITION_DEFINITIONS)
-    .filter(([, definition]) => definition.tickOnTurnStart)
+    .filter(([, definition]) => definition.tickOnTurnStart || definition.skipsTurn)
     .map(([key]) => key);
 }
 

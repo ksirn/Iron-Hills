@@ -2,12 +2,17 @@ import { IronHillsCombatTechniqueApp, AIM_ZONES } from "./combat-technique-app.m
 import { IronHillsSpellCastApp } from "./spell-cast-app.mjs";
 import { TarkovTradeApp } from "./tarkov-trade-app.mjs";
 import { performActorAttack } from "../services/attack-flow-service.mjs";
+import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+} from "../services/combat-chat-service.mjs";
 import { buildHitEffect } from "../services/hit-effect-service.mjs";
 import { getActiveConditionEntries } from "../services/condition-policy-service.mjs";
 import {
   buildTechniqueAttackParams,
   getTechniqueAoeConfig,
-  isTechniqueSupportAction
+  isTechniqueSupportAction,
+  techniqueRequiresTargetZoneChoice
 } from "../services/combat-technique-service.mjs";
 import {
   executePendingCombatActionForActorSheet,
@@ -15,9 +20,12 @@ import {
   resolveCombatTimeCostForActorSheet,
   useQuickSlotForActorSheet,
 } from "../services/actor-sheet-orchestration-service.mjs";
-import { resolveCombatTimeCostForActor } from "../services/actor-combat-sheet-service.mjs";
 import {
-  castCatalogSpellAction,
+  continuePendingCombatActionFromSheet,
+  resolveCombatTimeCostForActor,
+} from "../services/actor-combat-sheet-service.mjs";
+import {
+  castSpellChoiceAction,
   performCombatAoeAttack,
   performTechniqueSupportCombatAction,
 } from "../services/combat-special-action-service.mjs";
@@ -28,12 +36,11 @@ import {
 import { getAvailableTechniques } from "../constants/combat-techniques.mjs";
 import {
   getCombatUiState,
+  getActorCombatUiState,
   isCombatActive,
   nextTurn,
   endCombat,
   canActorCommitAction,
-  getActorPendingAction,
-  continuePendingAction,
   cancelPendingAction,
   endTurnForActor,
   isActorActiveTurn,
@@ -46,8 +53,30 @@ import {
   getPersistentActorUuid,
   resolvePersistentActorFromTokenOrUser
 } from "../utils/actor-utils.mjs";
+import {
+  buildActorMedicalTriage,
+  getBodyPartTraumaStatus,
+} from "../services/body-trauma-service.mjs";
+import { buildActorRecoveryPlan } from "../services/recovery-service.mjs";
+import {
+  getActionBlockReason,
+  getTargetPartLabel,
+} from "../services/actor-state-service.mjs";
+import {
+  getAoeFriendlyFireLabel,
+  getAoeTargetZoneModeLabel,
+} from "../services/aoe-policy-service.mjs";
+import {
+  getCombatTargetActor,
+  getCombatTargetToken,
+  normalizeCombatTargets,
+  resolveCombatTargetRefs,
+} from "../services/combat-action-target-service.mjs";
 import { markActorDead } from "../services/condition-service.mjs";
 import { num } from "../utils/math-utils.mjs";
+import { getItemQuickSlotIcon } from "../utils/item-utils.mjs";
+
+const HUD_TARGET_PREVIEW_LIMIT = 3;
 
 function getRatio(value, max) {
   const safeMax = Math.max(1, num(max, 1));
@@ -70,7 +99,15 @@ async function chooseTechniqueTargetZone(technique) {
 
     new Dialog({
       title: `${technique?.label ?? "Приём"}: зона попадания`,
-      content: `<p>Выберите зону для точного броска.</p>`,
+      content: buildSystemDialogContent({
+        className: "ih-technique-zone-dialog",
+        headline: technique?.label ?? "Приём",
+        headlineMeta: "зона попадания",
+        status: "Точный бросок",
+        rows: [
+          ["Действие", "выбрать зону"],
+        ],
+      }),
       buttons,
       default: "torso",
       close: () => resolve(null),
@@ -102,19 +139,317 @@ function isFriendlySide(a, b) {
   return a === b;
 }
 
-function getPartTrauma(hpNode) {
-  const status = hpNode?.status ?? {};
-  const majorBleeding = Number(status.majorBleeding ?? 0);
-  const tourniquet = Boolean(status.tourniquet);
+function formatSecondsLabel(value) {
+  const seconds = Number(value ?? 0);
+  if (!Number.isFinite(seconds)) return "0с";
+  return `${Math.round(seconds * 10) / 10}с`;
+}
+
+function actorIdentity(actor) {
   return {
-    minorBleeding: Number(status.minorBleeding ?? 0),
-    majorBleeding,
-    activeMajorBleeding: tourniquet ? 0 : majorBleeding,
-    suppressedMajorBleeding: tourniquet ? majorBleeding : 0,
-    fracture: Boolean(status.fracture),
-    destroyed: Boolean(status.destroyed),
-    splinted: Boolean(status.splinted),
-    tourniquet
+    id: String(actor?.id ?? ""),
+    uuid: String(getPersistentActorUuid(actor) || actor?.uuid || ""),
+  };
+}
+
+function isSameActor(a, b) {
+  if (!a || !b) return false;
+  const left = actorIdentity(a);
+  const right = actorIdentity(b);
+  return Boolean(
+    (left.uuid && right.uuid && left.uuid === right.uuid) ||
+    (left.id && right.id && left.id === right.id)
+  );
+}
+
+function findParticipantForActor(state, actor) {
+  if (!actor) return null;
+  const actorId = String(actor?.id ?? "");
+  const actorUuid = String(getPersistentActorUuid(actor) || actor?.uuid || "");
+
+  return (state?.participants ?? []).find(participant => {
+    const participantActorId = String(participant?.actorId ?? "");
+    const participantActorUuid = String(participant?.actorUuid ?? "");
+    return Boolean(
+      (actorUuid && participantActorUuid && actorUuid === participantActorUuid) ||
+      (actorId && participantActorId && actorId === participantActorId)
+    );
+  }) ?? null;
+}
+
+function resolveTargetRelation({ actor, actorSide, targetActor, targetSide }) {
+  if (isSameActor(actor, targetActor)) {
+    return { key: "self", label: "себя", cssClass: "is-self" };
+  }
+
+  if (!targetSide || targetSide === "neutral" || actorSide === "neutral") {
+    return { key: "neutral", label: "нейтр.", cssClass: "is-neutral" };
+  }
+
+  if (isFriendlySide(actorSide, targetSide)) {
+    return { key: "friendly", label: "союзн.", cssClass: "is-friendly" };
+  }
+
+  return { key: "hostile", label: "враг", cssClass: "is-hostile" };
+}
+
+function buildTargetHudContext({
+  actor,
+  actorSide = "neutral",
+  state,
+  targets = globalThis.game?.user?.targets ?? [],
+} = {}) {
+  const normalizedTargets = normalizeCombatTargets(targets);
+  const seen = new Set();
+  const entries = [];
+
+  for (const target of normalizedTargets) {
+    const targetActor = getCombatTargetActor(target);
+    if (!targetActor) continue;
+
+    const identity = actorIdentity(targetActor);
+    const key = identity.uuid || identity.id || targetActor.name;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const token = getCombatTargetToken(target);
+    const participant = findParticipantForActor(state, targetActor);
+    const side = participant?.side ?? "neutral";
+    const relation = resolveTargetRelation({ actor, actorSide, targetActor, targetSide: side });
+    const secondsLeft = participant ? Number(participant.remainingSeconds ?? participant.secondsLeft ?? 0) : null;
+    const pendingUi = participant?.pendingActionUi ?? null;
+    const pendingAction = participant?.pendingAction ?? null;
+
+    entries.push({
+      name: targetActor.name || token?.name || "Цель",
+      img: token?.document?.texture?.src || token?.texture?.src || targetActor.img || "icons/svg/mystery-man.svg",
+      side,
+      sideClass: getParticipantSideClass(side),
+      relationKey: relation.key,
+      relationLabel: relation.label,
+      relationClass: relation.cssClass,
+      inCombat: Boolean(participant),
+      defeated: Boolean(participant?.defeated),
+      secondsLabel: participant ? formatSecondsLabel(secondsLeft) : "вне боя",
+      pendingLabel: pendingUi?.label || pendingAction?.label || "",
+      pendingStatus: pendingUi?.statusLabel || "",
+      hasPendingAction: Boolean(pendingUi || pendingAction),
+      tooltip: participant
+        ? `${targetActor.name} — ${relation.label}, ${formatSecondsLabel(secondsLeft)}`
+        : `${targetActor.name} — не участвует в текущем бою`,
+    });
+  }
+
+  const hasTargets = entries.length > 0;
+  const hostileCount = entries.filter(entry => entry.relationKey === "hostile").length;
+  const friendlyCount = entries.filter(entry => entry.relationKey === "friendly").length;
+  const selfCount = entries.filter(entry => entry.relationKey === "self").length;
+  const neutralCount = entries.filter(entry => entry.relationKey === "neutral").length;
+  const preview = entries.slice(0, HUD_TARGET_PREVIEW_LIMIT);
+  const overflowCount = Math.max(0, entries.length - preview.length);
+
+  let cssClass = "is-empty";
+  if (hostileCount > 0) cssClass = "has-hostile";
+  else if (friendlyCount > 0 || selfCount > 0) cssClass = "has-friendly";
+  else if (neutralCount > 0) cssClass = "has-neutral";
+
+  const parts = [];
+  if (hostileCount) parts.push(`${hostileCount} враг.`);
+  if (friendlyCount) parts.push(`${friendlyCount} союзн.`);
+  if (selfCount) parts.push("себя");
+  if (neutralCount) parts.push(`${neutralCount} нейтр.`);
+
+  return {
+    hasTargets,
+    targets: entries,
+    preview,
+    hasOverflow: overflowCount > 0,
+    overflowCount,
+    count: entries.length,
+    countLabel: hasTargets ? `${entries.length}` : "0",
+    cssClass,
+    summaryLabel: hasTargets ? parts.join(" · ") : "цель не выбрана",
+    primaryName: entries[0]?.name ?? "",
+    hasHostile: hostileCount > 0,
+    hasFriendly: friendlyCount > 0 || selfCount > 0,
+  };
+}
+
+function resolvePendingTargetNames(pendingAction) {
+  const refs = pendingAction?.data?.targetRefs ?? pendingAction?.targetRefs ?? [];
+  if (!Array.isArray(refs) || !refs.length) return [];
+
+  return resolveCombatTargetRefs(refs)
+    .map(target => getCombatTargetActor(target)?.name ?? "")
+    .filter(Boolean);
+}
+
+function firstActionValue(...values) {
+  return values.find(value => value !== undefined && value !== null && value !== "");
+}
+
+function buildPendingActionTacticalMeta(pendingAction) {
+  if (!pendingAction) {
+    return {
+      visible: false,
+      chips: [],
+      targetSummary: "",
+    };
+  }
+
+  const data = pendingAction.data ?? {};
+  const spellOverrides = data.spellOverrides ?? {};
+  const targetNames = resolvePendingTargetNames(pendingAction);
+  const zone = firstActionValue(
+    data.targetZone,
+    data.targetPart,
+    spellOverrides.targetZone,
+    spellOverrides.targetPart
+  );
+  const zoneMode = firstActionValue(data.targetZoneMode, spellOverrides.targetZoneMode);
+  const friendlyFireMode = firstActionValue(data.friendlyFireMode, spellOverrides.friendlyFireMode, data.friendlyFire);
+  const chips = [];
+
+  if (targetNames.length) {
+    chips.push({
+      key: "targets",
+      label: "Цели",
+      value: targetNames.length > 2
+        ? `${targetNames.slice(0, 2).join(", ")} +${targetNames.length - 2}`
+        : targetNames.join(", "),
+    });
+  }
+
+  if (zone) {
+    chips.push({
+      key: "zone",
+      label: "Зона",
+      value: getTargetPartLabel(zone),
+    });
+  } else if (zoneMode) {
+    chips.push({
+      key: "zone-mode",
+      label: "Зоны",
+      value: getAoeTargetZoneModeLabel(zoneMode),
+    });
+  }
+
+  if (friendlyFireMode !== undefined && friendlyFireMode !== null && friendlyFireMode !== "") {
+    chips.push({
+      key: "friendly-fire",
+      label: "Союзники",
+      value: getAoeFriendlyFireLabel(friendlyFireMode),
+    });
+  }
+
+  return {
+    visible: chips.length > 0,
+    chips,
+    targetSummary: targetNames.join(", "),
+  };
+}
+
+function buildHudReadiness({
+  combatActive = false,
+  actorCombat = {},
+  isCurrentTurn = false,
+  targetHud = null,
+} = {}) {
+  if (!combatActive) {
+    return {
+      cssClass: "is-peace",
+      icon: "✦",
+      title: "Свободный режим",
+      detail: "Бой не активен",
+    };
+  }
+
+  if (!actorCombat?.isInCombat) {
+    return {
+      cssClass: "is-out",
+      icon: "!",
+      title: "Вне боя",
+      detail: "Актёр не участвует в текущей очереди",
+    };
+  }
+
+  if (!isCurrentTurn) {
+    return {
+      cssClass: "is-waiting",
+      icon: "↻",
+      title: "Ожидание хода",
+      detail: actorCombat?.activeParticipant?.name
+        ? `Сейчас ходит: ${actorCombat.activeParticipant.name}`
+        : "Сейчас ход другого участника",
+    };
+  }
+
+  if (actorCombat?.pendingActionReady) {
+    return {
+      cssClass: "is-ready",
+      icon: "▶",
+      title: "Действие готово",
+      detail: "Можно продолжить и применить результат",
+    };
+  }
+
+  if (actorCombat?.hasPendingAction) {
+    return {
+      cssClass: "is-pending",
+      icon: "⏳",
+      title: "Длительное действие",
+      detail: "Продолжите или отмените действие перед новым ходом",
+    };
+  }
+
+  if (!actorCombat?.canStartNewAction) {
+    return {
+      cssClass: "is-blocked",
+      icon: "!",
+      title: "Действие недоступно",
+      detail: actorCombat?.actionBlockedReason || "Нет доступных секунд или состояние мешает действию",
+    };
+  }
+
+  if (targetHud?.hasTargets) {
+    return {
+      cssClass: "is-actionable",
+      icon: "⚔",
+      title: "Можно действовать",
+      detail: targetHud.summaryLabel,
+    };
+  }
+
+  return {
+    cssClass: "is-need-target",
+    icon: "◎",
+    title: "Нет выбранной цели",
+    detail: "Обычная атака потребует цель; стойки и подготовка могут быть доступны",
+  };
+}
+
+function buildHudPills({ state = {}, actorCombat = {}, targetHud = null } = {}) {
+  return [
+    { label: "Раунд", value: state.round ?? 0 },
+    { label: "Ход", value: state.turn ?? 0 },
+    { label: "Сек.", value: actorCombat?.isInCombat ? formatSecondsLabel(actorCombat.remainingSeconds) : "—" },
+    { label: "Цели", value: targetHud?.countLabel ?? "0" },
+  ];
+}
+
+function getPartTrauma(hpNode) {
+  const status = getBodyPartTraumaStatus({ system: { resources: { hp: { part: hpNode } } } }, "part");
+  return {
+    minorBleeding: status.minorBleeding,
+    majorBleeding: status.majorBleeding,
+    activeMajorBleeding: status.activeMajorBleeding,
+    suppressedMajorBleeding: status.suppressedMajorBleeding,
+    rawFracture: status.rawFracture,
+    fracture: status.fracture,
+    fractureSuppressed: status.fractureSuppressed,
+    destroyed: status.destroyed,
+    splinted: status.splinted,
+    tourniquet: status.tourniquet
   };
 }
 
@@ -128,7 +463,7 @@ function buildZoneTooltip(label, value, max, trauma) {
       : `🔴 Сильн. кровотечение: ${trauma.majorBleeding}`);
   }
   if (trauma.minorBleeding)   parts.push(`🟡 Мал. кровотечение: ${trauma.minorBleeding}`);
-  if (trauma.fracture)        parts.push("🟣 Перелом");
+  if (trauma.rawFracture)     parts.push(trauma.fractureSuppressed ? "🟣 Перелом стабилизирован" : "🟣 Перелом");
   if (trauma.tourniquet)      parts.push("🔵 Жгут наложен");
   if (trauma.splinted)        parts.push("🟢 Шина наложена");
   return parts.join(" | ");
@@ -192,10 +527,41 @@ export class IronHillsCombatHudApp extends Application {
   }
 
   _canActorUseCombatAction(actor) {
-    return canActorCommitAction(actor);
+    if (!isCombatActive()) return { ok: true, reason: "" };
+
+    const commitCheck = canActorCommitAction(actor);
+    if (!commitCheck.ok) return commitCheck;
+
+    const combatState = getActorCombatUiState(actor);
+    if (!combatState.canStartNewAction) {
+      return {
+        ok: false,
+        reason: combatState.hasPendingAction
+          ? "Сначала продолжите или отмените незавершённое длительное действие."
+          : (combatState.actionBlockedReason || "Сейчас действие недоступно."),
+      };
+    }
+
+    return commitCheck;
   }
 
   _completeHudSpellCast() {
+    this._refreshHud({ keepOnTop: true });
+  }
+
+  _clearTargets() {
+    const targets = [...(globalThis.game?.user?.targets ?? [])];
+    for (const token of targets) {
+      try {
+        token?.setTarget?.(false, {
+          user: globalThis.game?.user,
+          releaseOthers: false,
+          groupSelection: true,
+        });
+      } catch (err) {
+        console.warn("Iron Hills | HUD target clear failed", err);
+      }
+    }
     this._refreshHud({ keepOnTop: true });
   }
 
@@ -278,14 +644,13 @@ export class IronHillsCombatHudApp extends Application {
     const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
     const choice  = await IronHillsSpellCastApp.choose(actor, targets);
     if (!choice) return;
-    const { spell } = choice;
-
-    const result = await castCatalogSpellAction({
+    const result = await castSpellChoiceAction({
       actor,
-      spell,
+      choice,
       targets: game.user?.targets ?? [],
       resolveCombatTimeCost: (args) => this._resolveHudCombatTimeCost(actor, args),
       requestHostileAction: (label) => requestGmHostileAction(actor, label),
+      onLethal: (target) => markActorDead(target),
     });
 
     if (result?.queued) {
@@ -300,7 +665,7 @@ export class IronHillsCombatHudApp extends Application {
   async _performAoeAttack(actor, { aoeType, distance, baseDamage, energyCost,
       skillKey, label, damageType = "physical", ignoreArmor = 0,
       targetMode = "blast", maxTargets = null, chainDecay = 1,
-      hitBonus = 0, skillValueFallback = null, targetZone = null, targetZoneMode = null, applyCondition = null,
+      hitBonus = 0, attackMode = null, skillValueFallback = null, targetZone = null, targetZoneMode = null, applyCondition = null,
       conditionDuration = 0, conditionChance = 1, effectNotes = [],
       friendlyFire = false, friendlyFireMode = null }) {
     const result = await performCombatAoeAttack({
@@ -313,6 +678,7 @@ export class IronHillsCombatHudApp extends Application {
       baseDamage,
       energyCost,
       skillKey,
+      attackMode,
       label,
       damageType,
       ignoreArmor,
@@ -330,6 +696,7 @@ export class IronHillsCombatHudApp extends Application {
       friendlyFireMode,
       color: skillKey === "bow" || skillKey === "crossbow" ? "#4488ff" : "#ff4444",
       resolveCombatTimeCost: (args) => this._resolveHudCombatTimeCost(actor, args),
+      onLethal: (target) => markActorDead(target),
       afterAction: () => this._refreshHud({ keepOnTop: true }),
     });
 
@@ -366,11 +733,19 @@ export class IronHillsCombatHudApp extends Application {
 
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div style="padding:6px">
-        💨 <b>${actor.name}</b> переводит дух.<br>
-        ⚡ Энергия: <b>${newMax}/${newMax}</b>
-        ${newMax < energyMax ? `<br><span style="color:#f87171">Макс. энергии −1 от усталости</span>` : ""}
-      </div>`
+      content: buildCombatChatCard({
+        title: "Перевести дух",
+        subtitle: actor.name,
+        icon: "💨",
+        status: `${newMax}/${newMax}`,
+        rows: [
+          ["Энергия", `${newMax}/${newMax}`],
+        ],
+        notices: newMax < energyMax
+          ? [["Усталость", "макс. энергии −1"]]
+          : [],
+        className: "ih-combat-rest-chat-card",
+      }),
     });
 
     this._refreshHud({ keepOnTop: true });
@@ -438,6 +813,7 @@ export class IronHillsCombatHudApp extends Application {
       skillValueFallback: profileParams.skillValueFallback,
       actionSeconds: profileParams.actionSeconds ?? baseParams.actionSeconds ?? null,
       rangeOverride: profileParams.rangeOverride ?? baseParams.rangeOverride ?? null,
+      attackMode: profileParams.attackMode ?? baseParams.attackMode ?? null,
     });
 
     if (techniques.length > 0 || canAim) {
@@ -457,10 +833,11 @@ export class IronHillsCombatHudApp extends Application {
           return;
         }
 
-        const targetZoneChoice = tech.effect?.special === "choose_zone"
+        const needsTargetZoneChoice = techniqueRequiresTargetZoneChoice(tech);
+        const targetZoneChoice = needsTargetZoneChoice
           ? await chooseTechniqueTargetZone(tech)
           : null;
-        if (tech.effect?.special === "choose_zone" && !targetZoneChoice) return;
+        if (needsTargetZoneChoice && !targetZoneChoice) return;
 
         const primaryTarget = targets[0] ?? null;
         const techniqueParams = buildTechniqueAttackParams({
@@ -487,15 +864,16 @@ export class IronHillsCombatHudApp extends Application {
             damageType:  techniqueParams.damageType,
             ignoreArmor: techniqueParams.ignoreArmor,
             hitBonus:    techniqueParams.hitBonus,
+            attackMode:  techniqueParams.attackMode,
             skillValueFallback: techniqueParams.skillValueFallback,
             targetZone:  techniqueParams.targetZone,
+            targetZoneMode: techniqueParams.targetZoneMode ?? aoe.targetZoneMode,
             applyCondition: techniqueParams.applyCondition,
             conditionDuration: techniqueParams.conditionDuration,
             conditionChance: techniqueParams.conditionChance,
             effectNotes: techniqueParams.effectNotes,
             friendlyFire: aoe.friendlyFire,
             friendlyFireMode: aoe.friendlyFireMode,
-            targetZoneMode: aoe.targetZoneMode,
           });
         } else {
           // Обычный одиночный приём
@@ -528,7 +906,9 @@ export class IronHillsCombatHudApp extends Application {
     const actor = getHudActor();
     if (!actor?.sheet) return;
 
-    await useQuickSlotForActorSheet(actor.sheet, slotKey, {}, this._getActorSheetActionOptions(actor));
+    await useQuickSlotForActorSheet(actor.sheet, slotKey, {
+      targets: globalThis.game?.user?.targets ?? [],
+    }, this._getActorSheetActionOptions(actor));
     this._refreshHud({ keepOnTop: true });
   }
 
@@ -536,30 +916,11 @@ export class IronHillsCombatHudApp extends Application {
     const actor = getHudActor();
     if (!actor?.sheet) return;
 
-    const pending = getActorPendingAction(actor);
-    if (!pending) {
-      ui.notifications.warn("Нет длительного действия для продолжения.");
-      return;
-    }
-
-    const result = continuePendingAction(actor);
-    if (!result?.ok) {
-      ui.notifications.warn(result?.reason || "Не удалось продолжить действие.");
-      return;
-    }
-
-    if (!result.done) {
-      ui.notifications.info(
-        `${actor.name} продолжает действие. Осталось ${Number(result.action?.remainingSeconds ?? 0)} сек.`
-      );
-      this._refreshHud({ keepOnTop: true });
-      return;
-    }
-
-    if (actor.sheet) {
-      await executePendingCombatActionForActorSheet(actor.sheet, result.action, this._getActorSheetActionOptions(actor));
-    }
-
+    await continuePendingCombatActionFromSheet(actor, {
+      executePendingAction: action =>
+        executePendingCombatActionForActorSheet(actor.sheet, action, this._getActorSheetActionOptions(actor)),
+      render: () => this._refreshHud({ keepOnTop: true }),
+    });
     this._refreshHud({ keepOnTop: true });
   }
 
@@ -577,55 +938,55 @@ export class IronHillsCombatHudApp extends Application {
     this._refreshHud({ keepOnTop: true });
   }
 
-async _endTurnForActor() {
-  const actor = getHudActor();
-  if (!actor) return;
+  async _endTurnForActor() {
+    const actor = getHudActor();
+    if (!actor) return;
 
-  const result = endTurnForActor(actor);
-  if (!result?.ok) {
-    ui.notifications.warn(result?.reason || "Не удалось завершить ход.");
-    return;
-  }
+    const result = endTurnForActor(actor);
+    if (!result?.ok) {
+      ui.notifications.warn(result?.reason || "Не удалось завершить ход.");
+      return;
+    }
 
-  const advanceResult = await advanceTurnIfReady();
-  if (!advanceResult?.ok) {
-    ui.notifications.warn(advanceResult?.reason || "Ход завершён, но передача следующему участнику не выполнена.");
-    this._refreshHud({ keepOnTop: true });
-    return;
-  }
-
-  this._refreshHud({ keepOnTop: true });
-}
-
-// _endMyTurn удалён: дублировал _endTurnForActor, но без advanceTurnIfReady.
-  // Все вызовы завершения хода идут через _endTurnForActor.
-
-async _nextTurn() {
-  if (!isCombatActive()) {
-    ui.notifications.warn("Активного боя нет.");
-    return;
-  }
-
-  const actor = getHudActor();
-
-  if (actor && isActorActiveTurn(actor)) {
-    await this._endTurnForActor();
-    return;
-  }
-
-  if (game.user?.isGM) {
-    const nextResult = await nextTurn();
-    if (nextResult?.ok === false) {
-      ui.notifications.warn(nextResult?.reason || "Не удалось передать ход.");
+    const advanceResult = await advanceTurnIfReady();
+    if (!advanceResult?.ok) {
+      ui.notifications.warn(advanceResult?.reason || "Ход завершён, но передача следующему участнику не выполнена.");
+      this._refreshHud({ keepOnTop: true });
       return;
     }
 
     this._refreshHud({ keepOnTop: true });
-    return;
   }
 
-  ui.notifications.warn("Сейчас не ваш активный ход.");
-}
+// _endMyTurn удалён: дублировал _endTurnForActor, но без advanceTurnIfReady.
+  // Все вызовы завершения хода идут через _endTurnForActor.
+
+  async _nextTurn() {
+    if (!isCombatActive()) {
+      ui.notifications.warn("Активного боя нет.");
+      return;
+    }
+
+    const actor = getHudActor();
+
+    if (actor && isActorActiveTurn(actor)) {
+      await this._endTurnForActor();
+      return;
+    }
+
+    if (game.user?.isGM) {
+      const nextResult = await nextTurn();
+      if (nextResult?.ok === false) {
+        ui.notifications.warn(nextResult?.reason || "Не удалось передать ход.");
+        return;
+      }
+
+      this._refreshHud({ keepOnTop: true });
+      return;
+    }
+
+    ui.notifications.warn("Сейчас не ваш активный ход.");
+  }
 
   async _endCombat() {
     if (!isCombatActive()) {
@@ -640,8 +1001,8 @@ async _nextTurn() {
   async getData() {
     const actor = getHudActor();
     const state = getCombatUiState();
-const current =
-  (state.participants ?? [])[Math.max(0, Number(state.turn ?? 1) - 1)] ?? null;
+    const current =
+      (state.participants ?? [])[Math.max(0, Number(state.turn ?? 1) - 1)] ?? null;
 
     if (!actor) {
       return {
@@ -656,11 +1017,39 @@ const current =
     const quickSlots = actor.system?.quickSlots ?? {};
     const slotKeys = ["slot1", "slot2", "slot3", "slot4", "slot5", "slot6"];
     const actorUuid = getPersistentActorUuid(actor);
-    const actorParticipant =
-      (state.participants ?? []).find(participant => participant.actorUuid === actorUuid) ?? null;
+    const actorCombat = getActorCombatUiState(actor);
+    const actorParticipant = actorCombat.participant
+      ?? (state.participants ?? []).find(participant => participant.actorUuid === actorUuid)
+      ?? null;
     const actorSide = actorParticipant?.side ?? "neutral";
-    const pendingAction = actorParticipant?.pendingAction ?? null;
+    const pendingAction = actorCombat.pendingAction ?? actorParticipant?.pendingAction ?? null;
+    const pendingActionUi = actorCombat.pendingActionUi ?? actorParticipant?.pendingActionUi ?? null;
     const globalEffects = getActiveConditionEntries(actor.system?.conditions ?? {});
+    const medicalTriage = buildActorMedicalTriage(actor);
+    const recoveryPlan = buildActorRecoveryPlan(actor);
+    const selectedTargets = globalThis.game?.user?.targets ?? [];
+    const currentActorTurn = Boolean(
+      actorCombat.isActiveTurn ??
+      (current && actorUuid && String(current.actorUuid ?? "") === String(actorUuid))
+    );
+    const targetHud = buildTargetHudContext({
+      actor,
+      actorSide,
+      state,
+      targets: selectedTargets,
+    });
+    const pendingActionTacticalMeta = buildPendingActionTacticalMeta(pendingAction);
+    const readiness = buildHudReadiness({
+      combatActive: isCombatActive(),
+      actorCombat,
+      isCurrentTurn: currentActorTurn,
+      targetHud,
+    });
+    const hudPills = buildHudPills({
+      state,
+      actorCombat,
+      targetHud,
+    });
 
     return {
       hasActor: true,
@@ -670,13 +1059,17 @@ const current =
       actorImg: actor.img,
       actorSide,
       actorSideClass: getParticipantSideClass(actorSide),
-isCurrentTurn: Boolean(current && actorUuid && String(current.actorUuid ?? "") === String(actorUuid)),
-canEndTurn: Boolean(current && actorUuid && String(current.actorUuid ?? "") === String(actorUuid)),
-canContinuePendingAction:
-  Boolean(actorParticipant?.pendingAction) &&
-  Boolean(current && actorUuid && String(current.actorUuid ?? "") === String(actorUuid)),
+      isCurrentTurn: currentActorTurn,
+      canStartNewAction: Boolean(actorCombat.canStartNewAction),
+      canEndTurn: Boolean(actorCombat.canEndTurn),
+      canContinuePendingAction: Boolean(actorCombat.canContinuePendingAction),
       currentTurnName: current?.actorName || "—",
-      secondsLeft: actorParticipant ? num(actorParticipant.remainingSeconds, 0) : null,
+      readiness,
+      hudPills,
+      targetHud,
+      medicalTriage,
+      recoveryPlan,
+      secondsLeft: actorCombat.isInCombat ? num(actorCombat.remainingSeconds, 0) : null,
       isSkippingTurn: Boolean(
         actorParticipant &&
         Number(actorParticipant.remainingSeconds ?? 0) <= 0 &&
@@ -698,10 +1091,17 @@ canContinuePendingAction:
       hydrationPct: Math.round(getRatio(resources.hydration?.value, resources.hydration?.max) * 100),
 
       pendingAction,
+      pendingActionUi,
       hasPendingAction: Boolean(pendingAction),
       pendingActionLabel: pendingAction?.label || "",
-      pendingActionRemainingSeconds: Number(pendingAction?.remainingSeconds ?? 0),
-      canCancelPendingAction: Boolean(pendingAction),
+      pendingActionRemainingSeconds: Number(pendingActionUi?.remainingSeconds ?? pendingAction?.remainingSeconds ?? 0),
+      pendingActionTotalSeconds: Number(pendingActionUi?.totalSeconds ?? pendingAction?.totalSeconds ?? 0),
+      pendingActionProgressPct: Number(pendingActionUi?.progressPct ?? actorCombat.pendingActionProgressPct ?? 0),
+      pendingActionStatusClass: pendingActionUi?.statusClass ?? actorCombat.pendingActionStatusClass ?? "",
+      pendingActionStatusLabel: pendingActionUi?.statusLabel ?? actorCombat.pendingActionStatusLabel ?? "",
+      pendingActionReady: Boolean(pendingActionUi?.ready ?? actorCombat.pendingActionReady),
+      pendingActionTacticalMeta,
+      canCancelPendingAction: Boolean(actorCombat.canCancelPendingAction),
 
       zones: [
         { key: "head", label: "Голова", value: num(hp.head?.value, 0), max: num(hp.head?.max, 0), pct: Math.round(getRatio(hp.head?.value, hp.head?.max) * 100), cssClass: getZoneClass(hp.head?.value, hp.head?.max), trauma: getPartTrauma(hp.head), tooltip: buildZoneTooltip("Голова", num(hp.head?.value,0), num(hp.head?.max,0), getPartTrauma(hp.head)) },
@@ -716,10 +1116,22 @@ canContinuePendingAction:
       quickSlots: slotKeys.map(slotKey => {
         const itemId = quickSlots?.[slotKey];
         const item = itemId ? actor.items.get(itemId) : null;
+        const reason = getActionBlockReason(actor, "quickslot", { slotKey, targets: selectedTargets });
+        const canUse = !reason;
+        const itemName = item?.name || "—";
+        const slotNumber = slotKey.replace("slot", "");
+        const display = item ? getItemQuickSlotIcon(item) : slotNumber;
         return {
           slotKey,
-          short: slotKey.replace("slot", ""),
-          itemName: item?.name || "—"
+          short: slotNumber,
+          display,
+          itemName,
+          hasItem: Boolean(item),
+          canUse,
+          blockedReason: reason,
+          tooltip: canUse
+            ? `[${slotNumber}] ${itemName}`
+            : `[${slotNumber}] ${itemName}: ${reason || "Недоступно"}`,
         };
       }),
 
@@ -767,7 +1179,7 @@ canContinuePendingAction:
       // Флаги для управления доступностью действий
       isGM: Boolean(game.user?.isGM),
       canActFreely: !isCombatActive(),
-      canAttack: isCombatActive(),
+      canAttack: !isCombatActive() || Boolean(actorCombat.canStartNewAction),
 
       // Энергия — для кнопки «Перевести дух»
       energyCur:  Number(actor.system?.resources?.energy?.value ?? 0),
@@ -784,6 +1196,7 @@ canContinuePendingAction:
       queue: (state.participants ?? []).map(participant => {
         const side = participant.side ?? "neutral";
         const isFriendly = actorSide !== "neutral" && isFriendlySide(actorSide, side);
+        const participantPending = participant.pendingActionUi ?? null;
 
         return {
           name: participant.actorName,
@@ -791,7 +1204,14 @@ canContinuePendingAction:
           initiative: participant.initiative,
           isCurrent: participant.id === state.activeParticipantId,
           sideClass: getParticipantSideClass(side),
-          relationLabel: side === "neutral" ? "N" : (isFriendly ? "F" : "E")
+          relationLabel: side === "neutral" ? "N" : (isFriendly ? "F" : "E"),
+          hasPendingAction: Boolean(participantPending),
+          pendingActionReady: Boolean(participantPending?.ready),
+          pendingActionRemainingSeconds: Number(participantPending?.remainingSeconds ?? 0),
+          pendingActionStatusLabel: participantPending?.statusLabel ?? "",
+          tooltip: participantPending
+            ? `${participant.actorName} — ${participant.remainingSeconds}с, ${participantPending.label}: ${participantPending.statusLabel}`
+            : `${participant.actorName} — ${participant.remainingSeconds}с`,
         };
       })
     };
@@ -834,6 +1254,11 @@ canContinuePendingAction:
     html.find("[data-end-turn]").on("click", async event => {
       event.preventDefault();
       await this._endTurnForActor();
+    });
+
+    html.find("[data-clear-targets]").on("click", event => {
+      event.preventDefault();
+      this._clearTargets();
     });
 
     html.find("[data-quickslot]").on("click", async event => {

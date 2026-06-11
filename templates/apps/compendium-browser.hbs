@@ -5,7 +5,7 @@
   <div class="ih-cb-sidebar">
     {{#each packs}}
     <a class="ih-cb-pack-btn {{#if (eq packName ../activePack)}}is-active{{/if}}"
-       data-pack="{{packName}}" style="--pack-color:{{color}}">
+       data-pack="{{packName}}" data-ih-style-pack-color="{{color}}">
       <span class="ih-cb-pack-icon">{{icon}}</span>
       <span class="ih-cb-pack-label">{{label}}</span>
     </a>
@@ -23,7 +23,7 @@
 
     {{!-- Шапка --}}
     <div class="ih-cb-header">
-      <span class="ih-cb-title" style="color:{{activeCfg.color}}">
+      <span class="ih-cb-title" data-ih-style-color="{{activeCfg.color}}">
         {{activeCfg.icon}} {{activeCfg.label}}
       </span>
       <input class="ih-cb-search" type="text" data-cb-search
@@ -46,7 +46,7 @@
       {{else if isEmpty}}
       <div class="ih-cb-empty">
         Ничего не найдено
-        {{#if isGM}}<br><a data-new-item style="cursor:pointer;color:var(--ih-accent)">✚ Создать первый предмет</a>{{/if}}
+        {{#if isGM}}<br><a class="ih-cb-empty-create" data-new-item>✚ Создать первый предмет</a>{{/if}}
       </div>
       {{else}}
       {{#each tiers}}
@@ -72,8 +72,7 @@
             <div class="ih-cb-item-actions">
               <a class="ih-icon-btn tiny" data-edit-item="{{uuid}}" title="Редактировать">✏</a>
               <a class="ih-icon-btn tiny" data-dupe-item="{{uuid}}" title="Дублировать">⎘</a>
-              <a class="ih-icon-btn tiny" data-del-item="{{uuid}}" title="Удалить"
-                 style="color:var(--ih-hp-crit)">✕</a>
+              <a class="ih-icon-btn tiny is-danger" data-del-item="{{uuid}}" title="Удалить">✕</a>
             </div>
           </div>
           {{/each}}

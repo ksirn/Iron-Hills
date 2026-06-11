@@ -1,12 +1,16 @@
-import { SPELLS } from "../constants/spells-catalog.mjs";
-import { buildChatSectionRow } from "../utils/text-utils.mjs";
 import {
   getActionBlockReason,
   getActorInjuryInfo,
   getDerivedConditionState,
   getSpellSchoolLabel,
+  resolveSpellSchoolSkill,
 } from "./actor-state-service.mjs";
 import { isCombatActive } from "./combat-flow-service.mjs";
+import {
+  buildCombatRows,
+  createCombatChatMessage,
+  joinCombatHtml,
+} from "./combat-chat-service.mjs";
 import {
   recalculateActorWeight,
   removeQuantityFromItem,
@@ -17,14 +21,14 @@ import {
   applySingleTargetSpellUtilityEffect,
 } from "./spell-effect-service.mjs";
 import {
-  buildCombatTargetPayload,
+  buildCombatActionTargetPayload,
   getPrimaryCombatTargetActor,
   resolveCombatActionTargets,
 } from "./combat-action-target-service.mjs";
 import {
-  resolveAoeFriendlyFireMode,
-  resolveAoeTargetZone,
-} from "./aoe-policy-service.mjs";
+  buildSpellChoicePayload,
+  buildSpellRuntimeData,
+} from "./spell-runtime-service.mjs";
 
 function spellCastResult({
   ok = true,
@@ -32,59 +36,48 @@ function spellCastResult({
   consumedScroll = false,
   reason = "",
   result = null,
+  summary = null,
 } = {}) {
-  return { ok, queued, consumedScroll, reason, result };
+  return { ok, queued, consumedScroll, reason, result, summary };
 }
 
-function getSpellData(item) {
-  const catalogSpell = SPELLS[String(item?.system?.spellId ?? "")] ?? null;
-  const itemAoe = item?.system?.aoe && Number(item.system.aoe.distance ?? 0) > 0
-    ? item.system.aoe
-    : null;
-  const catalogAoe = catalogSpell?.aoe && Number(catalogSpell.aoe.distance ?? 0) > 0
-    ? catalogSpell.aoe
-    : null;
-  const itemEffect = item?.system?.effect && typeof item.system.effect === "object"
-    ? item.system.effect
-    : null;
-  const itemDamage = Number(item?.system?.damage ?? 0);
-  const catalogDamage = Number(catalogSpell?.damage ?? 0);
-  const spellDamage = itemDamage > 0 ? itemDamage : catalogDamage;
-  const spellEffect = itemEffect ?? catalogSpell?.effect ?? null;
-  const effectType = item?.system?.effectType
-    || (spellDamage > 0 ? "damage" : (spellEffect?.special === "heal" ? "heal" : ""));
-  const rawDamageType = item?.system?.damageType ?? catalogSpell?.damageType ?? "magical";
-  const explicitTargetPart = resolveAoeTargetZone(
-    item?.system?.targetZone,
-    item?.system?.targetPart,
-    catalogSpell?.targetZone,
-    catalogSpell?.targetPart,
-    spellEffect?.targetZone,
-    spellEffect?.targetPart,
-  );
+function clonePlain(value) {
+  if (value === undefined) return undefined;
+  if (globalThis.foundry?.utils?.deepClone) return foundry.utils.deepClone(value);
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return JSON.parse(JSON.stringify(value ?? null));
+}
 
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function getItemSystemData(item) {
+  if (typeof item?.toObject === "function") return item.toObject()?.system ?? {};
+  return item?.system ?? {};
+}
+
+function buildSpellCastItem(item, spellOverrides = null) {
+  if (!isPlainObject(spellOverrides)) return item;
+  const system = buildSpellChoicePayload(clonePlain(getItemSystemData(item)), spellOverrides);
   return {
-    catalogSpell,
-    spellAoe: itemAoe ?? catalogAoe,
-    spellEffect,
-    spellDamage,
-    spellFriendlyFire: resolveAoeFriendlyFireMode(
-      itemAoe?.friendlyFireMode,
-      itemAoe?.friendlyFire,
-      catalogAoe?.friendlyFireMode,
-      catalogSpell?.friendlyFireMode,
-      catalogAoe?.friendlyFire,
-      catalogSpell?.friendlyFire,
-      item?.system?.friendlyFireMode,
-      item?.system?.friendlyFire,
-      false,
-    ),
-    effectType,
-    damageType: String(rawDamageType).toLowerCase() === "physical" ? "physical" : "magical",
-    targetPart: explicitTargetPart ?? "torso",
-    attackTargetZone: explicitTargetPart,
-    power: Number(item?.system?.power ?? 0) > 0 ? Number(item.system.power) : spellDamage,
+    id: item.id,
+    uuid: item.uuid,
+    name: item.name,
+    type: item.type,
+    img: item.img,
+    system,
   };
+}
+
+function serializeSpellOverrides(overrides = null) {
+  if (!isPlainObject(overrides)) return null;
+  const output = {};
+  if (overrides.targetZone !== undefined) output.targetZone = overrides.targetZone;
+  if (overrides.targetZoneMode !== undefined) output.targetZoneMode = overrides.targetZoneMode;
+  if (overrides.friendlyFire !== undefined) output.friendlyFire = Boolean(overrides.friendlyFire);
+  if (overrides.friendlyFireMode !== undefined) output.friendlyFireMode = overrides.friendlyFireMode;
+  return Object.keys(output).length ? output : null;
 }
 
 export async function spendSpellLikeResources(actor, {
@@ -128,50 +121,54 @@ export async function castSpellLikeItem({
   applySkillExp = null,
   onLethal = null,
   afterCast = null,
+  spellOverrides = null,
 } = {}) {
   if (!item) {
     ui.notifications.warn("Заклинание не найдено");
     return spellCastResult({ ok: false, reason: "missing-item" });
   }
 
-  const spellLabel = `${isScroll ? "Свиток" : "Заклинание"}: ${item.name}`;
+  const castItem = buildSpellCastItem(item, spellOverrides);
+  const spellLabel = `${isScroll ? "Свиток" : "Заклинание"}: ${castItem.name}`;
   const selectedTargets = resolveCombatActionTargets({ targets });
-  const school = item.system?.school;
-  const schoolSkill = actor?.system?.skills?.[school];
+  const school = castItem.system?.school;
+  const schoolSkillRef = resolveSpellSchoolSkill(actor, school);
+  const schoolSkill = schoolSkillRef.skill;
+  const skillKey = schoolSkillRef.key || school;
   if (!schoolSkill) {
-    ui.notifications.warn(`У персонажа нет школы магии ${school}`);
+    ui.notifications.warn(`У персонажа нет школы магии ${schoolSkillRef.label || school}`);
     return spellCastResult({ ok: false, reason: "missing-school" });
   }
 
-  const manaCost = isScroll ? 0 : Number(item.system?.manaCost ?? 0);
-  const energyCost = Number(item.system?.energyCost ?? 0);
+  const manaCost = isScroll ? 0 : Number(castItem.system?.manaCost ?? 0);
+  const energyCost = Number(castItem.system?.energyCost ?? 0);
   const currentMana = Number(actor.system?.resources?.mana?.value ?? 0);
   const currentEnergy = Number(actor.system?.resources?.energy?.value ?? 0);
-  const blockReason = getActionBlockReason(actor, isScroll ? "scroll" : "spell", { item });
+  const blockReason = getActionBlockReason(actor, isScroll ? "scroll" : "spell", { item: castItem });
   if (blockReason) {
     ui.notifications.warn(blockReason);
     return spellCastResult({ ok: false, reason: "blocked" });
   }
 
+  const spellData = buildSpellRuntimeData(castItem);
   const {
-    spellAoe,
-    spellEffect,
-    spellDamage,
-    spellFriendlyFire,
+    aoe: spellAoe,
+    effect: spellEffect,
     effectType,
-    damageType,
+    combatDamageType: damageType,
     targetPart,
     attackTargetZone,
     power,
-  } = getSpellData(item);
+  } = spellData;
 
-  const isOffensiveSpell = effectType === "damage";
+  const isOffensiveSpell = spellData.isHostile;
   if (isOffensiveSpell && !isCombatActive() && !globalThis.game?.user?.isGM) {
     const allowed = await requestHostileAction?.(spellLabel);
     if (!allowed) return spellCastResult({ ok: false, reason: "hostile-action-denied" });
   }
 
-  const targetActor = getPrimaryCombatTargetActor(selectedTargets);
+  const targetActor = getPrimaryCombatTargetActor(selectedTargets)
+    ?? (spellData.defaultTargetSelf ? actor : null);
   if (!spellAoe && !targetActor) {
     ui.notifications.warn("Выберите цель");
     return spellCastResult({ ok: false, reason: "missing-target" });
@@ -187,14 +184,18 @@ export async function castSpellLikeItem({
   }
 
   if (!skipTimeCost && resolveCombatTimeCost) {
+    const serializedOverrides = serializeSpellOverrides(spellOverrides);
     const timeState = await resolveCombatTimeCost({
       actionType: isScroll ? "scroll" : "cast-spell",
       label: spellLabel,
-      item,
+      item: castItem,
       payload: {
         itemId: item.id,
         isScroll,
-        ...buildCombatTargetPayload(selectedTargets),
+        ...buildCombatActionTargetPayload({
+          targets: selectedTargets,
+          spellOverrides: serializedOverrides,
+        }),
       },
     });
 
@@ -208,36 +209,43 @@ export async function castSpellLikeItem({
     const aoeSpell = await applyAoeSpellEffect({
       caster: actor,
       aoe: spellAoe,
-      label: item.name,
+      label: castItem.name,
       color: "#8888ff",
-      skillKey: school,
+      skillKey,
       hitBonus: 0,
       injuries: {
         ...injuries,
         attackPenalty: castPenalty,
         meleePenalty: castPenalty,
       },
-      friendlyFire: spellFriendlyFire,
-      baseDamage: effectType === "damage" ? power : 0,
+      friendlyFire: spellData.friendlyFire,
+      friendlyFireMode: spellData.friendlyFireMode,
+      baseDamage: spellData.isDamage ? power : 0,
       damageType,
       effect: spellEffect,
-      power: spellEffect?.healAmount ?? power,
-      targetZone: effectType === "damage" ? attackTargetZone : targetPart,
+      power: spellData.utilityPower,
+      targetZone: spellData.isDamage ? attackTargetZone : targetPart,
+      targetZoneMode: spellData.targetZoneMode,
+      onLethal,
       onTemplatePlaced: async () => spendSpellLikeResources(actor, resourceState),
     });
     if (!aoeSpell.ok) return spellCastResult({ ok: false, reason: "aoe-cancelled", result: aoeSpell });
 
-    await completeSpellLikeCast({ actor, item, school, isScroll, applySkillExp, afterCast });
-    return spellCastResult({ consumedScroll: Boolean(isScroll), result: aoeSpell });
+    await completeSpellLikeCast({ actor, item: castItem, school: skillKey, isScroll, applySkillExp, afterCast });
+    return spellCastResult({
+      consumedScroll: Boolean(isScroll),
+      result: aoeSpell,
+      summary: aoeSpell.summary ?? null,
+    });
   }
 
-  if (effectType === "damage") {
+  if (spellData.isDamage) {
     await spendSpellLikeResources(actor, resourceState);
 
     const spellAttack = await applySingleTargetSpellDamage({
       caster: actor,
       target: targetActor,
-      skillKey: school,
+      skillKey,
       baseDamage: power,
       damageType,
       label: spellLabel,
@@ -252,17 +260,17 @@ export async function castSpellLikeItem({
     });
     if (!spellAttack.ok) return spellCastResult({ ok: false, reason: "attack-cancelled", result: spellAttack });
 
-    const costHtml = `
-      ${buildChatSectionRow("Мана", `-${manaCost}`)}
-      ${buildChatSectionRow("Энергия", `-${energyCost}`)}
-    `;
+    const costHtml = buildCombatRows([
+      ["Мана", `-${manaCost}`],
+      ["Энергия", `-${energyCost}`],
+    ]);
 
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: spellAttack.html + costHtml,
+    await createCombatChatMessage({
+      actor,
+      content: joinCombatHtml(spellAttack.html, costHtml),
     });
 
-    await completeSpellLikeCast({ actor, item, school, isScroll, applySkillExp, afterCast });
+    await completeSpellLikeCast({ actor, item: castItem, school: skillKey, isScroll, applySkillExp, afterCast });
     return spellCastResult({ consumedScroll: Boolean(isScroll), result: spellAttack });
   }
 
@@ -271,43 +279,41 @@ export async function castSpellLikeItem({
 
   await spendSpellLikeResources(actor, resourceState);
 
-  let content = `
-    <h3>${spellLabel}</h3>
-    ${buildChatSectionRow("Источник", actor.name)}
-    ${buildChatSectionRow("Цель", targetActor.name)}
-    ${buildChatSectionRow("Школа", getSpellSchoolLabel(school))}
-    ${buildChatSectionRow("Куб", `d${dieSize}`)}
-    ${buildChatSectionRow("Штраф от ранений", castPenalty > 0 ? `-${castPenalty}` : "0")}
-    ${buildChatSectionRow("Кровопотеря", Number(derivedConditions.bleeding ?? 0))}
-    ${buildChatSectionRow("Шок", Number(derivedConditions.shock ?? 0))}
-    ${buildChatSectionRow("Бросок", `${roll.total}`)}
-    ${buildChatSectionRow("Мана", `-${manaCost}`)}
-    ${buildChatSectionRow("Энергия", `-${energyCost}`)}
-  `;
-
   const utilityEffect = await applySingleTargetSpellUtilityEffect({
     caster: actor,
     target: targetActor,
-    item,
+    item: castItem,
     effectType,
     effect: spellEffect,
     power,
     roll,
     targetPart,
     schoolSkill,
-    markActorDead: target => onLethal?.(target),
+    markActorDead: onLethal ? (target => onLethal(target)) : null,
   });
-  content += utilityEffect.html;
+  const fallbackHtml = utilityEffect.handled
+    ? ""
+    : buildCombatRows([["Эффект", "Не настроен: " + (effectType || spellEffect?.special || "unknown")]]);
 
-  if (!utilityEffect.handled) {
-    content += buildChatSectionRow("Эффект", "Не настроен: " + (effectType || spellEffect?.special || "unknown"));
-  }
-
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    content,
+  await createCombatChatMessage({
+    actor,
+    title: spellLabel,
+    rows: [
+      ["Источник", actor.name],
+      ["Цель", targetActor.name],
+      ["Школа", getSpellSchoolLabel(school)],
+      ["Куб", `d${dieSize}`],
+      ["Штраф от ранений", castPenalty > 0 ? `-${castPenalty}` : "0"],
+      ["Кровопотеря", Number(derivedConditions.bleeding ?? 0)],
+      ["Шок", Number(derivedConditions.shock ?? 0)],
+      ["Бросок", `${roll.total}`],
+      ["Мана", `-${manaCost}`],
+      ["Энергия", `-${energyCost}`],
+    ],
+    bodyHtml: joinCombatHtml(utilityEffect.html, fallbackHtml),
+    className: "ih-spell-utility-card",
   });
 
-  await completeSpellLikeCast({ actor, item, school, isScroll, applySkillExp, afterCast });
+  await completeSpellLikeCast({ actor, item: castItem, school: skillKey, isScroll, applySkillExp, afterCast });
   return spellCastResult({ consumedScroll: Boolean(isScroll), result: utilityEffect });
 }

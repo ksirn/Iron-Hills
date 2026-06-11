@@ -1,22 +1,74 @@
 {{!-- Iron Hills AoE attack/spell summary chat card. --}}
 
-<div style="padding:6px;font-family:var(--font-primary)">
-  {{icon}} <b>{{label}}</b><br>
-  {{localize "IRONHILLS.Chat.Aoe.TargetCount"}}: <b>{{totalCount}}</b> / {{localize "IRONHILLS.Chat.Aoe.HitCount"}}: <b>{{hitCount}}</b>
-  <br>Zones: <b>{{targetZoneLabel}}</b> | FF: <b>{{friendlyFireMode}}</b>
-  {{#if (gt alliesSpared 0)}}
-    <br><span style="color:#7d9aff;">{{localize "IRONHILLS.Chat.Aoe.AlliesSpared"}}: {{alliesSpared}}</span>
+<div class="ih-chat-card ih-aoe-chat-card {{cardClass}}">
+  <div class="ih-aoe-chat-head">
+    <div class="ih-aoe-chat-title">
+      <span class="ih-aoe-chat-icon">{{icon}}</span>
+      <span>{{label}}</span>
+    </div>
+  </div>
+
+  <div class="ih-aoe-stat-row">
+    {{#each statPills}}
+    <span class="ih-aoe-stat {{className}}">
+      <span class="ih-aoe-stat-label">{{label}}</span>
+      <b>{{value}}</b>
+    </span>
+    {{/each}}
+  </div>
+
+  <div class="ih-aoe-meta-grid">
+    {{#each metaRows}}
+    <div class="ih-aoe-meta">
+      <span>{{label}}</span>
+      <b>{{value}}</b>
+    </div>
+    {{/each}}
+  </div>
+
+  {{#if noticeRows.length}}
+  <div class="ih-aoe-notices">
+    {{#each noticeRows}}
+    <div class="ih-aoe-notice {{className}}">{{text}}</div>
+    {{/each}}
+  </div>
   {{/if}}
-  {{#if (gt alliesHit 0)}}
-    <br><span style="color:#f87171;">Allies hit: {{alliesHit}}</span>
+
+  {{#if hasResults}}
+  <div class="ih-aoe-result-list">
+    {{#each results}}
+    <div class="ih-aoe-result {{className}}">
+      <span class="ih-aoe-result-status">{{statusIcon}}</span>
+      <div class="ih-aoe-result-main">
+        <div class="ih-aoe-result-name">
+          <b>{{name}}</b>
+          <span>{{sideLabel}}</span>
+        </div>
+        {{#if badges.length}}
+        <div class="ih-aoe-result-badges">
+          {{#each badges}}
+          <span class="ih-aoe-result-badge {{className}}">{{text}}</span>
+          {{/each}}
+        </div>
+        {{/if}}
+        <div class="ih-aoe-result-outcome">{{outcome}}</div>
+        {{#if detailRows.length}}
+        <div class="ih-aoe-result-details">
+          {{#each detailRows}}
+          <div class="ih-aoe-result-detail {{className}}">
+            <span>{{label}}</span>
+            <b>{{value}}</b>
+          </div>
+          {{/each}}
+        </div>
+        {{else}}
+        {{#if metaText}}
+        <div class="ih-aoe-result-meta">{{metaText}}</div>
+        {{/if}}
+        {{/if}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
   {{/if}}
-  <br>
-  {{#each results}}
-    {{#if this.hit}}
-      [hit] {{#if this.ally}}[ally] {{/if}}{{this.name}}: <b>{{this.damage}}</b> {{localize "IRONHILLS.Chat.Aoe.LineHit"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}}{{#if (gt this.armor 0)}}, armor -{{this.armor}}{{/if}}{{#if this.condition}}, {{this.condition}}{{/if}})
-    {{else}}
-      [miss] {{#if this.ally}}[ally] {{/if}}{{this.name}}: {{localize "IRONHILLS.Chat.Aoe.LineMiss"}} ({{localize "IRONHILLS.Chat.Aoe.RollSlash"}} {{this.roll}}/{{this.threshold}}{{#if this.zone}}, {{this.zone}}{{/if}})
-    {{/if}}
-    {{#unless @last}}<br>{{/unless}}
-  {{/each}}
 </div>

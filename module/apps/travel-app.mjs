@@ -7,6 +7,10 @@ import {
   getMembersOfGroup, getActiveGroup
 } from "../services/party-manager.mjs";
 import { DISEASES, getActiveDiseases, getDiseasesPenalties } from "../constants/diseases.mjs";
+import {
+  buildCombatChatCard,
+  escapeCombatHtml,
+} from "../services/combat-chat-service.mjs";
 
 const BASE_RATES = {
   satiety:    2,
@@ -430,7 +434,20 @@ class IronHillsTravelApp extends Application {
           `${actor.name} полностью истощён — не может двигаться дальше! Требуется отдых.`
         );
         await ChatMessage.create({
-          content: `<div style="padding:6px">💀 <b>${actor.name}</b> полностью истощён и не может продолжать путь. Необходим отдых.</div>`
+          content: buildCombatChatCard({
+            title: "Истощение",
+            icon: "💀",
+            status: "остановка",
+            statusClass: "is-danger",
+            rows: [
+              ["Персонаж", actor.name],
+              ["Итог", "не может продолжать путь"],
+            ],
+            notices: [
+              ["Нужно", "отдых"],
+            ],
+            className: "ih-travel-chat-card",
+          }),
         });
         // Не применяем это перемещение
         continue;
@@ -538,7 +555,7 @@ class IronHillsTravelApp extends Application {
             const nextStage = dState.stage + 1;
             if (nextStage < def.stages.length) {
               diseaseData[dKey] = { stage: nextStage, progress: 0, duration: (dState.duration ?? 0) + this._hours };
-              diseaseMessages.push(`⚠ <b>${actor.name}</b>: ${def.icon} ${def.label} → <b>${def.stages[nextStage].label}</b>`);
+              diseaseMessages.push(`⚠ <b>${escapeCombatHtml(actor.name)}</b>: ${escapeCombatHtml(def.icon)} ${escapeCombatHtml(def.label)} → <b>${escapeCombatHtml(def.stages[nextStage].label)}</b>`);
             }
           } else {
             diseaseData[dKey] = { ...dState, progress: newProgress, duration: (dState.duration ?? 0) + this._hours };
@@ -554,7 +571,7 @@ class IronHillsTravelApp extends Application {
           const chancePerHour = def.naturalCureChance * this._hours;
           if (roll < chancePerHour) {
             diseaseData[dKey] = { stage: -1, progress: 0, duration: dState.duration ?? 0 };
-            diseaseMessages.push(`✅ <b>${actor.name}</b>: ${def.icon} ${def.label} — <b>выздоровел!</b>`);
+            diseaseMessages.push(`✅ <b>${escapeCombatHtml(actor.name)}</b>: ${escapeCombatHtml(def.icon)} ${escapeCombatHtml(def.label)} — <b>выздоровел!</b>`);
           }
         }
       }
@@ -572,7 +589,7 @@ class IronHillsTravelApp extends Application {
 
       const fmt = (v) => Number(v).toFixed(2).replace(/\.?0+$/, "");
 
-      let msg = `<b>${actor.name}</b>`;
+      let msg = `<b>${escapeCombatHtml(actor.name)}</b>`;
       if (satCost > 0.01) msg += ` · 🍖 ${fmt(satV)}→${fmt(newSat)}`;
       if (hydCost > 0.01) msg += ` · 💧 ${fmt(hydV)}→${fmt(newHyd)}`;
 
@@ -591,20 +608,20 @@ class IronHillsTravelApp extends Application {
           msg += ` · ⚡ ${fmt(enV)}→${fmt(newEn)} (−${fmt(enSpent)})`;
         // Сообщение об усталости при снижении максимума
         if (maxDelta < 0) {
-          msg += ` <span style="color:#fb923c">⚠ Усталость: макс. ⚡ ${enCurMax}→${newEnMax}</span>`;
+          msg += ` <span class="ih-travel-alert is-warn">⚠ Усталость: макс. ⚡ ${enCurMax}→${newEnMax}</span>`;
         }
         if (newEnMax <= 3 && newEnMax > 1) {
-          msg += ` <span style="color:#ef4444">⚠ Критическая усталость!</span>`;
+          msg += ` <span class="ih-travel-alert is-danger">⚠ Критическая усталость!</span>`;
         }
       }
 
       if (newMn >= mnM) msg += ` · ✨ мана полная`;
       else if (mnRegen > 0) msg += ` · ✨ ${mnV}→${newMn} (+${mnRegen})`;
 
-      if (hunger) msg += ` <span style="color:${hunger.color}">⚠ ${hunger.label} (−${hunger.enPenalty} макс.⚡)</span>`;
-      if (thirst) msg += ` <span style="color:${thirst.color}">⚠ ${thirst.label} (−${thirst.enPenalty} макс.⚡)</span>`;
-      if (willPassOut)   msg += ` <span style="color:#ef4444">💀 Потерял сознание — макс. энергия исчерпана!</span>`;
-      if (willManaFaint) msg += ` <span style="color:#818cf8">💀 Потерял сознание — мана иссякла!</span>`;
+      if (hunger) msg += ` <span class="ih-travel-alert is-warn">⚠ ${escapeCombatHtml(hunger.label)} (−${hunger.enPenalty} макс.⚡)</span>`;
+      if (thirst) msg += ` <span class="ih-travel-alert is-warn">⚠ ${escapeCombatHtml(thirst.label)} (−${thirst.enPenalty} макс.⚡)</span>`;
+      if (willPassOut)   msg += ` <span class="ih-travel-alert is-danger">💀 Потерял сознание — макс. энергия исчерпана!</span>`;
+      if (willManaFaint) msg += ` <span class="ih-travel-alert is-magic">💀 Потерял сознание — мана иссякла!</span>`;
       messages.push(msg);
     }
 
@@ -661,7 +678,15 @@ class IronHillsTravelApp extends Application {
       if (Object.keys(updates).length) await actor.update(updates);
       if (diseaseMessages.length) {
         await ChatMessage.create({
-          content: `<b>${actor.name}:</b> ${diseaseMessages.join(", ")}`,
+          content: buildCombatChatCard({
+            title: "Болезнь",
+            subtitle: actor.name,
+            icon: "⚠",
+            status: "прогресс",
+            statusClass: "is-warn",
+            bodyHtml: diseaseMessages.join(", "),
+            className: "ih-travel-chat-card",
+          }),
           speaker: ChatMessage.getSpeaker({ actor })
         });
       }
@@ -686,12 +711,13 @@ class IronHillsTravelApp extends Application {
     } catch(e) { /* weather service недоступен */ }
 
     await ChatMessage.create({
-      content: `<div style="border:1px solid rgba(91,156,246,0.3);border-radius:8px;
-                padding:10px;background:rgba(91,156,246,0.05);">
-        <b>⏳ ${group?.label ?? "Все"} — ${this._hours}ч ${this._mins > 0 ? this._mins+"м " : ""}· ${act.label}</b>
-        <hr style="border-color:rgba(255,255,255,0.08);margin:5px 0;">
-        ${messages.join("<br>")}
-      </div>`
+      content: buildCombatChatCard({
+        title: `${group?.label ?? "Все"} — ${act.label}`,
+        icon: "⏳",
+        status: `${this._hours}ч ${this._mins > 0 ? `${this._mins}м` : ""}`.trim(),
+        bodyHtml: messages.join("<br>"),
+        className: "ih-travel-chat-card",
+      }),
     });
 
     ui.notifications.info(`Прошло ${this._hours}ч — готово.`);

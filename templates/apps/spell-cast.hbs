@@ -14,7 +14,7 @@
   <div class="ih-spell-schools">
     {{#each allSchools}}
     <a class="ih-spell-school-btn {{#if (eq id ../activeSchool)}}is-active{{/if}}"
-       data-school-filter="{{id}}" style="--school-color:{{color}}">
+       data-school-filter="{{id}}" data-ih-style-school-color="{{color}}">
       {{icon}} {{label}}
     </a>
     {{/each}}
@@ -24,7 +24,7 @@
   <div class="ih-spell-list">
     {{#each schools}}
     <div class="ih-spell-school-group">
-      <div class="ih-spell-school-title" style="color:{{color}}">{{icon}} {{label}}</div>
+      <div class="ih-spell-school-title" data-ih-style-color="{{color}}">{{icon}} {{label}}</div>
       {{#each spells}}
       {{#unless (eq locked 'unknown')}}
       <div class="ih-spell-item {{#unless available}}is-locked{{/unless}}"
@@ -32,34 +32,32 @@
          {{#unless available}}title="{{locked}}"{{/unless}}>
         <div class="ih-spell-item-head">
           <span class="ih-spell-name">{{label}}</span>
+          {{#if sourceLabel}}<span class="ih-spell-rank">{{sourceLabel}}{{#if quantity}} x{{quantity}}{{/if}}</span>{{/if}}
           <span class="ih-spell-rank">Ранг {{rank}}</span>
           <span class="ih-spell-cost">✨ {{manaCost}} · ⏱ {{castTime}}с</span>
-          {{#if damage}}<span class="ih-spell-dmg">⚔ {{damage}}</span>{{/if}}
+          {{#if runtimeSummary}}<span class="ih-spell-dmg">{{runtimeSummary}}</span>{{else if damage}}<span class="ih-spell-dmg">⚔ {{damage}}</span>{{/if}}
         </div>
         <div class="ih-spell-desc muted-text">{{desc}}</div>
         {{#if aoe}}
         <div class="ih-spell-aoe-tag">
-          {{aoeLabel}}
-          {{#if aoe.friendlyFireMode}} | FF {{aoe.friendlyFireMode}}{{/if}}
-          {{#if aoe.targetZoneMode}} | Zone {{aoe.targetZoneMode}}{{/if}}
-          {{#if aoe.maxTargets}} · макс {{aoe.maxTargets}} цели{{/if}}
-          · {{aoe.distance}} кл.
+          {{aoeSummary}}
         </div>
         {{/if}}
         {{#if canChooseTargetZone}}
         <div class="ih-spell-options">
           <label class="ih-spell-option">
-            <span>Зона</span>
-            <select data-spell-option data-spell-target-zone>
+            <span>Зона{{#if targetZoneRequired}} *{{/if}}</span>
+            <select data-spell-option data-spell-target-zone data-spell-target-zone-mode="{{targetZoneMode}}">
               {{#each bodyZones}}
               <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
               {{/each}}
             </select>
+            {{#if targetZoneModeLabel}}<small class="ih-spell-option-note">{{targetZoneModeLabel}}</small>{{/if}}
           </label>
           {{#if canToggleFriendlyFire}}
           <label class="ih-spell-option ih-spell-option-check">
             <input type="checkbox" data-spell-option data-spell-friendly-fire data-spell-friendly-fire-mode="{{friendlyFireMode}}" data-spell-friendly-fire-default="{{friendlyFire}}" {{#if friendlyFire}}checked{{/if}}>
-            <span>Friendly fire</span>
+            <span>Задевать союзников</span>
           </label>
           {{/if}}
         </div>
@@ -68,7 +66,7 @@
           <div class="ih-spell-options">
             <label class="ih-spell-option ih-spell-option-check">
               <input type="checkbox" data-spell-option data-spell-friendly-fire data-spell-friendly-fire-mode="{{friendlyFireMode}}" data-spell-friendly-fire-default="{{friendlyFire}}" {{#if friendlyFire}}checked{{/if}}>
-              <span>Friendly fire</span>
+              <span>Задевать союзников</span>
             </label>
           </div>
           {{/if}}

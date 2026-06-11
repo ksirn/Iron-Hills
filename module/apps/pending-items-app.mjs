@@ -6,6 +6,7 @@
  */
 import { IronHillsGridInventoryApp, getPendingItemsForActor } from "./grid-inventory-app.mjs";
 import { isStackable } from "../utils/item-utils.mjs";
+import { buildSystemDialogContent } from "../services/combat-chat-service.mjs";
 
 const CELL = 46;
 const STASH_COLS = 10;
@@ -174,7 +175,16 @@ export class PendingItemsApp extends Application {
       if (!item) return;
       const drop = await Dialog.confirm({
         title:   "Выбросить на землю?",
-        content: `<p>Выбросить <b>${item.name}</b> на землю?</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-pending-confirm-dialog",
+          headline: "Выбросить на землю?",
+          status: "Подтверждение",
+          statusClass: "is-warn",
+          rows: [
+            ["Предмет", item.name],
+            ["Действие", "выбросить на землю"],
+          ],
+        }),
         defaultYes: false,
       });
       if (drop) {

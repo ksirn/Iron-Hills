@@ -5,6 +5,11 @@
  */
 import { TERRAIN_TYPES, TRANSPORT_TYPES, DEFAULT_REGIONS } from "../constants/world-map.mjs";
 import { getPartyGroups, savePartyGroups, getMembersOfGroup } from "../services/party-manager.mjs";
+import {
+  buildCombatChatCard,
+  buildSystemDialogContent,
+  escapeCombatHtml,
+} from "../services/combat-chat-service.mjs";
 
 const TILE_PX = 56; // px на тайл
 
@@ -262,40 +267,6 @@ class IronHillsWorldMapApp extends Application {
     html.on("click", ".ih-wm-poi-marker", e => {
       e.stopPropagation();
       const poiId = e.currentTarget.dataset.poiId;
-      if (!poiId) return;
-      const actor = game.actors.get(poiId);
-      if (actor) actor.sheet.render(true);
-    });
-
-    // ПКМ по POI маркеру — контекстное меню
-    html.on("contextmenu", ".ih-wm-poi-marker", async e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const poiId = e.currentTarget.dataset.poiId;
-      const actor = game.actors.get(poiId);
-      if (!actor) return;
-      const choice = await Dialog.wait({
-        title: actor.name,
-        content: `<p style="color:#a8b8d0">${actor.name}</p>`,
-        buttons: {
-          open:  { label: "📋 Открыть лист",    callback: () => "open"  },
-          close: { label: "✅ Закрыть (зачищен)", callback: () => "clear" },
-        },
-        default: "open",
-      });
-      if (choice === "open") {
-        actor.sheet.render(true);
-      } else if (choice === "clear") {
-        await actor.update({ "system.info.status": "cleared" });
-        ui.notifications.info(`${actor.name} помечен как зачищенный`);
-        this.render(false);
-      }
-    });
-
-    // Клик по POI маркеру — открывает лист актора
-    html.on("click", ".ih-wm-poi-marker", e => {
-      e.stopPropagation();
-      const poiId = e.currentTarget.dataset.poiId;
       const actor = game.actors?.get(poiId);
       if (actor) actor.sheet?.render(true);
     });
@@ -307,7 +278,11 @@ class IronHillsWorldMapApp extends Application {
       if (!actor) return;
       const choice = await Dialog.wait({
         title: actor.name,
-        content: `<p style="color:#a8b8d0;margin:0">${actor.name}</p>`,
+        content: buildSystemDialogContent({
+          className: "ih-world-poi-dialog",
+          headline: actor.name,
+          headlineMeta: "точка интереса",
+        }),
         buttons: {
           open:  { label: "📋 Открыть лист",     callback: () => "open"  },
           clear: { label: "✅ Зачищен",            callback: () => "clear" },
@@ -451,92 +426,6 @@ class IronHillsWorldMapApp extends Application {
     });
   }
 
-  /**
-   * Пошаговое путешествие. Вызывается при старте и после каждого «Продолжить».
-   * Если следующий шаг маршрута содержит событие — останавливаемся и показываем его.
-   * Если событий больше нет — завершаем путешествие.
-   */
-  async _stepTravel() {
-    if (!this._travel) return;
-    const tr = this._travel;
-    const { presentTravelEvent } = await import("../services/travel-events-service.mjs");
-
-    // Есть ли следующее событие?
-    const nextEvent = tr.events[tr.eventIdx];
-
-    if (nextEvent) {
-      tr.eventIdx++;
-
-      // Часть пути до события
-      const stepFraction = nextEvent.tileIdx / (tr.path.length - 1);
-      const hoursToEvent = tr.baseHours * stepFraction - tr.hoursAccum;
-      tr.hoursAccum += hoursToEvent;
-
-      // Показываем событие в чат
-      const { delay, timeBonus } = await presentTravelEvent(
-        nextEvent, tr.eventIdx, tr.events.length
-      );
-      tr.totalDelay += delay - timeBonus;
-
-      // Кнопка «Продолжить путь» через ChatMessage с кастомным action
-      const btn = `<button class="ih-travel-continue-btn"
-        data-travel-app-id="${this.appId}"
-        style="margin-top:8px;padding:5px 16px;background:#1e3a5f;border:1px solid #5b9cf6;
-               border-radius:4px;color:#90c4f8;cursor:pointer;font-family:var(--font-primary)">
-        ▶ Продолжить путь
-      </button>`;
-
-      await ChatMessage.create({
-        content: `<div style="padding:4px 0">${btn}</div>`
-      });
-
-      // Слушаем клик по кнопке через Hooks
-      const hookId = Hooks.on("renderChatMessage", (_msg, html) => {
-        html.find(".ih-travel-continue-btn").on("click", () => {
-          if (!game.user?.isGM) return;
-          Hooks.off("renderChatMessage", hookId);
-          this._stepTravel();
-        });
-      });
-
-    } else {
-      // Событий больше нет — завершаем путешествие
-      const adjustedHours = Math.max(0.5, tr.baseHours + tr.totalDelay);
-
-      // Обновляем позицию группы
-      const groups = getPartyGroups().map(g => {
-        if (g.id !== this._groupId && !(this._groupId === null && g.isActive)) return g;
-        return {
-          ...g,
-          mapCol:     tr.target.col,
-          mapRow:     tr.target.row,
-          localHours: (g.localHours ?? 0) + adjustedHours,
-          location:   tr.targetLabel || g.location,
-        };
-      });
-      await savePartyGroups(groups);
-
-      // Travel Manager
-      const { IronHillsTravelApp } = await import("./travel-app.mjs");
-      const travelApp = Object.values(ui.windows).find(w => w instanceof IronHillsTravelApp)
-        ?? new IronHillsTravelApp();
-      travelApp._hours    = Math.max(1, Math.round(adjustedHours));
-      travelApp._activity = tr.activity;
-      await travelApp._applyTime(true);
-
-      const note = tr.totalDelay !== 0
-        ? ` (задержка: ${tr.totalDelay > 0 ? "+" : ""}${tr.totalDelay.toFixed(1)}ч)`
-        : "";
-
-      await ChatMessage.create({
-        content: `✅ <b>Группа прибыла:</b> ${tr.targetLabel} (${adjustedHours.toFixed(1)}ч${note})`
-      });
-
-      this._travel = null;
-      this.render(false);
-    }
-  }
-
   async _stepTravel() {
     if (!this._travel) return;
     const tr = this._travel;
@@ -558,14 +447,18 @@ class IronHillsWorldMapApp extends Application {
 
       // Кнопка «Продолжить» в чате — только GM видит
       const btn = `<button class="ih-travel-continue-btn"
-        style="margin-top:6px;padding:5px 16px;background:#1e3a5f;
-               border:1px solid #5b9cf6;border-radius:4px;color:#90c4f8;
-               cursor:pointer;font-size:12px">
+        data-travel-app-id="${escapeCombatHtml(this.appId)}">
         ▶ Продолжить путь
       </button>`;
 
       const msg = await ChatMessage.create({
-        content: `<div style="padding:4px 0">${btn}</div>`,
+        content: buildCombatChatCard({
+          title: "Путешествие",
+          subtitle: "ожидание решения GM",
+          icon: "▶",
+          bodyHtml: btn,
+          className: "ih-travel-action-card",
+        }),
         whisper: ChatMessage.getWhisperRecipients("GM"),
       });
 
@@ -604,7 +497,17 @@ class IronHillsWorldMapApp extends Application {
       const note = tr.totalDelay !== 0
         ? ` (задержка: ${tr.totalDelay > 0 ? "+" : ""}${tr.totalDelay.toFixed(1)}ч)` : "";
       await ChatMessage.create({
-        content: `✅ <b>Группа прибыла:</b> ${tr.targetLabel} (${adjustedHours.toFixed(1)}ч${note})`
+        content: buildCombatChatCard({
+          title: "Группа прибыла",
+          icon: "✓",
+          status: `${adjustedHours.toFixed(1)}ч`,
+          statusClass: "is-good",
+          rows: [
+            ["Цель", tr.targetLabel || "цель"],
+            ["Итог", note ? note.replace(/[()]/g, "") : "без задержек"],
+          ],
+          className: "ih-travel-chat-card",
+        }),
       });
 
       this._travel = null;
@@ -624,9 +527,18 @@ class IronHillsWorldMapApp extends Application {
     // Подтверждение
     const ok = await Dialog.confirm({
       title:   "Подтвердить путешествие",
-      content: `<p>Маршрут: <b>${hours}ч</b> (${this._transport})<br>
-        Цель: <b>${target?.label || `[${this._target.col},${this._target.row}]`}</b></p>
-        <p>Применить к активной группе?</p>`
+      content: buildSystemDialogContent({
+        className: "ih-travel-confirm-dialog",
+        headline: "Подтвердить путешествие",
+        headlineMeta: "активная группа",
+        status: "Применить маршрут?",
+        statusClass: "is-warn",
+        rows: [
+          ["Маршрут", `${hours}ч`],
+          ["Транспорт", this._transport],
+          ["Цель", target?.label || `[${this._target.col},${this._target.row}]`],
+        ],
+      }),
     });
     if (!ok) return;
 
@@ -654,7 +566,16 @@ class IronHillsWorldMapApp extends Application {
     };
 
     await ChatMessage.create({
-      content: `🗺 <b>Группа выдвигается</b> → ${target?.label ?? "цель"} (${hours.toFixed(1)}ч)`
+      content: buildCombatChatCard({
+        title: "Группа выдвигается",
+        icon: "🗺",
+        status: `${hours.toFixed(1)}ч`,
+        rows: [
+          ["Цель", target?.label ?? "цель"],
+          ["Транспорт", this._transport],
+        ],
+        className: "ih-travel-chat-card",
+      }),
     });
 
     this._target = null;
@@ -668,7 +589,13 @@ class IronHillsWorldMapApp extends Application {
       if (scene) {
         const enter = await Dialog.confirm({
           title: "Войти в локацию?",
-          content: `<p>Загрузить сцену <b>${scene.name}</b>?</p>`
+          content: buildSystemDialogContent({
+            className: "ih-travel-confirm-dialog",
+            headline: scene.name,
+            headlineMeta: "сцена",
+            status: "Загрузить сцену?",
+            statusClass: "is-warn",
+          }),
         });
         if (enter) await scene.activate();
       }

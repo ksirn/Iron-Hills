@@ -1,3 +1,5 @@
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
+
 function repairResult({
   ok = true,
   changed = false,
@@ -96,8 +98,21 @@ export async function repairActorItem(actor, item, {
   await item.update({ "system.durability.value": repairCap });
 
   await ChatMessage.create({
-    content: `🔨 <b>${actor.name}</b> починил <b>${item.name}</b> (+${restored} прочности → ${repairCap}/${durMax})<br>
-      <small>Навык: ${repair.label} ст.${repair.value}</small>`,
+    content: buildCombatChatCard({
+      title: "Ремонт",
+      subtitle: item.name,
+      icon: "+",
+      status: "Починено",
+      statusClass: "is-good",
+      rows: [
+        ["Мастер", actor.name],
+        ["Предмет", item.name],
+        ["Прочность", `${current} -> ${repairCap}/${durMax}`],
+        ["Восстановлено", `+${restored}`],
+        ["Навык", `${repair.label} ст.${repair.value}`],
+      ],
+      className: "ih-system-chat-card ih-repair-chat-card",
+    }),
     speaker: ChatMessage.getSpeaker({ actor }),
   });
 

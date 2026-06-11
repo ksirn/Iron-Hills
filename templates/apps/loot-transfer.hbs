@@ -101,16 +101,23 @@
              data-sec-key="{{key}}"
              data-cell="{{cellSize}}"
              data-pocket="{{pocketMode}}"
-             style="width:{{gridW}}px; height:{{gridH}}px;">
+             data-ih-style-width-px="{{gridW}}"
+             data-ih-style-height-px="{{gridH}}">
           {{#each cells}}
           <div class="ih-lt2-cell {{#if isPocket}}is-pocket{{/if}}"
-               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+               data-ih-style-left-px="{{x}}"
+               data-ih-style-top-px="{{y}}"
+               data-ih-style-width-px="{{size}}"
+               data-ih-style-height-px="{{size}}"></div>
           {{/each}}
           {{#each items}}
           <div class="ih-lt2-item"
                draggable="true"
                data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="{{secKey}}"
-               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               data-ih-style-left-px="{{cssLeft}}"
+               data-ih-style-top-px="{{cssTop}}"
+               data-ih-style-width-px="{{cssW}}"
+               data-ih-style-height-px="{{cssH}}"
                title="{{name}} · ст.{{tier}}">
             <img src="{{img}}" alt="{{name}}" draggable="false">
             {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
@@ -147,16 +154,23 @@
              data-actor-id="{{stashGrid.actorId}}"
              data-sec-key="__stash__"
              data-cell="{{cellSize}}"
-             style="width:{{stashGrid.gridW}}px; min-height:{{stashGrid.gridH}}px;">
+             data-ih-style-width-px="{{stashGrid.gridW}}"
+             data-ih-style-min-height-px="{{stashGrid.gridH}}">
           {{#each stashGrid.cells}}
           <div class="ih-lt2-cell"
-               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+               data-ih-style-left-px="{{x}}"
+               data-ih-style-top-px="{{y}}"
+               data-ih-style-width-px="{{size}}"
+               data-ih-style-height-px="{{size}}"></div>
           {{/each}}
           {{#each stashGrid.items}}
           <div class="ih-lt2-item"
                draggable="true"
                data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="__stash__"
-               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               data-ih-style-left-px="{{cssLeft}}"
+               data-ih-style-top-px="{{cssTop}}"
+               data-ih-style-width-px="{{cssW}}"
+               data-ih-style-height-px="{{cssH}}"
                title="{{name}} · ст.{{tier}}">
             <img src="{{img}}" alt="{{name}}" draggable="false">
             {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
@@ -195,16 +209,23 @@
              data-sec-key="{{key}}"
              data-cell="{{cellSize}}"
              data-pocket="{{pocketMode}}"
-             style="width:{{gridW}}px; height:{{gridH}}px;">
+             data-ih-style-width-px="{{gridW}}"
+             data-ih-style-height-px="{{gridH}}">
           {{#each cells}}
           <div class="ih-lt2-cell {{#if isPocket}}is-pocket{{/if}}"
-               style="left:{{x}}px;top:{{y}}px;width:{{size}}px;height:{{size}}px"></div>
+               data-ih-style-left-px="{{x}}"
+               data-ih-style-top-px="{{y}}"
+               data-ih-style-width-px="{{size}}"
+               data-ih-style-height-px="{{size}}"></div>
           {{/each}}
           {{#each items}}
           <div class="ih-lt2-item"
                draggable="true"
                data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="{{secKey}}"
-               style="left:{{cssLeft}}px;top:{{cssTop}}px;width:{{cssW}}px;height:{{cssH}}px"
+               data-ih-style-left-px="{{cssLeft}}"
+               data-ih-style-top-px="{{cssTop}}"
+               data-ih-style-width-px="{{cssW}}"
+               data-ih-style-height-px="{{cssH}}"
                title="{{name}} · ст.{{tier}}">
             <img src="{{img}}" alt="{{name}}" draggable="false">
             {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
@@ -213,6 +234,27 @@
         </div>
       </div>
       {{/each}}
+
+      {{#if rightLooseItems.length}}
+      <div class="ih-lt2-section ih-lt2-loose-section">
+        <div class="ih-lt2-sec-label">Неразмещенная добыча</div>
+        <div class="ih-lt2-loose-list">
+          {{#each rightLooseItems}}
+          <div class="ih-lt2-item ih-lt2-loose-item"
+               draggable="true"
+               data-item-id="{{itemId}}" data-actor-id="{{actorId}}" data-sec-key="{{secKey}}"
+               title="{{name}} · ст.{{tier}} · {{w}}x{{h}}">
+            <img src="{{img}}" alt="{{name}}" draggable="false">
+            {{#if qty}}<span class="ih-lt2-qty">{{qty}}</span>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{else}}
+        {{#unless rightSections.length}}
+        <div class="ih-lt2-empty muted-text">Нет доступной добычи на листе.</div>
+        {{/unless}}
+      {{/if}}
 
       {{!-- Земля --}}
       {{else}}

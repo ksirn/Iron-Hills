@@ -12,8 +12,15 @@ import {
   getMerchantMarketPriceFactor,
   getMerchantSellPriceForItem,
 } from "../services/trade-service.mjs";
+import { buildCombatChatCard } from "../services/combat-chat-service.mjs";
 import { coinsToCopper, formatCurrency } from "../utils/currency.mjs";
-import { buildItemStackSignature, isStackable } from "../utils/item-utils.mjs";
+import {
+  buildItemStackSignature,
+  formatItemActionSummary,
+  formatSpellSchoolRank,
+  getItemQuantity,
+  isStackable,
+} from "../utils/item-utils.mjs";
 
 const CELL = 52; // меньше чем в инвентаре — больше помещается
 
@@ -94,8 +101,10 @@ export class TarkovTradeApp extends Application {
     // Группируем стакуемые предметы по фактической stack signature, а не только по имени.
     // Порядок типов для сортировки
     const TYPE_ORDER = {
-      weapon:1, armor:2, ammo:3, tool:4,
-      potion:5, food:6, material:7, spell:8
+      weapon:1, armor:2, throwable:3, ammo:4,
+      belt:5, backpack:6, attachment:7, tool:8,
+      potion:9, consumable:10, food:11, material:12, resource:13,
+      spell:14, scroll:15, jewelry:16
     };
     const CATS = { weapon:"⚔ Оружие", armor:"🛡 Броня", potion:"⚗ Зелья",
                    food:"🍖 Еда", material:"📦 Материалы", tool:"🔧 Инстр.",
@@ -117,19 +126,20 @@ export class TarkovTradeApp extends Application {
     const grouped = [];
     const seen = new Map();
     for (const item of filtered) {
+      const itemQty = getItemQuantity(item);
       if (isStackable(item.type)) {
         const key = buildItemStackSignature(item);
         if (seen.has(key)) {
           const existing = seen.get(key);
-          existing.qty += Number(item.system?.quantity ?? 1);
+          existing.qty += itemQty;
           existing.ids.push(item.id);
         } else {
-          const entry = { item, qty: Number(item.system?.quantity ?? 1), ids: [item.id] };
+          const entry = { item, qty: itemQty, ids: [item.id] };
           seen.set(key, entry);
           grouped.push(entry);
         }
       } else {
-        grouped.push({ item, qty: 1, ids: [item.id] });
+        grouped.push({ item, qty: itemQty, ids: [item.id] });
       }
     }
 
@@ -168,18 +178,22 @@ export class TarkovTradeApp extends Application {
             if (sys.protection?.physical) tips.push(`🛡 ${sys.protection.physical}`);
             if (sys.satiety)    tips.push(`🍖 +${sys.satiety}`);
             if (sys.hydration)  tips.push(`💧 +${sys.hydration}`);
-            if (sys.power && sys.actionType) tips.push(`✦ +${sys.power}`);
-            if (sys.school)     tips.push(`✨ ${sys.school} р${sys.rank ?? 1}`);
+            {
+              const actionSummary = formatItemActionSummary(sys, { compact: true });
+              if (actionSummary) tips.push(actionSummary);
+            }
+            if (sys.school)     tips.push(formatSpellSchoolRank(sys, { compact: true }));
             if (sys.weight)     tips.push(`⚖ ${sys.weight}кг`);
             const desc = sys.description ?? sys.desc ?? "";
             const descShort = desc ? String(desc).replace(/<[^>]+>/g,"").slice(0,100) : "";
 
             const unitPrice = this._itemPrice(entry.item, side);
-            placed.push({ ...entry, itemIds: entry.ids, maxQty: entry.qty, col: c, row: r, w, h,
+            const maxQty = Math.max(1, Math.floor(Number(entry.qty ?? 1) || 1));
+            placed.push({ ...entry, qty: maxQty, showQty: maxQty > 1, itemIds: entry.ids, maxQty, col: c, row: r, w, h,
               cssLeft: c*CELL, cssTop: r*CELL,
               cssW: w*CELL-2, cssH: h*CELL-2,
               price: unitPrice,
-              priceStr: unitPrice > 0 ? formatCurrency(unitPrice * entry.qty) : "—",
+              priceStr: unitPrice > 0 ? formatCurrency(unitPrice * maxQty) : "—",
               tooltipStats: tips.join(" · "),
               tooltipDesc:  descShort,
               itemType:     entry.item.type,
@@ -203,7 +217,7 @@ export class TarkovTradeApp extends Application {
         {
           item: entry.item,
           itemIds: entry.itemIds ?? entry.ids ?? [entry.item.id],
-          maxQty: Math.max(1, Number(entry.maxQty ?? entry.qty ?? 1))
+          maxQty: Math.max(1, Math.floor(Number(entry.maxQty ?? entry.qty ?? 1) || 1))
         }
       ])
     );
@@ -250,7 +264,24 @@ export class TarkovTradeApp extends Application {
     this._pOfferGroups = pGrid.offerGroups ?? {};
 
     // Категории для фильтров
-    const CATS = ["weapon","armor","potion","food","material","tool","spell","ammo"];
+    const CATS = [
+      "weapon",
+      "armor",
+      "throwable",
+      "ammo",
+      "belt",
+      "backpack",
+      "attachment",
+      "tool",
+      "potion",
+      "consumable",
+      "food",
+      "material",
+      "resource",
+      "spell",
+      "scroll",
+      "jewelry",
+    ];
     const mCats = ["all", ...new Set(Array.from(merchant?.items??[]).map(i=>i.type).filter(t=>CATS.includes(t)))];
     const pCats = ["all", ...new Set(Array.from(buyer?.items??[]).map(i=>i.type).filter(t=>CATS.includes(t)))];
     const CAT_LABELS = { all:"Все", weapon:"⚔", armor:"🛡", potion:"⚗",
@@ -297,11 +328,15 @@ export class TarkovTradeApp extends Application {
       // Предложения
       offer:       this._offer.map(o => ({
         itemId: o.item.id, name: o.item.name, img: o.item.img,
-        qty: o.qty, priceStr: this._itemPriceStr(o.item, o.qty, "merchant")
+        qty: o.qty,
+        maxQty: o.maxQty,
+        priceStr: this._itemPriceStr(o.item, o.qty, "merchant")
       })),
       playerOffer: this._playerOffer.map(o => ({
         itemId: o.item.id, name: o.item.name, img: o.item.img,
-        qty: o.qty, priceStr: this._itemPriceStr(o.item, o.qty, "player")
+        qty: o.qty,
+        maxQty: o.maxQty,
+        priceStr: this._itemPriceStr(o.item, o.qty, "player")
       })),
 
       offerTotalStr:       formatCurrency(offerTotal),
@@ -437,7 +472,7 @@ export class TarkovTradeApp extends Application {
       const list   = side === "merchant" ? this._offer : this._playerOffer;
       const entry  = list.find(o => o.item.id === itemId);
       if (entry) {
-        const maxQty = Math.max(1, Number(entry.maxQty ?? entry.item.system?.quantity ?? 1));
+        const maxQty = Math.max(1, Math.floor(Number(entry.maxQty ?? getItemQuantity(entry.item)) || 1));
         entry.qty = Math.min(maxQty, entry.qty + 1);
         this.render(false);
       }
@@ -458,7 +493,7 @@ export class TarkovTradeApp extends Application {
     if (!item) return;
     const list  = side === "merchant" ? this._offer : this._playerOffer;
     const existing = list.find(o => o.item.id === itemId);
-    const maxQty = Math.max(1, Number(group?.maxQty ?? item.system?.quantity ?? 1));
+    const maxQty = Math.max(1, Math.floor(Number(group?.maxQty ?? getItemQuantity(item)) || 1));
     if (existing) {
       existing.qty = Math.min(Number(existing.maxQty ?? maxQty), existing.qty + 1);
     } else {
@@ -516,11 +551,11 @@ export class TarkovTradeApp extends Application {
 
     const quote = result.quote;
     const merchantItems = result.merchantItems.length
-      ? `Покупатель получает: ${result.merchantItems.map(o => `${o.name}×${o.qty}`).join(", ")}<br>`
-      : "";
+      ? result.merchantItems.map(o => `${o.name}×${o.qty}`).join(", ")
+      : "—";
     const playerItems = result.playerItems.length
-      ? `Торговец получает: ${result.playerItems.map(o => `${o.name}×${o.qty}`).join(", ")}<br>`
-      : "";
+      ? result.playerItems.map(o => `${o.name}×${o.qty}`).join(", ")
+      : "—";
     const moneyLine = gmForce
       ? "GM-сделка: монеты не двигались"
       : quote.buyerPays > 0 && quote.merchantPays > 0
@@ -532,7 +567,17 @@ export class TarkovTradeApp extends Application {
             : "Бартер";
 
     await ChatMessage.create({
-      content: `<div style="padding:6px">🏪 <b>${buyer.name}</b> ↔ <b>${merchant.name}</b><br>${merchantItems}${playerItems}${moneyLine}</div>`
+      content: buildCombatChatCard({
+        title: "Торговая сделка",
+        subtitle: `${buyer.name} ↔ ${merchant.name}`,
+        icon: "🏪",
+        rows: [
+          ["Покупатель получает", merchantItems],
+          ["Торговец получает", playerItems],
+          ["Расчёт", moneyLine],
+        ],
+        className: "ih-trade-chat-card",
+      }),
     });
 
     this._offer = []; this._playerOffer = [];

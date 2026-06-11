@@ -3,11 +3,14 @@
  * Окно магазина с генерацией ассортимента по тиру поселения.
  */
 import {
+  buildShopPurchaseItemData,
   generateMerchantStock, MERCHANT_TYPES, SETTLEMENT_TIERS, getMerchantsForTier,
   ECONOMY_STATES, getSettlementEconomy, setSettlementEconomy,
 } from "../services/merchant-service.mjs";
 import { addItemToActorOrStack } from "../services/trade-service.mjs";
-import { coinsToCopper, formatCurrency } from "../utils/currency.mjs";
+import { buildCombatChatCard } from "../services/combat-chat-service.mjs";
+import { coinsToCopper, currencyUpdateData, formatCurrency } from "../utils/currency.mjs";
+import { formatItemActionSummary, getSpellSchoolDisplay } from "../utils/item-utils.mjs";
 
 class IronHillsShopApp extends Application {
   constructor(options = {}) {
@@ -65,9 +68,9 @@ class IronHillsShopApp extends Application {
     const merchants  = getMerchantsForTier(this._settlementTier);
 
     // Фильтр по тиру
-    const stock = this._filterTier
-      ? this._stock.filter(i => i.tier === this._filterTier)
-      : this._stock;
+    const stock = this._stock
+      .map((item, stockIndex) => ({ ...item, stockIndex }))
+      .filter((item) => !this._filterTier || item.tier === this._filterTier);
 
     // Монеты покупателя
     const buyer     = this._buyer;
@@ -90,6 +93,8 @@ class IronHillsShopApp extends Application {
       isGM:           game.user?.isGM,
       stock: stock.map(item => ({
         ...item,
+        schoolLabel: item.school ? getSpellSchoolDisplay(item.school).label : "",
+        actionLabel: formatItemActionSummary(item.itemData ?? item),
         shopPriceFormatted: formatCurrency(item.shopPrice),
         canAfford: buyerCoins >= item.shopPrice,
       })),
@@ -159,9 +164,7 @@ class IronHillsShopApp extends Application {
         : { ok: true };
       if (!pendingCheck.ok) return;
 
-      const coins = Number(buyer.system?.resources?.coins?.copper ?? 0)
-                  + Number(buyer.system?.resources?.coins?.silver ?? 0) * 100
-                  + Number(buyer.system?.resources?.coins?.gold   ?? 0) * 10000;
+      const coins = coinsToCopper(buyer.system?.currency ?? {});
 
       if (coins < item.shopPrice) {
         ui.notifications.warn(`Недостаточно монет (${formatCurrency(coins)} / ${formatCurrency(item.shopPrice)})`);
@@ -170,23 +173,27 @@ class IronHillsShopApp extends Application {
 
       // Списываем монеты
       const remaining = coins - item.shopPrice;
-      const gold   = Math.floor(remaining / 10000);
-      const silver = Math.floor((remaining % 10000) / 100);
-      const copper = remaining % 100;
-      await buyer.update({
-        "system.resources.coins.gold":   gold,
-        "system.resources.coins.silver": silver,
-        "system.resources.coins.copper": copper,
-      });
+      await buyer.update(currencyUpdateData("system.currency", remaining));
 
       // Добавляем предмет в инвентарь
-      const itemData = _buildItemData(item);
+      const itemData = buildShopPurchaseItemData(item);
       await addItemToActorOrStack(buyer, itemData);
+      this._stock.splice(idx, 1);
 
       ui.notifications.info(`${buyer.name} купил ${item.label} за ${formatCurrency(item.shopPrice)}`);
 
       await ChatMessage.create({
-        content: `<div style="padding:6px">🏪 <b>${buyer.name}</b> купил <b>${item.label}</b> за ${formatCurrency(item.shopPrice)}</div>`
+        content: buildCombatChatCard({
+          title: "Покупка",
+          icon: "🏪",
+          status: formatCurrency(item.shopPrice),
+          statusClass: "is-warn",
+          rows: [
+            ["Покупатель", buyer.name],
+            ["Предмет", item.label],
+          ],
+          className: "ih-shop-chat-card",
+        }),
       });
 
       const { PendingItemsApp } = await import("./pending-items-app.mjs").catch(() => ({}));
@@ -194,45 +201,6 @@ class IronHillsShopApp extends Application {
       this.render(false);
     });
   }
-}
-
-function _buildItemData(item) {
-  const typeMap = {
-    weapon: "weapon", armor: "armor", potion: "potion",
-    food: "food", tool: "tool", material: "material", spell: "spell"
-  };
-  return {
-    name:   item.label,
-    type:   typeMap[item.itemType] ?? "material",
-    system: {
-      tier:       item.tier ?? 1,
-      weight:     item.weight ?? 0,
-      quantity:   item.qty ?? 1,
-      value:      item.value ?? 0,
-      quality:    "common",
-      // weapon
-      ...(item.itemType === "weapon" && {
-        damage: item.damage, skill: item.skill,
-        energyCost: item.energyCost, timeCost: item.timeCost ?? 2,
-        twoHanded: item.twoHanded ?? false,
-      }),
-      // spell
-      ...(item.itemType === "spell" && {
-        spellId: item.id, school: item.school,
-        rank: item.rank, manaCost: item.manaCost,
-        castTime: item.castTime, damage: item.damage ?? 0,
-        damageType: item.damageType ?? "magical",
-        effectType: Number(item.damage ?? 0) > 0 ? "damage" : (item.effect?.special === "heal" ? "heal" : ""),
-        effect: item.effect ?? null,
-        power: Number(item.damage ?? 0) > 0 ? Number(item.damage ?? 0) : Number(item.effect?.healAmount ?? 0),
-        targetPart: item.targetPart ?? item.targetZone ?? "torso",
-        targetZone: item.targetZone ?? item.targetPart ?? "",
-        friendlyFire: Boolean(item.friendlyFire ?? item.aoe?.friendlyFire ?? false),
-        friendlyFireMode: item.aoe?.friendlyFireMode ?? item.friendlyFireMode ?? "off",
-        aoe: item.aoe ?? null,
-      }),
-    }
-  };
 }
 
 export { IronHillsShopApp };

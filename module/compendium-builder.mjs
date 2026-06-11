@@ -5,358 +5,327 @@
  * Повторный запуск: game.ironHills.buildCompendiums()
  */
 
-import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, ATTACHMENTS, DRINK_VESSELS } from "./constants/items-catalog.mjs";
+import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, ATTACHMENTS, CONSUMABLES, THROWABLES } from "./constants/items-catalog.mjs";
 import { SPELLS } from "./constants/spells-catalog.mjs";
 import { NPC_ROLE_PROFILES, resolveNpcProfileKey } from "./constants/npc-profiles.mjs";
 import { MONSTER_BESTIARY, resolveMonsterPackDocToBestiaryId } from "./constants/monster-bestiary.mjs";
-import { monsterRowToActorData, buildDrinkVesselItemData } from "./services/wilderness-service.mjs";
+import { monsterRowToActorData } from "./services/wilderness-service.mjs";
+import {
+  attachmentToItemData,
+  armorToItemData,
+  backpackToItemData,
+  beltToItemData,
+  consumableToItemData,
+  foodToItemData,
+  materialToItemData,
+  potionToItemData,
+  spellToItemData,
+  throwableToItemData,
+  toolToItemData,
+  weaponToItemData,
+} from "./utils/catalog-item-data.mjs";
 import { replaceMonsterHarvestEmbeddedItems } from "./utils/monster-harvest-items.mjs";
 
 // ── Конвертеры из каталога в данные Item ────────────────────
 
 function materialToItem(m) {
-  const conventionMatImg = `systems/iron-hills-system/icons/items/materials/${m.id}.webp`;
-  return {
-    name: m.label,
-    type: "material",
-    img:  m.img ?? conventionMatImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: m.id ?? "",
-      },
-    },
-    system: {
-      tier:     m.tier,
-      category: m.category,
-      weight:   m.weight  ?? 1,
-      quantity: 1,
-      gridW:    1, gridH: 1,
-      value:    m.value   ?? 0,
-      quality:  "common",
-    }
-  };
+  return materialToItemData(m);
 }
 
 function weaponToItem(w) {
-  const IMG = {
-    sword:"icons/weapons/swords/sword-shortsword.webp",
-    axe:"icons/weapons/axes/axe-battle.webp",
-    spear:"icons/weapons/polearms/spear.webp",
-    knife:"icons/weapons/daggers/dagger.webp",
-    mace:"icons/weapons/maces/mace.webp",
-    flail:"icons/weapons/flails/flail.webp",
-    bow:"icons/weapons/bows/shortbow.webp",
-    crossbow:"icons/weapons/crossbows/crossbow.webp",
-    throwing:"icons/weapons/thrown/javelin.webp",
-    unarmed:"icons/skills/melee/unarmed-punch.webp",
-    exotic:"icons/weapons/staves/staff.webp",
-  };
-  const defaultImg = IMG[w.skill] ?? "icons/weapons/swords/sword-shortsword.webp";
-
-  const system = {
-    tier:       w.tier,
-    quality:    "common",
-    weight:     w.weight     ?? 2,
-    quantity:   1,
-    gridW:      w.gridW      ?? 1,
-    gridH:      w.gridH      ?? 2,
-    damage:     w.damage     ?? 3,
-    damageType: w.damageType ?? "physical",
-    skill:      w.skill      ?? "sword",
-    twoHanded:  w.twoHanded  ?? false,
-    energyCost: w.energyCost ?? 8,
-    timeCost:   w.timeCost   ?? 2.0,
-    value:      w.value      ?? 10,
-    durability: { value: 40 + w.tier*10, max: 40 + w.tier*10 },
-    range:      w.range ?? 1,
-  };
-  if (w.affixes && typeof w.affixes === "object") {
-    system.affixes = foundry.utils.deepClone(w.affixes);
-  }
-
-  return {
-    name: w.label,
-    type: "weapon",
-    img:  w.img ?? defaultImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: w.id ?? "",
-      },
-    },
-    system,
-  };
+  return weaponToItemData(w);
 }
 
 function armorToItem(a) {
-  const SLOT_GRID = {
-    head:{w:2,h:2}, torso:{w:2,h:3}, leftArm:{w:1,h:2}, rightArm:{w:1,h:2},
-    legs:{w:2,h:3}, leftHand:{w:2,h:2}, rightHand:{w:2,h:2},
-    neck:{w:1,h:1}, ringLeft:{w:1,h:1}, ringRight:{w:1,h:1},
-    belt:{w:2,h:1}, backpack:{w:2,h:3},
-  };
-  const DEFAULT_COVERS = {
-    head:["head"], torso:["torso"], legs:["leftLeg","rightLeg"],
-    leftArm:["leftArm"], rightArm:["rightArm"], neck:["neck"],
-    leftHand:["leftArm","torso"], rightHand:["rightArm","torso"],
-  };
-  const sg = SLOT_GRID[a.slot] ?? {w:2,h:2};
-  const resistRaw = a.resist ?? { physical: a.tier, magical: 0 };
-  const imgFromResist =
-    typeof resistRaw === "object" && resistRaw !== null && typeof resistRaw.img === "string"
-      ? resistRaw.img
-      : undefined;
-  const resist = foundry.utils.deepClone(resistRaw);
-  if (typeof resist === "object" && resist !== null) delete resist.img;
-  const conventionArmorImg = `systems/iron-hills-system/icons/items/armor/${a.id}.webp`;
-  const system = {
-    tier:    a.tier,
-    quality: "common",
-    weight:  a.weight ?? 3,
-    quantity: 1,
-    gridW:   sg.w,
-    gridH:   sg.h,
-    slot:    a.slot,
-    protection: resist,
-    value:   a.value ?? 20,
-    durability: { value: 50 + a.tier*15, max: 50 + a.tier*15 },
-    covers: a.covers ?? DEFAULT_COVERS[a.slot] ?? ["torso"],
-  };
-  if (a.affixes && typeof a.affixes === "object") {
-    system.affixes = foundry.utils.deepClone(a.affixes);
-  }
-  return {
-    name: a.label,
-    type: "armor",
-    img:  a.img ?? imgFromResist ?? conventionArmorImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: a.id ?? "",
-      },
-    },
-    system,
-  };
+  return armorToItemData(a);
+}
+
+function potionToItem(p) {
+  return potionToItemData(p);
 }
 
 function potionActionConfig(p) {
   const effect = p.effect ?? p.effectType ?? "healHP";
   const targetPart = p.targetPart ?? p.zone ?? "torso";
-  const map = {
-    healHP: {
-      actionType: "heal-part",
-      applicationScope: "targeted",
-      targetActorMode: "selected-or-self",
-      targetPart,
-    },
-    healAll: {
-      actionType: "heal-body",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    restoreEnergy: {
-      actionType: "restore-energy",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    restoreEnergyMax: {
-      actionType: "restore-energy-max",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    restoreMana: {
-      actionType: "restore-mana",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    restoreHydration: {
-      actionType: "restore-hydration",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    restoreSatiety: {
-      actionType: "restore-satiety",
-      applicationScope: "global",
-      targetActorMode: "self",
-      targetPart: "",
-    },
-    curePoison: {
-      actionType: "cure-poison",
-      applicationScope: "global",
-      targetActorMode: "selected-or-self",
-      targetPart: "",
-    },
-    cureDisease: {
-      actionType: "cure-disease",
-      applicationScope: "global",
-      targetActorMode: "selected-or-self",
-      targetPart: "",
-    },
-  };
-  return map[effect] ?? {
-    actionType: "",
-    applicationScope: "global",
-    targetActorMode: "self",
-    targetPart: "",
-  };
-}
-
-function potionToItem(p) {
-  const defaultImg = "icons/consumables/potions/potion-round-empty-green.webp";
-  const action = potionActionConfig(p);
+  const data = potionToItemData({ ...p, effect, targetPart });
   return {
-    name: p.label,
-    type: "potion",
-    img:  p.img ?? defaultImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: p.id ?? "",
-      },
-    },
-    system: {
-      tier:    p.tier,
-      quality: "common",
-      weight:  p.weight ?? 0.3,
-      quantity: 1,
-      effect:  p.effect  ?? "healHP",
-      effectType: p.effect ?? "healHP",
-      actionType: action.actionType,
-      applicationScope: action.applicationScope,
-      targetActorMode: action.targetActorMode,
-      targetPart: action.targetPart,
-      power:   p.power   ?? 5,
-      scope:   "single",
-      target:  "self",
-      zone:    "torso",
-      value:   p.value   ?? 20,
-    }
+    actionType: data.system?.actionType ?? "",
+    applicationScope: data.system?.applicationScope ?? "global",
+    targetActorMode: data.system?.targetActorMode ?? "self",
+    targetPart: data.system?.targetPart ?? "",
   };
 }
 
 function foodToItem(f) {
-  const defaultImg = "icons/consumables/food/bread-loaf-round-brown.webp";
-  const sys = {
-    tier:      f.tier ?? 1,
-    quality:   "common",
-    weight:    f.weight ?? 0.5,
-    quantity:  1,
-    satiety:   f.satiety ?? 10,
-    hydration: f.hydration ?? 5,
-    value:     f.value ?? 2,
-    gridW:     f.gridW ?? 1,
-    gridH:     f.gridH ?? 1,
-  };
-  if (f.bonus && typeof f.bonus === "object") {
-    sys.bonus = foundry.utils.deepClone(f.bonus);
-  }
-  return {
-    name: f.label,
-    type: "food",
-    img:  f.img ?? defaultImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: f.id ?? "",
-      },
-    },
-    system: sys,
-  };
+  return foodToItemData(f);
 }
 
 function toolToItem(t) {
-  const conventionToolImg = `systems/iron-hills-system/icons/items/tools/${t.id}.webp`;
-  return {
-    name: t.label,
-    type: "tool",
-    img:  t.img ?? conventionToolImg,
-    flags: {
-      "iron-hills-system": {
-        catalogId: t.id ?? "",
-      },
-    },
-    system: {
-      tier:      t.tier,
-      quality:   "common",
-      weight:    t.weight    ?? 2,
-      quantity:  1,
-      craftType: t.craftType ?? "crafting",
-      value:     t.value     ?? 10,
-    }
-  };
+  return toolToItemData(t);
 }
 
 function attachmentToItem(a) {
-  const conventionAttachImg = `systems/iron-hills-system/icons/items/attachments/${a.id}.webp`;
-  return {
-    name: a.label, type: "attachment",
-    img:  a.img ?? conventionAttachImg,
-    system: {
-      tier: a.tier, quality:"common", weight:a.weight ?? 0.3,
-      quantity:1, value:a.value ?? 10,
-      gridW: a.gridW ?? 1, gridH: a.gridH ?? 2,
-      attachesTo:   a.attachesTo   ?? "belt",
-      addsLabel:    a.addsLabel    ?? a.label,
-      addsSlots:    a.addsSlots    ?? {cols:2,rows:1},
-      allowedTypes: a.allowedTypes ?? null,
-      allowedSkills:a.allowedSkills ?? [],
-      accessSeconds:a.accessSeconds ?? 1,
-      description:  a.desc ?? "",
-      durability:{value:20,max:20},
-    },
-    flags: {
-      "iron-hills-system": {
-        catalogId: a.id ?? "",
-      },
-    },
-  };
+  return attachmentToItemData(a);
 }
 
 function beltToItem(b) {
-  const conventionBeltImg = `systems/iron-hills-system/icons/items/belts/${b.id}.webp`;
-  return {
-    name: b.label, type: "belt",
-    img:  b.img ?? conventionBeltImg,
-    system: {
-      tier: b.tier, quality:"common", weight:b.weight ?? 0.5,
-      quantity:1, value:b.value ?? 10,
-      gridW: b.gridW ?? 2, gridH: b.gridH ?? 1,
-      containerSlots: b.containerSlots ?? {cols:3,rows:1},
-      attachmentSlots: b.attachmentSlots ?? [],
-      weightFactor: b.weightFactor ?? 1.0,
-      description: b.desc ?? "",
-      durability:{value:25,max:25},
-    },
-    flags: {
-      "iron-hills-system": {
-        catalogId: b.id ?? "",
-      },
-    },
-  };
+  return beltToItemData(b);
 }
 
 function backpackToItem(b) {
-  const conventionPackImg = `systems/iron-hills-system/icons/items/backpacks/${b.id}.webp`;
+  return backpackToItemData(b);
+}
+
+function consumableToItem(v) {
+  return consumableToItemData(v);
+}
+
+function throwableToItem(t) {
+  return throwableToItemData(t);
+}
+
+const SYSTEM_ID = "iron-hills-system";
+
+export const CATALOG_ITEM_PACKS = Object.freeze([
+  { packName: "ih-weapons", label: "Weapons", documentType: "Item", rows: WEAPONS, converter: weaponToItem },
+  { packName: "ih-armor", label: "Armor", documentType: "Item", rows: ARMORS, converter: armorToItem },
+  { packName: "ih-materials", label: "Materials", documentType: "Item", rows: MATERIALS, converter: materialToItem },
+  { packName: "ih-potions", label: "Potions", documentType: "Item", rows: POTIONS, converter: potionToItem },
+  { packName: "ih-food", label: "Food", documentType: "Item", rows: FOOD, converter: foodToItem },
+  { packName: "ih-tools", label: "Tools", documentType: "Item", rows: TOOLS, converter: toolToItem },
+  { packName: "ih-belts", label: "Belts", documentType: "Item", rows: BELTS, converter: beltToItem },
+  { packName: "ih-backpacks", label: "Backpacks", documentType: "Item", rows: BACKPACKS, converter: backpackToItem },
+  { packName: "ih-attachments", label: "Attachments", documentType: "Item", rows: ATTACHMENTS, converter: attachmentToItem },
+  { packName: "ih-spells", label: "Spells", documentType: "Item", rows: SPELLS, converter: spellToItem },
+  { packName: "ih-consumables", label: "Consumables", documentType: "Item", rows: CONSUMABLES, converter: consumableToItem },
+  { packName: "ih-throwables", label: "Throwables", documentType: "Item", rows: THROWABLES, converter: throwableToItem },
+]);
+
+export const GENERATED_PACKS = Object.freeze([
+  ...CATALOG_ITEM_PACKS,
+  { packName: "ih-monsters", label: "Monsters", documentType: "Actor", rows: MONSTER_BESTIARY, converter: monsterRowToActorData },
+]);
+
+function clonePlain(value) {
+  if (globalThis.foundry?.utils?.deepClone) return foundry.utils.deepClone(value);
+  if (globalThis.foundry?.utils?.duplicate) return foundry.utils.duplicate(value);
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function normalizePackId(packId) {
+  return String(packId ?? "").trim().replace(/^iron-hills-system\./, "");
+}
+
+function packFilterSet(packIds = null) {
+  if (!Array.isArray(packIds) || !packIds.length) return null;
+  return new Set(packIds.map(normalizePackId).filter(Boolean));
+}
+
+function filterPackSpecs(specs, packIds = null) {
+  const filter = packFilterSet(packIds);
+  if (!filter) return [...specs];
+  return specs.filter(spec => filter.has(spec.packName));
+}
+
+function packCollectionId(packName) {
+  return `${SYSTEM_ID}.${packName}`;
+}
+
+function getCatalogIdFromData(data) {
+  return String(data?.flags?.[SYSTEM_ID]?.catalogId ?? data?.system?.catalogId ?? "").trim();
+}
+
+function getCatalogIdFromDoc(doc) {
+  return String(
+    doc?.getFlag?.(SYSTEM_ID, "catalogId")
+      ?? doc?.flags?.[SYSTEM_ID]?.catalogId
+      ?? doc?.system?.catalogId
+      ?? ""
+  ).trim();
+}
+
+function sortPlain(value) {
+  if (Array.isArray(value)) return value.map(sortPlain);
+  if (!value || typeof value !== "object") return value;
+  return Object.keys(value).sort().reduce((out, key) => {
+    out[key] = sortPlain(value[key]);
+    return out;
+  }, {});
+}
+
+function stableStringify(value) {
+  return JSON.stringify(sortPlain(value ?? null));
+}
+
+function samePlainValue(a, b) {
+  return stableStringify(clonePlain(a)) === stableStringify(clonePlain(b));
+}
+
+function buildCatalogDocumentPatch(doc, data) {
+  const patch = {};
+
+  if (data.name && doc.name !== data.name) patch.name = data.name;
+  if (data.img && doc.img !== data.img) patch.img = data.img;
+
+  if (data.system && !samePlainValue(doc.system ?? {}, data.system)) {
+    patch.system = clonePlain(data.system);
+  }
+
+  const desiredSystemFlags = data.flags?.[SYSTEM_ID] ?? null;
+  if (desiredSystemFlags && typeof desiredSystemFlags === "object") {
+    const currentFlags = clonePlain(doc.flags ?? {});
+    const currentSystemFlags = currentFlags[SYSTEM_ID] ?? {};
+    const nextSystemFlags = {
+      ...currentSystemFlags,
+      ...clonePlain(desiredSystemFlags),
+    };
+    if (!samePlainValue(currentSystemFlags, nextSystemFlags)) {
+      patch.flags = {
+        ...currentFlags,
+        [SYSTEM_ID]: nextSystemFlags,
+      };
+    }
+  }
+
+  return patch;
+}
+
+function buildPackPlanEntry(spec) {
   return {
-    name: b.label, type: "backpack",
-    img:  b.img ?? conventionPackImg,
-    system: {
-      tier: b.tier, quality:"common", weight:b.weight ?? 1,
-      quantity:1, value:b.value ?? 20,
-      gridW: b.gridW ?? 2, gridH: b.gridH ?? 3,
-      containerSlots: b.containerSlots ?? {cols:5,rows:6},
-      attachmentSlots: b.attachmentSlots ?? [],
-      weightFactor: b.weightFactor ?? 0.9,
-      description: b.desc ?? "",
-      durability:{value:30,max:30},
-    },
-    flags: {
-      "iron-hills-system": {
-        catalogId: b.id ?? "",
-      },
-    },
+    packName: spec.packName,
+    collection: packCollectionId(spec.packName),
+    label: spec.label,
+    documentType: spec.documentType,
+    expected: Object.keys(spec.rows ?? {}).length,
+    catalogIds: Object.keys(spec.rows ?? {}),
   };
+}
+
+export function getCompendiumBuildPlan(options = {}) {
+  const packIds = options.packIds ?? null;
+  const specs = filterPackSpecs(GENERATED_PACKS, packIds);
+  const packs = specs.map(buildPackPlanEntry);
+  return {
+    ok: true,
+    totalExpected: packs.reduce((sum, pack) => sum + pack.expected, 0),
+    packs,
+  };
+}
+
+async function syncCatalogPackSpec(spec) {
+  const collection = packCollectionId(spec.packName);
+  const pack = game.packs.get(collection);
+  const expected = Object.keys(spec.rows ?? {}).length;
+
+  if (!pack) {
+    console.warn(`Iron Hills | Pack not found: ${spec.packName}`);
+    return {
+      ok: false,
+      packName: spec.packName,
+      collection,
+      expected,
+      scanned: 0,
+      created: 0,
+      updated: 0,
+      unchanged: 0,
+      failed: 1,
+      errors: [{ id: spec.packName, error: "pack-not-found" }],
+    };
+  }
+
+  await pack.configure({ locked: false });
+  const docs = await pack.getDocuments();
+  const byCatalogId = new Map();
+  const byName = new Map();
+  let duplicates = 0;
+
+  for (const doc of docs) {
+    const catalogId = getCatalogIdFromDoc(doc);
+    if (catalogId) {
+      if (byCatalogId.has(catalogId)) duplicates++;
+      else byCatalogId.set(catalogId, doc);
+    }
+    if (doc.name && !byName.has(doc.name)) byName.set(doc.name, doc);
+  }
+
+  const cls = pack.documentClass;
+  let created = 0;
+  let updated = 0;
+  let unchanged = 0;
+  const errors = [];
+
+  for (const [id, row] of Object.entries(spec.rows ?? {})) {
+    try {
+      const data = spec.converter(row, id);
+      if (!data) throw new Error("converter returned empty data");
+
+      const catalogId = getCatalogIdFromData(data) || row?.id || id;
+      const doc = byCatalogId.get(String(catalogId)) ?? byName.get(data.name);
+      if (!doc) {
+        await cls.create(data, { pack: collection });
+        created++;
+        continue;
+      }
+
+      const patch = buildCatalogDocumentPatch(doc, data);
+      if (Object.keys(patch).length) {
+        await doc.update(patch);
+        updated++;
+      } else {
+        unchanged++;
+      }
+    } catch (err) {
+      errors.push({ id, error: String(err?.message ?? err) });
+      console.error(`Iron Hills | Error syncing ${spec.packName}/${id}:`, err);
+    }
+  }
+
+  const failed = errors.length;
+  return {
+    ok: failed === 0,
+    packName: spec.packName,
+    collection,
+    expected,
+    scanned: docs.length,
+    created,
+    updated,
+    unchanged,
+    duplicates,
+    failed,
+    errors,
+  };
+}
+
+export async function syncAllCatalogItemPacks(options = {}) {
+  if (!game?.user?.isGM) {
+    ui.notifications.warn("Только GM может синхронизировать компендиумы.");
+    return { ok: false, total: 0, updated: 0, created: 0, failed: 1, results: [], errors: ["gm-required"] };
+  }
+
+  const specs = filterPackSpecs(CATALOG_ITEM_PACKS, options.packIds ?? null);
+  const results = [];
+  for (const spec of specs) {
+    results.push(await syncCatalogPackSpec(spec));
+  }
+
+  const summary = {
+    ok: results.every(result => result.ok),
+    total: results.reduce((sum, result) => sum + Number(result.scanned ?? 0), 0),
+    expected: results.reduce((sum, result) => sum + Number(result.expected ?? 0), 0),
+    created: results.reduce((sum, result) => sum + Number(result.created ?? 0), 0),
+    updated: results.reduce((sum, result) => sum + Number(result.updated ?? 0), 0),
+    unchanged: results.reduce((sum, result) => sum + Number(result.unchanged ?? 0), 0),
+    failed: results.reduce((sum, result) => sum + Number(result.failed ?? 0), 0),
+    duplicates: results.reduce((sum, result) => sum + Number(result.duplicates ?? 0), 0),
+    results,
+  };
+
+  const message = `Iron Hills | Catalog packs sync: created ${summary.created}, updated ${summary.updated}, failed ${summary.failed}.`;
+  if (summary.failed) ui.notifications.warn(message);
+  else ui.notifications.info(message);
+
+  return summary;
 }
 
 
@@ -372,11 +341,22 @@ async function emptyActorPack(packName) {
 
 // ── Основная функция заполнения ────────────────────────────
 
-async function fillPack(packName, items, converter) {
-  const pack = game.packs.get(`iron-hills-system.${packName}`);
+async function fillPack(packName, items, converter, options = {}) {
+  const collection = packCollectionId(packName);
+  const expected = Object.keys(items ?? {}).length;
+  const pack = game.packs.get(collection);
   if (!pack) {
     console.warn(`Iron Hills | Pack not found: ${packName}`);
-    return 0;
+    return {
+      ok: false,
+      packName,
+      collection,
+      expected,
+      deleted: 0,
+      created: 0,
+      failed: 1,
+      errors: [{ id: packName, error: "pack-not-found" }],
+    };
   }
 
   // Разблокируем компендиум
@@ -388,20 +368,33 @@ async function fillPack(packName, items, converter) {
 
   // Добавляем новые записи
   let count = 0;
+  const errors = [];
   const cls = pack.documentClass;
   for (const [id, raw] of Object.entries(items)) {
     try {
       const data = converter(raw, id);
-      await cls.create(data, { pack: `iron-hills-system.${packName}` });
+      if (!data) throw new Error("converter returned empty data");
+      await cls.create(data, { pack: collection });
       count++;
     } catch(e) {
+      errors.push({ id, error: String(e?.message ?? e) });
       console.error(`Iron Hills | Error creating ${id}:`, e);
     }
   }
 
   // Не блокируем — оставляем доступными для просмотра
   // (locked=true мешает открывать листы предметов)
-  return count;
+  return {
+    ok: errors.length === 0,
+    packName,
+    collection,
+    label: options.label ?? packName,
+    expected,
+    deleted: existing.length,
+    created: count,
+    failed: errors.length,
+    errors,
+  };
 }
 
 /**
@@ -558,6 +551,7 @@ export async function syncPotionPackFromCatalog() {
     const imgPath = p.img ?? "icons/consumables/potions/potion-round-empty-green.webp";
     if (doc.img !== imgPath) patch.img = imgPath;
 
+    const desired = potionToItemData(p);
     const action = potionActionConfig(p);
     if ((doc.system?.effect ?? "") !== (p.effect ?? "healHP")) patch["system.effect"] = p.effect ?? "healHP";
     if ((doc.system?.effectType ?? "") !== (p.effect ?? "healHP")) patch["system.effectType"] = p.effect ?? "healHP";
@@ -565,6 +559,11 @@ export async function syncPotionPackFromCatalog() {
     if ((doc.system?.applicationScope ?? "") !== action.applicationScope) patch["system.applicationScope"] = action.applicationScope;
     if ((doc.system?.targetActorMode ?? "") !== action.targetActorMode) patch["system.targetActorMode"] = action.targetActorMode;
     if ((doc.system?.targetPart ?? "") !== action.targetPart) patch["system.targetPart"] = action.targetPart;
+    for (const key of ["conditionKey", "conditionMode", "conditionValueKind", "duration"]) {
+      if (!Object.prototype.hasOwnProperty.call(desired.system ?? {}, key)) continue;
+      const desiredValue = desired.system?.[key];
+      if ((doc.system?.[key] ?? "") !== desiredValue) patch[`system.${key}`] = desiredValue;
+    }
     if (Number(doc.system?.power ?? 0) !== Number(p.power ?? 5)) patch["system.power"] = p.power ?? 5;
     if (Number(doc.system?.tier ?? 0) !== Number(p.tier ?? 1)) patch["system.tier"] = p.tier ?? 1;
     if (Number(doc.system?.value ?? 0) !== Number(p.value ?? 20)) patch["system.value"] = p.value ?? 20;
@@ -662,46 +661,7 @@ export async function syncFoodPackFromCatalog() {
 
 
 function spellToItem(s) {
-  const SCHOOL_IMGS = {
-    fire:      "icons/magic/fire/flame-burning-campfire-orange.webp",
-    ice:       "icons/magic/water/ice-block-frozen-mountain.webp",
-    lightning: "icons/magic/lightning/bolt-strike-blue.webp",
-    shadow:    "icons/magic/unholy/orb-glowing-green.webp",
-    light:     "icons/magic/holy/projectile-orb-yellow.webp",
-    earth:     "icons/magic/earth/projectile-boulder-brown.webp",
-    mind:      "icons/magic/symbols/rune-sigil-purple-pink.webp",
-    summon:    "icons/magic/life/cross-worn-green.webp",
-  };
-  return {
-    name: s.label,
-    type: "spell",
-    img:  SCHOOL_IMGS[s.school] ?? "icons/magic/symbols/rune-sigil-purple-pink.webp",
-    system: {
-      tier:       s.rank,
-      spellId:    s.id,
-      school:     s.school,
-      rank:       s.rank,
-      manaCost:   s.manaCost,
-      castTime:   s.castTime,
-      damage:     s.damage     ?? 0,
-      damageType: s.damageType ?? "magical",
-      effectType: Number(s.damage ?? 0) > 0 ? "damage" : (s.effect?.special === "heal" ? "heal" : ""),
-      power:      Number(s.damage ?? 0) > 0 ? Number(s.damage ?? 0) : Number(s.effect?.healAmount ?? 0),
-      targetPart: s.targetPart ?? s.targetZone ?? "torso",
-      targetZone: s.targetZone ?? s.targetPart ?? "",
-      friendlyFire: Boolean(s.friendlyFire ?? s.aoe?.friendlyFire ?? false),
-      friendlyFireMode: s.aoe?.friendlyFireMode ?? s.friendlyFireMode ?? "off",
-      actionType: "",
-      applicationScope: s.aoe ? "area" : "targeted",
-      targetActorMode: s.aoe ? "area" : "selected-only",
-      desc:       s.desc       ?? "",
-      effect:     s.effect     ?? null,
-      aoe:        s.aoe        ?? null,
-      value:      s.rank * 50,
-      weight:     0,
-      quantity:   1,
-    }
-  };
+  return spellToItemData(s);
 }
 
 /**
@@ -861,31 +821,52 @@ export async function syncMonsterPackToBestiary(options = {}) {
   return { deleted, created, patched, canon: canonKeys.length };
 }
 
-export async function buildCompendiums() {
-  if (!game.user?.isGM) { ui.notifications.warn("Только GM может заполнять компендиумы."); return; }
+export async function buildCompendiums(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Только GM может заполнять компендиумы.");
+    return { ok: false, total: 0, results: [], errors: ["gm-required"] };
+  }
 
   ui.notifications.info("Iron Hills | Заполняем компендиумы...");
 
-  await emptyActorPack("ih-npc");
+  const results = [];
+  const specs = filterPackSpecs(GENERATED_PACKS, options.packIds ?? null);
 
-  const results = await Promise.all([
-    fillPack("ih-weapons",     WEAPONS,    weaponToItem),
-    fillPack("ih-armor",       ARMORS,     armorToItem),
-    fillPack("ih-materials",   MATERIALS,  materialToItem),
-    fillPack("ih-potions",     POTIONS,    potionToItem),
-    fillPack("ih-food",        FOOD,       foodToItem),
-    fillPack("ih-tools",       TOOLS,      toolToItem),
-    fillPack("ih-belts",       BELTS,      beltToItem),
-    fillPack("ih-backpacks",   BACKPACKS,  backpackToItem),
-    fillPack("ih-attachments", ATTACHMENTS,attachmentToItem),
-    fillPack("ih-spells",      SPELLS,     spellToItem),
-    fillPack("ih-monsters",    MONSTER_BESTIARY, monsterRowToActorData),
-    fillPack("ih-consumables", DRINK_VESSELS, (v) => buildDrinkVesselItemData(v.id)),
-  ]);
+  if (options.clearNpcPack) {
+    const deleted = await emptyActorPack("ih-npc");
+    results.push({
+      ok: true,
+      packName: "ih-npc",
+      collection: packCollectionId("ih-npc"),
+      label: "NPC",
+      expected: 0,
+      deleted,
+      created: 0,
+      failed: 0,
+      errors: [],
+      note: "cleared-empty-npc-pack",
+    });
+  }
 
-  const total = results.reduce((a,b) => a+b, 0);
-  ui.notifications.info(`Iron Hills | Компендиумы заполнены: ${total} записей.`);
+  for (const spec of specs) {
+    results.push(await fillPack(spec.packName, spec.rows, spec.converter, { label: spec.label }));
+  }
+
+  const total = results.reduce((sum, result) => sum + Number(result.created ?? 0), 0);
+  const expected = results.reduce((sum, result) => sum + Number(result.expected ?? 0), 0);
+  const failed = results.reduce((sum, result) => sum + Number(result.failed ?? 0), 0);
+  const message = `Iron Hills | Compendiums built: ${total}/${expected} created, ${failed} failed.`;
+  if (failed) ui.notifications.warn(message);
+  else ui.notifications.info(message);
   console.log("Iron Hills | Compendiums built:", results);
+  return {
+    ok: failed === 0,
+    total,
+    expected,
+    failed,
+    results,
+    packs: Object.fromEntries(results.map(result => [result.packName, result])),
+  };
 }
 
 export async function initCompendiums() {
@@ -896,7 +877,7 @@ export async function initCompendiums() {
     "ih-weapons","ih-armor","ih-materials","ih-potions","ih-spells",
     "ih-food","ih-tools","ih-npc","ih-gods",
     "ih-belts","ih-backpacks","ih-attachments",
-    "ih-monsters","ih-consumables",
+    "ih-monsters","ih-consumables","ih-throwables",
   ];
   for (const id of packIds) {
     const pack = game.packs.get(`iron-hills-system.${id}`);

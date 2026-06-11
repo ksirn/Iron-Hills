@@ -9,7 +9,7 @@
   {{#each groups}}
   <div class="ih-party-group {{#if isActive}}is-active{{/if}}">
     <div class="ih-party-group-header">
-      <div class="ih-party-group-color" style="background:{{color}}"></div>
+      <div class="ih-party-group-color" data-ih-style-background="{{color}}"></div>
       <span class="ih-party-group-name">{{label}}</span>
       <span class="muted-text">{{memberCount}} чел.</span>
       <span class="muted-text">{{localHoursDisplay}}ч</span>
@@ -41,7 +41,7 @@
            data-group-id="{{../id}}" data-char-id="{{id}}" title="Убрать">✕</a>
       </div>
       {{else}}
-      <div class="muted-text" style="font-size:11px;padding:4px">Нет участников</div>
+      <div class="muted-text ih-party-member-empty">Нет участников</div>
       {{/each}}
     </div>
   </div>

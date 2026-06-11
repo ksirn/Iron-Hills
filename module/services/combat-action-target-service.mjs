@@ -1,3 +1,9 @@
+import {
+  normalizeAoeFriendlyFireMode,
+  normalizeAoeTargetZone,
+  normalizeAoeTargetZoneMode,
+} from "./aoe-policy-service.mjs";
+
 function getTargetActor(target) {
   if (!target) return null;
   if (target.documentName === "Actor") return target;
@@ -70,6 +76,73 @@ function resolveActorRef(ref = {}) {
   return fromUuidSyncSafe(ref.actorUuid)
     ?? globalThis.game?.actors?.get?.(ref.actorId)
     ?? null;
+}
+
+function hasValue(value) {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function firstValue(...values) {
+  return values.find(hasValue);
+}
+
+function clonePlain(value) {
+  if (!value || typeof value !== "object") return null;
+  if (globalThis.foundry?.utils?.deepClone) return foundry.utils.deepClone(value);
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
+
+function boolOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value > 0;
+  const text = String(value).trim().toLowerCase();
+  if (["true", "1", "yes", "y", "on"].includes(text)) return true;
+  if (["false", "0", "no", "n", "off"].includes(text)) return false;
+  return null;
+}
+
+function normalizeTargetZoneModeForPayload(value, fallback = null) {
+  if (!hasValue(value) && !hasValue(fallback)) return null;
+  return normalizeAoeTargetZoneMode(value, fallback ?? "random");
+}
+
+function normalizeFriendlyFireModeForPayload(value, friendlyFire = null) {
+  if (!hasValue(value) && friendlyFire === null) return null;
+  return normalizeAoeFriendlyFireMode(hasValue(value) ? value : friendlyFire, "off");
+}
+
+function normalizeSpellOverrides(overrides = null) {
+  const copy = clonePlain(overrides);
+  if (!copy) return null;
+
+  if (copy.targetZone !== undefined || copy.targetPart !== undefined) {
+    const zone = normalizeAoeTargetZone(firstValue(copy.targetZone, copy.targetPart));
+    if (zone) {
+      copy.targetZone = zone;
+      copy.targetPart = zone;
+    } else {
+      delete copy.targetZone;
+      delete copy.targetPart;
+    }
+  }
+
+  if (copy.targetZoneMode !== undefined) {
+    copy.targetZoneMode = normalizeTargetZoneModeForPayload(
+      copy.targetZoneMode,
+      copy.targetZone ? "fixed" : "random"
+    );
+  }
+
+  if (copy.friendlyFire !== undefined || copy.friendlyFireMode !== undefined) {
+    const bool = boolOrNull(copy.friendlyFire);
+    const mode = normalizeFriendlyFireModeForPayload(copy.friendlyFireMode, bool);
+    if (mode) copy.friendlyFireMode = mode;
+    if (bool !== null) copy.friendlyFire = bool;
+  }
+
+  return Object.keys(copy).length ? copy : null;
 }
 
 export function normalizeCombatTargets(targets = globalThis.game?.user?.targets ?? []) {
@@ -149,7 +222,99 @@ export function buildCombatTargetPayload(targets = globalThis.game?.user?.target
 }
 
 export function normalizeCombatTargetZone(value) {
-  const zone = String(value ?? "").trim();
-  if (!zone || zone === "random" || zone === "auto" || zone === "none") return null;
-  return zone;
+  return normalizeAoeTargetZone(value);
+}
+
+export function buildCombatActionTargetContext({
+  targets = null,
+  targetRefs = null,
+  fallbackTargets = globalThis.game?.user?.targets ?? [],
+  targetZone = null,
+  targetPart = null,
+  targetZoneMode = null,
+  aimed = false,
+  friendlyFire = null,
+  friendlyFireMode = null,
+  spellOverrides = null,
+} = {}) {
+  const resolvedTargets = resolveCombatActionTargets({ targets, targetRefs, fallbackTargets });
+  const normalizedSpellOverrides = normalizeSpellOverrides(spellOverrides);
+  const zone = normalizeCombatTargetZone(firstValue(
+    targetZone,
+    targetPart,
+    normalizedSpellOverrides?.targetZone,
+    normalizedSpellOverrides?.targetPart,
+  ));
+  const part = normalizeCombatTargetZone(firstValue(
+    targetPart,
+    targetZone,
+    normalizedSpellOverrides?.targetPart,
+    normalizedSpellOverrides?.targetZone,
+  ));
+  const zoneMode = normalizeTargetZoneModeForPayload(
+    firstValue(targetZoneMode, normalizedSpellOverrides?.targetZoneMode),
+    zone ? "fixed" : null
+  );
+  const friendlyBool = boolOrNull(firstValue(friendlyFire, normalizedSpellOverrides?.friendlyFire));
+  const fireMode = normalizeFriendlyFireModeForPayload(
+    firstValue(friendlyFireMode, normalizedSpellOverrides?.friendlyFireMode),
+    friendlyBool
+  );
+
+  return {
+    targets: resolvedTargets,
+    targetRefs: buildCombatTargetRefs(resolvedTargets),
+    targetZone: zone,
+    targetPart: part,
+    targetZoneMode: zoneMode,
+    aimed: Boolean(aimed),
+    friendlyFire: friendlyBool,
+    friendlyFireMode: fireMode,
+    spellOverrides: normalizedSpellOverrides,
+  };
+}
+
+export function resolveCombatActionTargetContext({
+  payload = {},
+  targets = undefined,
+  targetRefs = undefined,
+  fallbackTargets = globalThis.game?.user?.targets ?? [],
+  targetZone = undefined,
+  targetPart = undefined,
+  targetZoneMode = undefined,
+  aimed = undefined,
+  friendlyFire = undefined,
+  friendlyFireMode = undefined,
+  spellOverrides = undefined,
+} = {}) {
+  return buildCombatActionTargetContext({
+    targets: targets !== undefined ? targets : payload.targets,
+    targetRefs: targetRefs !== undefined ? targetRefs : payload.targetRefs,
+    fallbackTargets,
+    targetZone: targetZone !== undefined ? targetZone : payload.targetZone,
+    targetPart: targetPart !== undefined ? targetPart : payload.targetPart,
+    targetZoneMode: targetZoneMode !== undefined ? targetZoneMode : payload.targetZoneMode,
+    aimed: aimed !== undefined ? aimed : payload.aimed,
+    friendlyFire: friendlyFire !== undefined ? friendlyFire : payload.friendlyFire,
+    friendlyFireMode: friendlyFireMode !== undefined ? friendlyFireMode : payload.friendlyFireMode,
+    spellOverrides: spellOverrides !== undefined ? spellOverrides : payload.spellOverrides,
+  });
+}
+
+export function buildCombatActionTargetPayload(options = {}) {
+  const context = options?.targets || options?.targetRefs || options?.payload
+    ? resolveCombatActionTargetContext(options)
+    : buildCombatActionTargetContext(options);
+  const payload = {};
+
+  if (context.targetRefs.length) payload.targetRefs = context.targetRefs;
+  if (context.targetZone) payload.targetZone = context.targetZone;
+  if (context.targetPart && context.targetPart !== context.targetZone) payload.targetPart = context.targetPart;
+  if (context.targetZoneMode) payload.targetZoneMode = context.targetZoneMode;
+  if (context.aimed) payload.aimed = true;
+  if (context.friendlyFire !== null) payload.friendlyFire = context.friendlyFire;
+  if (context.friendlyFireMode) payload.friendlyFireMode = context.friendlyFireMode;
+  if (context.spellOverrides) payload.spellOverrides = context.spellOverrides;
+
+  return payload;
 }

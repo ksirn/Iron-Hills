@@ -3,6 +3,7 @@ import {
   getDamageTypeOptions,
 } from "../services/damage-type-service.mjs";
 import { SPELL_SCHOOLS, normalizeSpellSchoolKey } from "../constants/spells-catalog.mjs";
+import { ARMOR_CLASS_KEYS, ARMOR_CLASS_PROFILES } from "../constants/armor-profiles.mjs";
 import {
   ITEM_ACTION_TYPE_LABELS as RUNTIME_ACTION_TYPE_LABELS,
   ITEM_EFFECT_TYPE_LABELS as RUNTIME_EFFECT_TYPE_LABELS,
@@ -236,6 +237,11 @@ const ARMOR_SLOTS = [
   { key:"backpack", label:"Рюкзак"       },
 ];
 
+const ARMOR_CLASS_OPTIONS = ARMOR_CLASS_KEYS.map(key => ({
+  key,
+  label: ARMOR_CLASS_PROFILES[key]?.label ?? key,
+}));
+
 function isObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
 }
@@ -441,6 +447,7 @@ class IronHillsItemSheet extends ItemSheet {
     ctx.craftTypes    = CRAFT_TYPES;
     ctx.matCategories = MATERIAL_CATEGORIES;
     ctx.armorSlots    = ARMOR_SLOTS;
+    ctx.armorClassOptions = ARMOR_CLASS_OPTIONS;
 
     // Тип-специфичные данные
     ctx.isWeapon    = type === "weapon";

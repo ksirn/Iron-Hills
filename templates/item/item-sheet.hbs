@@ -112,6 +112,22 @@
             {{/each}}
           </select>
         </div>
+        <div class="ih-is-field">
+          <label>Класс</label>
+          <select name="system.armorClass">
+            {{#each armorClassOptions}}
+            <option value="{{key}}" {{#if (eq key ../system.armorClass)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Выносл.</label>
+          <input type="number" name="system.requirements.endurance" value="{{system.requirements.endurance}}" min="0">
+        </div>
+        <div class="ih-is-field narrow">
+          <label>Атлетика</label>
+          <input type="number" name="system.requirements.athletics" value="{{system.requirements.athletics}}" min="0">
+        </div>
         {{#each armorResistanceOptions}}
         <div class="ih-is-field resist">
           <label>{{label}}</label>

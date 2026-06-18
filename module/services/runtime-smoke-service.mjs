@@ -641,6 +641,7 @@ async function combatSmoke() {
     spellEffectService,
     actionDispatchService,
     actorItemUseService,
+    attackFlowService,
   ] = await Promise.all([
     import("./combat-attack-service.mjs"),
     import("./combat-hit-context-service.mjs"),
@@ -658,6 +659,7 @@ async function combatSmoke() {
     import("./spell-effect-service.mjs"),
     import("./actor-action-dispatch-service.mjs"),
     import("./actor-item-use-service.mjs"),
+    import("./attack-flow-service.mjs"),
   ]);
 
   const attacker = makeSmokeActor({
@@ -871,6 +873,115 @@ async function combatSmoke() {
     { fireReduction, iceReduction, physicalReduction, healingReduction, fireResistanceOption },
   );
 
+  const armorRuleTarget = makeSmokeActor({
+    id: "ih-smoke-armor-rule-target",
+    name: "Smoke Armor Rule Target",
+    disposition: -1,
+  });
+  armorRuleTarget.system.resources.hp.torso = smokeHpPart(100);
+  const armorRuleItem = addSmokeItem(armorRuleTarget, withSmokeItemUpdate({
+    id: "ih-smoke-armor-rule",
+    name: "Smoke Armor Rule",
+    type: "armor",
+    system: {
+      slot: "torso",
+      covers: ["torso", "abdomen"],
+      protection: { physical: 25 },
+      durability: { value: 100, max: 100 },
+    },
+  }), "torso");
+  const armorRuleResult = await attackService.resolveSingleAttack({
+    attacker,
+    target: armorRuleTarget,
+    skillKey: "sword",
+    baseDamage: 50,
+    damageType: "physical",
+    energyCost: 0,
+    targetZone: "torso",
+    spendEnergy: false,
+    wearWeapon: false,
+    wearArmor: true,
+    applyInjuries: false,
+    shieldIntercept: false,
+    encumbrance: SMOKE_ENCUMBRANCE,
+    injuries: SMOKE_INJURIES,
+    dieRoller: async skillValue => ({
+      total: 4,
+      rolls: [{ die: Math.max(2, Number(skillValue) * 2), result: 4 }],
+      exploded: false,
+    }),
+  });
+  pushCombatFinding(
+    findings,
+    armorRuleResult?.rawDamage === 50
+      && armorRuleResult?.reduction === 25
+      && armorRuleResult?.finalDamage === 25
+      && Number(armorRuleItem.system.durability.value ?? 0) === 50
+      && Number(armorRuleTarget.system.resources.hp.torso.value ?? 0) === 75,
+    "bad-armor-durability-damage-gate",
+    "Armor should lose incoming damage as durability, absorb up to protection/current durability, and pass the remainder to body HP.",
+    { armorRuleResult, armorDurability: armorRuleItem.system.durability, torso: armorRuleTarget.system.resources.hp.torso },
+  );
+
+  const lowDurabilityArmorLayer = await attackService.resolveDurableDefenseLayer({
+    item: withSmokeItemUpdate({
+      id: "ih-smoke-low-durability-armor",
+      name: "Smoke Low Durability Armor",
+      type: "armor",
+      system: {
+        protection: { physical: 25 },
+        durability: { value: 10, max: 100 },
+      },
+    }),
+    incomingDamage: 50,
+    damageType: "physical",
+    wear: false,
+  });
+  const shieldThenArmorShieldLayer = await attackService.resolveDurableDefenseLayer({
+    item: withSmokeItemUpdate({
+      id: "ih-smoke-layer-shield",
+      name: "Smoke Layer Shield",
+      type: "armor",
+      system: {
+        isShield: true,
+        protection: { physical: 15 },
+        durability: { value: 50, max: 50 },
+      },
+    }),
+    incomingDamage: 50,
+    damageType: "physical",
+    wear: false,
+    kind: "shield",
+  });
+  const shieldThenArmorBodyLayer = await attackService.resolveDurableDefenseLayer({
+    item: withSmokeItemUpdate({
+      id: "ih-smoke-layer-armor",
+      name: "Smoke Layer Armor",
+      type: "armor",
+      system: {
+        protection: { physical: 25 },
+        durability: { value: 100, max: 100 },
+      },
+    }),
+    incomingDamage: shieldThenArmorShieldLayer.remainingDamage,
+    damageType: "physical",
+    wear: false,
+    kind: "armor",
+  });
+  pushCombatFinding(
+    findings,
+    lowDurabilityArmorLayer.absorbed === 10
+      && lowDurabilityArmorLayer.remainingDamage === 40
+      && lowDurabilityArmorLayer.durabilityAfter === 0
+      && shieldThenArmorShieldLayer.absorbed === 15
+      && shieldThenArmorShieldLayer.remainingDamage === 35
+      && shieldThenArmorBodyLayer.absorbed === 25
+      && shieldThenArmorBodyLayer.remainingDamage === 10,
+    "bad-shield-armor-layering",
+    "Shield and armor layers should resolve sequentially using protection capped by current durability.",
+    { lowDurabilityArmorLayer, shieldThenArmorShieldLayer, shieldThenArmorBodyLayer },
+  );
+
   const aoeChance = aoeService.calcHitChance(attacker, target, "sword", 0, null, {
     encumbrance: SMOKE_ENCUMBRANCE,
     injuries: SMOKE_INJURIES,
@@ -1054,6 +1165,113 @@ async function combatSmoke() {
     "bad-combat-action-target-context",
     "Combat action target context should normalize target refs, zones, friendly-fire mode, and spell overrides consistently.",
     { actionTargetContext, actionTargetPayload },
+  );
+
+  const queuedAttackTarget = makeSmokeActor({
+    id: "ih-smoke-queued-attack-target",
+    name: "Smoke Queued Attack Target",
+    disposition: -1,
+  });
+  let queuedAttackTimeArgs = null;
+  let queuedAttackAppliedImmediately = false;
+  const queuedAttack = await attackFlowService.performActorAttack({
+    actor: attacker,
+    skillKey: "sword",
+    label: "Smoke queued attack",
+    baseDamage: 2,
+    energyCost: 2,
+    targetZone: "torso",
+    targetZoneMode: "fixed",
+    targets: [makeSmokeTargetRef(queuedAttackTarget)],
+    resolveCombatTimeCost: async args => {
+      queuedAttackTimeArgs = args;
+      return {
+        ok: true,
+        queued: true,
+        actionType: args.actionType,
+        data: args.payload,
+      };
+    },
+    requestHostileAction: async () => true,
+    afterAttack: async () => {
+      queuedAttackAppliedImmediately = true;
+    },
+  });
+  const queuedAttackRefs = queuedAttackTimeArgs?.payload?.targetRefs ?? [];
+  let resumedAttack = null;
+  let resumedAttackSkillExp = 0;
+  let resumedAttackSummary = null;
+  const previousAttackFromUuidSync = globalThis.fromUuidSync;
+  globalThis.fromUuidSync = uuid => {
+    if (uuid === queuedAttackTarget.uuid) return queuedAttackTarget;
+    if (typeof previousAttackFromUuidSync !== "function") return null;
+    try {
+      return previousAttackFromUuidSync(uuid);
+    } catch (_err) {
+      return null;
+    }
+  };
+  try {
+    resumedAttack = await actionDispatchService.executeActorPendingCombatAction(
+      attacker,
+      {
+        actionType: "attack",
+        label: "Smoke queued attack",
+        data: queuedAttackTimeArgs?.payload ?? {},
+      },
+      {
+        performAttack: args => attackFlowService.performActorAttack({
+          ...args,
+          actor: attacker,
+          requestHostileAction: async () => true,
+          dieRoller: async skillValue => ({
+            total: Math.max(12, Number(skillValue) * 2),
+            rolls: [{ die: Math.max(2, Number(skillValue) * 2), result: Math.max(12, Number(skillValue) * 2) }],
+            exploded: false,
+          }),
+          applySkillExp: async () => {
+            resumedAttackSkillExp += 1;
+          },
+          afterAttack: async ({ summary }) => {
+            resumedAttackSummary = summary;
+          },
+        }),
+      },
+    );
+  } finally {
+    if (previousAttackFromUuidSync) globalThis.fromUuidSync = previousAttackFromUuidSync;
+    else delete globalThis.fromUuidSync;
+  }
+  const resumedAttackResult = resumedAttack?.result?.result ?? null;
+  const resumedAttackResultSummary = resumedAttack?.result?.summary ?? resumedAttackSummary;
+  pushCombatFinding(
+    findings,
+    queuedAttack?.queued === true
+      && queuedAttack?.reason === "queued"
+      && queuedAttackAppliedImmediately === false
+      && queuedAttackTimeArgs?.actionType === "attack"
+      && queuedAttackRefs.length === 1
+      && queuedAttackRefs[0]?.actorUuid === queuedAttackTarget.uuid
+      && queuedAttackTimeArgs?.payload?.targetZone === "torso"
+      && queuedAttackTimeArgs?.payload?.targetZoneMode === "fixed"
+      && resumedAttack?.ok === true
+      && resumedAttackResult?.hit === true
+      && resumedAttackResult?.locationKey === "torso"
+      && Number(resumedAttackResult?.finalDamage ?? 0) > 0
+      && Number(queuedAttackTarget.system.resources.hp.torso.value ?? 18) < 18
+      && resumedAttackResultSummary?.targetId === queuedAttackTarget.id
+      && resumedAttackResultSummary?.selectedTargetCount === 1
+      && resumedAttackResultSummary?.surroundCount === 0
+      && resumedAttackSkillExp === 1,
+    "bad-single-attack-pending-flow",
+    "Single-target attacks should queue with target refs and resume through the combat action dispatcher without losing target zone or result summary.",
+    {
+      queuedAttack,
+      queuedPayload: queuedAttackTimeArgs?.payload,
+      resumedAttack,
+      resumedAttackSummary: resumedAttackResultSummary,
+      targetUpdates: queuedAttackTarget._ihSmokeUpdates,
+    },
   );
 
   const consumableActor = makeSmokeActor({
@@ -1862,6 +2080,8 @@ async function combatSmoke() {
       attackFinalDamage: Number(attackResult?.finalDamage ?? 0),
       attackMutations: target._ihSmokeUpdates.length,
       targetRefs: targetRefs.length,
+      queuedAttack: Boolean(queuedAttack?.queued),
+      resumedAttackDamage: Number(resumedAttackResult?.finalDamage ?? 0),
       consumableQueued: Boolean(queuedConsumable?.queued),
       consumablePendingTargetRefs: queuedConsumableRefs.length,
       aoePolicy: blastConfig.type,
@@ -2122,11 +2342,13 @@ async function medicineSmoke() {
 
   const [
     bodyTraumaService,
+    bodyHudService,
     conditionService,
     hitEffectService,
     itemActionDialogService,
   ] = await Promise.all([
     import("./body-trauma-service.mjs"),
+    import("./body-hud-service.mjs"),
     import("./condition-service.mjs"),
     import("./hit-effect-service.mjs"),
     import("./item-action-dialog-service.mjs"),
@@ -2220,6 +2442,26 @@ async function medicineSmoke() {
     "bad-medical-triage-priority",
     "Medical triage and item target dialogs should prioritize the body part relevant to the selected treatment.",
     { initialTriage, tourniquetOptions, bandageOptions, splintOptions },
+  );
+
+  const initialBodyHud = bodyHudService.buildActorBodyHud(actor, { medicalTriage: initialTriage });
+  const initialResourceHud = bodyHudService.buildActorResourceHud(actor);
+  pushMedicineFinding(
+    findings,
+    initialBodyHud.hasBodyMap === true
+      && initialBodyHud.parts.length === 7
+      && initialBodyHud.figureRows.length === 4
+      && initialBodyHud.partMap.torso?.hasIssue === true
+      && initialBodyHud.partMap.torso?.sheetPartClass?.includes("ih-cs-fig-torso")
+      && initialBodyHud.partMap.torso?.trauma?.majorBleedingTitle
+      && initialBodyHud.partMap.abdomen?.hasIssue === true
+      && initialBodyHud.partMap.rightLeg?.cssClass === "is-dead"
+      && initialBodyHud.chips.some(chip => chip.key === "abdomen-energy" && chip.cssClass !== "is-stable")
+      && initialResourceHud.find(row => row.key === "energy")?.pct === 100
+      && initialResourceHud.find(row => row.key === "mana")?.pct === 100,
+    "bad-body-hud-view-model",
+    "Body HUD view model should expose synchronized body parts, urgent trauma chips, dead limbs, and resource bars for the combat HUD.",
+    { initialBodyHud, initialResourceHud },
   );
 
   const tourniquetResult = await conditionService.applyMedicalActionToBodyPart(

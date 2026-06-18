@@ -3,6 +3,14 @@ import { NPC_SPECIALIZATIONS } from "../constants/npc-profiles.mjs";
 import { SKILLS_FLAT } from "../constants/skills.mjs";
 import { normalizeSpellSchoolKey } from "../constants/spells-catalog.mjs";
 import { ARMORS, FOOD, MATERIALS, POTIONS, THROWABLES, TOOLS, WEAPONS } from "../constants/items-catalog.mjs";
+import {
+  formatArmorClassRequirementLabel,
+  getArmorClassDurabilityMax,
+  getArmorClassPenalties,
+  getArmorClassProfile,
+  getArmorClassRequirements,
+  normalizeArmorClass,
+} from "../constants/armor-profiles.mjs";
 import { choice, randInt, clamp } from "../utils/math-utils.mjs";
 import { getComputedItemUnitPrice, getDefaultWeaponRange } from "../utils/item-utils.mjs";
 import { normalizeItemDataForInventory } from "../utils/catalog-item-data.mjs";
@@ -324,6 +332,16 @@ function durabilityFor(type, tier, explicit = null) {
   return { value: max, max };
 }
 
+function armorDurabilityFor(tier, armorClass, explicit = null) {
+  if (explicit && typeof explicit === "object") {
+    const max = getArmorClassDurabilityMax(tier, armorClass, explicit);
+    const value = cleanPositiveNumber(explicit.value, max);
+    return { value: Math.min(max, value), max };
+  }
+  const max = getArmorClassDurabilityMax(tier, armorClass);
+  return { value: max, max };
+}
+
 function weaponGrid(skill, twoHanded = false) {
   if (skill === "knife") return { w: 1, h: 2 };
   if (skill === "bow" || skill === "crossbow" || skill === "spear" || twoHanded) return { w: 1, h: 4 };
@@ -567,21 +585,36 @@ export function buildWeapon(name, tier, opts = {}) {
 
 export function buildArmor(name, tier, slot, physical, magical = 0, weight = 2, opts = {}) {
   const clean = cleanTier(tier);
+  const armorClass = normalizeArmorClass(opts.armorClass, "medium");
+  const armorProfile = getArmorClassProfile(armorClass);
+  const requirements = opts.requirements && typeof opts.requirements === "object"
+    ? opts.requirements
+    : getArmorClassRequirements(clean, armorClass);
   const system = withGeneratedItemDefaults("armor", {
     tier: clean,
     quality: opts.quality ?? "common",
     weight: cleanPositiveNumber(opts.weight ?? weight, weight),
     quantity: opts.quantity ?? 1,
     slot,
+    armorClass,
+    armorClassLabel: armorProfile.label,
     protection: {
       physical,
       magical
     },
-    durability: durabilityFor("armor", clean, opts.durability),
+    durability: armorDurabilityFor(clean, armorClass, opts.durability),
     covers: opts.covers ?? ARMOR_SLOT_COVERS[slot] ?? ["torso"],
     layer: opts.layer ?? "outer",
+    requirements: {
+      endurance: Number(requirements.endurance ?? 0),
+      athletics: Number(requirements.athletics ?? 0),
+    },
+    penalties: opts.penalties && typeof opts.penalties === "object"
+      ? { ...opts.penalties }
+      : getArmorClassPenalties(armorClass),
     value: opts.value,
   });
+  system.requirementsLabel = formatArmorClassRequirementLabel(system);
 
   return finalizeGeneratedItem({
     name,

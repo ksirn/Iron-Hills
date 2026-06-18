@@ -1,6 +1,19 @@
 {{!-- Iron Hills — Pending Items Stash (Tarkov-style) --}}
 <div class="ih-pi-app">
 
+  <div class="ih-pi-summary {{pendingSummary.cssClass}}">
+    <div>
+      <span class="ih-pi-summary-label">Очередь распределения</span>
+      <b>{{actorName}}</b>
+    </div>
+    <div class="ih-pi-summary-chips">
+      <span><i class="fas fa-inbox"></i><b>{{pendingSummary.countLabel}}</b></span>
+      <span><i class="fas fa-border-all"></i><b>{{pendingSummary.cellsLabel}}</b></span>
+      <span><i class="fas fa-layer-group"></i><b>{{pendingSummary.rows}} ряд.</b></span>
+    </div>
+    <div class="ih-pi-summary-track"><span data-ih-style-width-pct="{{pendingSummary.pct}}"></span></div>
+  </div>
+
   {{#if done}}
   <div class="ih-pi-done">✅ Все предметы распределены</div>
   {{else}}

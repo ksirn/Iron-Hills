@@ -8,8 +8,14 @@
 import { getPersistentActor, isSyntheticActorDocument } from "../utils/actor-utils.mjs";
 import {
   getBestResistForZone as _getBestResistForZone,
-  DEFAULT_SLOT_COVERS as SLOT_COVERS
+  DEFAULT_SLOT_COVERS as SLOT_COVERS,
+  buildOverviewSummary,
+  getEncumbranceInfo,
 } from "../services/actor-state-service.mjs";
+import {
+  buildActorBodyHud,
+  buildActorResourceHud,
+} from "../services/body-hud-service.mjs";
 import {
   clearContainedItemsForEquipmentSlot,
   clearItemGridPlacement,
@@ -26,6 +32,7 @@ import {
   getItemQuantity,
   isStackable,
 } from "../utils/item-utils.mjs";
+import { formatCurrency } from "../utils/currency.mjs";
 
 // Реэкспорт канонической функции — для обратной совместимости с прежним публичным API.
 // Все новые потребители должны импортировать напрямую из services/actor-state-service.mjs.
@@ -104,6 +111,110 @@ function sortItemsForAutoPlacement(items) {
     }
     return 0;
   });
+}
+
+/** Tactical inventory dashboard view model. */
+function clampPct(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(100, Math.round(number)));
+}
+
+function ratioPct(value, max) {
+  return clampPct((Number(value ?? 0) / Math.max(1, Number(max ?? 1))) * 100);
+}
+
+function formatWeight(value) {
+  const number = Number(value ?? 0);
+  if (!Number.isFinite(number)) return "0";
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+}
+
+function loadClassFromPct(pct) {
+  if (pct >= 100) return "is-danger";
+  if (pct >= 75) return "is-warn";
+  if (pct >= 50) return "is-medium";
+  return "is-good";
+}
+
+function sumSectionCells(sections) {
+  return sections.reduce((sum, section) =>
+    sum + Math.max(0, Number(section.cols ?? 0)) * Math.max(0, Number(section.rows ?? 0)), 0);
+}
+
+function sumPlacedCells(sections) {
+  return sections.reduce((sum, section) =>
+    sum + (section.placed ?? []).reduce((inner, item) =>
+      inner + Math.max(1, Number(item.w ?? 1)) * Math.max(1, Number(item.h ?? 1)), 0), 0);
+}
+
+function sumPendingCells(pendingItems) {
+  return pendingItems.reduce((sum, item) =>
+    sum + Math.max(1, Number(item.w ?? 1)) * Math.max(1, Number(item.h ?? 1)), 0);
+}
+
+function buildInventoryDashboard(actor, { allSections = [], pendingItems = [], totalOverflow = 0 } = {}) {
+  const overview = buildOverviewSummary(actor);
+  const encumbrance = getEncumbranceInfo(actor);
+  const body = buildActorBodyHud(actor);
+  const resourceBars = buildActorResourceHud(actor);
+  const totalCells = sumSectionCells(allSections);
+  const usedCells = sumPlacedCells(allSections);
+  const freeCells = Math.max(0, totalCells - usedCells);
+  const gridPct = ratioPct(usedCells, totalCells);
+  const pendingCells = sumPendingCells(pendingItems);
+  const pendingCount = pendingItems.length;
+  const weightPct = ratioPct(overview.weightValue, overview.weightMax);
+  const coinsLabel = formatCurrency(overview.coins);
+  const hasPending = pendingCount > 0;
+  const hasOverflow = totalOverflow > 0;
+
+  return {
+    cssClass: hasPending ? "has-pending" : hasOverflow ? "has-overflow" : "is-clear",
+    actorName: actor?.name ?? "",
+    actorImg: actor?.img ?? "icons/svg/mystery-man.svg",
+    body,
+    resourceBars,
+    weight: {
+      value: overview.weightValue,
+      max: overview.weightMax,
+      label: `${formatWeight(overview.weightValue)} / ${formatWeight(overview.weightMax)} кг`,
+      pct: weightPct,
+      cssClass: loadClassFromPct(weightPct),
+      encumbranceLabel: encumbrance.label,
+      armorBurdenLabel: encumbrance.armorBurden?.label ?? "Без брони",
+      armorHasPenalty: Boolean(encumbrance.armorBurden?.hasPenalty),
+      armorActionSecondsFlat: encumbrance.actionSecondsFlat ?? 0,
+      armorMovementPenalty: encumbrance.movementPenalty ?? 0,
+      energyMultiplier: encumbrance.energyMultiplier,
+    },
+    grid: {
+      totalCells,
+      usedCells,
+      freeCells,
+      pct: gridPct,
+      cssClass: loadClassFromPct(gridPct),
+      label: `${usedCells}/${totalCells}`,
+    },
+    pending: {
+      count: pendingCount,
+      cells: pendingCells,
+      label: hasPending ? `${pendingCount} шт.` : "нет",
+      cssClass: hasPending ? "is-danger" : "is-good",
+    },
+    overflow: {
+      count: totalOverflow,
+      cssClass: hasOverflow ? "is-warn" : "is-good",
+    },
+    coinsLabel,
+    chips: [
+      { key: "coins", icon: "fa-coins", label: "Монеты", value: coinsLabel, cssClass: "is-money" },
+      { key: "sections", icon: "fa-box-archive", label: "Секции", value: `${allSections.length}`, cssClass: "is-muted" },
+      { key: "free", icon: "fa-border-all", label: "Свободно", value: `${freeCells}`, cssClass: freeCells > 0 ? "is-good" : "is-warn" },
+      { key: "pending", icon: "fa-inbox", label: "Pending", value: hasPending ? `${pendingCount}` : "0", cssClass: hasPending ? "is-danger" : "is-good" },
+      { key: "overflow", icon: "fa-triangle-exclamation", label: "Overflow", value: `${totalOverflow}`, cssClass: hasOverflow ? "is-warn" : "is-good" },
+    ],
+  };
 }
 
 /** Геометрия силуэта (пиксели) — синхронно с CELL инвентарной сетки */
@@ -844,6 +955,8 @@ class IronHillsGridInventoryApp extends Application {
           if (s.energyCost)           parts.push(`⚡ Энергия: ${s.energyCost}`);
           if (s.twoHanded)            parts.push(`🤲 Двуручное`);
           if (s.protection?.physical) parts.push(`🛡 Защита: ${s.protection.physical}`);
+          if (s.armorClassLabel)      parts.push(`🛡 ${s.armorClassLabel}`);
+          if (s.requirementsLabel)    parts.push(`Треб.: ${s.requirementsLabel}`);
           if (s.satiety)              parts.push(`🍖 Сытость: +${s.satiety}`);
           if (s.hydration)            parts.push(`💧 Жажда: +${s.hydration}`);
           {
@@ -892,9 +1005,11 @@ class IronHillsGridInventoryApp extends Application {
 
     const totalOverflow = allSections.reduce((n,s) => n + s.overflow.length, 0);
     const pendingItems = getPendingItemsForActor(actor, conts).map(item => this._mapPendingItem(item, conts));
+    const inventoryDashboard = buildInventoryDashboard(actor, { allSections, pendingItems, totalOverflow });
 
     return {
       actor,
+      inventoryDashboard,
       equipSlots,
       equipSilhouetteH,
       allSections,
@@ -928,6 +1043,8 @@ class IronHillsGridInventoryApp extends Application {
       if (sys.energyCost)           tooltipParts.push(`⚡ Энергия: ${sys.energyCost}`);
       if (sys.twoHanded)            tooltipParts.push(`🤲 Двуручное`);
       if (sys.protection?.physical) tooltipParts.push(`🛡 Защита: ${sys.protection.physical}`);
+      if (sys.armorClassLabel)      tooltipParts.push(`🛡 ${sys.armorClassLabel}`);
+      if (sys.requirementsLabel)    tooltipParts.push(`Треб.: ${sys.requirementsLabel}`);
       if (sys.satiety)              tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
       if (sys.hydration)            tooltipParts.push(`💧 Жажда: +${sys.hydration}`);
       {

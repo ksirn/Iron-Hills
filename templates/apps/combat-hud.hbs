@@ -56,10 +56,10 @@
   <div class="ih-compact-body-row">
 
     {{!-- Силуэт человечка --}}
-    <div class="ih-figure-wrap">
+    <div class="ih-figure-wrap {{bodyHud.cssClass}}">
       {{!-- Голова --}}
       {{#each zones}}{{#if (eq key "head")}}
-      <div class="ih-fig-part ih-fig-head {{cssClass}}" title="{{tooltip}}">
+      <div class="{{partClass}}" title="{{tooltip}}">
         <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
         <div class="ih-fig-dots">
           {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -74,7 +74,7 @@
       {{!-- Руки + Торс --}}
       <div class="ih-fig-row">
         {{#each zones}}{{#if (eq key "leftArm")}}
-        <div class="ih-fig-part ih-fig-arm {{cssClass}}" title="{{tooltip}}">
+        <div class="{{partClass}}" title="{{tooltip}}">
           <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -86,7 +86,7 @@
         {{/if}}{{/each}}
 
         {{#each zones}}{{#if (eq key "torso")}}
-        <div class="ih-fig-part ih-fig-torso {{cssClass}}" title="{{tooltip}}">
+        <div class="{{partClass}}" title="{{tooltip}}">
           <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -97,7 +97,7 @@
         {{/if}}{{/each}}
 
         {{#each zones}}{{#if (eq key "rightArm")}}
-        <div class="ih-fig-part ih-fig-arm {{cssClass}}" title="{{tooltip}}">
+        <div class="{{partClass}}" title="{{tooltip}}">
           <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -111,7 +111,7 @@
 
       {{!-- Живот --}}
       {{#each zones}}{{#if (eq key "abdomen")}}
-      <div class="ih-fig-part ih-fig-abdomen {{cssClass}}" title="{{tooltip}}">
+      <div class="{{partClass}}" title="{{tooltip}}">
         <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
         <div class="ih-fig-dots">
           {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -124,7 +124,7 @@
       {{!-- Ноги --}}
       <div class="ih-fig-row">
         {{#each zones}}{{#if (eq key "leftLeg")}}
-        <div class="ih-fig-part ih-fig-leg {{cssClass}}" title="{{tooltip}}">
+        <div class="{{partClass}}" title="{{tooltip}}">
           <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -135,7 +135,7 @@
         {{/if}}{{/each}}
         <div class="ih-fig-gap"></div>
         {{#each zones}}{{#if (eq key "rightLeg")}}
-        <div class="ih-fig-part ih-fig-leg {{cssClass}}" title="{{tooltip}}">
+        <div class="{{partClass}}" title="{{tooltip}}">
           <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
           <div class="ih-fig-dots">
             {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
@@ -149,6 +149,31 @@
 
     {{!-- Ресурс-бары + быстрые слоты --}}
     <div class="ih-compact-bars">
+      <div class="ih-body-overview {{bodyHud.cssClass}}">
+        <div class="ih-body-overview-head">
+          <span class="ih-body-overview-title">{{bodyHud.title}}</span>
+          <span class="ih-body-overview-hp">{{bodyHud.hpLabel}}</span>
+        </div>
+        <div class="ih-body-overview-detail">{{bodyHud.detail}}</div>
+        <div class="ih-body-overview-meter" title="HP {{bodyHud.hpLabel}}">
+          <span data-ih-style-width-pct="{{bodyHud.hpPct}}"></span>
+        </div>
+        <div class="ih-body-overview-chips">
+          {{#each bodyHud.chips}}
+          <span class="ih-body-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class="ih-resource-stack">
+        {{#each resourceBars}}
+        <div class="ih-res-bar {{cssClass}}" title="{{tooltip}}">
+          <span class="ih-res-icon {{key}}"><i class="fas {{iconClass}}"></i></span>
+          <div class="ih-res-track"><div class="ih-res-fill {{key}}" data-ih-style-width-pct="{{pct}}"></div></div>
+          <span class="ih-res-val">{{valueLabel}}</span>
+        </div>
+        {{/each}}
+      </div>
       <div class="ih-res-bar" title="Энергия: {{energyValue}}/{{energyMax}}">
         <span class="ih-res-icon energy">⚡</span>
         <div class="ih-res-track"><div class="ih-res-fill energy" data-ih-style-width-pct="{{energyPct}}"></div></div>

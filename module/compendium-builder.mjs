@@ -7,9 +7,10 @@
 
 import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, ATTACHMENTS, CONSUMABLES, THROWABLES } from "./constants/items-catalog.mjs";
 import { SPELLS } from "./constants/spells-catalog.mjs";
-import { NPC_ROLE_PROFILES, resolveNpcProfileKey } from "./constants/npc-profiles.mjs";
+import { NPC_PACK_ACTORS, NPC_ROLE_PROFILES, resolveNpcProfileKey } from "./constants/npc-profiles.mjs";
 import { MONSTER_BESTIARY, resolveMonsterPackDocToBestiaryId } from "./constants/monster-bestiary.mjs";
 import { monsterRowToActorData } from "./services/wilderness-service.mjs";
+import { buildNpcActorData, buildNpcStartingInventoryItems } from "./services/world-content-service.mjs";
 import {
   attachmentToItemData,
   armorToItemData,
@@ -84,6 +85,55 @@ function throwableToItem(t) {
   return throwableToItemData(t);
 }
 
+function npcRowToActorData(row, id) {
+  const roleKey = row.specialization ?? "villager";
+  const tier = Math.max(1, Math.min(10, Number(row.tier ?? 1) || 1));
+  const built = buildNpcActorData(roleKey, tier, row.faction ?? "", {
+    name: row.label ?? id,
+  });
+  const data = built?.data ?? {};
+  const items = buildNpcStartingInventoryItems(roleKey, tier, {
+    includeEquipment: true,
+    includeCarry: true,
+  });
+  data.img = row.img ?? data.img ?? "icons/svg/mystery-man.svg";
+  data.items = items;
+  data.system = {
+    ...(data.system ?? {}),
+    info: {
+      ...(data.system?.info ?? {}),
+      role: NPC_ROLE_PROFILES[roleKey]?.label ?? roleKey,
+      specialization: roleKey,
+      tier,
+      tierRange: row.tierRange ?? "",
+      faction: row.faction ?? "",
+      desc: row.desc ?? data.system?.info?.desc ?? "",
+      bestiaryId: row.id ?? id,
+      allowPickpocket: true,
+      lootTable: "",
+      pickpocketTable: "",
+    },
+  };
+  data.prototypeToken = {
+    name: data.name,
+    displayName: 20,
+    actorLink: false,
+    disposition: roleKey === "bandit" ? -1 : 0,
+    texture: { src: data.img },
+    width: 1,
+    height: 1,
+  };
+  data.flags = {
+    ...(data.flags ?? {}),
+    [SYSTEM_ID]: {
+      ...(data.flags?.[SYSTEM_ID] ?? {}),
+      npcProfileId: row.id ?? id,
+      specialization: roleKey,
+    },
+  };
+  return data;
+}
+
 const SYSTEM_ID = "iron-hills-system";
 
 export const CATALOG_ITEM_PACKS = Object.freeze([
@@ -103,6 +153,7 @@ export const CATALOG_ITEM_PACKS = Object.freeze([
 
 export const GENERATED_PACKS = Object.freeze([
   ...CATALOG_ITEM_PACKS,
+  { packName: "ih-npc", label: "NPC", documentType: "Actor", rows: NPC_PACK_ACTORS, converter: npcRowToActorData },
   { packName: "ih-monsters", label: "Monsters", documentType: "Actor", rows: MONSTER_BESTIARY, converter: monsterRowToActorData },
 ]);
 
@@ -475,6 +526,8 @@ export async function syncArmorPackFromCatalog() {
     if (!a) a = Object.values(ARMORS).find((x) => x.label === doc.name);
     if (!a) continue;
 
+    const desiredArmorData = armorToItemData(a);
+    const desiredSystem = desiredArmorData.system ?? {};
     const rawResist = a.resist ?? { physical: a.tier ?? 0 };
     const imgFromCatalogResist =
       typeof rawResist === "object" && rawResist !== null && typeof rawResist.img === "string"
@@ -487,16 +540,42 @@ export async function syncArmorPackFromCatalog() {
     })();
     const patch = {};
     const conventionArmorImg = `systems/iron-hills-system/icons/items/armor/${a.id}.webp`;
-    const desiredArmorImg = a.img ?? imgFromCatalogResist ?? conventionArmorImg;
+    const desiredArmorImg = desiredArmorData.img ?? a.img ?? imgFromCatalogResist ?? conventionArmorImg;
     if (doc.img !== desiredArmorImg) patch.img = desiredArmorImg;
 
     const prot = doc.system?.protection ?? {};
-    const np = resist.physical ?? 0;
-    const nm = resist.magical ?? 0;
+    const desiredProtection = desiredSystem.protection ?? resist;
+    const np = desiredProtection.physical ?? 0;
+    const nm = desiredProtection.magical ?? 0;
     const cp = prot.physical ?? 0;
     const cm = prot.magical ?? 0;
     if (np !== cp || nm !== cm) {
-      patch["system.protection"] = foundry.utils.deepClone(resist);
+      patch["system.protection"] = foundry.utils.deepClone(desiredProtection);
+    }
+
+    const syncSystemFields = [
+      "slot",
+      "tier",
+      "weight",
+      "value",
+      "gridW",
+      "gridH",
+      "bulk",
+      "durability",
+      "covers",
+      "armorClass",
+      "armorClassLabel",
+      "requirements",
+      "requirementsLabel",
+      "penalties",
+    ];
+    for (const field of syncSystemFields) {
+      const desiredValue = desiredSystem[field];
+      if (desiredValue === undefined) continue;
+      const currentValue = doc.system?.[field];
+      if (JSON.stringify(currentValue ?? null) !== JSON.stringify(desiredValue ?? null)) {
+        patch[`system.${field}`] = foundry.utils.deepClone(desiredValue);
+      }
     }
 
     if (a.affixes && typeof a.affixes === "object") {

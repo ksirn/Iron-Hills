@@ -44,6 +44,7 @@ import {
   getItemTargetActorMode,
 } from "./item-effect-service.mjs";
 import { buildCombatChatCard } from "./combat-chat-service.mjs";
+import { getArmorBurdenInfo } from "./armor-burden-service.mjs";
 
 export function getHitLocation(rollTotal) {
   const r = Number(rollTotal);
@@ -118,10 +119,22 @@ export function getArmorSlotForLocation(locationKey) {
   return null;
 }
 
+function isShieldArmorItem(item, equippedSlot = "") {
+  if (!item) return false;
+  const itemSlot = String(item.system?.slot ?? "");
+  return Boolean(
+    item.system?.isShield ||
+    item.type === "shield" ||
+    (item.type === "armor" && ["leftHand", "rightHand", "shield"].includes(equippedSlot)) ||
+    (item.type === "armor" && ["shield", "leftHand", "rightHand"].includes(itemSlot))
+  );
+}
+
 export function getEquippedArmorForLocation(actor, locationKey, damageType = "physical") {
   if (!actor) return null;
 
   const zone = locationKey === "shield" ? "torso" : locationKey;
+  const wantsShield = locationKey === "shield";
   const equip = actor.system?.equipment ?? {};
   let bestArmor = null;
   let bestReduction = -1;
@@ -130,9 +143,15 @@ export function getEquippedArmorForLocation(actor, locationKey, damageType = "ph
     if (!itemId) continue;
     const item = actor.items.get(itemId);
     if (!item || item.type !== "armor") continue;
+    const shieldArmor = isShieldArmorItem(item, slot);
+    if (wantsShield) {
+      if (!shieldArmor) continue;
+    } else if (shieldArmor) {
+      continue;
+    }
 
     const covers = getArmorCovers(item, slot);
-    if (!covers.includes(zone)) continue;
+    if (!wantsShield && !covers.includes(zone)) continue;
 
     const reduction = getDamageReduction(item, damageType);
     if (reduction > bestReduction) {
@@ -147,13 +166,13 @@ export function getEquippedArmorForLocation(actor, locationKey, damageType = "ph
 export function getDamageReduction(armorItem, damageType) {
   if (!armorItem || armorItem.type !== "armor") return 0;
 
-  const durVal   = Number(armorItem.system?.durability?.value ?? 100);
-  const durMax   = Number(armorItem.system?.durability?.max   ?? 100);
-  const durRatio = durMax > 0 ? Math.max(0, durVal / durMax) : 1;
-  const scale    = durRatio >= 0.5 ? 1 : durRatio * 2;
-
   const val = getDamageResistanceValue(armorItem.system ?? {}, damageType);
-  return Math.floor(val * scale);
+  const durability = armorItem.system?.durability;
+  if (durability && typeof durability === "object") {
+    const current = Math.max(0, Number(durability.value ?? 0));
+    return Math.floor(Math.min(Math.max(0, val), current));
+  }
+  return Math.floor(Math.max(0, val));
 }
 
 /**
@@ -186,14 +205,21 @@ function getArmorCovers(item, slot) {
  */
 export function getBestResistForZone(actor, zone, damageType = "physical") {
   const equip = actor.system?.equipment ?? {};
+  const wantsShield = zone === "shield";
 
   let best = 0;
   for (const [slot, itemId] of Object.entries(equip)) {
     if (!itemId) continue;
     const item = actor.items.get(itemId);
     if (!item || item.type !== "armor") continue;
+    const shieldArmor = isShieldArmorItem(item, slot);
+    if (wantsShield) {
+      if (!shieldArmor) continue;
+    } else if (shieldArmor) {
+      continue;
+    }
     const covers = getArmorCovers(item, slot);
-    if (!covers.includes(zone)) continue;
+    if (!wantsShield && !covers.includes(zone)) continue;
     const r = getDamageReduction(item, damageType);
     if (r > best) best = r;
   }
@@ -204,11 +230,22 @@ export function getEncumbranceInfo(actor) {
   const current = Number(actor.system.resources?.weight?.value ?? 0);
   const max = Math.max(1, Number(actor.system.resources?.weight?.max ?? 1));
   const ratio = current / max;
+  const armorBurden = getArmorBurdenInfo(actor);
 
-  if (ratio < 0.5) return { label: "Лёгкая", ratio, attackPenalty: 0, energyMultiplier: 1 };
-  if (ratio < 0.75) return { label: "Средняя", ratio, attackPenalty: 0, energyMultiplier: 1.25 };
-  if (ratio <= 1) return { label: "Тяжёлая", ratio, attackPenalty: 1, energyMultiplier: 1.5 };
-  return { label: "Критическая", ratio, attackPenalty: 2, energyMultiplier: 2 };
+  const withArmor = (base) => ({
+    ...base,
+    attackPenalty: Number(base.attackPenalty ?? 0) + Number(armorBurden.attackPenalty ?? 0),
+    energyMultiplier: Math.max(1, Number(base.energyMultiplier ?? 1) * Number(armorBurden.energyMultiplier ?? 1)),
+    actionSecondsFlat: Number(armorBurden.actionSecondsFlat ?? 0),
+    movementPenalty: Number(armorBurden.movementPenalty ?? 0),
+    movementMultiplier: Number(armorBurden.movementMultiplier ?? 1),
+    armorBurden,
+  });
+
+  if (ratio < 0.5) return withArmor({ label: "Лёгкая", ratio, attackPenalty: 0, energyMultiplier: 1 });
+  if (ratio < 0.75) return withArmor({ label: "Средняя", ratio, attackPenalty: 0, energyMultiplier: 1.25 });
+  if (ratio <= 1) return withArmor({ label: "Тяжёлая", ratio, attackPenalty: 1, energyMultiplier: 1.5 });
+  return withArmor({ label: "Критическая", ratio, attackPenalty: 2, energyMultiplier: 2 });
 }
 
 function getLimbStatusInfo(actor, partKey) {
@@ -760,7 +797,7 @@ export function getSpellCastBlockReason(actor, item, { isScroll = false } = {}) 
   // Безмолвие
   if (!isScroll) {
     const silencedUntil = Number(actor.system?.conditions?.silencedUntil ?? 0);
-    if (silencedUntil > 0 && (game.time?.worldTime ?? 0) < silencedUntil) {
+    if (silencedUntil > 0 && (globalThis.game?.time?.worldTime ?? 0) < silencedUntil) {
       return "Персонаж под эффектом безмолвия — нельзя колдовать";
     }
   }
@@ -1402,6 +1439,9 @@ export function buildCombatSummary(actor) {
     encumbranceLabel: encumbrance.label,
     encumbranceAttackPenalty: num(encumbrance.attackPenalty, 0),
     encumbranceEnergyMultiplier: num(encumbrance.energyMultiplier, 1),
+    armorBurdenLabel: encumbrance.armorBurden?.label ?? "Без брони",
+    armorActionSecondsFlat: num(encumbrance.actionSecondsFlat, 0),
+    armorMovementPenalty: num(encumbrance.movementPenalty, 0),
     injuriesAttackPenalty: num(injuries.attackPenalty, 0),
     rightWeaponName: rightWeapon?.name || "Кулаки",
     leftWeaponName: leftWeapon?.name || "Кулаки",
@@ -1558,6 +1598,11 @@ export function buildOverviewSummary(actor) {
     weightPct:   pct(resources.weight?.value, resources.weight?.max),
     coins: getActorCurrency(actor),
     encumbranceLabel: encumbrance.label,
+    armorBurden: encumbrance.armorBurden,
+    armorBurdenLabel: encumbrance.armorBurden?.label ?? "Без брони",
+    armorActionSecondsFlat: num(encumbrance.actionSecondsFlat, 0),
+    armorMovementPenalty: num(encumbrance.movementPenalty, 0),
+    armorEnergyMultiplier: num(encumbrance.armorBurden?.energyMultiplier, 1),
     calculatedTier: calculatedTier,
     bleeding:     num(conditions.bleeding, 0),
     shock:        num(conditions.shock, 0),

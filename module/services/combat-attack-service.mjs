@@ -25,8 +25,6 @@ import {
   getHitLocation,
   getHitLabel,
   getEquippedArmorForLocation,
-  getBestResistForZone,
-  getDamageReduction,
   resolveDamageHpKey,
   getShieldInterceptChance,
   grantSkillExp,
@@ -49,6 +47,7 @@ import {
 } from "./damage-type-service.mjs";
 import { normalizeAoeTargetZone } from "./aoe-policy-service.mjs";
 import { getSkillLabel } from "./combat-presentation-service.mjs";
+import { buildCombatChatCard } from "./combat-chat-service.mjs";
 import { addOrExtendActorCondition } from "./condition-service.mjs";
 import { unequipActorSlot } from "./inventory-service.mjs";
 
@@ -121,12 +120,6 @@ export async function applyDamageToBodyPart(actor, locationKey, damage, opts = {
   const newHP    = currentHP - absorbed;
 
   await actor.update({ [path]: newHP });
-
-  if (absorbed > 0) {
-    import("./durability-service.mjs").then(({ wearArmorAtLocation }) => {
-      wearArmorAtLocation?.(actor, locationKey, absorbed)?.catch?.(() => {});
-    }).catch(() => {});
-  }
 
   if (newHP <= 0 && (locationKey === "head" || locationKey === "torso")) {
     try { await onLethal?.(actor); }
@@ -208,6 +201,88 @@ async function wearItem(actor, item, amount = 1) {
   if (!item || !actor) return;
   const { wearItem: wearItemDurable } = await import("./durability-service.mjs");
   return wearItemDurable(item, amount, actor);
+}
+
+function cleanDamageNumber(value) {
+  const parsed = Number(value);
+  return Math.max(0, Math.round(Number.isFinite(parsed) ? parsed : 0));
+}
+
+function cleanRatio(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(0.95, parsed));
+}
+
+function getDurabilitySnapshot(item) {
+  const durability = item?.system?.durability;
+  if (!durability || typeof durability !== "object") {
+    return {
+      hasDurability: false,
+      value: Number.POSITIVE_INFINITY,
+      max: Number.POSITIVE_INFINITY,
+    };
+  }
+  return {
+    hasDurability: true,
+    value: Math.max(0, cleanDamageNumber(durability.value ?? 0)),
+    max: Math.max(0, cleanDamageNumber(durability.max ?? durability.value ?? 0)),
+  };
+}
+
+export async function resolveDurableDefenseLayer({
+  actor = null,
+  item = null,
+  incomingDamage = 0,
+  damageType = "physical",
+  armorPenetration = 0,
+  ignoreArmor = 0,
+  wear = true,
+  kind = "armor",
+} = {}) {
+  const incoming = cleanDamageNumber(incomingDamage);
+  const durability = getDurabilitySnapshot(item);
+  const baseProtection = Math.max(0, cleanDamageNumber(getDamageResistanceValue(item?.system ?? {}, damageType)));
+  const durabilityLimit = durability.hasDurability ? durability.value : Number.POSITIVE_INFINITY;
+  const availableProtection = Math.min(baseProtection, durabilityLimit, incoming);
+  const cleanPenetration = Math.min(availableProtection, cleanDamageNumber(armorPenetration));
+  const techPenetration = Math.min(
+    Math.max(0, availableProtection - cleanPenetration),
+    Math.round(availableProtection * cleanRatio(ignoreArmor)),
+  );
+  const effectiveProtection = Math.max(0, availableProtection - cleanPenetration - techPenetration);
+  const absorbed = Math.min(incoming, effectiveProtection);
+  const remainingDamage = Math.max(0, incoming - absorbed);
+  const durabilityLoss = durability.hasDurability
+    ? Math.min(durability.value, incoming)
+    : 0;
+  const durabilityAfter = durability.hasDurability
+    ? Math.max(0, durability.value - durabilityLoss)
+    : null;
+
+  if (wear && durabilityLoss > 0 && item) {
+    await wearItem(actor, item, durabilityLoss);
+  }
+
+  return {
+    kind,
+    itemId: item?.id ?? "",
+    itemName: item?.name ?? "",
+    incomingDamage: incoming,
+    baseProtection,
+    availableProtection,
+    effectiveProtection,
+    absorbed,
+    remainingDamage,
+    armorPenetration: cleanPenetration,
+    techPenetration,
+    reductionNegated: Math.max(0, availableProtection - effectiveProtection),
+    durabilityBefore: durability.hasDurability ? durability.value : null,
+    durabilityAfter,
+    durabilityMax: durability.hasDurability ? durability.max : null,
+    durabilityLoss,
+    broken: durability.hasDurability && durability.value > 0 && durabilityAfter <= 0,
+  };
 }
 
 // ── Resolve attack ─────────────────────────────────────────
@@ -418,6 +493,10 @@ export async function resolveSingleAttack(args = {}) {
     armorPenetration: 0,
     techPenetration:  0,
     armorItem:        null,
+    shieldItem:       null,
+    armorLayer:       null,
+    shieldLayer:      null,
+    defenseLayers:    [],
     locationKey:      null,
     locationLabel:    "",
     locationRoll:     0,
@@ -481,6 +560,7 @@ export async function resolveSingleAttack(args = {}) {
   const anatomicalKey = location.key;
 
   let shieldBlock = null;
+  let shieldLayer = null;
   let rawForReduction = rawDamage;
 
   if (
@@ -500,9 +580,6 @@ export async function resolveSingleAttack(args = {}) {
     if (pctR.total <= chancePct) {
       const blk = await new Roll("1d10 + @shield", { shield: shieldSkillVal }).evaluate();
       const br = blk.total;
-      const shieldRed = getDamageReduction(targetShield, resolvedDamageType);
-      const softened = Math.max(0, rawDamage - shieldRed);
-
       if (br < 6) {
         shieldBlock = {
           triggered: true,
@@ -516,29 +593,26 @@ export async function resolveSingleAttack(args = {}) {
         };
         await grantSkillExp(target, "shield", "Щит", 1).catch(() => {});
       } else {
-        let passFactor;
-        let wear;
         let tierLabel;
         if (br >= 15) {
-          passFactor = 0;
-          wear = 1;
           tierLabel = "Идеальный блок";
         } else if (br >= 12) {
-          passFactor = 0.15;
-          wear = 1;
           tierLabel = "Крепкий блок";
         } else if (br >= 9) {
-          passFactor = 0.38;
-          wear = 2;
           tierLabel = "Частичное парирование";
         } else {
-          passFactor = 0.62;
-          wear = 2;
           tierLabel = "Слабое укрытие";
         }
 
-        const wearShield = wear + Math.max(0, Math.floor(rawDamage / 12));
-        rawForReduction = Math.floor(softened * passFactor);
+        shieldLayer = await resolveDurableDefenseLayer({
+          actor: target,
+          item: targetShield,
+          incomingDamage: rawDamage,
+          damageType: resolvedDamageType,
+          wear: wearArmor,
+          kind: "shield",
+        });
+        rawForReduction = shieldLayer.remainingDamage;
 
         shieldBlock = {
           triggered: true,
@@ -548,51 +622,110 @@ export async function resolveSingleAttack(args = {}) {
           pctRoll: pctR.total,
           blockRoll: br,
           tierLabel,
-          passFactor,
-          shieldReduction: shieldRed,
-          softenedRaw: softened,
-          shieldWear: wearShield,
+          passFactor: rawDamage > 0 ? rawForReduction / rawDamage : 0,
+          shieldReduction: shieldLayer.absorbed,
+          shieldProtection: shieldLayer.availableProtection,
+          softenedRaw: rawForReduction,
+          shieldWear: shieldLayer.durabilityLoss,
+          durabilityBefore: shieldLayer.durabilityBefore,
+          durabilityAfter: shieldLayer.durabilityAfter,
+          durabilityMax: shieldLayer.durabilityMax,
+          broken: shieldLayer.broken,
           rawLeakToBody: rawForReduction,
-          absorbed: Math.max(0, rawDamage - rawForReduction),
+          absorbed: shieldLayer.absorbed,
           note: "",
         };
 
         location = pickFixedLocation("shield");
-
-        if (wearArmor && targetShield) {
-          await wearItem(target, targetShield, wearShield);
-        }
 
         await grantSkillExp(target, "shield", "Щит", 2).catch(() => {});
       }
     }
   }
 
+  if (
+    !targetIsMonster &&
+    !shieldBlock &&
+    anatomicalKey === "shield" &&
+    targetHasShield &&
+    targetShield &&
+    isShieldBlockableDamageType(resolvedDamageType)
+  ) {
+    shieldLayer = await resolveDurableDefenseLayer({
+      actor: target,
+      item: targetShield,
+      incomingDamage: rawDamage,
+      damageType: resolvedDamageType,
+      wear: wearArmor,
+      kind: "shield",
+    });
+    rawForReduction = shieldLayer.remainingDamage;
+    shieldBlock = {
+      triggered: true,
+      success: true,
+      direct: true,
+      chancePct: 100,
+      shieldSkill: Math.max(0, Number(target.system?.skills?.shield?.value ?? 0)),
+      pctRoll: 0,
+      blockRoll: "-",
+      tierLabel: "Удар по щиту",
+      passFactor: rawDamage > 0 ? rawForReduction / rawDamage : 0,
+      shieldReduction: shieldLayer.absorbed,
+      shieldProtection: shieldLayer.availableProtection,
+      softenedRaw: rawForReduction,
+      shieldWear: shieldLayer.durabilityLoss,
+      durabilityBefore: shieldLayer.durabilityBefore,
+      durabilityAfter: shieldLayer.durabilityAfter,
+      durabilityMax: shieldLayer.durabilityMax,
+      broken: shieldLayer.broken,
+      rawLeakToBody: rawForReduction,
+      absorbed: shieldLayer.absorbed,
+      note: "",
+    };
+    location = pickFixedLocation("shield");
+  }
+
   const reductionZone =
     location.key === "shield" ? "torso" : location.key;
 
-  let armorItem;
-  if (targetIsMonster) {
-    armorItem = null;
-  } else if (location.key === "shield") {
-    armorItem = targetShield ?? null;
-  } else {
-    armorItem = getEquippedArmorForLocation(target, location.key);
-  }
+  const armorItem = targetIsMonster
+    ? null
+    : getEquippedArmorForLocation(target, reductionZone, resolvedDamageType);
 
-  let reduction;
-  if (targetIsMonster) {
-    reduction = getDamageResistanceValue(target.system?.resources?.armor ?? {}, resolvedDamageType);
-  } else {
-    reduction = getBestResistForZone(target, reductionZone, resolvedDamageType);
-  }
+  let reduction = 0;
+  let reductionBeforePenetration = 0;
+  let armorPenetration = 0;
+  let techPenetration = 0;
+  let reductionNegated = 0;
+  let finalDamage = rawForReduction;
+  let armorLayer = null;
 
-  const reductionBeforePenetration = Math.max(0, Number(reduction) || 0);
-  const armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
-  const techPenetration  = Math.round(reductionBeforePenetration * totalIgnoreArmor);
-  const effectiveReduction = Math.max(0, reductionBeforePenetration - armorPenetration - techPenetration);
-  const reductionNegated = Math.max(0, reductionBeforePenetration - effectiveReduction);
-  const finalDamage = Math.max(0, rawForReduction - effectiveReduction);
+  if (targetIsMonster) {
+    reductionBeforePenetration = Math.max(0, Number(getDamageResistanceValue(target.system?.resources?.armor ?? {}, resolvedDamageType)) || 0);
+    armorPenetration = margin >= 8 ? Math.floor(margin / 4) : 0;
+    techPenetration = Math.round(reductionBeforePenetration * totalIgnoreArmor);
+    const effectiveReduction = Math.max(0, reductionBeforePenetration - armorPenetration - techPenetration);
+    reduction = Math.min(rawForReduction, effectiveReduction);
+    reductionNegated = Math.max(0, reductionBeforePenetration - effectiveReduction);
+    finalDamage = Math.max(0, rawForReduction - reduction);
+  } else if (armorItem && rawForReduction > 0) {
+    armorLayer = await resolveDurableDefenseLayer({
+      actor: target,
+      item: armorItem,
+      incomingDamage: rawForReduction,
+      damageType: resolvedDamageType,
+      armorPenetration: margin >= 8 ? Math.floor(margin / 4) : 0,
+      ignoreArmor: totalIgnoreArmor,
+      wear: wearArmor,
+      kind: "armor",
+    });
+    reductionBeforePenetration = armorLayer.availableProtection;
+    armorPenetration = armorLayer.armorPenetration;
+    techPenetration = armorLayer.techPenetration;
+    reduction = armorLayer.absorbed;
+    reductionNegated = armorLayer.reductionNegated;
+    finalDamage = armorLayer.remainingDamage;
+  }
 
   const injuryFxKey =
     shieldBlock?.success ? "torso" : anatomicalKey;
@@ -609,7 +742,11 @@ export async function resolveSingleAttack(args = {}) {
     locationLabel: location.label,
     locationRoll: locationRollValue,
     armorItem,
-    reduction: effectiveReduction,
+    shieldItem: shieldBlock?.success ? targetShield : null,
+    armorLayer,
+    shieldLayer,
+    defenseLayers: [shieldLayer, armorLayer].filter(Boolean),
+    reduction,
     reductionBeforePenetration,
     reductionNegated,
     armorPenetration,
@@ -671,17 +808,6 @@ export async function resolveSingleAttack(args = {}) {
     }
   }
   result.affixesApplied.executed = executeTriggered;
-
-  // Износ брони слота (не щит — он уже при перехвате)
-  if (
-    wearArmor &&
-    !targetIsMonster &&
-    armorItem &&
-    finalDamage > 0 &&
-    !(shieldBlock?.success && location.key === "shield")
-  ) {
-    await wearItem(target, armorItem, 1);
-  }
 
   // Affix: lifeSteal — атакующий получает % от нанесённого урона как HP в торс
   if (finalDamage > 0 && affixes.lifeSteal > 0) {
@@ -755,14 +881,17 @@ function getAttackOverflowLabel(result = {}) {
 
 function getAttackArmorDurability(result = {}) {
   if (!result?.hit || result?.targetIsMonster || !result?.armorItem) return null;
-  const showDur = result.finalDamage > 0 || result?.shieldBlock?.success;
+  const showDur =
+    result.finalDamage > 0 ||
+    result?.shieldBlock?.success ||
+    Number(result?.armorLayer?.durabilityLoss ?? 0) > 0;
   if (!showDur) return null;
 
-  const value = Number(result.armorItem.system?.durability?.value ?? 0);
+  const value = Number(result.armorLayer?.durabilityAfter ?? result.armorItem.system?.durability?.value ?? 0);
   if (value < 0) return null;
   return {
     value,
-    max: Number(result.armorItem.system?.durability?.max ?? 100),
+    max: Number(result.armorLayer?.durabilityMax ?? result.armorItem.system?.durability?.max ?? 100),
   };
 }
 
@@ -831,6 +960,7 @@ function buildShieldBlockRows(result = {}) {
         `снято ${sb.shieldReduction}`,
         `в тело raw ${sb.rawLeakToBody}`,
         `износ -${sb.shieldWear}`,
+        sb.durabilityAfter != null ? `dur ${sb.durabilityAfter}/${sb.durabilityMax ?? "?"}` : "",
       ], "; "),
       className: "is-shield",
     }];
@@ -949,6 +1079,7 @@ function buildAttackDamageRows({
         `снято ${result.reductionNegated}`,
         Number(result.armorPenetration ?? 0) > 0 ? `пробито ${result.armorPenetration}` : "",
         Number(result.techPenetration ?? 0) > 0 ? `техника ${result.techPenetration}` : "",
+        Number(result.armorLayer?.durabilityLoss ?? 0) > 0 ? `dur -${result.armorLayer.durabilityLoss}` : "",
       ], ", ")
     : "";
   const zoneSource = result.locationRoll ? `d20 ${result.locationRoll}` : "прицельно";
@@ -1055,7 +1186,22 @@ export function buildAttackChatData({
  * @returns {Promise<string>}
  */
 export async function formatAttackChatHtml({ label, skillKey, attacker, target, result }) {
-  return renderTemplate(ATTACK_TEMPLATE, {
-    attack: buildAttackChatData({ label, skillKey, attacker, target, result }),
+  const attack = buildAttackChatData({ label, skillKey, attacker, target, result });
+  if (typeof globalThis.renderTemplate === "function") {
+    return globalThis.renderTemplate(ATTACK_TEMPLATE, { attack });
+  }
+
+  return buildCombatChatCard({
+    title: attack.title,
+    icon: attack.icon,
+    status: attack.statusLabel,
+    statusClass: attack.statusClass,
+    rows: [
+      ...attack.metaRows,
+      ...attack.rollRows,
+      ...attack.damageRows,
+    ],
+    notices: attack.noticeRows,
+    className: `ih-attack-chat-card ${attack.cardClass}`,
   });
 }

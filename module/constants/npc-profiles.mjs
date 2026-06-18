@@ -76,6 +76,41 @@ export const NPC_SPECIALIZATIONS = {
 /** Совместимость: старый импорт `NPC_ROLE_PROFILES`. */
 export const NPC_ROLE_PROFILES = NPC_SPECIALIZATIONS;
 
+const NPC_ROLE_IMAGES = Object.freeze({
+  villager: "icons/svg/mystery-man.svg",
+  guard: "icons/svg/mystery-man.svg",
+  bandit: "icons/svg/mystery-man.svg",
+  mage: "icons/svg/mystery-man.svg",
+  crafter: "icons/svg/mystery-man.svg",
+  hunter: "icons/svg/mystery-man.svg",
+  noble: "icons/svg/mystery-man.svg",
+  priest: "icons/svg/mystery-man.svg",
+});
+
+export const NPC_TIER_BANDS = Object.freeze([
+  { id: "t1_3", label: "тир 1-3", tier: 2, tierRange: "1-3", faction: "frontier" },
+  { id: "t4_6", label: "тир 4-6", tier: 5, tierRange: "4-6", faction: "settled" },
+  { id: "t7_10", label: "тир 7-10", tier: 8, tierRange: "7-10", faction: "elite" },
+]);
+
+export const NPC_PACK_ACTORS = Object.freeze(Object.fromEntries(
+  Object.entries(NPC_SPECIALIZATIONS).flatMap(([roleKey, profile]) =>
+    NPC_TIER_BANDS.map((band) => {
+      const id = `${roleKey}_${band.id}`;
+      return [id, {
+        id,
+        specialization: roleKey,
+        label: `${profile.label} (${band.label})`,
+        tier: band.tier,
+        tierRange: band.tierRange,
+        faction: band.faction,
+        img: NPC_ROLE_IMAGES[roleKey] ?? "icons/svg/mystery-man.svg",
+        desc: `${profile.desc} Готовый NPC-архетип для быстрых сцен и тестов тира ${band.tierRange}.`,
+      }];
+    })
+  )
+));
+
 /**
  * Таблица останков простолюдина по ступени NPC (1–10).
  * @param {number} tier

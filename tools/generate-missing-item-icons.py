@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate deterministic WebP item icons for missing Iron Hills catalog assets.
+Generate deterministic WebP item icons for Iron Hills catalog assets.
 
-The script asks the JS asset audit for missing system-local image paths, then
-draws stylized fantasy item icons with Pillow. Existing assets are never
-overwritten unless --overwrite is supplied.
+By default the script asks the JS asset audit for missing system-local image
+paths. The generated pictures are deterministic development placeholders, not
+final content art. Reading docs/content/art-backlog.json is intentionally gated
+behind --dev-placeholder-art so this tool is not mistaken for the prompt-driven
+content image pipeline.
 """
 
 from __future__ import annotations
@@ -106,6 +108,11 @@ KEYWORD_COLORS = [
 DEFAULT_COLORS = {
     "armor": ((112, 116, 118), (225, 214, 170)),
     "materials": ((116, 96, 62), (218, 178, 92)),
+    "weapons": ((116, 118, 112), (232, 196, 116)),
+    "potions": ((70, 88, 130), (132, 216, 242)),
+    "food": ((132, 88, 50), (232, 176, 94)),
+    "spells": ((70, 74, 142), (164, 212, 255)),
+    "throwables": ((112, 82, 64), (230, 146, 82)),
     "tools": ((116, 94, 64), (218, 170, 88)),
     "belts": ((112, 70, 42), (212, 145, 78)),
     "backpacks": ((102, 76, 48), (204, 146, 76)),
@@ -453,7 +460,26 @@ def draw_attachment(d, key, main, accent, rng):
 
 
 def draw_consumable(d, key, main, accent, rng):
-    if "gourd" in key:
+    k = key.lower()
+    if any(s in k for s in ["bandage", "dressing", "suture", "tourniquet"]):
+        d.rounded_rectangle(box((128, 194, 384, 340)), radius=p(32), fill=alpha((212, 204, 178), 245), outline=alpha(accent, 130), width=p(4))
+        for y in (214, 250, 286, 322):
+            d.line(pts([(144, y), (368, y + rng.randint(-6, 6))]), fill=alpha(adjust(main, 54), 80), width=p(2))
+        d.rounded_rectangle(box((196, 156, 316, 382)), radius=p(30), fill=alpha((230, 224, 198), 222), outline=alpha(adjust(accent, 34), 120), width=p(3))
+        d.line(pts([(256, 170), (256, 368)]), fill=alpha(adjust(accent, 60), 90), width=p(4))
+    elif any(s in k for s in ["splint", "bone_pin"]):
+        for x in (204, 292):
+            d.rounded_rectangle(box((x - 24, 116, x + 24, 398)), radius=p(16), fill=alpha(adjust(main, 20), 245), outline=alpha(accent, 120), width=p(3))
+        for y in (168, 242, 318):
+            d.rounded_rectangle(box((156, y, 356, y + 34)), radius=p(12), fill=alpha((220, 208, 172), 230), outline=alpha(adjust(accent, 32), 105), width=p(2))
+    elif any(s in k for s in ["powder", "pack", "kit"]):
+        d.rounded_rectangle(box((132, 152, 380, 384)), radius=p(36), fill=alpha(main, 245), outline=alpha(accent, 135), width=p(4))
+        d.rounded_rectangle(box((158, 188, 354, 250)), radius=p(18), fill=alpha(adjust(main, -26), 230), outline=alpha(adjust(accent, 32), 105), width=p(2))
+        d.line(pts([(196, 292), (316, 292)]), fill=alpha(adjust(accent, 58), 150), width=p(8))
+        d.line(pts([(256, 232), (256, 352)]), fill=alpha(adjust(accent, 58), 150), width=p(8))
+    elif any(s in k for s in ["ampoule", "draught", "stimulant", "wash"]):
+        draw_vial(d, k, main, accent, rng)
+    elif "gourd" in key:
         d.ellipse(box((150, 160, 362, 404)), fill=alpha(main, 245), outline=alpha(accent, 130), width=p(5))
         d.rounded_rectangle(box((224, 96, 288, 180)), radius=p(22), fill=alpha(adjust(main, 12), 230), outline=alpha(accent, 100), width=p(3))
     else:
@@ -461,6 +487,237 @@ def draw_consumable(d, key, main, accent, rng):
         d.polygon(pts([(154, 166), (358, 166), (390, 394), (122, 394)]), fill=alpha(main, 242), outline=alpha(accent, 135))
         d.line(pts([(144, 288), (368, 288)]), fill=alpha(adjust(accent, 56), 140), width=p(5))
     d.ellipse(box((210, 224, 302, 312)), fill=alpha(adjust(accent, 42), 105))
+
+
+def draw_weapon(d, key, main, accent, rng):
+    k = key.lower()
+    metal = blend(main, (224, 230, 220), 0.38)
+    dark = adjust(main, -32)
+    wood = blend((104, 66, 34), main, 0.18)
+
+    if "bow" in k and "crossbow" not in k:
+        d.arc(box((94, 78, 298, 438)), 275, 92, fill=alpha(accent, 245), width=p(18))
+        d.line(pts([(202, 84), (202, 430)]), fill=alpha((236, 230, 198), 185), width=p(3))
+        d.line(pts([(176, 262), (398, 262)]), fill=alpha(metal, 245), width=p(7))
+        d.polygon(pts([(398, 262), (356, 244), (356, 280)]), fill=alpha(adjust(accent, 42), 235))
+        d.polygon(pts([(156, 252), (112, 232), (126, 264), (112, 292)]), fill=alpha(adjust(accent, 14), 205))
+        return
+
+    if "crossbow" in k:
+        d.line(pts([(134, 316), (374, 164)]), fill=alpha(wood, 255), width=p(24))
+        d.rounded_rectangle(box((196, 214, 340, 282)), radius=p(18), fill=alpha(dark, 245), outline=alpha(accent, 130), width=p(3))
+        d.arc(box((104, 122, 418, 332)), 190, 350, fill=alpha(accent, 245), width=p(16))
+        d.line(pts([(122, 224), (396, 224)]), fill=alpha((232, 222, 184), 175), width=p(3))
+        d.line(pts([(184, 254), (394, 254)]), fill=alpha(metal, 245), width=p(7))
+        d.polygon(pts([(398, 254), (360, 238), (360, 270)]), fill=alpha(adjust(accent, 45), 235))
+        return
+
+    if any(s in k for s in ["staff", "rod", "wand"]):
+        d.line(pts([(174, 418), (318, 96)]), fill=alpha(wood, 255), width=p(20))
+        d.line(pts([(186, 396), (330, 74)]), fill=alpha(adjust(accent, 36), 115), width=p(5))
+        d.ellipse(box((280, 74, 378, 172)), fill=alpha(blend(main, accent, 0.45), 190), outline=alpha(adjust(accent, 60), 220), width=p(5))
+        d.ellipse(box((312, 104, 348, 140)), fill=alpha(adjust(accent, 82), 160))
+        add_sparkles(d, rng, accent, 6)
+        return
+
+    if any(s in k for s in ["spear", "pike", "javelin", "piercer"]):
+        d.line(pts([(160, 420), (330, 122)]), fill=alpha(wood, 255), width=p(14))
+        d.polygon(pts([(330, 84), (382, 172), (316, 144)]), fill=alpha(metal, 250), outline=alpha(adjust(accent, 38), 145))
+        d.line(pts([(322, 146), (364, 168)]), fill=alpha(adjust(accent, 55), 130), width=p(4))
+        d.rounded_rectangle(box((194, 306, 242, 346)), radius=p(8), fill=alpha(adjust(accent, 8), 220))
+        return
+
+    if any(s in k for s in ["dagger", "knife"]):
+        d.polygon(pts([(244, 82), (316, 246), (264, 330), (196, 248)]), fill=alpha(metal, 250), outline=alpha(adjust(accent, 32), 150))
+        d.line(pts([(244, 116), (258, 316)]), fill=alpha((255, 255, 240), 95), width=p(3))
+        d.rounded_rectangle(box((180, 302, 310, 340)), radius=p(12), fill=alpha(accent, 235), outline=alpha(adjust(accent, 54), 130), width=p(3))
+        d.line(pts([(242, 334), (198, 426)]), fill=alpha(wood, 255), width=p(24))
+        return
+
+    if "chakram" in k or "disc" in k:
+        d.ellipse(box((130, 126, 382, 378)), fill=alpha(metal, 230), outline=alpha(adjust(accent, 50), 190), width=p(14))
+        d.ellipse(box((206, 202, 306, 302)), fill=alpha((14, 15, 15), 220), outline=alpha(adjust(accent, 35), 140), width=p(5))
+        for ang in range(0, 360, 60):
+            x = 256 + math.cos(math.radians(ang)) * 118
+            y = 252 + math.sin(math.radians(ang)) * 118
+            d.polygon(pts([(256, 252), (x, y), (256 + math.cos(math.radians(ang + 16)) * 84, 252 + math.sin(math.radians(ang + 16)) * 84)]), fill=alpha(adjust(accent, 15), 78))
+        return
+
+    if "flail" in k:
+        d.line(pts([(146, 386), (258, 234)]), fill=alpha(wood, 255), width=p(24))
+        d.rounded_rectangle(box((126, 374, 178, 430)), radius=p(14), fill=alpha(accent, 235), outline=alpha(adjust(accent, 50), 120), width=p(3))
+        for i in range(5):
+            d.ellipse(box((266 + i * 22, 198 - i * 14, 284 + i * 22, 216 - i * 14)), fill=alpha(metal, 215), outline=alpha(adjust(accent, 40), 115))
+        d.ellipse(box((342, 98, 430, 186)), fill=alpha(dark, 250), outline=alpha(adjust(accent, 42), 160), width=p(4))
+        for x, y in [(386, 82), (424, 124), (388, 202), (330, 142)]:
+            d.line(pts([(386, 142), (x, y)]), fill=alpha(adjust(accent, 48), 190), width=p(5))
+        return
+
+    if any(s in k for s in ["mace", "crusher"]):
+        d.line(pts([(164, 408), (310, 164)]), fill=alpha(wood, 255), width=p(24))
+        d.ellipse(box((282, 96, 390, 204)), fill=alpha(dark, 250), outline=alpha(adjust(accent, 45), 165), width=p(5))
+        for x, y in [(336, 72), (392, 106), (398, 178), (306, 208)]:
+            d.polygon(pts([(336, 150), (x, y), (346, 150)]), fill=alpha(adjust(accent, 28), 205))
+        return
+
+    if any(s in k for s in ["hammer", "warhammer"]):
+        d.line(pts([(154, 410), (300, 172)]), fill=alpha(wood, 255), width=p(24))
+        d.rounded_rectangle(box((244, 110, 402, 190)), radius=p(18), fill=alpha(metal, 245), outline=alpha(adjust(accent, 36), 145), width=p(4))
+        d.polygon(pts([(398, 118), (452, 146), (398, 182)]), fill=alpha(adjust(accent, 8), 220), outline=alpha(adjust(accent, 38), 130))
+        return
+
+    if "axe" in k:
+        d.line(pts([(168, 420), (300, 118)]), fill=alpha(wood, 255), width=p(22))
+        d.polygon(pts([(276, 108), (410, 126), (360, 254), (286, 214)]), fill=alpha(metal, 245), outline=alpha(adjust(accent, 40), 150))
+        if "great" in k or "splitter" in k:
+            d.polygon(pts([(284, 116), (168, 130), (210, 258), (290, 216)]), fill=alpha(blend(metal, accent, 0.15), 235), outline=alpha(adjust(accent, 36), 140))
+        d.line(pts([(298, 132), (274, 214)]), fill=alpha(adjust(accent, 54), 100), width=p(4))
+        return
+
+    # Sword, greatsword, blade, and legendary slash silhouettes.
+    width = 64 if any(s in k for s in ["great", "world", "cataclysm"]) else 46
+    d.polygon(pts([(256, 58), (256 + width, 288), (256, 360), (256 - width, 288)]), fill=alpha(metal, 250), outline=alpha(adjust(accent, 40), 150))
+    d.line(pts([(256, 86), (256, 344)]), fill=alpha((255, 255, 235), 90), width=p(4))
+    d.rounded_rectangle(box((160, 342, 352, 382)), radius=p(12), fill=alpha(accent, 235), outline=alpha(adjust(accent, 50), 130), width=p(4))
+    d.line(pts([(256, 376), (256, 444)]), fill=alpha(wood, 255), width=p(28))
+    d.ellipse(box((232, 422, 280, 470)), fill=alpha(adjust(accent, 12), 230), outline=alpha(adjust(accent, 58), 120), width=p(3))
+
+
+def draw_potion(d, key, main, accent, rng):
+    k = key.lower()
+    liquid = accent
+    if any(s in k for s in ["health", "healing", "vital", "blood", "restore"]):
+        liquid = (210, 54, 58)
+    elif any(s in k for s in ["mana", "arcane", "focus"]):
+        liquid = (72, 116, 230)
+    elif any(s in k for s in ["stamina", "energy", "haste", "swift"]):
+        liquid = (92, 204, 86)
+    elif any(s in k for s in ["poison", "venom", "toxic"]):
+        liquid = (94, 190, 72)
+
+    if any(s in k for s in ["elixir", "draught", "greater", "supreme"]):
+        d.rounded_rectangle(box((214, 80, 298, 142)), radius=p(18), fill=alpha(adjust(main, 18), 230), outline=alpha(liquid, 120), width=p(3))
+        d.polygon(pts([(164, 154), (348, 154), (390, 388), (122, 388)]), fill=alpha(blend(main, liquid, 0.34), 152), outline=alpha(adjust(liquid, 36), 170))
+        d.line(pts([(148, 286), (368, 286)]), fill=alpha(adjust(liquid, 50), 165), width=p(6))
+        d.ellipse(box((210, 206, 302, 298)), fill=alpha(adjust(liquid, 36), 108))
+    elif any(s in k for s in ["vial", "ampoule", "needle"]):
+        d.rounded_rectangle(box((220, 76, 292, 136)), radius=p(15), fill=alpha(adjust(main, 18), 230), outline=alpha(liquid, 120), width=p(3))
+        d.rounded_rectangle(box((194, 124, 318, 410)), radius=p(44), fill=alpha(blend(main, liquid, 0.28), 160), outline=alpha(adjust(liquid, 36), 170), width=p(4))
+        d.line(pts([(196, 292), (316, 292)]), fill=alpha(adjust(liquid, 55), 160), width=p(5))
+    else:
+        draw_vial(d, k, main, liquid, rng)
+    d.ellipse(box((222, 210, 258, 246)), fill=alpha(adjust(liquid, 72), 115))
+    d.ellipse(box((278, 316, 326, 366)), fill=alpha(adjust(liquid, 50), 86))
+
+
+def draw_food(d, key, main, accent, rng):
+    k = key.lower()
+    if any(s in k for s in ["ale", "brandy", "brew", "wine", "mead", "tea", "drink", "water", "skin", "flask"]):
+        d.rounded_rectangle(box((202, 86, 310, 156)), radius=p(20), fill=alpha(adjust(main, 10), 238), outline=alpha(accent, 120), width=p(3))
+        d.polygon(pts([(170, 160), (342, 160), (374, 402), (138, 402)]), fill=alpha(main, 242), outline=alpha(accent, 135))
+        d.line(pts([(154, 288), (358, 288)]), fill=alpha(adjust(accent, 56), 140), width=p(5))
+        d.ellipse(box((210, 216, 302, 306)), fill=alpha(adjust(accent, 36), 105))
+        return
+    if any(s in k for s in ["stew", "soup", "broth", "meal"]):
+        d.rounded_rectangle(box((116, 244, 396, 382)), radius=p(50), fill=alpha(adjust(main, -8), 245), outline=alpha(accent, 145), width=p(5))
+        d.ellipse(box((138, 202, 374, 310)), fill=alpha((96, 62, 34), 235), outline=alpha(adjust(accent, 38), 125), width=p(4))
+        for _ in range(8):
+            x = rng.randint(178, 334)
+            y = rng.randint(222, 278)
+            d.ellipse(box((x - 9, y - 7, x + 9, y + 7)), fill=alpha(adjust(accent, rng.randint(-20, 35)), 190))
+        return
+    if any(s in k for s in ["meat", "roast", "haunch", "jerky", "fish"]):
+        d.ellipse(box((146, 174, 380, 342)), fill=alpha((156, 74, 48), 245), outline=alpha(adjust(accent, 20), 135), width=p(4))
+        d.ellipse(box((118, 202, 210, 310)), fill=alpha((220, 206, 164), 235), outline=alpha(accent, 110), width=p(3))
+        d.ellipse(box((154, 236, 194, 280)), fill=alpha((250, 240, 200), 210))
+        d.line(pts([(210, 220), (356, 300)]), fill=alpha(adjust(accent, 46), 80), width=p(4))
+        return
+    if any(s in k for s in ["bread", "loaf", "pie", "tart", "cake"]):
+        d.ellipse(box((122, 188, 390, 352)), fill=alpha((174, 112, 52), 245), outline=alpha(adjust(accent, 30), 145), width=p(5))
+        for x in (178, 238, 298):
+            d.arc(box((x, 188, x + 82, 328)), 195, 340, fill=alpha(adjust(accent, 60), 115), width=p(4))
+        d.rounded_rectangle(box((150, 318, 362, 376)), radius=p(26), fill=alpha(adjust(main, -10), 220))
+        return
+    if any(s in k for s in ["apple", "berry", "fruit", "honey", "mushroom"]):
+        for _ in range(5):
+            x = rng.randint(156, 338)
+            y = rng.randint(156, 330)
+            r = rng.randint(28, 46)
+            d.ellipse(box((x - r, y - r, x + r, y + r)), fill=alpha(blend(main, accent, rng.random() * 0.5), 235), outline=alpha(adjust(accent, 30), 110), width=p(2))
+        d.line(pts([(256, 158), (276, 110)]), fill=alpha((88, 62, 34), 225), width=p(8))
+        d.ellipse(box((278, 102, 344, 148)), fill=alpha((84, 146, 70), 180))
+        return
+    d.rounded_rectangle(box((130, 174, 382, 360)), radius=p(48), fill=alpha(main, 242), outline=alpha(accent, 138), width=p(5))
+    d.line(pts([(160, 238), (354, 238)]), fill=alpha(adjust(accent, 48), 100), width=p(4))
+    d.ellipse(box((198, 270, 314, 352)), fill=alpha(adjust(accent, 20), 90))
+
+
+def draw_throwable(d, key, main, accent, rng):
+    k = key.lower()
+    if any(s in k for s in ["javelin", "dart", "knife", "dagger"]):
+        draw_weapon(d, k if "javelin" in k else "throwing_knife", main, accent, rng)
+        return
+    if any(s in k for s in ["flask", "fire", "acid", "oil", "bomb", "grenade", "powder"]):
+        d.ellipse(box((160, 170, 352, 402)), fill=alpha(main, 240), outline=alpha(adjust(accent, 32), 150), width=p(5))
+        d.rounded_rectangle(box((214, 116, 298, 190)), radius=p(18), fill=alpha(adjust(main, -12), 230), outline=alpha(accent, 120), width=p(3))
+        d.line(pts([(256, 116), (320, 66)]), fill=alpha((220, 196, 132), 230), width=p(8))
+        d.ellipse(box((306, 46, 354, 92)), fill=alpha((255, 108, 42), 155), outline=alpha((255, 190, 70), 110))
+        d.ellipse(box((210, 232, 302, 324)), fill=alpha(adjust(accent, 48), 105))
+        return
+    if any(s in k for s in ["stone", "shard", "crystal"]):
+        draw_crystals(d, main, accent, rng)
+        return
+    d.ellipse(box((154, 152, 358, 356)), fill=alpha(main, 242), outline=alpha(adjust(accent, 35), 145), width=p(5))
+    d.rounded_rectangle(box((224, 112, 288, 182)), radius=p(18), fill=alpha(adjust(main, -18), 230), outline=alpha(accent, 120), width=p(3))
+    d.line(pts([(254, 108), (330, 72)]), fill=alpha(adjust(accent, 30), 200), width=p(6))
+
+
+def spell_palette(key, main, accent):
+    k = key.lower()
+    if any(s in k for s in ["fire", "flame", "burn", "ember"]):
+        return (128, 42, 30), (255, 116, 42)
+    if any(s in k for s in ["ice", "frost", "cold"]):
+        return (68, 116, 146), (166, 238, 255)
+    if any(s in k for s in ["lightning", "storm", "thunder"]):
+        return (78, 74, 146), (238, 230, 88)
+    if any(s in k for s in ["earth", "stone", "root", "thorn"]):
+        return (82, 100, 58), (150, 214, 98)
+    if any(s in k for s in ["heal", "life", "holy", "sun"]):
+        return (120, 110, 54), (255, 232, 112)
+    if any(s in k for s in ["shadow", "void", "death"]):
+        return (50, 34, 72), (174, 94, 240)
+    if any(s in k for s in ["water", "wave"]):
+        return (42, 96, 136), (112, 218, 248)
+    return main, accent
+
+
+def draw_spell(d, key, main, accent, rng):
+    k = key.lower()
+    main, accent = spell_palette(k, main, accent)
+    center = (256, 256)
+    for r, a in [(158, 44), (116, 68), (76, 92)]:
+        d.ellipse(box((center[0] - r, center[1] - r, center[0] + r, center[1] + r)), outline=alpha(adjust(accent, 30), a), width=p(5))
+    for i in range(8):
+        ang = math.tau * i / 8 + rng.random() * 0.08
+        x1 = center[0] + math.cos(ang) * 70
+        y1 = center[1] + math.sin(ang) * 70
+        x2 = center[0] + math.cos(ang) * 174
+        y2 = center[1] + math.sin(ang) * 174
+        d.line((p(x1), p(y1), p(x2), p(y2)), fill=alpha(accent, 116), width=p(4))
+    if any(s in k for s in ["bolt", "ray", "lance", "beam"]):
+        d.polygon(pts([(118, 286), (286, 122), (252, 246), (394, 218), (224, 390), (262, 270)]), fill=alpha(accent, 205), outline=alpha(adjust(accent, 60), 145))
+    elif any(s in k for s in ["shield", "ward", "barrier"]):
+        d.polygon(pts([(256, 98), (380, 148), (348, 336), (256, 418), (164, 336), (132, 148)]), fill=alpha(blend(main, accent, 0.35), 118), outline=alpha(adjust(accent, 50), 210))
+        d.line(pts([(256, 126), (256, 384)]), fill=alpha(adjust(accent, 60), 110), width=p(4))
+    elif any(s in k for s in ["summon", "circle", "ritual"]):
+        for ang in range(0, 360, 72):
+            x = center[0] + math.cos(math.radians(ang)) * 104
+            y = center[1] + math.sin(math.radians(ang)) * 104
+            d.polygon(pts([(x, y - 18), (x + 18, y), (x, y + 18), (x - 18, y)]), fill=alpha(adjust(accent, 40), 190))
+    else:
+        d.ellipse(box((186, 184, 326, 324)), fill=alpha(blend(main, accent, 0.5), 170), outline=alpha(adjust(accent, 64), 210), width=p(6))
+        d.ellipse(box((226, 224, 286, 284)), fill=alpha(adjust(accent, 80), 150))
+    add_sparkles(d, rng, accent, 10)
 
 
 def generate_icon(catalog: str, key: str, output: Path, overwrite: bool = False, size: int = SIZE):
@@ -473,6 +730,16 @@ def generate_icon(catalog: str, key: str, output: Path, overwrite: bool = False,
         draw_armor(d, key, main, accent, rng)
     elif catalog == "materials":
         draw_material(d, key, main, accent, rng)
+    elif catalog == "weapons":
+        draw_weapon(d, key, main, accent, rng)
+    elif catalog == "potions":
+        draw_potion(d, key, main, accent, rng)
+    elif catalog == "food":
+        draw_food(d, key, main, accent, rng)
+    elif catalog == "spells":
+        draw_spell(d, key, main, accent, rng)
+    elif catalog == "throwables":
+        draw_throwable(d, key, main, accent, rng)
     elif catalog == "tools":
         draw_tool(d, key, main, accent, rng)
     elif catalog == "belts":
@@ -515,6 +782,24 @@ import('./module/services/content-asset-audit-service.mjs').then(async m => {
     return json.loads(out)
 
 
+def art_backlog_icons(manifest: Path, catalogs=None):
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    wanted = {str(value).strip() for value in (catalogs or []) if str(value).strip()}
+    rows = []
+    for item in data.get("items", []):
+        catalog = str(item.get("catalog") or "").strip()
+        item_type = str(item.get("type") or "").strip()
+        if wanted and catalog not in wanted and item_type not in wanted:
+            continue
+        rows.append({
+            "catalog": catalog,
+            "pack": "",
+            "key": item.get("id"),
+            "img": item.get("targetImg"),
+        })
+    return [row for row in rows if row["catalog"] and row["key"] and row["img"]]
+
+
 def output_path(img_path: str) -> Path:
     normalized = img_path.replace("\\", "/")
     if not normalized.startswith(SYSTEM_PREFIX):
@@ -524,12 +809,27 @@ def output_path(img_path: str) -> Path:
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--art-backlog", type=Path, help="read image targets from docs/content/art-backlog.json")
+    parser.add_argument("--dev-placeholder-art", action="store_true", help="allow placeholder generation from art backlog; not for final content art")
+    parser.add_argument("--catalog", "--type", dest="catalogs", action="append", default=[], help="limit to one catalog/type; can be repeated")
     parser.add_argument("--overwrite", action="store_true", help="replace existing icon files")
     parser.add_argument("--limit", type=int, default=0, help="generate at most N icons")
     parser.add_argument("--size", type=int, default=SIZE, help="output square icon size")
     args = parser.parse_args()
 
-    rows = missing_icons()
+    if args.art_backlog and not args.dev_placeholder_art:
+        parser.error("--art-backlog requires --dev-placeholder-art because this generator creates placeholder art, not final content images")
+
+    if args.art_backlog:
+        rows = art_backlog_icons(args.art_backlog, args.catalogs)
+        source = "art-backlog"
+    else:
+        rows = missing_icons()
+        if args.catalogs:
+            wanted = set(args.catalogs)
+            rows = [row for row in rows if row["catalog"] in wanted]
+        source = "missing-system-image"
+
     if args.limit > 0:
         rows = rows[:args.limit]
 
@@ -547,11 +847,13 @@ def main():
         by_catalog[row["catalog"]] = by_catalog.get(row["catalog"], 0) + 1
 
     print(json.dumps({
+        "source": source,
         "requested": len(rows),
         "generated": len(generated),
         "skipped": len(skipped),
         "byCatalog": by_catalog,
         "firstGenerated": [str(path.relative_to(ROOT)).replace("\\", "/") for path in generated[:12]],
+        "firstSkipped": [str(path.relative_to(ROOT)).replace("\\", "/") for path in skipped[:12]],
     }, indent=2))
 
 

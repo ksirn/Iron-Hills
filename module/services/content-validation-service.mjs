@@ -16,6 +16,7 @@ import { SPELLS } from "../constants/spells-catalog.mjs";
 import { MIXING_RULES } from "../constants/alchemy.mjs";
 import { uniqueCraftRecipes } from "../constants/recipes.mjs";
 import { MONSTER_HARVEST_DROP_POOLS } from "../constants/monster-loot-pools.mjs";
+import { ARMOR_CLASS_KEYS } from "../constants/armor-profiles.mjs";
 import { GENERATED_PACKS } from "../compendium-builder.mjs";
 import {
   attachmentToItemData,
@@ -416,6 +417,28 @@ function validateTypeSpecificItem(itemData, context, findings) {
 
   if (itemData.type === "armor") {
     pushIf(findings, !String(system.slot ?? "").trim(), "error", "missing-armor-slot", "Armor is missing slot.", context);
+    pushIf(
+      findings,
+      !ARMOR_CLASS_KEYS.includes(String(system.armorClass ?? "")),
+      "warn",
+      "missing-armor-class",
+      "Armor is missing supported armorClass.",
+      context,
+      { armorClass: system.armorClass }
+    );
+    pushIf(findings, !isPlainObject(system.requirements), "warn", "missing-armor-requirements", "Armor is missing requirements object.", context);
+    if (isPlainObject(system.requirements)) {
+      pushIf(
+        findings,
+        !isNonNegativeNumber(system.requirements.endurance) || !isNonNegativeNumber(system.requirements.athletics),
+        "warn",
+        "bad-armor-requirements",
+        "Armor requirements should have non-negative endurance and athletics.",
+        context,
+        { requirements: system.requirements }
+      );
+    }
+    pushIf(findings, !isPlainObject(system.penalties), "warn", "missing-armor-penalties", "Armor is missing penalties object.", context);
     pushIf(findings, !isPlainObject(system.protection), "error", "missing-protection", "Armor is missing protection object.", context);
     validateDamageResistanceObject(system.protection, context, findings, {
       prefix: "armor-protection",

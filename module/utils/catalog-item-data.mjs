@@ -8,6 +8,15 @@ import {
   buildSpellItemSystemData,
 } from "../services/spell-runtime-service.mjs";
 import { normalizeDamageType } from "../services/damage-type-service.mjs";
+import {
+  formatArmorClassRequirementLabel,
+  getArmorClassDurabilityMax,
+  getArmorClassPenalties,
+  getArmorClassProfile,
+  getArmorClassRequirements,
+  inferArmorClassFromArmorRow,
+  normalizeArmorClass,
+} from "../constants/armor-profiles.mjs";
 
 const DEFAULT_WEAPON_IMG = Object.freeze({
   sword: "icons/weapons/swords/sword-shortsword.webp",
@@ -173,6 +182,16 @@ function durabilityFor(type, tier, explicit = null) {
   return { value: max, max };
 }
 
+function armorDurabilityFor(tier, armorClass, explicit = null) {
+  if (explicit && typeof explicit === "object") {
+    const max = getArmorClassDurabilityMax(tier, armorClass, explicit);
+    const value = cleanPositiveNumber(explicit.value, max);
+    return { value: Math.min(max, value), max };
+  }
+  const max = getArmorClassDurabilityMax(tier, armorClass);
+  return { value: max, max };
+}
+
 function rowFlags(row) {
   return row?.id ? { "iron-hills-system": { catalogId: row.id } } : {};
 }
@@ -231,10 +250,26 @@ export function normalizeItemDataForInventory(itemData, options = {}) {
 
   if (type === "armor") {
     system.slot = String(system.slot ?? "torso").trim() || "torso";
+    system.armorClass = normalizeArmorClass(system.armorClass, "medium");
+    system.armorClassLabel = getArmorClassProfile(system.armorClass).label;
     if (!system.protection || typeof system.protection !== "object" || Array.isArray(system.protection)) {
       system.protection = { physical: 0, magical: 0 };
     }
     if (!Array.isArray(system.covers)) system.covers = DEFAULT_COVERS[system.slot] ?? ["torso"];
+    const requirements = system.requirements && typeof system.requirements === "object"
+      ? system.requirements
+      : {};
+    const classRequirements = getArmorClassRequirements(system.tier, system.armorClass);
+    system.requirements = {
+      ...requirements,
+      endurance: cleanNonNegativeNumber(requirements.endurance, classRequirements.endurance),
+      athletics: cleanNonNegativeNumber(requirements.athletics, classRequirements.athletics),
+    };
+    system.requirementsLabel = formatArmorClassRequirementLabel(system);
+    system.penalties = {
+      ...(system.penalties && typeof system.penalties === "object" ? system.penalties : {}),
+      ...getArmorClassPenalties(system.armorClass),
+    };
   }
 
   if (type === "tool") {
@@ -336,6 +371,11 @@ export function weaponToItemData(row, { quantity = 1 } = {}) {
 export function armorToItemData(row, { quantity = 1 } = {}) {
   const tier = cleanTier(row.tier);
   const slotGrid = SLOT_GRID[row.slot] ?? DEFAULT_GRIDS.armor;
+  const armorClass = normalizeArmorClass(row.armorClass, inferArmorClassFromArmorRow(row));
+  const classProfile = getArmorClassProfile(armorClass);
+  const classRequirements = row.requirements && typeof row.requirements === "object"
+    ? row.requirements
+    : getArmorClassRequirements(tier, armorClass);
   const system = {
     tier,
     quality: row.quality ?? "common",
@@ -344,12 +384,22 @@ export function armorToItemData(row, { quantity = 1 } = {}) {
     gridW: row.gridW ?? slotGrid.w,
     gridH: row.gridH ?? slotGrid.h,
     slot: row.slot ?? "torso",
+    armorClass,
+    armorClassLabel: row.armorClassLabel ?? classProfile.label,
     protection: protectionFromArmorRow(row),
     value: row.value ?? 20,
-    durability: durabilityFor("armor", tier, row.durability),
+    durability: armorDurabilityFor(tier, armorClass, row.durability),
     covers: row.covers ?? DEFAULT_COVERS[row.slot] ?? ["torso"],
+    requirements: {
+      endurance: Number(classRequirements.endurance ?? 0),
+      athletics: Number(classRequirements.athletics ?? 0),
+    },
+    penalties: row.penalties && typeof row.penalties === "object"
+      ? clonePlain(row.penalties)
+      : getArmorClassPenalties(armorClass),
   };
   if (row.affixes && typeof row.affixes === "object") system.affixes = clonePlain(row.affixes);
+  system.requirementsLabel = formatArmorClassRequirementLabel(system);
 
   return normalizeItemDataForInventory({
     name: row.label,

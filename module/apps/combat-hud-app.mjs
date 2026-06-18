@@ -5,6 +5,7 @@ import { performActorAttack } from "../services/attack-flow-service.mjs";
 import {
   buildCombatChatCard,
   buildSystemDialogContent,
+  createCombatChatMessage,
 } from "../services/combat-chat-service.mjs";
 import { buildHitEffect } from "../services/hit-effect-service.mjs";
 import { getActiveConditionEntries } from "../services/condition-policy-service.mjs";
@@ -55,8 +56,11 @@ import {
 } from "../utils/actor-utils.mjs";
 import {
   buildActorMedicalTriage,
-  getBodyPartTraumaStatus,
 } from "../services/body-trauma-service.mjs";
+import {
+  buildActorBodyHud,
+  buildActorResourceHud,
+} from "../services/body-hud-service.mjs";
 import { buildActorRecoveryPlan } from "../services/recovery-service.mjs";
 import {
   getActionBlockReason,
@@ -77,6 +81,14 @@ import { num } from "../utils/math-utils.mjs";
 import { getItemQuickSlotIcon } from "../utils/item-utils.mjs";
 
 const HUD_TARGET_PREVIEW_LIMIT = 3;
+
+function notifyWarn(message) {
+  globalThis.ui?.notifications?.warn?.(message);
+}
+
+function notifyInfo(message) {
+  globalThis.ui?.notifications?.info?.(message);
+}
 
 function getRatio(value, max) {
   const safeMax = Math.max(1, num(max, 1));
@@ -113,15 +125,6 @@ async function chooseTechniqueTargetZone(technique) {
       close: () => resolve(null),
     }).render(true);
   });
-}
-
-function getZoneClass(value, max) {
-  const ratio = getRatio(value, max);
-  if (ratio <= 0) return "is-dead";
-  if (ratio <= 0.25) return "is-critical";
-  if (ratio <= 0.5) return "is-bad";
-  if (ratio <= 0.75) return "is-warn";
-  return "is-good";
 }
 
 function getHudActor() {
@@ -438,7 +441,7 @@ function buildHudPills({ state = {}, actorCombat = {}, targetHud = null } = {}) 
 }
 
 function getPartTrauma(hpNode) {
-  const status = getBodyPartTraumaStatus({ system: { resources: { hp: { part: hpNode } } } }, "part");
+  const status = hpNode?.status ?? {};
   return {
     minorBleeding: status.minorBleeding,
     majorBleeding: status.majorBleeding,
@@ -615,7 +618,7 @@ export class IronHillsCombatHudApp extends Application {
   async _callPerformAttack(actor, params) {
     const attackParams = {
       ...params,
-      targets: params.targets ?? game.user?.targets ?? [],
+      targets: params.targets ?? globalThis.game?.user?.targets ?? [],
       autoTargetHostile: params.autoTargetHostile ?? actor?.type !== "character",
       useExplodingDice: params.useExplodingDice ?? actor?.type === "character",
     };
@@ -640,14 +643,14 @@ export class IronHillsCombatHudApp extends Application {
     if (!actor) return;
     if (!(await this._requireSettledInventory(actor, "заклинание"))) return;
     const combatCheck = this._canActorUseCombatAction(actor);
-    if (!combatCheck.ok) { ui.notifications.warn(combatCheck.reason); return; }
-    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
+    if (!combatCheck.ok) { notifyWarn(combatCheck.reason); return; }
+    const targets = [...(globalThis.game?.user?.targets ?? [])].map(t => t.actor).filter(Boolean);
     const choice  = await IronHillsSpellCastApp.choose(actor, targets);
     if (!choice) return;
     const result = await castSpellChoiceAction({
       actor,
       choice,
-      targets: game.user?.targets ?? [],
+      targets: globalThis.game?.user?.targets ?? [],
       resolveCombatTimeCost: (args) => this._resolveHudCombatTimeCost(actor, args),
       requestHostileAction: (label) => requestGmHostileAction(actor, label),
       onLethal: (target) => markActorDead(target),
@@ -713,7 +716,7 @@ export class IronHillsCombatHudApp extends Application {
 
     const combatCheck = this._canActorUseCombatAction(actor);
     if (!combatCheck.ok) {
-      ui.notifications.warn(combatCheck.reason || "Сейчас действие недоступно.");
+      notifyWarn(combatCheck.reason || "Сейчас действие недоступно.");
       return;
     }
 
@@ -731,8 +734,8 @@ export class IronHillsCombatHudApp extends Application {
     // Тратим весь ход
     spendActionSeconds(actor, 6, { actionType: "breathe", label: "Перевести дух" });
 
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
+    await createCombatChatMessage({
+      actor,
       content: buildCombatChatCard({
         title: "Перевести дух",
         subtitle: actor.name,
@@ -758,7 +761,7 @@ export class IronHillsCombatHudApp extends Application {
 
     const combatCheck = this._canActorUseCombatAction(actor);
     if (!combatCheck.ok) {
-      ui.notifications.warn(combatCheck.reason || "Сейчас действие недоступно.");
+      notifyWarn(combatCheck.reason || "Сейчас действие недоступно.");
       return;
     }
 
@@ -797,7 +800,7 @@ export class IronHillsCombatHudApp extends Application {
     };
 
     // Получаем цели из таргетов
-    const targets = [...(game.user.targets ?? [])].map(t => t.actor).filter(Boolean);
+    const targets = [...(globalThis.game?.user?.targets ?? [])].map(t => t.actor).filter(Boolean);
 
     // Есть ли доступные приёмы или прицельный удар?
     const techniques = weapon ? getAvailableTechniques(actor, weapon) : [];
@@ -930,11 +933,11 @@ export class IronHillsCombatHudApp extends Application {
 
     const result = cancelPendingAction(actor);
     if (!result?.ok) {
-      ui.notifications.warn(result?.reason || "Не удалось отменить действие.");
+      notifyWarn(result?.reason || "Не удалось отменить действие.");
       return;
     }
 
-    ui.notifications.info(`${actor.name} отменяет длительное действие.`);
+    notifyInfo(`${actor.name} отменяет длительное действие.`);
     this._refreshHud({ keepOnTop: true });
   }
 
@@ -944,13 +947,13 @@ export class IronHillsCombatHudApp extends Application {
 
     const result = endTurnForActor(actor);
     if (!result?.ok) {
-      ui.notifications.warn(result?.reason || "Не удалось завершить ход.");
+      notifyWarn(result?.reason || "Не удалось завершить ход.");
       return;
     }
 
     const advanceResult = await advanceTurnIfReady();
     if (!advanceResult?.ok) {
-      ui.notifications.warn(advanceResult?.reason || "Ход завершён, но передача следующему участнику не выполнена.");
+      notifyWarn(advanceResult?.reason || "Ход завершён, но передача следующему участнику не выполнена.");
       this._refreshHud({ keepOnTop: true });
       return;
     }
@@ -963,7 +966,7 @@ export class IronHillsCombatHudApp extends Application {
 
   async _nextTurn() {
     if (!isCombatActive()) {
-      ui.notifications.warn("Активного боя нет.");
+      notifyWarn("Активного боя нет.");
       return;
     }
 
@@ -974,10 +977,10 @@ export class IronHillsCombatHudApp extends Application {
       return;
     }
 
-    if (game.user?.isGM) {
+    if (globalThis.game?.user?.isGM) {
       const nextResult = await nextTurn();
       if (nextResult?.ok === false) {
-        ui.notifications.warn(nextResult?.reason || "Не удалось передать ход.");
+        notifyWarn(nextResult?.reason || "Не удалось передать ход.");
         return;
       }
 
@@ -985,12 +988,12 @@ export class IronHillsCombatHudApp extends Application {
       return;
     }
 
-    ui.notifications.warn("Сейчас не ваш активный ход.");
+    notifyWarn("Сейчас не ваш активный ход.");
   }
 
   async _endCombat() {
     if (!isCombatActive()) {
-      ui.notifications.warn("Активного боя нет.");
+      notifyWarn("Активного боя нет.");
       return;
     }
 
@@ -1012,7 +1015,6 @@ export class IronHillsCombatHudApp extends Application {
       };
     }
 
-    const hp = actor.system?.resources?.hp ?? {};
     const resources = actor.system?.resources ?? {};
     const quickSlots = actor.system?.quickSlots ?? {};
     const slotKeys = ["slot1", "slot2", "slot3", "slot4", "slot5", "slot6"];
@@ -1026,6 +1028,8 @@ export class IronHillsCombatHudApp extends Application {
     const pendingActionUi = actorCombat.pendingActionUi ?? actorParticipant?.pendingActionUi ?? null;
     const globalEffects = getActiveConditionEntries(actor.system?.conditions ?? {});
     const medicalTriage = buildActorMedicalTriage(actor);
+    const bodyHud = buildActorBodyHud(actor, { medicalTriage });
+    const resourceBars = buildActorResourceHud(actor);
     const recoveryPlan = buildActorRecoveryPlan(actor);
     const selectedTargets = globalThis.game?.user?.targets ?? [];
     const currentActorTurn = Boolean(
@@ -1068,6 +1072,8 @@ export class IronHillsCombatHudApp extends Application {
       hudPills,
       targetHud,
       medicalTriage,
+      bodyHud,
+      resourceBars,
       recoveryPlan,
       secondsLeft: actorCombat.isInCombat ? num(actorCombat.remainingSeconds, 0) : null,
       isSkippingTurn: Boolean(
@@ -1103,16 +1109,7 @@ export class IronHillsCombatHudApp extends Application {
       pendingActionTacticalMeta,
       canCancelPendingAction: Boolean(actorCombat.canCancelPendingAction),
 
-      zones: [
-        { key: "head", label: "Голова", value: num(hp.head?.value, 0), max: num(hp.head?.max, 0), pct: Math.round(getRatio(hp.head?.value, hp.head?.max) * 100), cssClass: getZoneClass(hp.head?.value, hp.head?.max), trauma: getPartTrauma(hp.head), tooltip: buildZoneTooltip("Голова", num(hp.head?.value,0), num(hp.head?.max,0), getPartTrauma(hp.head)) },
-        { key: "torso", label: "Торс", value: num(hp.torso?.value, 0), max: num(hp.torso?.max, 0), pct: Math.round(getRatio(hp.torso?.value, hp.torso?.max) * 100), cssClass: getZoneClass(hp.torso?.value, hp.torso?.max), trauma: getPartTrauma(hp.torso), tooltip: buildZoneTooltip("Торс", num(hp.torso?.value,0), num(hp.torso?.max,0), getPartTrauma(hp.torso)) },
-        { key: "abdomen", label: "Живот", value: num(hp.abdomen?.value, 0), max: num(hp.abdomen?.max, 0), pct: Math.round(getRatio(hp.abdomen?.value, hp.abdomen?.max) * 100), cssClass: getZoneClass(hp.abdomen?.value, hp.abdomen?.max), trauma: getPartTrauma(hp.abdomen), tooltip: buildZoneTooltip("Живот", num(hp.abdomen?.value,0), num(hp.abdomen?.max,0), getPartTrauma(hp.abdomen)) },
-        { key: "leftArm", label: "Л. рука", value: num(hp.leftArm?.value, 0), max: num(hp.leftArm?.max, 0), pct: Math.round(getRatio(hp.leftArm?.value, hp.leftArm?.max) * 100), cssClass: getZoneClass(hp.leftArm?.value, hp.leftArm?.max), trauma: getPartTrauma(hp.leftArm), tooltip: buildZoneTooltip("Л. рука", num(hp.leftArm?.value,0), num(hp.leftArm?.max,0), getPartTrauma(hp.leftArm)) },
-        { key: "rightArm", label: "П. рука", value: num(hp.rightArm?.value, 0), max: num(hp.rightArm?.max, 0), pct: Math.round(getRatio(hp.rightArm?.value, hp.rightArm?.max) * 100), cssClass: getZoneClass(hp.rightArm?.value, hp.rightArm?.max), trauma: getPartTrauma(hp.rightArm), tooltip: buildZoneTooltip("П. рука", num(hp.rightArm?.value,0), num(hp.rightArm?.max,0), getPartTrauma(hp.rightArm)) },
-        { key: "leftLeg", label: "Л. нога", value: num(hp.leftLeg?.value, 0), max: num(hp.leftLeg?.max, 0), pct: Math.round(getRatio(hp.leftLeg?.value, hp.leftLeg?.max) * 100), cssClass: getZoneClass(hp.leftLeg?.value, hp.leftLeg?.max), trauma: getPartTrauma(hp.leftLeg), tooltip: buildZoneTooltip("Л. нога", num(hp.leftLeg?.value,0), num(hp.leftLeg?.max,0), getPartTrauma(hp.leftLeg)) },
-        { key: "rightLeg", label: "П. нога", value: num(hp.rightLeg?.value, 0), max: num(hp.rightLeg?.max, 0), pct: Math.round(getRatio(hp.rightLeg?.value, hp.rightLeg?.max) * 100), cssClass: getZoneClass(hp.rightLeg?.value, hp.rightLeg?.max), trauma: getPartTrauma(hp.rightLeg), tooltip: buildZoneTooltip("П. нога", num(hp.rightLeg?.value,0), num(hp.rightLeg?.max,0), getPartTrauma(hp.rightLeg)) }
-      ],
-
+      zones: bodyHud.parts,
       quickSlots: slotKeys.map(slotKey => {
         const itemId = quickSlots?.[slotKey];
         const item = itemId ? actor.items.get(itemId) : null;
@@ -1150,7 +1147,7 @@ export class IronHillsCombatHudApp extends Application {
         { key: "burning",  label: "Горение",      icon: "fa-fire",      color: "var(--ih-hp-bad)",  active: num(actor.system?.conditions?.burning, 0) > 0,                                                                            value: num(actor.system?.conditions?.burning, 0) },
         { key: "shock",    label: "Шок",          icon: "fa-bolt",      color: "var(--ih-mana)",    active: num(actor.system?.conditions?.shock, 0) > 0,                                                                              value: num(actor.system?.conditions?.shock, 0) },
         { key: "bleeding", label: "Кровотечение", icon: "fa-droplet",   color: "var(--ih-hp-crit)", active: num(actor.system?.conditions?.bleeding, 0) > 0,                                                                           value: num(actor.system?.conditions?.bleeding, 0) },
-        { key: "silence",  label: "Безмолвие",   icon: "fa-volume-xmark", color: "#a78bfa",         active: num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),                                            value: "🔇" },
+        { key: "silence",  label: "Безмолвие",   icon: "fa-volume-xmark", color: "#a78bfa",         active: num(actor.system?.conditions?.silencedUntil, 0) > (globalThis.game?.time?.worldTime ?? 0),                                            value: "🔇" },
         { key: "slow",     label: "Замедление",  icon: "fa-person-walking", color: "#94a3b8",        active: num(actor.system?.conditions?.slowPenalty, 0) > 0,                                                                        value: num(actor.system?.conditions?.slowPenalty, 0) },
         { key: "feared",   label: "Страх",       icon: "fa-ghost",     color: "#c084fc",           active: num(actor.system?.conditions?.feared, 0) > 0,                                                                              value: num(actor.system?.conditions?.feared, 0) },
         { key: "aim",      label: "Прицел",      icon: "fa-crosshairs", color: "#facc15",           active: num(actor.system?.conditions?.aimed_shot_bonus, 0) > 0,                                                                   value: `+${num(actor.system?.conditions?.aimed_shot_bonus, 0)}` },
@@ -1165,7 +1162,7 @@ export class IronHillsCombatHudApp extends Application {
         num(actor.system?.conditions?.burning, 0) > 0,
         num(actor.system?.conditions?.shock, 0) > 0,
         num(actor.system?.conditions?.bleeding, 0) > 0,
-        num(actor.system?.conditions?.silencedUntil, 0) > (game.time?.worldTime ?? 0),
+        num(actor.system?.conditions?.silencedUntil, 0) > (globalThis.game?.time?.worldTime ?? 0),
         num(actor.system?.conditions?.slowPenalty, 0) > 0,
         num(actor.system?.conditions?.feared, 0) > 0,
         num(actor.system?.conditions?.aimed_shot_bonus, 0) > 0,
@@ -1177,7 +1174,7 @@ export class IronHillsCombatHudApp extends Application {
       ].some(Boolean),
 
       // Флаги для управления доступностью действий
-      isGM: Boolean(game.user?.isGM),
+      isGM: Boolean(globalThis.game?.user?.isGM),
       canActFreely: !isCombatActive(),
       canAttack: !isCombatActive() || Boolean(actorCombat.canStartNewAction),
 
@@ -1191,7 +1188,7 @@ export class IronHillsCombatHudApp extends Application {
       manaMax:    Number(actor.system?.resources?.mana?.max   ?? 0),
       hasMana:    Number(actor.system?.resources?.mana?.max   ?? 0) > 0,
       rightHandEquipped: !!actor.system?.equipment?.rightHand,
-      isSprinting: game.ironHills?._moveMode === "sprint",
+      isSprinting: globalThis.game?.ironHills?._moveMode === "sprint",
 
       queue: (state.participants ?? []).map(participant => {
         const side = participant.side ?? "neutral";
@@ -1241,8 +1238,8 @@ export class IronHillsCombatHudApp extends Application {
     });
 
     html.find("[data-toggle-sprint]").on("click", () => {
-      const cur = game.ironHills?._moveMode ?? "walk";
-      game.ironHills?.setMoveMode?.(cur === "sprint" ? "walk" : "sprint");
+      const cur = globalThis.game?.ironHills?._moveMode ?? "walk";
+      globalThis.game?.ironHills?.setMoveMode?.(cur === "sprint" ? "walk" : "sprint");
       this.render(false);
     });
 

@@ -12,6 +12,14 @@ import {
 } from "./combat-special-action-service.mjs";
 import { markActorDead } from "./condition-service.mjs";
 
+function notifyWarn(message) {
+  globalThis.ui?.notifications?.warn?.(message);
+}
+
+function notifyInfo(message) {
+  globalThis.ui?.notifications?.info?.(message);
+}
+
 export function buildItemUseHandlers(handlers = {}) {
   return {
     useFood: handlers.useFood,
@@ -61,7 +69,7 @@ export async function useActorQuickSlot(actor, slotKey, {
   const reason = getActionBlockReason(actor, "quickslot", { slotKey, targets });
 
   if (reason) {
-    ui.notifications.warn(reason);
+    notifyWarn(reason);
     return false;
   }
 
@@ -69,7 +77,7 @@ export async function useActorQuickSlot(actor, slotKey, {
   const item = itemId ? actor.items.get(itemId) : null;
 
   if (!item) {
-    ui.notifications.warn("Предмет в слоте не найден");
+    notifyWarn("Предмет в слоте не найден");
     return false;
   }
 
@@ -207,7 +215,7 @@ export async function executeActorPendingCombatAction(actor, pendingAction, {
 
   if (actionType === "attack") {
     if (!performAttack) {
-      ui.notifications.warn("Невозможно продолжить атаку: обработчик атаки не подключён.");
+      notifyWarn("Невозможно продолжить атаку: обработчик атаки не подключён.");
       return { ok: false, reason: "missing-attack-handler" };
     }
 
@@ -219,7 +227,7 @@ export async function executeActorPendingCombatAction(actor, pendingAction, {
   if (actionType === "quickslot") {
     const slotKey = data.slotKey;
     if (!slotKey) {
-      ui.notifications.warn("Не найден quick slot для продолжения действия.");
+      notifyWarn("Не найден quick slot для продолжения действия.");
       return { ok: false, reason: "missing-quickslot" };
     }
 
@@ -269,6 +277,6 @@ export async function executeActorPendingCombatAction(actor, pendingAction, {
     );
   }
 
-  ui.notifications.info(`Действие "${pendingAction.label || "действие"}" завершено.`);
+  notifyInfo(`Действие "${pendingAction.label || "действие"}" завершено.`);
   return { ok: true, handled: false, actionType };
 }

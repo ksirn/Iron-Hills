@@ -1,6 +1,49 @@
 {{!-- Iron Hills — Tarkov Trade --}}
 <div class="tt-app">
 
+  <div class="tt-dashboard {{tradeDashboard.cssClass}}">
+    <div class="tt-dash-party">
+      <img src="{{tradeDashboard.merchant.img}}" alt="{{tradeDashboard.merchant.name}}">
+      <div>
+        <span>Торговец</span>
+        <b>{{tradeDashboard.merchant.name}}</b>
+        <em>{{tradeDashboard.merchant.coins}}</em>
+      </div>
+    </div>
+
+    <div class="tt-dash-flow">
+      <div class="tt-dash-flow-head">
+        <span>Курс x{{tradeDashboard.priceFactor}}</span>
+        <b class="{{tradeDashboard.status.cssClass}}">{{tradeDashboard.status.label}}</b>
+      </div>
+      <div class="tt-dash-flow-grid">
+        <span><b>{{tradeDashboard.exchange.buyerGetsQty}}</b> игроку</span>
+        <span><b>{{tradeDashboard.exchange.buyerPaysStr}}</b> платит игрок</span>
+        <span><b>{{tradeDashboard.exchange.merchantGetsQty}}</b> торговцу</span>
+        <span><b>{{tradeDashboard.exchange.merchantPaysStr}}</b> платит торговец</span>
+      </div>
+    </div>
+
+    <div class="tt-dash-party is-right">
+      <div>
+        <span>Игрок</span>
+        <b>{{tradeDashboard.buyer.name}}</b>
+        <em>{{tradeDashboard.buyer.coins}}</em>
+      </div>
+      <img src="{{tradeDashboard.buyer.img}}" alt="{{tradeDashboard.buyer.name}}">
+    </div>
+
+    <div class="tt-dash-chips">
+      {{#each tradeDashboard.chips}}
+      <span class="tt-dash-chip {{cssClass}}">
+        <i class="fas {{icon}}"></i>
+        <b>{{label}}</b>
+        {{value}}
+      </span>
+      {{/each}}
+    </div>
+  </div>
+
   {{!-- Шапки --}}
   <div class="tt-headers">
     <div class="tt-col-header">

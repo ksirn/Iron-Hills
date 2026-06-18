@@ -1007,9 +1007,26 @@
       "weight": 2,
       "quantity": 1,
       "slot": "torso",
+      "armorClass": "medium",
+      "armorClassLabel": "Средняя",
       "protection": {
         "physical": 1,
         "magical": 0
+      },
+      "requirements": {
+        "endurance": 1,
+        "athletics": 1
+      },
+      "requirementsLabel": "Выносливость 1 / Атлетика 1",
+      "penalties": {
+        "attackPenaltyPerEndurance": 0.3,
+        "attackPenaltyPerAthletics": 0.15,
+        "actionSecondsPerEndurance": 0.15,
+        "actionSecondsPerAthletics": 0.1,
+        "movementPenaltyPerEndurance": 0.25,
+        "movementPenaltyPerAthletics": 0.35,
+        "energyMultPerEndurance": 0.035,
+        "energyMultPerAthletics": 0.045
       },
       "durability": {
         "value": 100,

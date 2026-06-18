@@ -128,7 +128,7 @@ export const WEATHER_PRESETS = {
 
 /** Получить текущий час (0-23) из worldTime */
 export function getCurrentHour() {
-  const wt = game.time?.worldTime ?? 0;
+  const wt = globalThis.game?.time?.worldTime ?? 0;
   return Math.floor((wt % 86400) / 3600);
 }
 
@@ -153,7 +153,7 @@ function lerpHex(a, b, t) {
  * Переход начинается за 45 минут до конца периода.
  */
 export function getSmoothLighting() {
-  const wt      = game.time?.worldTime ?? 0;
+  const wt      = globalThis.game?.time?.worldTime ?? 0;
   const totalMin = Math.floor((wt % 86400) / 60); // минуты с начала дня
   const hour     = Math.floor(totalMin / 60);
   const minute   = totalMin % 60;
@@ -189,7 +189,7 @@ export function getSmoothLighting() {
 
 /** Получить текущую погоду (из настроек) */
 export function getCurrentWeather() {
-  const id = game.settings?.get?.("iron-hills-system", "currentWeather") ?? "clear";
+  const id = globalThis.game?.settings?.get?.("iron-hills-system", "currentWeather") ?? "clear";
   return WEATHER_PRESETS[id] ?? WEATHER_PRESETS.clear;
 }
 

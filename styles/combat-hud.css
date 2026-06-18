@@ -1958,3 +1958,210 @@
 .ih-pending-meta-chip {
   flex: 1 1 86px;
 }
+
+/* ============================================================
+   Body HUD view model pass
+   ============================================================ */
+
+.ih-body-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(214,196,138,0.18);
+  border-radius: var(--ih-radius-md);
+  background:
+    linear-gradient(180deg, rgba(214,196,138,0.07), rgba(0,0,0,0.18)),
+    rgba(7,10,8,0.62);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.34);
+}
+
+.ih-body-overview.is-critical,
+.ih-body-overview.is-danger {
+  border-color: rgba(214,87,87,0.42);
+  background:
+    linear-gradient(180deg, rgba(214,87,87,0.12), rgba(0,0,0,0.22)),
+    rgba(7,10,8,0.68);
+}
+
+.ih-body-overview.is-warning {
+  border-color: rgba(216,190,93,0.36);
+}
+
+.ih-body-overview.is-stable {
+  border-color: rgba(121,198,107,0.30);
+}
+
+.ih-body-overview-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ih-body-overview-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ih-text-0);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ih-body-overview-hp {
+  flex: 0 0 auto;
+  color: var(--ih-parchment);
+  font-size: 11px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.ih-body-overview-detail {
+  color: var(--ih-text-2);
+  font-size: 9px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ih-body-overview-meter {
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(214,196,138,0.12);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.38);
+}
+
+.ih-body-overview-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ih-hp-good), var(--ih-energy));
+}
+
+.ih-body-overview.is-warning .ih-body-overview-meter span {
+  background: linear-gradient(90deg, var(--ih-hp-warn), #d8a75d);
+}
+
+.ih-body-overview.is-danger .ih-body-overview-meter span,
+.ih-body-overview.is-critical .ih-body-overview-meter span {
+  background: linear-gradient(90deg, var(--ih-hp-crit), var(--ih-hp-bad));
+}
+
+.ih-body-overview-chips {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.ih-body-chip {
+  min-width: 0;
+  padding: 3px 4px;
+  overflow: hidden;
+  border: 1px solid rgba(214,196,138,0.12);
+  border-radius: var(--ih-radius-sm);
+  background: rgba(0,0,0,0.24);
+  color: var(--ih-text-1);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ih-body-chip b {
+  display: block;
+  color: var(--ih-text-3);
+  font-size: 7px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ih-body-chip.is-critical,
+.ih-body-chip.is-danger,
+.ih-body-chip.is-dead {
+  border-color: rgba(214,87,87,0.36);
+  color: var(--ih-hp-crit);
+}
+
+.ih-body-chip.is-warning,
+.ih-body-chip.is-hurt {
+  border-color: rgba(216,190,93,0.30);
+  color: var(--ih-hp-warn);
+}
+
+.ih-body-chip.is-good,
+.ih-body-chip.is-stable {
+  border-color: rgba(121,198,107,0.24);
+  color: var(--ih-energy);
+}
+
+.ih-resource-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ih-resource-stack ~ .ih-res-bar {
+  display: none;
+}
+
+.ih-resource-stack .ih-res-bar {
+  padding: 3px 5px;
+  border: 1px solid rgba(214,196,138,0.10);
+  border-radius: var(--ih-radius-sm);
+  background: rgba(0,0,0,0.18);
+}
+
+.ih-resource-stack .ih-res-bar.is-low {
+  border-color: rgba(214,87,87,0.32);
+}
+
+.ih-resource-stack .ih-res-bar.is-warn {
+  border-color: rgba(216,190,93,0.26);
+}
+
+.ih-resource-stack .ih-res-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.22);
+  font-size: 9px;
+}
+
+.ih-resource-stack .ih-res-val {
+  width: 42px;
+  color: var(--ih-text-1);
+  font-size: 9px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ih-figure-wrap.is-critical,
+.ih-figure-wrap.is-danger {
+  border-color: rgba(214,87,87,0.34);
+}
+
+.ih-figure-wrap.is-warning,
+.ih-figure-wrap.is-hurt {
+  border-color: rgba(216,190,93,0.26);
+}
+
+.ih-fig-part.has-trauma {
+  box-shadow:
+    inset 0 0 9px rgba(0,0,0,0.68),
+    0 0 8px rgba(216,190,93,0.12);
+}
+
+.ih-fig-part.is-vital.is-critical,
+.ih-fig-part.is-vital.is-dead {
+  box-shadow:
+    inset 0 0 10px rgba(0,0,0,0.72),
+    0 0 12px rgba(214,87,87,0.26);
+}

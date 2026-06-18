@@ -180,7 +180,7 @@
     },
     {
       "name": "ih-npc",
-      "label": "Iron Hills — NPC (пустой, генерировать вручную)",
+      "label": "Iron Hills — NPC",
       "path": "packs/npc",
       "type": "Actor",
       "system": "iron-hills-system"

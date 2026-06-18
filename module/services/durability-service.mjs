@@ -109,8 +109,7 @@ export async function wearArmorAtLocation(actor, locationKey, damageReceived) {
     const covers = item.system?.covers ?? [];
     if (!covers.includes(locationKey)) continue;
 
-    // Снимаем 1-3 единицы прочности в зависимости от урона
-    const delta = damageReceived >= 10 ? 3 : damageReceived >= 5 ? 2 : 1;
+    const delta = Math.max(1, Math.ceil(Number(damageReceived ?? 0)));
     await wearItem(item, delta, actor);
     break; // только верхний слой
   }

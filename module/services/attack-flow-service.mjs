@@ -22,6 +22,7 @@ import { consumePreparedAttackBonus } from "./combat-technique-service.mjs";
 import { isCombatActive } from "./combat-flow-service.mjs";
 import { applyHitEffects, buildHitEffect } from "./hit-effect-service.mjs";
 import { getWeatherSkillMod } from "./weather-service.mjs";
+import { actorsAreAllies } from "./disposition-service.mjs";
 import {
   buildCombatActionTargetPayload,
   getCombatTargetActor,
@@ -41,9 +42,80 @@ function attackResult({
   ok = true,
   queued = false,
   result = null,
+  summary = null,
   reason = "",
 } = {}) {
-  return { ok, queued, result, reason };
+  return { ok, queued, result, summary, reason };
+}
+
+function notifyWarn(message) {
+  globalThis.ui?.notifications?.warn?.(message);
+}
+
+function getTargetDocument(token) {
+  return token?.document ?? token ?? null;
+}
+
+function getTokenCenterForSurround(token) {
+  const doc = getTargetDocument(token);
+  const gridSize = Number(globalThis.canvas?.grid?.size ?? 100) || 100;
+  const width = Number(token?.w ?? (Number(doc?.width ?? 1) * gridSize));
+  const height = Number(token?.h ?? (Number(doc?.height ?? 1) * gridSize));
+  return {
+    x: Number(token?.x ?? doc?.x ?? 0) + width / 2,
+    y: Number(token?.y ?? doc?.y ?? 0) + height / 2,
+  };
+}
+
+function getTokenDistanceInCells(a, b) {
+  if (!a || !b) return Infinity;
+  const gridSize = Number(globalThis.canvas?.grid?.size ?? 100) || 100;
+  const ca = getTokenCenterForSurround(a);
+  const cb = getTokenCenterForSurround(b);
+  return Math.hypot(ca.x - cb.x, ca.y - cb.y) / gridSize;
+}
+
+function resolveAttackSurroundCount({ attacker = null, targetActor = null, targetToken = null } = {}) {
+  const targetTokenForScene = targetToken ?? getActorToken(targetActor);
+  const tokens = globalThis.canvas?.tokens?.placeables;
+  if (!attacker || !targetActor || !targetTokenForScene || !Array.isArray(tokens)) return 0;
+
+  return tokens.filter(token => {
+    const actor = token?.actor;
+    if (!actor) return false;
+    if (actor.id === attacker.id || actor.id === targetActor.id) return false;
+    if (!actorsAreAllies(attacker, actor)) return false;
+    if (actorsAreAllies(actor, targetActor)) return false;
+    return getTokenDistanceInCells(token, targetTokenForScene) <= 1.5;
+  }).length;
+}
+
+function buildAttackFlowSummary({
+  actor = null,
+  targetActor = null,
+  result = null,
+  selectedTargets = [],
+  surroundCount = 0,
+  preparedBonus = null,
+  preReaction = null,
+  reaction = null,
+  hitEffects = null,
+} = {}) {
+  return {
+    actorId: actor?.id ?? null,
+    targetId: targetActor?.id ?? null,
+    targetName: targetActor?.name ?? "",
+    selectedTargetCount: selectedTargets.length,
+    surroundCount,
+    hit: Boolean(result?.hit),
+    damage: Number(result?.finalDamage ?? 0),
+    targetKilled: Boolean(result?.targetKilled),
+    interrupted: Boolean(result?.interrupted),
+    preparedBonus: Number(preparedBonus?.hitBonus ?? 0),
+    preReactionInterrupted: Boolean(preReaction?.interrupted),
+    reactionTriggered: Boolean(reaction?.triggered || reaction?.html),
+    effectApplied: Boolean(hitEffects?.condition || hitEffects?.lines?.length),
+  };
 }
 
 async function spendInterruptedAttackEnergy(actor, energyCost, encumbrance) {
@@ -115,7 +187,7 @@ export async function performActorAttack({
   const derivedConditions = getDerivedConditionState(actor);
   const attackBlockState = getAttackBlockState(derivedConditions, attackMode);
   if (!attackBlockState.canAttack) {
-    ui.notifications.warn(attackBlockState.reason || "Персонаж не может атаковать из-за состояния.");
+    notifyWarn(attackBlockState.reason || "Персонаж не может атаковать из-за состояния.");
     return attackResult({ ok: false, reason: `cannot-${attackBlockState.mode}-attack` });
   }
 
@@ -139,7 +211,7 @@ export async function performActorAttack({
     energyCost,
   });
   if (blockReason) {
-    ui.notifications.warn(blockReason);
+    notifyWarn(blockReason);
     return attackResult({ ok: false, reason: "blocked" });
   }
 
@@ -148,21 +220,21 @@ export async function performActorAttack({
     autoTargetHostile,
   });
   if (!selectedTargets.length) {
-    ui.notifications.warn("Выберите цель");
+    notifyWarn("Выберите цель");
     return attackResult({ ok: false, reason: "missing-target" });
   }
 
   const targetToken = selectedTargets[0];
   const targetActor = getCombatTargetActor(targetToken);
   if (!targetActor) {
-    ui.notifications.warn("У цели нет актёра");
+    notifyWarn("У цели нет актёра");
     return attackResult({ ok: false, reason: "missing-target-actor" });
   }
 
   const skill = actor.system.skills?.[skillKey];
   const fallbackSkillValue = Number(skillValueFallback ?? 0);
   if (!skill && !(fallbackSkillValue > 0)) {
-    ui.notifications.warn(`У персонажа нет навыка ${skillKey}`);
+    notifyWarn(`У персонажа нет навыка ${skillKey}`);
     return attackResult({ ok: false, reason: "missing-skill" });
   }
 
@@ -174,7 +246,7 @@ export async function performActorAttack({
       ? Number(rangeOverride)
       : (weapon ? getWeaponRange(weapon) : (skillKey === "exotic" ? 1 : 1));
     if (dist > range) {
-      ui.notifications.warn(`Цель вне досягаемости: расстояние ${Math.ceil(dist)} клеток, дальность оружия ${range}`);
+      notifyWarn(`Цель вне досягаемости: расстояние ${Math.ceil(dist)} клеток, дальность оружия ${range}`);
       return attackResult({ ok: false, reason: "out-of-range" });
     }
   }
@@ -215,8 +287,8 @@ export async function performActorAttack({
       },
     });
 
-    if (timeState?.queued) return attackResult({ queued: true });
-    if (!timeState?.ok) return attackResult({ ok: false, reason: "time-cost" });
+    if (timeState?.queued) return attackResult({ queued: true, result: timeState, reason: "queued" });
+    if (!timeState?.ok) return attackResult({ ok: false, reason: timeState?.reason || "time-cost", result: timeState });
   }
 
   const preReaction = await applyPreparedCombatReaction({
@@ -245,12 +317,21 @@ export async function performActorAttack({
       bodyHtml: preReactionHtml,
       className: "ih-combat-interrupted-attack",
     });
-    await afterAttack?.({ actor, targetActor, result: null, interrupted: true, reaction: preReaction });
+    const interrupted = {
+      interrupted: true,
+      reaction: preReaction,
+    };
+    const summary = buildAttackFlowSummary({
+      actor,
+      targetActor,
+      result: interrupted,
+      selectedTargets,
+      preReaction,
+    });
+    await afterAttack?.({ actor, targetActor, result: null, interrupted: true, reaction: preReaction, summary });
     return attackResult({
-      result: {
-        interrupted: true,
-        reaction: preReaction,
-      },
+      result: interrupted,
+      summary,
       reason: "interrupted",
     });
   }
@@ -264,7 +345,11 @@ export async function performActorAttack({
     ];
   }
 
-  const surroundCount = selectedTargets.length > 1 ? selectedTargets.length - 1 : 0;
+  const surroundCount = resolveAttackSurroundCount({
+    attacker: actor,
+    targetActor,
+    targetToken: targetTokenForRange,
+  });
   const result = await resolveSingleAttack({
     attacker: actor,
     target: targetActor,
@@ -298,10 +383,14 @@ export async function performActorAttack({
   if (technique?.effect?.targetZoneMode && !aimed) {
     extraRows.push(["Зона приёма", result.locationLabel ?? targetZone ?? "случайная"]);
   }
+  if (selectedTargets.length > 1) {
+    extraRows.push(["Цели", `выбрано ${selectedTargets.length}, атакована ${targetActor.name}`]);
+  }
+  if (surroundCount > 0) {
+    extraRows.push(["Окружение", `+${surroundCount} союзн. у цели`]);
+  }
 
-  const extraHtml = joinCombatHtml(
-    buildCombatRows(extraRows, { className: "ih-attack-extra-rows" }),
-    (await applyHitEffects({
+  const hitEffects = await applyHitEffects({
     attacker: actor,
     target: targetActor,
     result,
@@ -311,7 +400,10 @@ export async function performActorAttack({
       conditionChance,
       notes: effectNotes,
     }),
-    })).html,
+  });
+  const extraHtml = joinCombatHtml(
+    buildCombatRows(extraRows, { className: "ih-attack-extra-rows" }),
+    hitEffects.html,
   );
 
   const content = await formatAttackChatHtml({
@@ -333,13 +425,24 @@ export async function performActorAttack({
     onLethal,
   });
 
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
+  await createCombatChatMessage({
+    actor,
     content: joinCombatHtml(preReactionHtml, content, extraHtml, reaction.html),
   });
 
   await applySkillExp?.(skillKey, label);
-  await afterAttack?.({ actor, targetActor, result, preReaction, reaction, preparedBonus });
+  const summary = buildAttackFlowSummary({
+    actor,
+    targetActor,
+    result,
+    selectedTargets,
+    surroundCount,
+    preparedBonus,
+    preReaction,
+    reaction,
+    hitEffects,
+  });
+  await afterAttack?.({ actor, targetActor, result, preReaction, reaction, preparedBonus, hitEffects, summary });
 
-  return attackResult({ result });
+  return attackResult({ result, summary });
 }

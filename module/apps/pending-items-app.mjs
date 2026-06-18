@@ -5,7 +5,7 @@
  * Нельзя закрыть пока все не распределены или не выброшены.
  */
 import { IronHillsGridInventoryApp, getPendingItemsForActor } from "./grid-inventory-app.mjs";
-import { isStackable } from "../utils/item-utils.mjs";
+import { getItemQuantity, isStackable } from "../utils/item-utils.mjs";
 import { buildSystemDialogContent } from "../services/combat-chat-service.mjs";
 
 const CELL = 46;
@@ -13,6 +13,27 @@ const STASH_COLS = 10;
 
 function resolveActor(actor) {
   return game.actors?.get(actor?.id) ?? actor ?? null;
+}
+
+function buildPendingSummary(actor, pending, placed, rows) {
+  const totalCells = STASH_COLS * rows;
+  const usedCells = placed.reduce((sum, entry) =>
+    sum + Math.max(1, Number(entry.w ?? 1)) * Math.max(1, Number(entry.h ?? 1)), 0);
+  const freeCells = Math.max(0, totalCells - usedCells);
+  const pct = Math.round(Math.max(0, Math.min(1, usedCells / Math.max(1, totalCells))) * 100);
+
+  return {
+    actorName: actor?.name ?? "",
+    count: pending.length,
+    rows,
+    totalCells,
+    usedCells,
+    freeCells,
+    pct,
+    cssClass: pending.length > 0 ? "has-pending" : "is-clear",
+    countLabel: pending.length > 0 ? `${pending.length} шт.` : "пусто",
+    cellsLabel: `${usedCells}/${totalCells}`,
+  };
 }
 
 export function getPendingInventoryItems(actor) {
@@ -130,7 +151,7 @@ export class PendingItemsApp extends Application {
       img:     p.item.img ?? "icons/svg/item-bag.svg",
       type:    p.item.type,
       // qty показываем только для стакуемых
-      qty:     isStackable(p.item.type) ? (p.item.system?.quantity ?? 1) : null,
+      qty:     isStackable(p.item) ? getItemQuantity(p.item) : null,
       w: p.w, h: p.h, col: p.col, row: p.row,
       cssLeft: p.col * CELL,
       cssTop:  p.row * CELL,
@@ -139,8 +160,11 @@ export class PendingItemsApp extends Application {
       tier:    p.item.system?.tier ?? 1,
     }));
 
+    const pendingSummary = buildPendingSummary(this._actor, pending, placed, rows);
+
     return {
       actorName:  this._actor.name,
+      pendingSummary,
       count:      pending.length,
       done:       pending.length === 0,
       cells,

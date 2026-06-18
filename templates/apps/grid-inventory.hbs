@@ -1,9 +1,75 @@
 {{!-- Iron Hills — Grid Inventory v4: одна страница --}}
 <div class="ih-gi-app">
 
+  <div class="ih-gi-dashboard {{inventoryDashboard.cssClass}}">
+    <div class="ih-gi-actor-card">
+      <img src="{{inventoryDashboard.actorImg}}" alt="{{inventoryDashboard.actorName}}">
+      <div>
+        <div class="ih-gi-actor-name">{{inventoryDashboard.actorName}}</div>
+        <div class="ih-gi-actor-meta">{{inventoryDashboard.weight.encumbranceLabel}} · {{inventoryDashboard.weight.armorBurdenLabel}} · {{inventoryDashboard.grid.freeCells}} клеток свободно</div>
+      </div>
+    </div>
+
+    <div class="ih-gi-dash-meter {{inventoryDashboard.weight.cssClass}}">
+      <div class="ih-gi-dash-meter-head">
+        <span>Нагрузка</span>
+        <b>{{inventoryDashboard.weight.label}}</b>
+      </div>
+      <div class="ih-gi-dash-track"><span data-ih-style-width-pct="{{inventoryDashboard.weight.pct}}"></span></div>
+    </div>
+
+    <div class="ih-gi-dash-meter {{inventoryDashboard.grid.cssClass}}">
+      <div class="ih-gi-dash-meter-head">
+        <span>Сетки</span>
+        <b>{{inventoryDashboard.grid.label}}</b>
+      </div>
+      <div class="ih-gi-dash-track"><span data-ih-style-width-pct="{{inventoryDashboard.grid.pct}}"></span></div>
+    </div>
+
+    <div class="ih-gi-dash-chips">
+      {{#each inventoryDashboard.chips}}
+      <span class="ih-gi-dash-chip {{cssClass}}">
+        <i class="fas {{icon}}"></i>
+        <b>{{label}}</b>
+        {{value}}
+      </span>
+      {{/each}}
+    </div>
+  </div>
+
   {{!-- ── ЛЕВАЯ: экипировка ── --}}
   <div class="ih-gi-equip-panel">
     <div class="ih-gi-equip-title">Экипировка</div>
+    {{#if inventoryDashboard.body.visible}}
+    <div class="ih-gi-body-card {{inventoryDashboard.body.cssClass}}">
+      <div class="ih-gi-body-card-head">
+        <span>{{inventoryDashboard.body.title}}</span>
+        <b>{{inventoryDashboard.body.hpLabel}}</b>
+      </div>
+      <div class="ih-gi-body-card-note">{{inventoryDashboard.body.detail}}</div>
+      <div class="ih-gi-body-meter"><span data-ih-style-width-pct="{{inventoryDashboard.body.hpPct}}"></span></div>
+      <div class="ih-gi-body-strip">
+        {{#each inventoryDashboard.body.parts}}
+        <span class="ih-gi-body-part {{cssClass}} {{#if hasIssue}}has-trauma{{/if}}" title="{{tooltip}}">
+          <span data-ih-style-height-pct="{{pct}}"></span>
+          <b>{{miniLabel}}</b>
+        </span>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="ih-gi-resource-stack">
+      {{#each inventoryDashboard.resourceBars}}
+      <div class="ih-gi-resource-line {{cssClass}}" title="{{tooltip}}">
+        <i class="fas {{iconClass}}"></i>
+        <span>{{label}}</span>
+        <b>{{valueLabel}}</b>
+        <em><span data-ih-style-width-pct="{{pct}}"></span></em>
+      </div>
+      {{/each}}
+    </div>
+
     <div class="ih-gi-silhouette"
          data-ih-style-min-height-px="{{equipSilhouetteH}}"
          data-ih-style-height-px="{{equipSilhouetteH}}">

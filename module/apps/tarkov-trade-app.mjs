@@ -24,6 +24,94 @@ import {
 
 const CELL = 52; // меньше чем в инвентаре — больше помещается
 
+function sumOfferQuantity(offers) {
+  return offers.reduce((sum, offer) => sum + Math.max(1, Number(offer.qty ?? 1)), 0);
+}
+
+function sumOfferCells(offers) {
+  return offers.reduce((sum, offer) => {
+    const item = offer.item ?? {};
+    const cells = Math.max(1, Number(item.system?.gridW ?? 1)) * Math.max(1, Number(item.system?.gridH ?? 1));
+    return sum + cells * Math.max(1, Number(offer.qty ?? 1));
+  }, 0);
+}
+
+function balanceClass(balance, quote) {
+  if (!quote?.ok || !quote?.canTrade) return "is-blocked";
+  if (!quote.hasExchange) return "is-empty";
+  if (!quote.buyerCanPay || !quote.merchantCanPay) return "is-danger";
+  if (balance === 0) return "is-balanced";
+  return "is-open";
+}
+
+function buildTradeDashboard({
+  merchant,
+  buyer,
+  merchantCoins,
+  buyerCoins,
+  merchantOffer,
+  playerOffer,
+  quote,
+  priceFactor,
+  offerTotal,
+  playerOfferTotal,
+  balance,
+  tradeBlockedReason,
+}) {
+  const buyerGetsQty = sumOfferQuantity(merchantOffer);
+  const merchantGetsQty = sumOfferQuantity(playerOffer);
+  const buyerGetsCells = sumOfferCells(merchantOffer);
+  const merchantGetsCells = sumOfferCells(playerOffer);
+  const merchantCoinOffer = coinsToCopper(merchantCoins);
+  const playerCoinOffer = coinsToCopper(buyerCoins);
+  const buyerPays = quote?.ok ? Number(quote.buyerPays ?? 0) : 0;
+  const merchantPays = quote?.ok ? Number(quote.merchantPays ?? 0) : 0;
+  const cssClass = balanceClass(balance, quote);
+
+  return {
+    cssClass,
+    merchant: {
+      name: merchant?.name ?? "Торговец",
+      img: merchant?.img ?? "icons/svg/mystery-man.svg",
+      coins: formatCurrency(getActorCurrency(merchant)),
+    },
+    buyer: {
+      name: buyer?.name ?? "—",
+      img: buyer?.img ?? "icons/svg/mystery-man.svg",
+      coins: formatCurrency(getActorCurrency(buyer)),
+    },
+    priceFactor: Number(priceFactor || 0).toFixed(2),
+    status: {
+      label: tradeBlockedReason || (quote?.hasExchange ? "Сделка готовится" : "Перетащи предметы или монеты"),
+      cssClass,
+    },
+    exchange: {
+      buyerGetsQty,
+      buyerGetsCells,
+      merchantGetsQty,
+      merchantGetsCells,
+      merchantCoinOffer,
+      playerCoinOffer,
+      offerTotal,
+      playerOfferTotal,
+      balance,
+      buyerPays,
+      merchantPays,
+      buyerPaysStr: formatCurrency(buyerPays),
+      merchantPaysStr: formatCurrency(merchantPays),
+      offerTotalStr: formatCurrency(offerTotal),
+      playerOfferTotalStr: formatCurrency(playerOfferTotal),
+    },
+    chips: [
+      { key: "buyer-gets", icon: "fa-inbox", label: "Игрок получает", value: `${buyerGetsQty} шт.`, cssClass: buyerGetsQty > 0 ? "is-good" : "is-muted" },
+      { key: "merchant-gets", icon: "fa-box-open", label: "Торговец получает", value: `${merchantGetsQty} шт.`, cssClass: merchantGetsQty > 0 ? "is-warn" : "is-muted" },
+      { key: "buyer-pays", icon: "fa-coins", label: "Платит игрок", value: formatCurrency(buyerPays), cssClass: buyerPays > 0 ? "is-danger" : "is-muted" },
+      { key: "merchant-pays", icon: "fa-hand-holding-usd", label: "Платит торговец", value: formatCurrency(merchantPays), cssClass: merchantPays > 0 ? "is-good" : "is-muted" },
+      { key: "pending", icon: "fa-boxes", label: "После покупки", value: buyerGetsQty > 0 ? "в pending" : "без pending", cssClass: buyerGetsQty > 0 ? "is-warn" : "is-muted" },
+    ],
+  };
+}
+
 export class TarkovTradeApp extends Application {
   constructor(merchant, options = {}) {
     super(options);
@@ -176,6 +264,9 @@ export class TarkovTradeApp extends Application {
             if (sys.skill)      tips.push(`🎯 ${sys.skill}`);
             if (sys.energyCost) tips.push(`⚡ ${sys.energyCost}`);
             if (sys.protection?.physical) tips.push(`🛡 ${sys.protection.physical}`);
+            if (sys.protection?.magical) tips.push(`✦ ${sys.protection.magical}`);
+            if (sys.armorClassLabel) tips.push(`Класс: ${sys.armorClassLabel}`);
+            if (sys.requirementsLabel) tips.push(`Треб.: ${sys.requirementsLabel}`);
             if (sys.satiety)    tips.push(`🍖 +${sys.satiety}`);
             if (sys.hydration)  tips.push(`💧 +${sys.hydration}`);
             {
@@ -302,8 +393,25 @@ export class TarkovTradeApp extends Application {
 
     // Монеты торговца
     const merchantCoins = this._actorCoins(merchant);
+    const priceFactor = Number(this._priceFactor()).toFixed(2);
+    const tradeBlockedReason = quote.ok && quote.canTrade ? "" : (quote.reason ?? "Сделка недоступна");
+    const tradeDashboard = buildTradeDashboard({
+      merchant,
+      buyer,
+      merchantCoins: this._mCoins,
+      buyerCoins: this._pCoins,
+      merchantOffer: this._offer,
+      playerOffer: this._playerOffer,
+      quote,
+      priceFactor,
+      offerTotal,
+      playerOfferTotal,
+      balance,
+      tradeBlockedReason,
+    });
 
     return {
+      tradeDashboard,
       merchantName:  merchant?.name ?? "Торговец",
       merchantImg:   merchant?.img  ?? "",
       merchantCoins: formatCurrency(merchantCoins),
@@ -312,7 +420,7 @@ export class TarkovTradeApp extends Application {
       buyerCoins:    formatCurrency(buyerCoins),
       buyerCoinsRaw: buyerCoins,
       canAfford:     Boolean(quote.ok && quote.canTrade && quote.hasExchange && quote.buyerCanPay && quote.merchantCanPay),
-      tradeBlockedReason: quote.ok && quote.canTrade ? "" : (quote.reason ?? "Сделка недоступна"),
+      tradeBlockedReason,
       isGM:          game.user?.isGM,
       // Монеты в предложениях
       mCopperOffer: this._mCoins.copper, mSilverOffer: this._mCoins.silver, mGoldOffer: this._mCoins.gold,
@@ -344,7 +452,7 @@ export class TarkovTradeApp extends Application {
       balanceStr:          formatCurrency(Math.abs(balance)),
       balanceSign:         balance > 0 ? "+" : balance < 0 ? "−" : "=",
       balanced:            balance === 0,
-      priceFactor:         Number(this._priceFactor()).toFixed(2),
+      priceFactor,
       repInfo:             this._getRepInfo(),
       mSearch: this._mSearch, pSearch: this._pSearch,
       mFilter: this._mFilter, pFilter: this._pFilter,

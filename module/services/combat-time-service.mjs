@@ -1,4 +1,5 @@
 import { isConditionActive } from "./condition-policy-service.mjs";
+import { getArmorActionSecondsPenalty } from "./armor-burden-service.mjs";
 
 export function getCombatActionSeconds(actionType, item = null) {
   if (actionType === "attack") {
@@ -60,7 +61,8 @@ export function getCombatActionSeconds(actionType, item = null) {
 
 export function applyActorSpeedModifier(actor, seconds) {
   const conditions = actor?.system?.conditions ?? {};
-  if (isConditionActive(conditions, "slowed")) return seconds * 2.0;
-  if (isConditionActive(conditions, "hasted")) return seconds * 0.5;
-  return seconds;
+  let adjusted = Number(seconds ?? 0) + getArmorActionSecondsPenalty(actor);
+  if (isConditionActive(conditions, "slowed")) adjusted *= 2.0;
+  if (isConditionActive(conditions, "hasted")) adjusted *= 0.5;
+  return adjusted;
 }

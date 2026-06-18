@@ -373,10 +373,12 @@ async function checkContentReadinessCommand(options = {}) {
   const errors = Number(report.summary?.blockingErrors ?? 0);
   const warnings = Number(report.summary?.warnings ?? 0);
   const missingSystemImages = Number(report.summary?.missingSystemImages ?? 0);
+  const releaseStage = report.release?.stageLabel ?? "";
+  const contentPatchReady = Boolean(report.release?.contentPatchReady);
   if (errors > 0) {
     ui.notifications.error(`Iron Hills content readiness: ${errors} blocking errors, ${warnings} warnings. Details in console.`);
-  } else if (warnings > 0 || missingSystemImages > 0 || !report.summary?.packDryRunClean) {
-    ui.notifications.warn(`Iron Hills content readiness: ${warnings} warnings, ${missingSystemImages} missing system images. Details in console.`);
+  } else if (warnings > 0 || missingSystemImages > 0 || !report.summary?.packDryRunClean || !contentPatchReady) {
+    ui.notifications.warn(`Iron Hills content readiness: ${releaseStage || "next gate pending"}. ${warnings} warnings, ${missingSystemImages} missing system images. Details in console.`);
   } else {
     ui.notifications.info("Iron Hills content readiness OK.");
   }

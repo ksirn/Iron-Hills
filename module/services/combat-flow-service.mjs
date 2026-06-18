@@ -98,18 +98,23 @@ const DEFAULT_STATE  = () => ({
 // Кэш в памяти для скорости — синхронизируется с game.settings
 let _stateCache = null;
 
+function getFoundryGame() {
+  return globalThis.game ?? null;
+}
+
 function getCombatStore() {
-  game.ironHills = game.ironHills || {};
+  const foundryGame = getFoundryGame();
+  if (foundryGame) foundryGame.ironHills = foundryGame.ironHills || {};
 
   if (!_stateCache) {
     // Пробуем загрузить из game.settings
     try {
-      const saved = game.settings?.get("iron-hills-system", COMBAT_SETTING);
+      const saved = foundryGame?.settings?.get?.("iron-hills-system", COMBAT_SETTING);
       _stateCache = (saved && saved.revision > 0) ? saved : DEFAULT_STATE();
     } catch {
       _stateCache = DEFAULT_STATE();
     }
-    game.ironHills._combatState = _stateCache;
+    if (foundryGame) foundryGame.ironHills._combatState = _stateCache;
   }
 
   return _stateCache;
@@ -117,9 +122,10 @@ function getCombatStore() {
 
 // Сохраняем в game.settings (только GM, через socket для других)
 async function _persistCombatState(state) {
-  if (!game.user?.isGM) return;
+  const foundryGame = getFoundryGame();
+  if (!foundryGame?.user?.isGM) return;
   try {
-    await game.settings?.set("iron-hills-system", COMBAT_SETTING, deepClone(state));
+    await foundryGame.settings?.set?.("iron-hills-system", COMBAT_SETTING, deepClone(state));
   } catch (e) {
     console.warn("Iron Hills | Failed to persist combat state:", e);
   }
@@ -228,7 +234,7 @@ function resolveActor(actorOrId) {
   let actor = null;
 
   if (typeof actorOrId === "string") {
-    actor = resolveActorFromUuid(actorOrId) ?? game.actors?.get(actorOrId) ?? null;
+    actor = resolveActorFromUuid(actorOrId) ?? getFoundryGame()?.actors?.get?.(actorOrId) ?? null;
     return getPersistentActor(actor) ?? actor ?? null;
   }
 
@@ -1677,11 +1683,13 @@ export async function advanceTurn() {
   // Определяем кому принадлежит следующий участник
   const nextActor  = resolveParticipantActor(next);
   const isPlayerActor = nextActor?.hasPlayerOwner ?? false;
-  const isMyTurn   = game.user?.character?.id === next.actorId
-                  || game.actors?.get(next.actorId)?.ownership?.[game.user?.id] >= 3;
+  const foundryGame = getFoundryGame();
+  const userId = foundryGame?.user?.id;
+  const isMyTurn   = foundryGame?.user?.character?.id === next.actorId
+                  || Number(foundryGame?.actors?.get?.(next.actorId)?.ownership?.[userId] ?? 0) >= 3;
 
   // Звук слышит только тот кому ходить (игрок) или GM (для монстров/NPC)
-  if (isMyTurn || (game.user?.isGM && !isPlayerActor)) {
+  if (isMyTurn || (foundryGame?.user?.isGM && !isPlayerActor)) {
     const soundPath = isPlayerActor
       ? "systems/iron-hills-system/sounds/your-turn.ogg"   // ход игрока
       : "systems/iron-hills-system/sounds/enemy-turn.ogg"; // ход монстра (GM)
@@ -1950,10 +1958,12 @@ export function forceSetActiveParticipant(participantId) {
   // ── Звуковое уведомление о начале хода ──────────────────
   const nextActor     = resolveParticipantActor(next);
   const isPlayerActor = nextActor?.hasPlayerOwner ?? false;
-  const isMyTurn      = game.user?.character?.id === next.actorId
-                     || Number(game.actors?.get(next.actorId)?.ownership?.[game.user?.id] ?? 0) >= 3;
+  const foundryGame = getFoundryGame();
+  const userId = foundryGame?.user?.id;
+  const isMyTurn      = foundryGame?.user?.character?.id === next.actorId
+                     || Number(foundryGame?.actors?.get?.(next.actorId)?.ownership?.[userId] ?? 0) >= 3;
 
-  if (isMyTurn || (game.user?.isGM && !isPlayerActor)) {
+  if (isMyTurn || (foundryGame?.user?.isGM && !isPlayerActor)) {
     const soundSrc = isPlayerActor
       ? "systems/iron-hills-system/sounds/your-turn.ogg"
       : "systems/iron-hills-system/sounds/enemy-turn.ogg";

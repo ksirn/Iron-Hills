@@ -126,6 +126,8 @@ class IronHillsCompendiumBrowser extends Application {
     } else if (doc.type === "armor") {
       details.push(`🛡 Физ: ${s.protection?.physical ?? 0}`);
       if (s.protection?.magical) details.push(`✦ Маг: ${s.protection.magical}`);
+      if (s.armorClassLabel) details.push(`Класс: ${s.armorClassLabel}`);
+      if (s.requirementsLabel) details.push(`Треб.: ${s.requirementsLabel}`);
       details.push(`📍 Слот: ${s.slot ?? "—"}`);
     } else if (doc.type === "potion" || doc.type === "consumable") {
       const actionSummary = formatItemActionSummary(s, { includeIcon: false });

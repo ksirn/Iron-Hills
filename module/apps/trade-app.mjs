@@ -432,6 +432,8 @@ class IronHillsTradeApp extends Application {
       // Броня
       if (sys.protection?.physical) tooltipParts.push(`🛡 Физ: ${sys.protection.physical}`);
       if (sys.protection?.magical)  tooltipParts.push(`✨ Маг: ${sys.protection.magical}`);
+      if (sys.armorClassLabel)      tooltipParts.push(`Класс: ${sys.armorClassLabel}`);
+      if (sys.requirementsLabel)    tooltipParts.push(`Треб.: ${sys.requirementsLabel}`);
       // Еда
       if (sys.satiety)    tooltipParts.push(`🍖 Сытость: +${sys.satiety}`);
       if (sys.hydration)  tooltipParts.push(`💧 Жажда: +${sys.hydration}`);

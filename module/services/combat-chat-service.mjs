@@ -350,8 +350,19 @@ export async function createCombatChatMessage({
     className,
   });
 
-  return ChatMessage.create({
-    speaker: speaker ?? (actor ? ChatMessage.getSpeaker({ actor }) : undefined),
+  if (!globalThis.ChatMessage?.create) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "chat-unavailable",
+      content: resolvedContent,
+    };
+  }
+
+  return globalThis.ChatMessage.create({
+    speaker: speaker ?? (actor && globalThis.ChatMessage?.getSpeaker
+      ? globalThis.ChatMessage.getSpeaker({ actor })
+      : undefined),
     content: resolvedContent,
   });
 }

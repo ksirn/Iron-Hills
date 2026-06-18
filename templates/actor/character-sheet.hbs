@@ -63,12 +63,33 @@
           <span class="ih-cs-section-meta ih-cs-triage-meta {{medicalTriage.severityClass}}">{{medicalTriage.bodyStatusLabel}}</span>
           {{/if}}
         </div>
+        {{#if bodyHud.visible}}
+        <div class="ih-cs-body-overview {{bodyHud.cssClass}}">
+          <div class="ih-cs-body-overview-head">
+            <div>
+              <div class="ih-cs-body-overview-title">{{bodyHud.title}}</div>
+              <div class="ih-cs-body-overview-detail">{{bodyHud.detail}}</div>
+            </div>
+            <span class="ih-cs-body-overview-hp">{{bodyHud.hpLabel}}</span>
+          </div>
+          <div class="ih-cs-body-overview-meter" title="HP {{bodyHud.hpLabel}}">
+            <span data-ih-style-width-pct="{{bodyHud.hpPct}}"></span>
+          </div>
+          {{#if bodyHud.hasChips}}
+          <div class="ih-cs-body-overview-chips">
+            {{#each bodyHud.chips}}
+            <span class="ih-cs-body-chip {{cssClass}}"><b>{{label}}</b>{{value}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
         <div class="ih-cs-body-layout">
 
           {{!-- Силуэт человечка --}}
-          <div class="ih-cs-figure">
+          <div class="ih-cs-figure {{bodyHud.cssClass}}">
             {{#each zones}}{{#if (eq key "head")}}
-            <div class="ih-cs-fig-part ih-cs-fig-head {{cssClass}}" title="{{tooltip}}">
+            <div class="{{sheetPartClass}}" title="{{tooltip}}">
               <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
               <span class="ih-cs-fig-label">Г</span>
               {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
@@ -78,7 +99,7 @@
             {{/if}}{{/each}}
             <div class="ih-cs-fig-row">
               {{#each zones}}{{#if (eq key "leftArm")}}
-              <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
+              <div class="{{sheetPartClass}}" title="{{tooltip}}">
                 <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Л</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
@@ -88,7 +109,7 @@
               </div>
               {{/if}}{{/each}}
               {{#each zones}}{{#if (eq key "torso")}}
-              <div class="ih-cs-fig-part ih-cs-fig-torso {{cssClass}}" title="{{tooltip}}">
+              <div class="{{sheetPartClass}}" title="{{tooltip}}">
                 <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Т</span>
                 {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
@@ -97,7 +118,7 @@
               </div>
               {{/if}}{{/each}}
               {{#each zones}}{{#if (eq key "rightArm")}}
-              <div class="ih-cs-fig-part ih-cs-fig-arm {{cssClass}}" title="{{tooltip}}">
+              <div class="{{sheetPartClass}}" title="{{tooltip}}">
                 <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">П</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
@@ -108,7 +129,7 @@
               {{/if}}{{/each}}
             </div>
             {{#each zones}}{{#if (eq key "abdomen")}}
-            <div class="ih-cs-fig-part ih-cs-fig-abdomen {{cssClass}}" title="{{tooltip}}">
+            <div class="{{sheetPartClass}}" title="{{tooltip}}">
               <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
               <span class="ih-cs-fig-label">Ж</span>
               {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
@@ -117,7 +138,7 @@
             {{/if}}{{/each}}
             <div class="ih-cs-fig-row">
               {{#each zones}}{{#if (eq key "leftLeg")}}
-              <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
+              <div class="{{sheetPartClass}}" title="{{tooltip}}">
                 <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">Л</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
@@ -127,7 +148,7 @@
               {{/if}}{{/each}}
               <div class="ih-cs-fig-gap"></div>
               {{#each zones}}{{#if (eq key "rightLeg")}}
-              <div class="ih-cs-fig-part ih-cs-fig-leg {{cssClass}}" title="{{tooltip}}">
+              <div class="{{sheetPartClass}}" title="{{tooltip}}">
                 <div class="ih-cs-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
                 <span class="ih-cs-fig-label">П</span>
                 {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
@@ -194,6 +215,16 @@
 
       <div class="ih-cs-section">
         <div class="ih-cs-section-title">Ресурсы</div>
+        <div class="ih-cs-resource-overview">
+          {{#each resourceBars}}
+          <div class="ih-cs-resource-card {{cssClass}}" title="{{tooltip}}">
+            <span class="ih-cs-resource-card-icon"><i class="fas {{iconClass}}"></i></span>
+            <span class="ih-cs-resource-card-label">{{label}}</span>
+            <b>{{valueLabel}}</b>
+            <span class="ih-cs-resource-card-track"><span data-ih-style-width-pct="{{pct}}"></span></span>
+          </div>
+          {{/each}}
+        </div>
         <div class="ih-cs-resources">
           <div class="ih-cs-res-row">
             <span class="ih-cs-res-icon energy">⚡</span>
@@ -251,6 +282,11 @@
             <span class="ih-cs-res-name">Нагрузка</span>
             <span class="ih-cs-res-static">{{overviewSummary.weightValue}}/{{overviewSummary.weightMax}}</span>
             <div class="ih-cs-res-track"><div class="ih-cs-res-fill weight" data-ih-style-width-pct="{{overviewSummary.weightPct}}"></div></div>
+            {{#if overviewSummary.armorBurden.hasPenalty}}
+            <div class="ih-cs-debuff-tag" title="Броня: +{{overviewSummary.armorActionSecondsFlat}} сек. к действиям, +{{overviewSummary.armorMovementPenalty}} к движению, энергия ×{{overviewSummary.armorEnergyMultiplier}}">
+              🛡 {{overviewSummary.armorBurdenLabel}}
+            </div>
+            {{/if}}
           </div>
         </div>
       </div>

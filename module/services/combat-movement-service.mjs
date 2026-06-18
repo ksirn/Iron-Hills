@@ -13,6 +13,7 @@ import {
   getCombatState,
   spendActorSeconds,
 } from "./combat-flow-service.mjs";
+import { getArmorBurdenInfo } from "./armor-burden-service.mjs";
 
 /**
  * Реестр режимов движения. Можно расширять (например, "stealth", "crouch").
@@ -69,14 +70,18 @@ export function setMoveMode(mode, { notify = true } = {}) {
  * @param {number} cells — пройденное расстояние в клетках (десятые доли допустимы).
  * @returns {{ timeCost:number, energyCost:number, mode:object, cells:number }}
  */
-export function getMovementCost(cells) {
+export function getMovementCost(cells, actor = null) {
   const mode = getMoveModeConfig();
   const safeCells = Math.max(0, Math.round(Number(cells || 0) * 10) / 10);
+  const armor = actor ? getArmorBurdenInfo(actor) : null;
+  const movementMultiplier = Math.max(1, Number(armor?.movementMultiplier ?? 1));
+  const energyMultiplier = Math.max(1, Number(armor?.energyMultiplier ?? 1));
   return {
     cells:     safeCells,
     mode,
-    timeCost:   Math.ceil(safeCells * mode.secondsPerCell),
-    energyCost: Math.ceil(safeCells * mode.energyPerCell),
+    armor,
+    timeCost:   Math.ceil(safeCells * mode.secondsPerCell * movementMultiplier),
+    energyCost: Math.ceil(safeCells * mode.energyPerCell * energyMultiplier),
   };
 }
 
@@ -122,7 +127,7 @@ export function registerCombatMovementHooks() {
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < 0.1) return;
 
-    const { cells, mode, timeCost, energyCost } = getMovementCost(dist);
+    const { cells, mode, timeCost, energyCost, armor } = getMovementCost(dist, actor);
 
     // Проверяем ресурсы
     const remainingSec = Number(participant.remainingSeconds ?? 0);
@@ -154,6 +159,7 @@ export function registerCombatMovementHooks() {
 
     ui.notifications.info(
       `${actor.name}: ${mode.label} ${cells} кл. — −${timeCost} сек., −${energyCost} ⚡ ` +
+      `${armor?.hasPenalty ? `(${armor.label}) ` : ""}` +
       `(осталось ${remainingSec - timeCost} сек., ${newEnergy} ⚡)`,
       { permanent: false }
     );

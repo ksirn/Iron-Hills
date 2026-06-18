@@ -1,0 +1,20 @@
+{
+  "label": "Iron Hills prompt-driven item art batch",
+  "generatedAt": "2026-06-13T23:03:02.779Z",
+  "sourceManifest": "docs/content/art-backlog.json",
+  "ok": true,
+  "summary": {
+    "total": 0,
+    "batches": 0,
+    "batchSize": 20,
+    "byCatalog": {}
+  },
+  "workflow": [
+    "1. Generate images from this manifest, one row per asset.",
+    "2. Save each selected final image exactly at targetFile.",
+    "3. Run node tools/audit-art-targets.mjs before applying catalog paths.",
+    "4. Run node tools/apply-art-backlog.mjs --dry-run, then apply without --dry-run after QA is clean."
+  ],
+  "batches": [],
+  "items": []
+}

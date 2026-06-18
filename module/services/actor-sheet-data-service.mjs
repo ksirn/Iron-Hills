@@ -31,9 +31,11 @@ import {
 } from "./world-content-service.mjs";
 import {
   buildActorMedicalTriage,
-  getBodyPartTraumaStatus,
-  getBodyTraumaPartLabel,
 } from "./body-trauma-service.mjs";
+import {
+  buildActorBodyHud,
+  buildActorResourceHud,
+} from "./body-hud-service.mjs";
 import {
   isCombatActive,
   getCombatSummary,
@@ -58,16 +60,6 @@ const SHEET_ITEM_TYPES = Object.freeze([
 ]);
 
 const QUICK_SLOT_KEYS = Object.freeze(["slot1", "slot2", "slot3", "slot4", "slot5", "slot6"]);
-
-const BODY_PARTS = Object.freeze([
-  ["head", "Голова"],
-  ["torso", "Торс"],
-  ["abdomen", "Живот"],
-  ["leftArm", "Л. рука"],
-  ["rightArm", "П. рука"],
-  ["leftLeg", "Л. нога"],
-  ["rightLeg", "П. нога"],
-]);
 
 function getPlacedItems(actor) {
   const equip = actor.system?.equipment ?? {};
@@ -196,69 +188,19 @@ async function assignDiseaseContext(context, actor) {
   }
 }
 
-function zoneClass(value, max) {
-  const pct = max > 0 ? value / max : 0;
-  if (pct <= 0) return "is-dead";
-  if (pct <= 0.25) return "is-critical";
-  if (pct <= 0.50) return "is-bad";
-  if (pct <= 0.75) return "is-warn";
-  return "is-good";
-}
-
-function zoneTooltip(label, value, max, trauma) {
-  const parts = [`${label}: ${value}/${max}`];
-  if (trauma.destroyed) parts.push("Разрушено");
-  if (trauma.majorBleeding) parts.push(trauma.majorBleedingSuppressed
-    ? `Сильное кровотечение пережато: ${trauma.majorBleeding}`
-    : `Сильное кровотечение: ${trauma.majorBleeding}`);
-  if (trauma.minorBleeding) parts.push(`Малое кровотечение: ${trauma.minorBleeding}`);
-  if (trauma.rawFracture) parts.push(trauma.fractureSuppressed ? "Перелом стабилизирован" : "Перелом");
-  if (trauma.tourniquet) parts.push("Жгут наложен");
-  if (trauma.splinted) parts.push("Шина наложена");
-  return parts.join(" | ");
-}
-
-function buildBodyZone(key, label, node) {
-  const value = Number(node?.value ?? 0);
-  const max = Number(node?.max ?? 0);
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const status = getBodyPartTraumaStatus({ system: { resources: { hp: { [key]: node } } } }, key);
-  const trauma = {
-    minorBleeding: status.minorBleeding,
-    majorBleeding: status.majorBleeding,
-    majorBleedingSuppressed: status.suppressedMajorBleeding > 0,
-    majorBleedingTitle: status.suppressedMajorBleeding > 0
-      ? `Сильн. кровь пережата ${status.majorBleeding}`
-      : `Сильн. кровь ${status.majorBleeding}`,
-    rawFracture: status.rawFracture,
-    fracture: status.fracture,
-    fractureSuppressed: status.fractureSuppressed,
-    destroyed: status.destroyed,
-    splinted: status.splinted,
-    tourniquet: status.tourniquet
-  };
-
-  return {
-    key,
-    label,
-    value,
-    max,
-    pct,
-    cssClass: zoneClass(value, max),
-    tooltip: zoneTooltip(label, value, max, trauma),
-    trauma
-  };
-}
-
 function assignBodyContext(context, actor) {
+  context.resourceBars = buildActorResourceHud(actor);
+
   if (actor.type !== "character" && actor.type !== "npc") {
     context.medicalTriage = null;
+    context.bodyHud = { visible: false, hasBodyMap: false, parts: [], partMap: {}, chips: [], hasChips: false };
+    context.zones = [];
     return;
   }
 
-  const hp = actor.system?.resources?.hp ?? {};
-  context.zones = BODY_PARTS.map(([key, label]) => buildBodyZone(key, getBodyTraumaPartLabel(key) || label, hp[key]));
   context.medicalTriage = buildActorMedicalTriage(actor);
+  context.bodyHud = buildActorBodyHud(actor, { medicalTriage: context.medicalTriage });
+  context.zones = context.bodyHud.parts;
 }
 
 function assignMonsterContext(context, actor) {

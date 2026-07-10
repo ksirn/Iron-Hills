@@ -7,7 +7,7 @@
 
 import { MATERIALS, WEAPONS, ARMORS, POTIONS, FOOD, TOOLS, BELTS, BACKPACKS, ATTACHMENTS, CONSUMABLES, THROWABLES } from "./constants/items-catalog.mjs";
 import { SPELLS } from "./constants/spells-catalog.mjs";
-import { NPC_PACK_ACTORS, NPC_ROLE_PROFILES, resolveNpcProfileKey } from "./constants/npc-profiles.mjs";
+import { NPC_PACK_ACTORS, NPC_ROLE_PROFILES, getNpcRoleImage, resolveNpcProfileKey } from "./constants/npc-profiles.mjs";
 import { MONSTER_BESTIARY, resolveMonsterPackDocToBestiaryId } from "./constants/monster-bestiary.mjs";
 import { monsterRowToActorData } from "./services/wilderness-service.mjs";
 import { buildNpcActorData, buildNpcStartingInventoryItems } from "./services/world-content-service.mjs";
@@ -218,6 +218,11 @@ function buildCatalogDocumentPatch(doc, data) {
 
   if (data.name && doc.name !== data.name) patch.name = data.name;
   if (data.img && doc.img !== data.img) patch.img = data.img;
+  const desiredTokenImg = String(data.prototypeToken?.texture?.src ?? data.img ?? "").trim();
+  const currentTokenImg = String(doc.prototypeToken?.texture?.src ?? "").trim();
+  if (desiredTokenImg && currentTokenImg !== desiredTokenImg) {
+    patch["prototypeToken.texture.src"] = desiredTokenImg;
+  }
 
   if (data.system && !samePlainValue(doc.system ?? {}, data.system)) {
     patch.system = clonePlain(data.system);
@@ -783,6 +788,8 @@ export async function syncNpcPackLootFromProfiles(options = {}) {
     const label = String(doc.system?.info?.role ?? "").trim();
     const labelBad = label !== prof.label;
     const specBad = spec !== key;
+    const wantImg = getNpcRoleImage(key, tier);
+    const curTokenImg = String(doc.prototypeToken?.texture?.src ?? "").trim();
     const needLootRebuild =
       forceLoot || curLoot !== wantLoot || curPick !== wantPick || labelBad || specBad;
 
@@ -794,6 +801,8 @@ export async function syncNpcPackLootFromProfiles(options = {}) {
     }
     if (specBad) patch["system.info.specialization"] = key;
     if (labelBad) patch["system.info.role"] = prof.label;
+    if (doc.img !== wantImg) patch.img = wantImg;
+    if (curTokenImg !== wantImg) patch["prototypeToken.texture.src"] = wantImg;
     if (Object.keys(patch).length) {
       await doc.update(patch);
       updated++;
@@ -884,6 +893,8 @@ export async function syncMonsterPackToBestiary(options = {}) {
       if (Number(doc.system?.info?.tier ?? 0) !== wantTier) patch["system.info.tier"] = wantTier;
       const wantImg = row.img ?? doc.img;
       if (wantImg && doc.img !== wantImg) patch.img = wantImg;
+      const curTokenImg = String(doc.prototypeToken?.texture?.src ?? "").trim();
+      if (wantImg && curTokenImg !== wantImg) patch["prototypeToken.texture.src"] = wantImg;
 
       if (Object.keys(patch).length) {
         await doc.update(patch);

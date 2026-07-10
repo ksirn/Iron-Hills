@@ -1,11 +1,149 @@
 {{!-- Iron Hills — World Map --}}
-<div class="ih-wm-app">
+<div class="ih-wm-app ih-wm-v2">
 
-  {{!-- ── Боковая панель ── --}}
-  <div class="ih-wm-sidebar">
+  <aside class="ih-wm-sidebar">
 
-    {{!-- Группа --}}
-    <div class="ih-wm-section">
+    <section class="ih-wm-section ih-wm-scale-section">
+      <div class="ih-wm-section-title">Масштаб</div>
+      <div class="ih-wm-level-tabs">
+        {{#each mapLevels}}
+        <a class="ih-wm-level-tab {{#if isActive}}is-active{{/if}} {{#unless isRegion}}is-atlas{{/unless}}"
+           data-map-level="{{id}}"
+           title="{{scale}}">
+          <b>{{index}}</b>
+          <span>{{shortLabel}}</span>
+        </a>
+        {{/each}}
+      </div>
+      <div class="ih-wm-level-note">
+        <strong>{{activeMapLevel.label}}</strong>
+        <span>{{activeMapLevel.role}}</span>
+        <em>{{activeMapLevel.travelUnit}}</em>
+      </div>
+    </section>
+
+    {{#if hasMapJourney}}
+    <section class="ih-wm-section ih-wm-journey-section">
+      <div class="ih-wm-section-title">Навигация сцены</div>
+      <div class="ih-wm-journey-focus">
+        <strong>{{mapJourney.focus.label}}</strong>
+        <span>{{mapJourney.focus.terrain}}{{#if mapJourney.focus.coordLabel}} · {{mapJourney.focus.coordLabel}}{{/if}}</span>
+        {{#if mapJourney.focus.hasHotspot}}<em>{{mapJourney.focus.hotspotLabel}} · {{mapJourney.focus.hotspotKind}}</em>{{/if}}
+      </div>
+      <div class="ih-wm-journey-crumbs">
+        {{#each mapJourney.crumbs}}
+        <a class="ih-wm-journey-crumb {{tone}} {{#if isActive}}is-active{{/if}}"
+           data-map-focus-level="{{level}}"
+           data-map-focus-col="{{col}}"
+           data-map-focus-row="{{row}}"
+           data-map-focus-hotspot="{{hotspotId}}"
+           title="{{caption}}">
+          <b>{{index}}</b>
+          <span>{{label}}</span>
+          <em>{{caption}}</em>
+        </a>
+        {{/each}}
+      </div>
+      {{#if mapJourney.hasActions}}
+      <div class="ih-wm-journey-actions">
+        {{#each mapJourney.actions}}
+        <a class="ih-wm-journey-action {{tone}} {{#if primary}}is-primary{{/if}}"
+           data-map-nav-action="{{action}}"
+           data-nav-level="{{level}}"
+           data-nav-col="{{col}}"
+           data-nav-row="{{row}}"
+           data-nav-hotspot="{{hotspotId}}"
+           data-nav-route="{{routeFlag}}"
+           title="{{hint}}">
+          <b>{{label}}</b>
+          <span>{{hint}}</span>
+        </a>
+        {{/each}}
+      </div>
+      {{/if}}
+    </section>
+    {{/if}}
+
+    {{#if hasSceneBrief}}
+    <section class="ih-wm-section ih-wm-scene-brief-sidebar {{sceneBrief.tone}}">
+      <div class="ih-wm-section-title">GM scene brief</div>
+      <div class="ih-wm-brief-head">
+        <strong>{{sceneBrief.title}}</strong>
+        <span>{{sceneBrief.subtitle}}</span>
+        <em>{{sceneBrief.statusLabel}}</em>
+      </div>
+      <div class="ih-wm-brief-summary">
+        {{#each sceneBrief.summaryRows}}
+        <div class="{{tone}}">
+          <b>{{label}}</b>
+          <span>{{value}}</span>
+          <em>{{note}}</em>
+        </div>
+        {{/each}}
+      </div>
+      {{#if sceneBrief.situation.hasSituation}}
+      <div class="ih-wm-brief-situation {{sceneBrief.situation.tone}}">
+        <strong>{{sceneBrief.situation.title}}</strong>
+        <span>{{sceneBrief.situation.map.label}} · {{sceneBrief.situation.map.level}}</span>
+        <em>{{sceneBrief.situation.summary}}</em>
+      </div>
+      {{/if}}
+      <div class="ih-wm-brief-actions">
+        <a data-scene-situation-reroll>Reroll</a>
+        <a data-scene-brief-chat>Brief в чат</a>
+        <a data-scene-prep-materialize>Prep packet</a>
+        <a data-scene-staging-materialize>Journal</a>
+        <a data-map-nav-action="combat-director">Combat</a>
+      </div>
+    </section>
+    {{/if}}
+
+    <section class="ih-wm-section ih-wm-overview {{mapSummary.routeTone}}">
+      <div class="ih-wm-section-title">Положение</div>
+      <div class="ih-wm-location-card {{mapSummary.currentDangerTone}}">
+        <span class="ih-wm-location-kicker">Сейчас</span>
+        <strong>{{mapSummary.currentLabel}}</strong>
+        <span>{{mapSummary.currentTerrain}} · {{mapSummary.currentCoord}}</span>
+      </div>
+      {{#if hasTarget}}
+      <div class="ih-wm-location-card is-target {{mapSummary.targetDangerTone}}">
+        <span class="ih-wm-location-kicker">Цель</span>
+        <strong>{{mapSummary.targetLabel}}</strong>
+        <span>{{mapSummary.targetCoord}}</span>
+      </div>
+      {{/if}}
+      <div class="ih-wm-poi-counts">
+        <span><b>{{mapSummary.discoveredPoiCount}}</b> открыто</span>
+        <span><b>{{mapSummary.hiddenPoiCount}}</b> скрыто</span>
+      </div>
+    </section>
+
+    {{#if hasSessionMap}}
+    <section class="ih-wm-section ih-wm-session-route">
+      <div class="ih-wm-section-title">Первая сессия · {{sessionMap.completion}}</div>
+      <div class="ih-wm-session-score">
+        <strong>{{sessionMap.completionPct}}%</strong>
+        <span>материализовано</span>
+      </div>
+      <div class="ih-wm-session-steps">
+        {{#each sessionMap.anchors}}
+        <a class="ih-wm-session-step {{tone}} {{#if isFocus}}is-focus{{/if}}"
+           data-session-anchor="{{id}}"
+           data-session-col="{{col}}"
+           data-session-row="{{row}}"
+           data-session-level="{{targetLevel}}"
+           data-session-hotspot="{{hotspotId}}"
+           title="{{detail}}">
+          <b>{{stage}}</b>
+          <span>{{label}}</span>
+          <em>{{statusLabel}} · {{coordLabel}}{{#if linkCount}} · {{linkCount}} связ.{{/if}}</em>
+        </a>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+    <section class="ih-wm-section">
       <div class="ih-wm-section-title">Группа</div>
       <select class="ih-wm-select" data-select-group>
         <option value="">Активная</option>
@@ -15,126 +153,640 @@
       </select>
       {{#if activeGroup}}
       <div class="ih-wm-group-info">
-        <span>📍 {{activeGroup.location}}</span>
+        <span>{{activeGroup.location}}</span>
         <span class="muted-text">{{activeGroup.localHours}}ч</span>
       </div>
       {{/if}}
-    </div>
+    </section>
 
-    {{!-- Транспорт --}}
-    <div class="ih-wm-section">
+    <section class="ih-wm-section">
       <div class="ih-wm-section-title">Транспорт</div>
       <div class="ih-wm-transport-list">
         {{#each transports}}
         <a class="ih-wm-transport {{#if isActive}}is-active{{/if}}"
            data-transport="{{key}}" title="{{label}}">
-          <span>{{icon}}</span>
+          <span class="ih-wm-transport-icon">{{icon}}</span>
           <span>{{label}}</span>
         </a>
         {{/each}}
       </div>
-    </div>
+    </section>
 
-    {{!-- Режим маршрута --}}
-    <div class="ih-wm-section">
+    <section class="ih-wm-section">
       <div class="ih-wm-section-title">Маршрут</div>
       <a class="ih-wm-mode-btn {{#if manualMode}}is-manual{{/if}}"
          data-toggle-manual title="{{#if manualMode}}Авто-маршрут (A*){{else}}Ручная прокладка{{/if}}">
-        {{#if manualMode}}✏ Ручной режим{{else}}🤖 Авто (A*){{/if}}
+        {{#if manualMode}}Ручной режим{{else}}Авто A*{{/if}}
       </a>
       {{#if manualMode}}
       <div class="ih-wm-manual-hint muted-text">
-        Кликай тайлы по порядку — путь строится вручную
+        Клик по тайлам добавляет путь по порядку. Повторный клик откатывает хвост маршрута.
       </div>
       {{/if}}
-    </div>
 
-    {{!-- Маршрут --}}
-    {{#if hasTarget}}
-    <div class="ih-wm-section">
-      <div class="ih-wm-section-title">{{#if isManualRoute}}Ручной маршрут{{else}}Маршрут (A*){{/if}}</div>
-      {{#if routeInfo.found}}
-      <div class="ih-wm-route-info">
-        <div class="ih-wm-route-target">📍 {{routeInfo.targetLabel}}</div>
-        <div class="ih-wm-route-stats">
-          <span>⏱ {{routeInfo.totalHours}}ч</span>
-          <span>· {{routeInfo.stepsCount}} тайлов</span>
+      {{#if hasTarget}}
+      <div class="ih-wm-route-panel {{routeInfo.routeTone}}">
+        {{#if routeInfo.found}}
+        <div class="ih-wm-route-info">
+          <div class="ih-wm-route-target">{{routeInfo.targetLabel}}</div>
+          <div class="ih-wm-route-stats">
+            <span>{{routeInfo.totalHours}}ч</span>
+            <span>{{routeInfo.stepsCount}} тайлов</span>
+            <span>{{routeInfo.dangerLabel}}</span>
+          </div>
+          <div class="ih-wm-route-transport muted-text">
+            {{routeInfo.transportLabel}} · {{routeInfo.targetTerrain}} · {{routeInfo.targetCoord}}
+          </div>
         </div>
-        <div class="ih-wm-route-transport muted-text">{{routeInfo.transportLabel}}</div>
-      </div>
-      {{#if canTravel}}
-      <a class="ih-btn ih-btn-primary ih-wm-sidebar-btn is-confirm" data-confirm-travel>
-        ✓ Подтвердить
-      </a>
-      {{else if isGM}}
-      <div class="muted-text ih-wm-route-hint">Нажми на тайл чтобы проложить маршрут</div>
-      {{else}}
-      <div class="muted-text ih-wm-route-hint">Ожидание подтверждения GM</div>
-      {{/if}}
-      {{else}}
-      <div class="ih-wm-blocked">⛔ Путь заблокирован для выбранного транспорта</div>
-      {{/if}}
-    </div>
-    {{/if}}
 
-    {{!-- Войти в локацию --}}
+        {{#if hasRouteTerrainBreakdown}}
+        <div class="ih-wm-route-breakdown">
+          {{#each routeTerrainBreakdown}}
+          <span title="{{label}}: {{steps}} тайлов, {{hours}}ч">
+            <i data-ih-style-background="{{color}}"></i>{{label}} <b>{{hours}}ч</b>
+          </span>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        {{#if hasRoutePreview}}
+        <div class="ih-wm-route-timeline">
+          {{#each routePreview}}
+          <div class="ih-wm-route-hop {{cssClass}}" title="{{terrainLabel}} · {{coord}}">
+            <b>{{index}}</b>
+            <span>{{label}}</span>
+            <em>{{costLabel}}</em>
+          </div>
+          {{/each}}
+          {{#if mapSummary.routePreviewMore}}
+          <div class="ih-wm-route-hop is-more">
+            <b>+</b>
+            <span>ещё</span>
+            <em>{{mapSummary.routePreviewMore}}</em>
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+
+        {{#if canTravel}}
+        <a class="ih-btn ih-btn-primary ih-wm-sidebar-btn is-confirm" data-confirm-travel>
+          Подтвердить
+        </a>
+        {{else if isGM}}
+        <div class="muted-text ih-wm-route-hint">Выбери цель на карте</div>
+        {{else}}
+        <div class="muted-text ih-wm-route-hint">Ожидание подтверждения GM</div>
+        {{/if}}
+        {{else}}
+        <div class="ih-wm-blocked">Путь заблокирован для выбранного транспорта</div>
+        {{/if}}
+      </div>
+      {{else}}
+      <div class="ih-wm-route-empty">
+        Выбери тайл или POI на региональной карте.
+      </div>
+      {{/if}}
+    </section>
+
     {{#if activeGroup}}
-    <div class="ih-wm-section">
+    <section class="ih-wm-section">
       <a class="ih-btn ih-wm-sidebar-btn" data-enter-location>
-        🚪 Войти в локацию
+        Войти в локацию
       </a>
+    </section>
+    {{/if}}
+
+    <section class="ih-wm-section ih-wm-legend">
+      <div class="ih-wm-section-title">Рельеф</div>
+      <div class="ih-wm-terrain-legend">
+        {{#each terrainLegend}}
+        <div class="ih-wm-terrain-row {{cssClass}}" title="{{label}}">
+          <i data-ih-style-background="{{color}}"></i>
+          <span>{{icon}}</span>
+          <b>{{label}}</b>
+          <em>{{costLabel}}</em>
+        </div>
+        {{/each}}
+      </div>
+    </section>
+
+  </aside>
+
+  <main class="ih-wm-map-wrap">
+    <div class="ih-wm-tooltip"></div>
+
+    <div class="ih-wm-map-head">
+      <div>
+        <span class="ih-wm-map-kicker">{{activeMapLevel.label}}</span>
+        <strong>{{region.label}}</strong>
+      </div>
+      <div class="ih-wm-map-head-pills">
+        <span>{{mapSummary.currentCoord}}</span>
+        {{#if routeInfo.found}}<span>{{routeInfo.totalHours}}ч</span>{{/if}}
+        {{#if hasTarget}}<span>{{mapSummary.targetCoord}}</span>{{/if}}
+      </div>
+    </div>
+    {{#if hasMapJourney}}
+    <div class="ih-wm-map-trail">
+      {{#each mapJourney.compactCrumbs}}
+      <a class="{{tone}} {{#if isActive}}is-active{{/if}}"
+         data-map-focus-level="{{level}}"
+         data-map-focus-col="{{col}}"
+         data-map-focus-row="{{row}}"
+         data-map-focus-hotspot="{{hotspotId}}">
+        <b>{{index}}</b>
+        <span>{{label}}</span>
+      </a>
+      {{/each}}
     </div>
     {{/if}}
 
-    {{!-- Легенда --}}
-    <div class="ih-wm-section ih-wm-legend">
-      <div class="ih-wm-section-title">Рельеф</div>
-      {{!-- Легенда генерируется из tiles на клиенте --}}
-      <div class="ih-wm-legend-hint muted-text">
-        Клик — выбрать цель<br>
-        Ещё клик — сбросить
-      </div>
-    </div>
-
-  </div>
-
-  {{!-- ── Карта ── --}}
-  <div class="ih-wm-map-wrap">
-    <div class="ih-wm-tooltip"></div>
+    {{#if isRegionLevel}}
     <div class="ih-wm-map"
          data-ih-style-width-px="{{mapW}}"
          data-ih-style-height-px="{{mapH}}">
+      <img class="ih-wm-map-backdrop" src="{{mapBackdrop}}" alt="">
+
+      {{#if hasRouteLine}}
+      <svg class="ih-wm-route-line"
+           viewBox="0 0 {{mapW}} {{mapH}}"
+           data-ih-style-width-px="{{mapW}}"
+           data-ih-style-height-px="{{mapH}}">
+        <polyline points="{{routeLine}}"></polyline>
+      </svg>
+      {{/if}}
 
       {{#each region.tiles}}
       <div class="ih-wm-tile
+                  {{terrainClass}}
+                  {{dangerTone}}
                   {{#if hasGroup}}has-group{{/if}}
                   {{#if isTarget}}is-target{{/if}}
                   {{#if inRoute}}in-route{{/if}}
+                  {{#if isManual}}is-manual{{/if}}
+                  {{#if hasSessionAnchor}}has-session-anchor{{/if}}
                   {{#if isPoi}}is-poi{{/if}}"
            data-col="{{col}}" data-row="{{row}}"
            title="{{#if label}}{{label}} — {{/if}}{{terrainLabel}}"
            data-ih-style-left-px="{{x}}"
            data-ih-style-top-px="{{y}}"
            data-ih-style-width-px="{{size}}"
-           data-ih-style-height-px="{{size}}"
-           data-ih-style-background="{{terrainColor}}">
+           data-ih-style-height-px="{{size}}">
 
-        {{!-- Иконка рельефа --}}
         <span class="ih-wm-tile-icon">{{terrainIcon}}</span>
-
-        {{!-- Название POI --}}
         {{#if label}}<span class="ih-wm-tile-label">{{label}}</span>{{/if}}
-
-        {{!-- Маркер группы --}}
-        {{#if hasGroup}}<span class="ih-wm-group-marker">👥</span>{{/if}}
-
-        {{!-- Цель --}}
-        {{#if isTarget}}<span class="ih-wm-target-marker">🎯</span>{{/if}}
-
+        {{#if hasSessionAnchor}}<span class="ih-wm-session-marker">{{sessionAnchorIndex}}</span>{{/if}}
+        {{#if hasRouteStep}}<span class="ih-wm-route-step">{{routeStepLabel}}</span>{{/if}}
+        {{#if hasGroup}}<span class="ih-wm-group-marker">●</span>{{/if}}
+        {{#if isTarget}}<span class="ih-wm-target-marker">✦</span>{{/if}}
       </div>
       {{/each}}
 
+      {{#if hasPoiMarkers}}
+      <div class="ih-wm-poi-layer">
+        {{#each poiMarkers}}
+        <a class="ih-wm-poi-marker {{cssClass}} {{#if hasActor}}has-actor{{/if}}"
+           data-poi-id="{{id}}"
+           data-col="{{col}}"
+           data-row="{{row}}"
+           title="{{name}} · опасность {{danger}}"
+           data-ih-style-left-px="{{x}}"
+           data-ih-style-top-px="{{y}}">
+          <span class="ih-wm-poi-icon">{{icon}}</span>
+          <span class="ih-wm-poi-name">{{name}}</span>
+        </a>
+        {{/each}}
+      </div>
+      {{/if}}
+
     </div>
-  </div>
+    {{else if isLocalLevel}}
+    <div class="ih-wm-local-board {{localView.terrainClass}} {{localView.dangerTone}} ih-wm-local-{{localView.profile}}">
+      <div class="ih-wm-local-map"
+           data-ih-style-width-px="{{localView.width}}"
+           data-ih-style-height-px="{{localView.height}}">
+        <img class="ih-wm-local-backdrop" src="{{localBackdrop}}" alt="">
+        <div class="ih-wm-local-fog"></div>
+        <div class="ih-wm-local-grid"></div>
+        <div class="ih-wm-local-core">
+          <strong>{{localView.focusName}}</strong>
+          <span>{{localView.terrainLabel}} · {{localView.focusCoord}}</span>
+        </div>
+
+        {{#if localView.hasNodes}}
+        {{#each localView.nodes}}
+        <a class="ih-wm-local-node {{tone}} {{#if hasRoute}}is-route{{/if}} {{#if hasHotspot}}is-hotspot ih-wm-hotspot-{{hotspotType}}{{/if}} {{#if isActiveHotspot}}is-active-hotspot{{/if}}"
+           {{#if hasRoute}}data-local-route-col="{{routeCol}}" data-local-route-row="{{routeRow}}"{{/if}}
+           {{#if hasHotspot}}data-local-hotspot="{{id}}" data-local-action="{{hotspotAction}}" data-hotspot-label="{{label}}" data-hotspot-type-label="{{hotspotTypeLabel}}" data-hotspot-detail="{{detail}}" data-hotspot-npc-role="{{npcRole}}"{{/if}}
+           data-ih-style-left-px="{{x}}"
+           data-ih-style-top-px="{{y}}"
+           title="{{detail}}">
+          <i>{{icon}}</i>
+          <strong>{{label}}</strong>
+          <span>{{hotspotTypeLabel}}{{#if npcRole}} · {{npcRole}}{{else}} · {{kind}}{{/if}}</span>
+        </a>
+        {{/each}}
+        {{/if}}
+      </div>
+
+      <aside class="ih-wm-local-panel">
+        <div class="ih-wm-scale-kicker">Локальный слой</div>
+        <h2>{{localView.headline}}</h2>
+        <p>{{localView.summary}}</p>
+        <div class="ih-wm-panel-actions">
+          <a data-map-nav-action="focus"
+             data-nav-level="region"
+             data-nav-col="{{mapJourney.focus.col}}"
+             data-nav-row="{{mapJourney.focus.row}}"
+             data-nav-hotspot="{{mapJourney.focus.hotspotId}}">Регион</a>
+          <a class="is-primary"
+             data-map-nav-action="focus"
+             data-nav-level="encounter"
+             data-nav-col="{{mapJourney.focus.col}}"
+             data-nav-row="{{mapJourney.focus.row}}"
+             data-nav-hotspot="{{mapJourney.focus.hotspotId}}">Сцена</a>
+        </div>
+        <div class="ih-wm-local-facts">
+          <span><b>{{localView.terrainLabel}}</b> рельеф</span>
+          <span><b>{{localView.danger}}</b> опасность</span>
+          <span><b>{{#if localView.hasScene}}есть{{else}}нет{{/if}}</b> сцена</span>
+        </div>
+        {{#if hasSceneBrief}}
+        <div class="ih-wm-scene-brief-detail {{sceneBrief.tone}}">
+          <div class="ih-wm-scene-brief-title">
+            <strong>GM brief</strong>
+            <span>{{sceneBrief.statusLabel}}</span>
+            <a data-scene-brief-chat>в чат</a>
+            <a data-scene-prep-materialize>prep</a>
+            <a data-scene-staging-materialize>stage</a>
+          </div>
+          {{#if sceneBrief.hasSetupRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Setup</b>
+            {{#each sceneBrief.setupRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasNavigationRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Navigation route</b>
+            {{#each sceneBrief.navigationRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasSituationRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Generated situation</b>
+            {{#each sceneBrief.situationRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasPlacementRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Placement</b>
+            {{#each sceneBrief.placementRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasClueRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Clues</b>
+            {{#each sceneBrief.clueRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasSkillRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Skill checks</b>
+            {{#each sceneBrief.skillRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasCastRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Cast</b>
+            {{#each sceneBrief.castRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasKitRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Encounter kit</b>
+            {{#each sceneBrief.kitRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasNpcRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Suggested NPC</b>
+            {{#each sceneBrief.npcRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasMechanicRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Checks</b>
+            {{#each sceneBrief.mechanicRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if localView.hasHotspots}}
+        <div class="ih-wm-local-hotspots">
+          <strong>Сцены и NPC</strong>
+          {{#each localView.hotspots}}
+          <a class="{{tone}} {{#if isActiveHotspot}}is-active{{/if}}"
+             data-local-hotspot="{{id}}"
+             data-local-action="{{hotspotAction}}"
+             data-hotspot-label="{{label}}"
+             data-hotspot-type-label="{{hotspotTypeLabel}}"
+             data-hotspot-detail="{{detail}}"
+             data-hotspot-npc-role="{{npcRole}}"
+             title="{{detail}}">
+            <b>{{label}}</b>
+            <span>{{hotspotTypeLabel}}</span>
+            <em>{{#if npcRole}}{{npcRole}}{{else}}scene{{/if}}{{#if linkedCount}} · {{linkedCount}}{{/if}}</em>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+        {{#if localView.hasSessionLinks}}
+        <div class="ih-wm-session-links">
+          <strong>Связанные сущности</strong>
+          {{#each localView.sessionLinks}}
+          <a class="{{tone}}"
+             data-session-actor-id="{{id}}"
+             title="{{detail}}">
+            <b>{{name}}</b>
+            <span>{{typeLabel}}</span>
+            <em>{{detail}}</em>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+        {{#if localView.hasExits}}
+        <div class="ih-wm-local-exits">
+          <strong>Выходы рядом</strong>
+          {{#each localView.exits}}
+          <a data-local-route-col="{{routeCol}}" data-local-route-row="{{routeRow}}">
+            <span>{{icon}}</span>
+            <b>{{label}}</b>
+            <em>{{kind}}</em>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+      </aside>
+    </div>
+    {{else if isEncounterLevel}}
+    <div class="ih-wm-encounter-board {{encounterView.terrainClass}} {{encounterView.dangerTone}} ih-wm-encounter-{{encounterView.profile}}">
+      <div class="ih-wm-encounter-map"
+           data-ih-style-width-px="{{encounterView.width}}"
+           data-ih-style-height-px="{{encounterView.height}}">
+        <img class="ih-wm-local-backdrop" src="{{encounterBackdrop}}" alt="">
+        <div class="ih-wm-encounter-shade"></div>
+        <div class="ih-wm-encounter-grid"></div>
+
+        {{#if encounterView.hasZones}}
+        {{#each encounterView.zones}}
+        <div class="ih-wm-encounter-zone {{tone}} ih-wm-hotspot-{{hotspotType}} {{#if isActiveHotspot}}is-active-hotspot{{/if}}"
+             data-encounter-zone="{{id}}"
+             data-zone-label="{{label}}"
+             data-zone-detail="{{detail}}"
+             data-zone-type-label="{{hotspotTypeLabel}}"
+             data-zone-npc-role="{{npcRole}}"
+             data-ih-style-left-px="{{x}}"
+             data-ih-style-top-px="{{y}}"
+             data-ih-style-width-px="{{w}}"
+             data-ih-style-height-px="{{h}}"
+             title="{{detail}}">
+          <b>{{index}}</b>
+          <strong>{{label}}</strong>
+          <span>{{kind}}</span>
+          <em>{{hotspotTypeLabel}}{{#if npcRole}} · {{npcRole}}{{/if}}</em>
+        </div>
+        {{/each}}
+        {{/if}}
+      </div>
+
+      <aside class="ih-wm-encounter-panel">
+        <div class="ih-wm-scale-kicker">Энкаунтер</div>
+        <h2>{{encounterView.focusName}}</h2>
+        <p>{{encounterView.summary}}</p>
+        <div class="ih-wm-panel-actions">
+          <a class="is-primary"
+             data-map-nav-action="focus"
+             data-nav-level="local"
+             data-nav-col="{{mapJourney.focus.col}}"
+             data-nav-row="{{mapJourney.focus.row}}"
+             data-nav-hotspot="{{mapJourney.focus.hotspotId}}">Локация</a>
+          <a data-map-nav-action="focus"
+             data-nav-level="region"
+             data-nav-col="{{mapJourney.focus.col}}"
+             data-nav-row="{{mapJourney.focus.row}}"
+             data-nav-hotspot="{{mapJourney.focus.hotspotId}}">Регион</a>
+          <a class="is-danger" data-map-nav-action="combat-director">Combat</a>
+        </div>
+        <div class="ih-wm-encounter-checks">
+          {{#each encounterView.checkRows}}
+          <span class="{{tone}}"><b>{{label}}</b><em>{{value}}</em></span>
+          {{/each}}
+        </div>
+        {{#if hasSceneBrief}}
+        <div class="ih-wm-scene-brief-detail {{sceneBrief.tone}}">
+          <div class="ih-wm-scene-brief-title">
+            <strong>GM brief</strong>
+            <span>{{sceneBrief.statusLabel}}</span>
+            <a data-scene-brief-chat>в чат</a>
+            <a data-scene-prep-materialize>prep</a>
+            <a data-scene-staging-materialize>stage</a>
+          </div>
+          {{#if sceneBrief.hasZoneRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Zones</b>
+            {{#each sceneBrief.zoneRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasNavigationRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Navigation route</b>
+            {{#each sceneBrief.navigationRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasSituationRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Generated situation</b>
+            {{#each sceneBrief.situationRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasMarkerRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Map markers</b>
+            {{#each sceneBrief.markerRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasPlacementRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Placement</b>
+            {{#each sceneBrief.placementRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasClueRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Clues</b>
+            {{#each sceneBrief.clueRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasSkillRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Skill checks</b>
+            {{#each sceneBrief.skillRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasKitRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Encounter kit</b>
+            {{#each sceneBrief.kitRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasMonsterRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Suggested monsters</b>
+            {{#each sceneBrief.monsterRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasNpcRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Suggested NPC</b>
+            {{#each sceneBrief.npcRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasCastRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Cast</b>
+            {{#each sceneBrief.castRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasLootRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Loot</b>
+            {{#each sceneBrief.lootRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasHarvestRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Harvest</b>
+            {{#each sceneBrief.harvestRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasMechanicRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Checks</b>
+            {{#each sceneBrief.mechanicRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if sceneBrief.hasRiskRows}}
+          <div class="ih-wm-scene-brief-block">
+            <b>Risks</b>
+            {{#each sceneBrief.riskRows}}
+            <div class="{{tone}}"><strong>{{label}}</strong><span>{{value}}</span><em>{{note}}</em></div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if encounterView.hasActiveHotspot}}
+        <div class="ih-wm-encounter-focus">
+          <strong>{{encounterView.activeHotspot.label}}</strong>
+          <span>{{encounterView.activeHotspot.hotspotTypeLabel}}{{#if encounterView.activeHotspot.npcRole}} · {{encounterView.activeHotspot.npcRole}}{{/if}}</span>
+          <p>{{encounterView.activeHotspot.detail}}</p>
+        </div>
+        {{/if}}
+        {{#if encounterView.hasSessionLinks}}
+        <div class="ih-wm-session-links">
+          <strong>Связанные сущности</strong>
+          {{#each encounterView.sessionLinks}}
+          <a class="{{tone}}"
+             data-session-actor-id="{{id}}"
+             title="{{detail}}">
+            <b>{{name}}</b>
+            <span>{{typeLabel}}</span>
+            <em>{{detail}}</em>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+        {{#if encounterView.hasTactics}}
+        <div class="ih-wm-encounter-notes">
+          {{#each encounterView.tactics}}
+          <p>{{this}}</p>
+          {{/each}}
+        </div>
+        {{/if}}
+      </aside>
+    </div>
+    {{else}}
+    <div class="ih-wm-scale-board ih-wm-scale-{{activeMapLevelId}}">
+      <div class="ih-wm-scale-art">
+        <img class="ih-wm-scale-art-img" src="{{mapBackdrop}}" alt="">
+      </div>
+      <div class="ih-wm-scale-copy">
+        <div class="ih-wm-scale-kicker">{{activeMapLevel.label}}</div>
+        <h2>{{activeMapLevel.shortLabel}}</h2>
+        <p>{{activeMapLevel.scale}}</p>
+        <span>{{activeMapLevel.travelUnit}}</span>
+      </div>
+      {{#if hasScaleNodes}}
+      <div class="ih-wm-scale-nodes">
+        {{#each scaleNodes}}
+        <div class="ih-wm-scale-node {{tone}}">
+          <strong>{{label}}</strong>
+          <span>{{kind}}</span>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+  </main>
 
 </div>

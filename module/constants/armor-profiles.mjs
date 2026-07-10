@@ -1,4 +1,6 @@
 export const ARMOR_CLASS_KEYS = Object.freeze(["light", "medium", "heavy"]);
+export const ARMOR_BODY_SLOT_KEYS = Object.freeze(["head", "neck", "torso", "leftArm", "rightArm", "legs"]);
+export const ARMOR_SHIELD_SLOT_KEYS = Object.freeze(["leftHand", "rightHand", "shield"]);
 
 export const ARMOR_CLASS_PROFILES = Object.freeze({
   light: Object.freeze({
@@ -99,6 +101,10 @@ function startsWithAny(value, prefixes) {
   return prefixes.some((prefix) => value.startsWith(prefix));
 }
 
+export function isShieldArmorSlot(slot) {
+  return ARMOR_SHIELD_SLOT_KEYS.includes(String(slot ?? ""));
+}
+
 function armorImageForRow(row = {}) {
   if (typeof row.img === "string" && row.img.trim()) return row.img;
   if (row.resist && typeof row.resist === "object" && typeof row.resist.img === "string") return row.resist.img;
@@ -120,7 +126,7 @@ export function inferArmorClassFromArmorRow(row = {}) {
   if (row.armorClass) return normalizeArmorClass(row.armorClass);
 
   const id = String(row.id ?? "").trim();
-  if (String(row.slot ?? "") === "leftHand") {
+  if (isShieldArmorSlot(row.slot)) {
     if (HEAVY_SHIELD_IDS.has(id)) return "heavy";
     if (LIGHT_SHIELD_IDS.has(id)) return "light";
     return "medium";
@@ -234,10 +240,6 @@ export function buildArmorClassVariantRows(baseRows = {}) {
   for (const row of Object.values(baseRows)) {
     if (!row?.id || row.variantOf) continue;
     if (EXCLUDED_VARIANT_SOURCE_IDS.has(row.id)) continue;
-    if (String(row.slot ?? "") === "leftHand") {
-      out[row.id] = withArmorClassDetails(row);
-      continue;
-    }
 
     const sourceClass = inferArmorClassFromArmorRow(row);
     out[row.id] = withArmorClassDetails(row, sourceClass);

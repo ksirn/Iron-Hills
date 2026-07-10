@@ -1,0 +1,752 @@
+{
+  "label": "Iron Hills built-in imagegen preview intake",
+  "generatedAt": "2026-06-18T21:04:52.344Z",
+  "source": {
+    "mode": "built-in-imagegen",
+    "sourceRoot": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca",
+    "note": "Preview-only sheets generated in Codex using the built-in image generation tool. They are copied here so visual QA and future slicing do not depend on transient generated_images filenames."
+  },
+  "workflow": [
+    "1. Review these preview sheets for visual direction.",
+    "2. Slice or regenerate chosen cells as individual candidate images under art-candidates/items/...",
+    "3. Run node tools/promote-art-candidates.mjs in dry-run mode before replacing final icons.",
+    "4. Rerun content readiness and Foundry runtime smoke checks after promotion."
+  ],
+  "summary": {
+    "total": 24,
+    "byCategory": {
+      "armor": 3,
+      "clothing": 1,
+      "npcs": 1,
+      "monsters": 1,
+      "spells": 6,
+      "magic-items": 1,
+      "attachments": 1,
+      "belts": 1,
+      "backpacks": 1,
+      "tools": 2,
+      "consumables": 1,
+      "materials": 5
+    }
+  },
+  "sheets": [
+    {
+      "slug": "2026-06-18-armor-helmets",
+      "title": "Armor helmets and headwear",
+      "category": "armor",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Helmet/headwear candidate direction for light, medium, heavy, darkiron, and mithril armor sets.",
+      "prompts": [
+        "padded arming cap",
+        "reinforced leather hood",
+        "chain coif",
+        "steel sallet",
+        "darkiron great helm",
+        "mithril open-face helm"
+      ],
+      "targetCatalogs": [
+        "armor"
+      ],
+      "notes": [
+        "Good visual tier separation",
+        "No final catalog replacements yet"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a344338a1e08193bf9580ed13fdc173.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "bytes": 2212350,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-armor-arms-hands",
+      "title": "Armor arms and hands",
+      "category": "armor",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Bracer, vambrace, sleeve, and gauntlet direction for armor slot expansion.",
+      "prompts": [
+        "leather bracers",
+        "studded vambraces",
+        "chain sleeves",
+        "steel plate gauntlets",
+        "darkiron bracers",
+        "mithril duelist gloves"
+      ],
+      "targetCatalogs": [
+        "armor"
+      ],
+      "notes": [
+        "Readable paired silhouettes",
+        "Needs individual cell slicing before use"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a344369ead88193b50b9bb72ce8ea73.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "bytes": 2625558,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-armor-legs-feet",
+      "title": "Armor legs and feet",
+      "category": "armor",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Boot, chausses, greaves, and sabaton direction for armor slot expansion.",
+      "prompts": [
+        "travel boots",
+        "ranger boots",
+        "chain chausses",
+        "steel greaves",
+        "darkiron leg plates",
+        "mithril greaves"
+      ],
+      "targetCatalogs": [
+        "armor"
+      ],
+      "notes": [
+        "Good footwear/leg distinction",
+        "No final catalog replacements yet"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a34439ddb4c819395b896357d8e1457.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "bytes": 2506186,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-clothing-robes",
+      "title": "Clothing and robes",
+      "category": "clothing",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Non-armor clothing direction for travel, scholar, noble, and arcane outfits.",
+      "prompts": [
+        "linen travel tunic",
+        "ranger cloak",
+        "padded gambeson",
+        "scholar robe",
+        "noble doublet",
+        "arcane battlemage robe"
+      ],
+      "targetCatalogs": [
+        "armor"
+      ],
+      "notes": [
+        "Useful for future clothing catalog or armor subtype expansion"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3443cebb2c81939e708ee0212dbd92.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "bytes": 2663516,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-npc-archetypes",
+      "title": "NPC archetype portraits",
+      "category": "npcs",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Foundry NPC portrait direction for merchants, healers, guards, scholars, fences, and envoys.",
+      "prompts": [
+        "blacksmith merchant",
+        "village healer",
+        "caravan guard captain",
+        "arcane scholar",
+        "fence trader",
+        "noble envoy"
+      ],
+      "targetCatalogs": [
+        "npcs"
+      ],
+      "notes": [
+        "Selected cells promoted as icons/tokens/npc/{role}_{tierBand}.webp actor portraits"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3444053ba0819394f05a33cd1cae53.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "bytes": 2589543,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-monster-archetypes",
+      "title": "Monster archetype portraits",
+      "category": "monsters",
+      "status": "preview",
+      "grid": "3x2",
+      "intendedUse": "Foundry monster/token portrait direction for early creature content.",
+      "prompts": [
+        "cave goblin raider",
+        "ironbound skeleton soldier",
+        "swamp ghoul",
+        "stonehide ogre brute",
+        "wyvern hatchling",
+        "corrupted forest wisp spirit"
+      ],
+      "targetCatalogs": [
+        "monsters"
+      ],
+      "notes": [
+        "Selected close matches promoted as icons/tokens/monsters/{bestiaryId}.webp actor portraits"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a34448b019481939031c5fcfc15fab0.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "bytes": 2808978,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-spell-schools",
+      "title": "Spell school identity icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "School-level identity direction for fire, ice, lightning, shadow, light, earth, mind, and summon.",
+      "prompts": [
+        "fire",
+        "ice",
+        "lightning",
+        "shadow",
+        "light",
+        "earth",
+        "mind",
+        "summon"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "Good physical artifact language for schools",
+        "Can guide default school fallback art"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3445c5ccd88193875339a5951da7a3.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "bytes": 2813162,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-spell-offensive",
+      "title": "Offensive spell icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Single-target and focused attack direction for core spell catalog damage entries.",
+      "prompts": [
+        "fire bolt",
+        "ice shard",
+        "lightning ray",
+        "shadow needle",
+        "sunlance",
+        "tectonic spear",
+        "mind lance",
+        "void judgement"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "Strong silhouettes for action-bar icons"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3445fe811c8193bbef7ed423b9c5a3.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "bytes": 2189643,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-spell-aoe-geometry",
+      "title": "AoE geometry spell icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Visual vocabulary for AoE shape/type mechanics: cone, circle, ray, rect, chain, nova, shards, aimed zones.",
+      "prompts": [
+        "cone blast",
+        "circle blast",
+        "ray line",
+        "rect wall",
+        "chain jumps",
+        "nova",
+        "shards",
+        "aimed target-zone"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "Tactical readability is the main value of this sheet"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a34463376f481938a627eec56fa4487.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "bytes": 2659826,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-spell-support-control",
+      "title": "Support and control spell icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Support/control direction for healing, protection, haste, slow, fear, grapple, and gate lock mechanics.",
+      "prompts": [
+        "healing wave",
+        "sanctuary ring",
+        "warding sigil",
+        "haste",
+        "slow",
+        "fear",
+        "root grapple",
+        "gate lock"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "Some cells may need regeneration before final use because support effects can drift toward face-like silhouettes"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a34466d96ac81939aadfeac353ed7d1.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "bytes": 2192837,
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "slug": "2026-06-18-magical-items",
+      "title": "Magical inventory items",
+      "category": "magic-items",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Inventory/trader direction for scrolls, grimoires, wands, staves, foci, and catalysts.",
+      "prompts": [
+        "spell scroll",
+        "grimoire",
+        "wand",
+        "staff",
+        "mana stone",
+        "focus ring",
+        "casting rod",
+        "catalyst vial"
+      ],
+      "targetCatalogs": [
+        "spells",
+        "consumables",
+        "materials"
+      ],
+      "notes": [
+        "Good bridge between magic catalog and Tarkov-style trade inventory"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3446ab5b048193af6bb09671488d48.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "bytes": 2291364,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-spell-high-tier-destruction",
+      "title": "High-tier destructive spell icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Late-game destructive spell direction for elemental, shadow, and lifesteal spells.",
+      "prompts": [
+        "volcanic burst",
+        "sunforge cataclysm",
+        "whiteout field",
+        "absolute zero",
+        "storm crown",
+        "worldbolt",
+        "nightfall zone",
+        "death whisper"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "High-tier power reads well without becoming a full battlefield scene"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a3446ecfed4819384bf14418202a8ad.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "bytes": 2485052,
+      "width": 1659,
+      "height": 948
+    },
+    {
+      "slug": "2026-06-18-spell-high-tier-utility",
+      "title": "High-tier utility and summon spell icons",
+      "category": "spells",
+      "status": "preview",
+      "grid": "4x2",
+      "intendedUse": "Late-game utility/control/summon direction for divine, earth, mind, and summoning spells.",
+      "prompts": [
+        "heavenfall",
+        "martyr aegis",
+        "mountain collapse",
+        "worldroot verdict",
+        "thought storm",
+        "absolute command",
+        "avatar pact",
+        "astral binding circle"
+      ],
+      "targetCatalogs": [
+        "spells"
+      ],
+      "notes": [
+        "Summon effects show gates and bindings instead of full creatures, which fits action-bar spell icons"
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0246d84eb098a92d016a344724154c819399b4182086d0a941.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "bytes": 2908075,
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "slug": "2026-06-18-utility-attachments",
+      "title": "Utility attachment icons",
+      "category": "attachments",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "attachments"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a34577a9b00819080f0d4e02b6ab4a4.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "bytes": 1966280,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-utility-belts",
+      "title": "Belt and harness icons",
+      "category": "belts",
+      "status": "candidate",
+      "grid": "4x3",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "belts"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a3457b9bd1c81909a0bebf2f7dd373a.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "bytes": 1957756,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-utility-backpacks",
+      "title": "Backpack and satchel icons",
+      "category": "backpacks",
+      "status": "candidate",
+      "grid": "5x3",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "backpacks"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a3457f004808190952861f91c954d00.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "bytes": 2357976,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-utility-tools-low-mid",
+      "title": "Low and mid tier tool icons",
+      "category": "tools",
+      "status": "candidate",
+      "grid": "5x3",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "tools"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a345821f6cc8190bc7baf3d9384ad30.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "bytes": 2115924,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-utility-tools-high",
+      "title": "High tier workshop tool icons",
+      "category": "tools",
+      "status": "candidate",
+      "grid": "5x3",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "tools"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a34585b9f8c8190827868613178fdd4.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "bytes": 2462102,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-utility-consumable-vessels",
+      "title": "Drink vessel consumable icons",
+      "category": "consumables",
+      "status": "candidate",
+      "grid": "3x1",
+      "intendedUse": "Utility inventory/trader replacement art",
+      "prompts": [],
+      "targetCatalogs": [
+        "consumables"
+      ],
+      "notes": [
+        "Generated with built-in imagegen for utility gear replacement pass."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_096322385013afdf016a3458e47ce0819092959eb4fc77c8f3.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "bytes": 1849368,
+      "width": 0,
+      "height": 0
+    },
+    {
+      "slug": "2026-06-18-materials-metals-woods",
+      "title": "Materials metals and woods",
+      "category": "materials",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Material icon replacements for metals-woods.",
+      "prompts": [
+        "Медная руда",
+        "Медный слиток",
+        "Оловянная руда",
+        "Бронзовый слиток",
+        "Железная руда",
+        "Железный слиток",
+        "Стальной слиток",
+        "Закалённая сталь",
+        "Митрильная руда",
+        "Митрильный слиток",
+        "Тёмная руда",
+        "Тёмное железо",
+        "Звёздная руда",
+        "Звёздный металл",
+        "Орихалк",
+        "Адамантий",
+        "Сосновая доска",
+        "Дубовая доска",
+        "Твёрдая древесина",
+        "Железное дерево"
+      ],
+      "targetCatalogs": [
+        "materials"
+      ],
+      "notes": [
+        "Generated built-in imagegen sheet for ores, ingots, and wood materials."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0f1e7fecb4b1a8f3016a345bc42a288194add097978ee8ec57.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "bytes": 2339931,
+      "width": 1619,
+      "height": 972
+    },
+    {
+      "slug": "2026-06-18-materials-hides-fabrics",
+      "title": "Materials hides and fabrics",
+      "category": "materials",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Material icon replacements for hides-fabrics.",
+      "prompts": [
+        "Древесина духов",
+        "Чёрное дерево",
+        "Вечное дерево",
+        "Мировое дерево",
+        "Доска солнечного дуба",
+        "Брус генезиса",
+        "Шкура зверя",
+        "Выделанная кожа",
+        "Толстая шкура",
+        "Чешуйчатая шкура",
+        "Чешуя дрейка",
+        "Кожа дрейка",
+        "Шкура варга",
+        "Шкура виверны",
+        "Кожа дракона",
+        "Шкура гидры",
+        "Шкура Левиафана",
+        "Сырое волокно",
+        "Ткань",
+        "Тонкая ткань"
+      ],
+      "targetCatalogs": [
+        "materials"
+      ],
+      "notes": [
+        "Generated built-in imagegen sheet for advanced woods, hides, leather, and basic cloth."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0f1e7fecb4b1a8f3016a345c011c908194bfcefd5be0df47ad.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "bytes": 2380480,
+      "width": 1619,
+      "height": 972
+    },
+    {
+      "slug": "2026-06-18-materials-textiles-minerals",
+      "title": "Materials textiles and minerals",
+      "category": "materials",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Material icon replacements for textiles-minerals.",
+      "prompts": [
+        "Шёлк",
+        "Паучий шёлк",
+        "Лунное волокно",
+        "Теневое волокно",
+        "Звёздная нить",
+        "Ткань Пустоты",
+        "Нить Авроры",
+        "Полотно генезиса",
+        "Камень",
+        "Кремень",
+        "Уголь",
+        "Кварц",
+        "Гранит",
+        "Обсидиан",
+        "Рубин",
+        "Сапфир",
+        "Алмаз",
+        "Мана-кристалл",
+        "Жеода эона",
+        "Кристалл Пустоты"
+      ],
+      "targetCatalogs": [
+        "materials"
+      ],
+      "notes": [
+        "Generated built-in imagegen sheet for advanced textiles, stones, gems, and crystals."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0f1e7fecb4b1a8f3016a345c3806fc81948b5ce5b01032e2a6.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "bytes": 2354669,
+      "width": 1619,
+      "height": 972
+    },
+    {
+      "slug": "2026-06-18-materials-reagents-supplies",
+      "title": "Materials reagents and supplies",
+      "category": "materials",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Material icon replacements for reagents-supplies.",
+      "prompts": [
+        "Осколок звезды",
+        "Сердце звезды",
+        "Обычная трава",
+        "Целебный лист",
+        "Болотный гриб",
+        "Горький корень",
+        "Ядовитый клык",
+        "Лунный цветок",
+        "Железа монстра",
+        "Мешок с ядом",
+        "Цветок духов",
+        "Перо феникса",
+        "Сердце великана",
+        "Кровь дракона",
+        "Лишайник Бездны",
+        "Слёзы богов",
+        "Верёвка",
+        "Кузнечный кокс",
+        "Стекло",
+        "Масло (фляга)"
+      ],
+      "targetCatalogs": [
+        "materials"
+      ],
+      "notes": [
+        "Generated built-in imagegen sheet for alchemical reagents and craft supplies."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0f1e7fecb4b1a8f3016a345c73de548194885074caddb9cadd.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "bytes": 2155610,
+      "width": 1619,
+      "height": 972
+    },
+    {
+      "slug": "2026-06-18-materials-arcane-harvest",
+      "title": "Materials arcane utility and monster harvest",
+      "category": "materials",
+      "status": "candidate",
+      "grid": "5x4",
+      "intendedUse": "Material icon replacements for arcane-harvest.",
+      "prompts": [
+        "Мана-камень",
+        "Пыль зачарования",
+        "Мастерская смола",
+        "Эссенция души",
+        "Планарная скоба",
+        "Моток арканной проволоки",
+        "Осколок реликта",
+        "Семя эпохи",
+        "Жильё зверя",
+        "Небольшая шкура (сырая)",
+        "Осколок клыка",
+        "Пыльца ночных мотыльков",
+        "Слабая змеиная желчь",
+        "Кольца из щетины кабана",
+        "Киль птицеящера",
+        "Железа вожака",
+        "Жилье виверны",
+        "Смоляная пробка хищника"
+      ],
+      "targetCatalogs": [
+        "materials"
+      ],
+      "notes": [
+        "Generated built-in imagegen sheet for arcane utility materials and monster harvest loot. Last two cells are intentionally empty."
+      ],
+      "sourceFile": "C:/Users/mitma/.codex/generated_images/019e0f8c-4831-7a21-a68b-03461ae405ca/ig_0f1e7fecb4b1a8f3016a345cb379cc8194a32f799df793f0af.png",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "img": "systems/iron-hills-system/docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "bytes": 2068618,
+      "width": 1619,
+      "height": 972
+    }
+  ]
+}

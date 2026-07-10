@@ -23,6 +23,10 @@ const REQUIRED_API = Object.freeze([
   "openCompendiumBrowser",
   "openGridInventory",
   "openTrade",
+  "openCombatDirector",
+  "openCombatManager",
+  "gmControl",
+  "runGmControlAction",
 ]);
 
 function nowMs() {
@@ -101,6 +105,7 @@ function normalizeOptions(options = {}) {
     includePrepared: options.includePrepared !== false,
     includeMedicine: options.includeMedicine !== false,
     includeLifecycle: options.includeLifecycle !== false,
+    includeWorldSituations: options.includeWorldSituations !== false,
     sampleDocsPerPack: Math.max(1, Math.min(10, Number(options.sampleDocsPerPack ?? 2))),
     checkAssetFiles: Boolean(options.checkAssetFiles ?? options.checkFilesystem ?? false),
     actor: options.actor ?? null,
@@ -642,6 +647,10 @@ async function combatSmoke() {
     actionDispatchService,
     actorItemUseService,
     attackFlowService,
+    armorBurdenService,
+    itemsCatalog,
+    catalogItemData,
+    combatEventService,
   ] = await Promise.all([
     import("./combat-attack-service.mjs"),
     import("./combat-hit-context-service.mjs"),
@@ -660,7 +669,12 @@ async function combatSmoke() {
     import("./actor-action-dispatch-service.mjs"),
     import("./actor-item-use-service.mjs"),
     import("./attack-flow-service.mjs"),
+    import("./armor-burden-service.mjs"),
+    import("../constants/items-catalog.mjs"),
+    import("../utils/catalog-item-data.mjs"),
+    import("./combat-event-service.mjs"),
   ]);
+  const combatEventStartCount = combatEventService.getCombatEventLog().length;
 
   const attacker = makeSmokeActor({
     id: "ih-smoke-attacker",
@@ -980,6 +994,103 @@ async function combatSmoke() {
     "bad-shield-armor-layering",
     "Shield and armor layers should resolve sequentially using protection capped by current durability.",
     { lowDurabilityArmorLayer, shieldThenArmorShieldLayer, shieldThenArmorBodyLayer },
+  );
+
+  const armorRows = Object.values(itemsCatalog.ARMORS ?? {});
+  const armorClasses = ["light", "medium", "heavy"];
+  const armorSlots = ["head", "neck", "torso", "leftArm", "rightArm", "legs"];
+  const shieldSlots = new Set(["leftHand", "rightHand", "shield"]);
+  const armorCoverage = new Set();
+  const shieldCoverage = new Set();
+  for (const row of armorRows) {
+    const tier = Number(row?.tier ?? 0);
+    const cls = String(row?.armorClass ?? "");
+    const slot = String(row?.slot ?? "");
+    if (!tier || !armorClasses.includes(cls)) continue;
+    if (shieldSlots.has(slot)) shieldCoverage.add(`${tier}:${cls}`);
+    else if (armorSlots.includes(slot)) armorCoverage.add(`${tier}:${cls}:${slot}`);
+  }
+  const missingArmorCoverage = [];
+  const missingShieldCoverage = [];
+  for (let tier = 1; tier <= 10; tier += 1) {
+    for (const cls of armorClasses) {
+      for (const slot of armorSlots) {
+        const key = `${tier}:${cls}:${slot}`;
+        if (!armorCoverage.has(key)) missingArmorCoverage.push(key);
+      }
+      const shieldKey = `${tier}:${cls}`;
+      if (!shieldCoverage.has(shieldKey)) missingShieldCoverage.push(shieldKey);
+    }
+  }
+  pushCombatFinding(
+    findings,
+    missingArmorCoverage.length === 0 && missingShieldCoverage.length === 0,
+    "bad-armor-class-catalog-coverage",
+    "Armor catalog should provide light, medium, and heavy body armor plus shield options for every tier.",
+    {
+      missingArmorCoverage: missingArmorCoverage.slice(0, 20),
+      missingShieldCoverage: missingShieldCoverage.slice(0, 20),
+      armorRows: armorRows.length,
+    },
+  );
+
+  function smokeCatalogArmor(id) {
+    const row = itemsCatalog.ARMORS?.[id];
+    if (!row) return null;
+    const itemData = catalogItemData.armorToItemData(row);
+    return withSmokeItemUpdate({
+      id,
+      name: itemData.name,
+      type: itemData.type,
+      img: itemData.img,
+      flags: itemData.flags,
+      system: itemData.system,
+    });
+  }
+
+  const lightPlate = smokeCatalogArmor("light_plate_chest");
+  const mediumPlate = smokeCatalogArmor("medium_plate_chest");
+  const heavyPlate = smokeCatalogArmor("plate_chest");
+  const lightShield = smokeCatalogArmor("light_tower_shield");
+  const mediumShield = smokeCatalogArmor("medium_tower_shield");
+  const heavyShield = smokeCatalogArmor("tower_shield");
+  const lightArmorActor = makeSmokeActor({
+    id: "ih-smoke-light-armor-actor",
+    name: "Smoke Light Armor Actor",
+    skills: { endurance: { value: 0 }, athletics: { value: 0 } },
+  });
+  const mediumArmorActor = makeSmokeActor({
+    id: "ih-smoke-medium-armor-actor",
+    name: "Smoke Medium Armor Actor",
+    skills: { endurance: { value: 0 }, athletics: { value: 0 } },
+  });
+  const heavyArmorActor = makeSmokeActor({
+    id: "ih-smoke-heavy-armor-actor",
+    name: "Smoke Heavy Armor Actor",
+    skills: { endurance: { value: 0 }, athletics: { value: 0 } },
+  });
+  if (lightPlate) addSmokeItem(lightArmorActor, lightPlate, "torso");
+  if (mediumPlate) addSmokeItem(mediumArmorActor, mediumPlate, "torso");
+  if (heavyPlate) addSmokeItem(heavyArmorActor, heavyPlate, "torso");
+  const lightBurden = armorBurdenService.getArmorBurdenInfo(lightArmorActor);
+  const mediumBurden = armorBurdenService.getArmorBurdenInfo(mediumArmorActor);
+  const heavyBurden = armorBurdenService.getArmorBurdenInfo(heavyArmorActor);
+  pushCombatFinding(
+    findings,
+    lightPlate?.system?.requirements?.athletics === 0
+      && lightPlate?.system?.requirements?.endurance === 0
+      && lightBurden.hasPenalty === false
+      && mediumBurden.hasPenalty === true
+      && heavyBurden.hasPenalty === true
+      && Number(heavyBurden.actionSecondsFlat ?? 0) > Number(mediumBurden.actionSecondsFlat ?? 0)
+      && Number(heavyBurden.movementPenalty ?? 0) > Number(mediumBurden.movementPenalty ?? 0)
+      && Number(heavyBurden.energyMultiplier ?? 1) > Number(mediumBurden.energyMultiplier ?? 1)
+      && lightShield?.system?.armorClass === "light"
+      && mediumShield?.system?.armorClass === "medium"
+      && heavyShield?.system?.armorClass === "heavy",
+    "bad-armor-class-burden-profile",
+    "Light armor should stay penalty-free, while medium/heavy armor and shields should expose escalating requirements and penalties.",
+    { lightPlate, mediumPlate, heavyPlate, lightShield, mediumShield, heavyShield, lightBurden, mediumBurden, heavyBurden },
   );
 
   const aoeChance = aoeService.calcHitChance(attacker, target, "sword", 0, null, {
@@ -1622,6 +1733,8 @@ async function combatSmoke() {
     autoAoeChatData.statPills.some(pill => pill.label === "Союзники" && pill.value === "1/0")
       && autoAoeChatData.statPills.some(pill => pill.className === "is-danger")
       && String(autoAoeChatData.cardClass).includes("has-friendly-fire-hit")
+      && autoAoeChatData.executionRows?.some(row => row.label === "Friendly fire" && row.className === "is-danger")
+      && autoAoeChatData.executionRows?.some(row => row.label === "Hit zone" && String(row.value).includes("Живот"))
       && autoAoeAllyView?.badges?.some(badge => badge.className === "is-danger")
       && autoAoeAllyView?.detailRows?.some(row => row.label === "Зона" && String(row.value).includes("Живот"))
       && autoAoeAllyView?.detailRows?.some(row => row.label === "Friendly fire" && String(row.value).includes("типу"))
@@ -1764,6 +1877,7 @@ async function combatSmoke() {
       && utilityAoeResults[0]?.actorId === utilityAoeAlly.id
       && utilityAoeResults[0]?.zoneKey === "abdomen"
       && utilityAoeResults[0]?.zoneSource === "fixed"
+      && Number(utilityAoeResults[0]?.metrics?.projectionFromOrigin ?? -1) === 1
       && Number(utilityAoeResults[0]?.healed ?? 0) === 4
       && Number(utilityAoeAlly.system.resources.hp.abdomen.value ?? 0) === 11
       && Number(utilityAoeEnemy.system.resources.hp.abdomen.value ?? 0) === 7
@@ -1851,6 +1965,35 @@ async function combatSmoke() {
     "Banish utility spell should resolve against weak undead/summoned targets.",
     { banishEffect, banished, updates: banishTarget._ihSmokeUpdates },
   );
+  const combatEvents = combatEventService.getCombatEventLog();
+  const newCombatEventCount = Math.max(0, combatEvents.length - combatEventStartCount);
+  const newCombatEvents = newCombatEventCount > 0 ? combatEvents.slice(0, newCombatEventCount) : [];
+  const smokeCombatEvents = newCombatEvents.filter(event => {
+    const haystack = `${event.title ?? ""} ${event.actorName ?? ""} ${event.targetName ?? ""}`;
+    return haystack.includes("Smoke");
+  });
+  const combatEventStats = combatEventService.getCombatEventStats(smokeCombatEvents);
+  const smokeAoeEvent = smokeCombatEvents.find(event => event.type === "aoe" && event.title === "Smoke Auto AoE");
+  const smokeSpellDamageEvent = smokeCombatEvents.find(event => event.type === "spell" && event.title === "Smoke holy spell");
+  const smokeUtilityEvent = smokeCombatEvents.find(event => event.type === "utility" && event.status === "down" && event.targetName === banishTarget.name);
+  pushCombatFinding(
+    findings,
+    Boolean(smokeAoeEvent)
+      && smokeAoeEvent?.friendlyFire === true
+      && smokeAoeEvent?.chips?.some(chip => chip.label === "FF")
+      && Boolean(smokeSpellDamageEvent)
+      && Number(smokeSpellDamageEvent?.damage ?? 0) > 0
+      && Boolean(smokeUtilityEvent)
+      && smokeUtilityEvent?.targetKilled === true
+      && smokeUtilityEvent?.chips?.some(chip => chip.className === "is-kill")
+      && combatEventStats.total >= 3
+      && combatEventStats.damage > 0
+      && combatEventStats.utility > 0
+      && combatEventStats.rows.some(row => row.className === "is-utility"),
+    "bad-combat-event-director-log",
+    "Combat Director event log should receive attack/spell, AoE, friendly-fire, and utility spell events with aggregate stats.",
+    { smokeAoeEvent, smokeSpellDamageEvent, smokeUtilityEvent, combatEventStats, newCombatEventCount, smokeCombatEvents: smokeCombatEvents.slice(0, 8) },
+  );
 
   let spellAoeConfigs = 0;
   let spellAimedConfigs = 0;
@@ -1935,6 +2078,11 @@ async function combatSmoke() {
     friendlyFire: false,
     friendlyFireMode: "off",
   });
+  const autoModeSpellChoice = spellRuntimeService.buildSpellChoicePayload({
+    aoe: { friendlyFireMode: "off", friendlyFire: false },
+  }, {
+    friendlyFireMode: "auto",
+  });
   pushCombatFinding(
     findings,
     aimedSpellChoice.targetZone === "head"
@@ -1948,10 +2096,14 @@ async function combatSmoke() {
       && randomSpellChoice.targetZoneMode === "random"
       && randomSpellChoice.aoe?.targetZone === undefined
       && randomSpellChoice.aoe?.targetZoneMode === "random"
-      && randomSpellChoice.friendlyFireMode === "off",
+      && randomSpellChoice.friendlyFireMode === "off"
+      && autoModeSpellChoice.friendlyFireMode === "auto"
+      && autoModeSpellChoice.friendlyFire === undefined
+      && autoModeSpellChoice.aoe?.friendlyFireMode === "auto"
+      && autoModeSpellChoice.aoe?.friendlyFire === undefined,
     "bad-spell-choice-payload-policy",
     "Spell choice payload should preserve aimed/fixed/random zone policy and friendly-fire mode overrides.",
-    { aimedSpellChoice, randomSpellChoice },
+    { aimedSpellChoice, randomSpellChoice, autoModeSpellChoice },
   );
 
   const combatFlow = await import("./combat-flow-service.mjs").catch(err => ({ _importError: err }));
@@ -2097,6 +2249,9 @@ async function combatSmoke() {
       aoeUtilityHealing: Number(utilityAoeSummary.healingTotal ?? 0),
       undeadSpellMultiplier: Number(undeadSpell.damageMultiplier ?? 1),
       banishDestroyed: Boolean(banishEffect.banish?.destroyed),
+      combatEvents: newCombatEventCount,
+      combatEventDamage: Number(combatEventStats.damage ?? 0),
+      combatEventUtility: Number(combatEventStats.utility ?? 0),
       spellAoeConfigs,
       spellAimedConfigs,
       spellFixedConfigs,
@@ -2451,6 +2606,7 @@ async function medicineSmoke() {
     initialBodyHud.hasBodyMap === true
       && initialBodyHud.parts.length === 7
       && initialBodyHud.figureRows.length === 4
+      && initialBodyHud.sheetFigureRows.length === 4
       && initialBodyHud.partMap.torso?.hasIssue === true
       && initialBodyHud.partMap.torso?.sheetPartClass?.includes("ih-cs-fig-torso")
       && initialBodyHud.partMap.torso?.trauma?.majorBleedingTitle
@@ -2779,6 +2935,81 @@ async function validationSmoke(options) {
   };
 }
 
+async function worldSituationSmoke() {
+  const findings = [];
+  const [
+    situationService,
+    sceneBriefService,
+  ] = await Promise.all([
+    import("./world-map-situation-generator-service.mjs"),
+    import("./world-map-scene-brief-service.mjs"),
+  ]);
+
+  const forestBrief = sceneBriefService.buildWorldMapSceneBrief({
+    activeLevelId: "encounter",
+    focusTile: { label: "Dark Forest", terrain: "forest", danger: 2, col: 2, row: 4 },
+    localView: { danger: 2 },
+    encounterView: { danger: 2 },
+    situationSeed: "runtime-smoke-forest",
+  });
+  const forestSituation = forestBrief.situation;
+  const blacksmithSituation = situationService.buildWorldMapSituation({
+    activeLevelId: "encounter",
+    focusTile: { label: "Blacksmith House", terrain: "town", danger: 1, col: 5, row: 2 },
+    localView: {
+      activeHotspot: {
+        id: "workshops",
+        label: "Workshop Row",
+        hotspotType: "craft",
+        npcRole: "crafter",
+      },
+    },
+    encounterView: { danger: 1 },
+    sceneBrief: { kind: "craft" },
+    seed: "runtime-smoke-blacksmith",
+  });
+  const stats = situationService.getWorldMapSituationPoolStats();
+
+  if (!forestSituation?.hasSituation || !forestSituation.hasPlacementRows || !forestSituation.hasSkillRows) {
+    findings.push(finding("error", "world-situation-forest-empty", "Forest scene brief did not generate actionable situation rows.", { scope: "world-situations" }, {
+      forestSituation,
+    }));
+  }
+  if (!String(forestSituation?.map?.id ?? "").includes("forest") && !String(forestSituation?.map?.label ?? "").toLowerCase().includes("forest")) {
+    findings.push(finding("warn", "world-situation-forest-map-mismatch", "Forest context did not choose a forest-flavored generated map.", { scope: "world-situations" }, {
+      map: forestSituation?.map,
+    }));
+  }
+  if (!blacksmithSituation?.map?.id?.includes("blacksmith") || !blacksmithSituation.skillRows?.some(row => String(row.label).toLowerCase().includes("blacksmith"))) {
+    findings.push(finding("error", "world-situation-blacksmith-mismatch", "Craft/blacksmith context did not generate the blacksmith house situation.", { scope: "world-situations" }, {
+      blacksmithSituation,
+    }));
+  }
+  for (const level of ["global", "region", "local", "encounter", "building"]) {
+    if (!Number(stats.levels?.[level] ?? 0)) {
+      findings.push(finding("error", "world-situation-pool-level-empty", "World situation map pool has no entries for a required level.", { scope: "world-situations" }, {
+        level,
+        stats,
+      }));
+    }
+  }
+
+  return {
+    summary: {
+      poolMaps: stats.total,
+      levels: Object.keys(stats.levels ?? {}).length,
+      forestMap: forestSituation?.map?.id ?? "",
+      forestPlacements: forestSituation?.counts?.placements ?? 0,
+      blacksmithMap: blacksmithSituation?.map?.id ?? "",
+      blacksmithSkills: blacksmithSituation?.counts?.skills ?? 0,
+    },
+    forestSituation,
+    blacksmithSituation,
+    stats,
+    findings,
+  };
+}
+
 async function assetSmoke(options) {
   const report = await auditIronHillsAssets({
     checkFilesystem: options.checkAssetFiles,
@@ -2812,6 +3043,9 @@ export async function runIronHillsRuntimeSmoke(options = {}) {
   }
   if (resolved.includeGeneratedSources || resolved.includePacks) {
     sections.push(await runSection("validation", "Generated/live content validation", () => validationSmoke(resolved)));
+  }
+  if (resolved.includeWorldSituations) {
+    sections.push(await runSection("world-situations", "World Map situation generator", () => worldSituationSmoke(resolved)));
   }
   if (resolved.includeInventory) {
     sections.push(await runSection("inventory", "Inventory view model smoke", () => inventorySmoke(resolved)));

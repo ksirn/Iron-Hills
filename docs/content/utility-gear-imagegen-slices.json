@@ -1,0 +1,2073 @@
+{
+  "ok": true,
+  "label": "Iron Hills utility gear imagegen slice plan",
+  "generatedAt": "2026-06-18T20:53:04.856629+00:00",
+  "dryRun": false,
+  "summary": {
+    "total": 76,
+    "promotable": 76,
+    "written": 76,
+    "skippedExisting": 0,
+    "blockers": 0
+  },
+  "source": {
+    "plan": "docs/content/utility-gear-imagegen-slice-plan.json",
+    "outputSize": 1024,
+    "outputRoot": "art-candidates/items"
+  },
+  "blockers": [],
+  "items": [
+    {
+      "id": "knife_sheath",
+      "name": "Ножны (нож)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/knife-sheath.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/knife-sheath.webp",
+      "finalFile": "icons/items/attachments/knife_sheath.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/knife_sheath.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ножны (нож)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sword_scabbard",
+      "name": "Ножны (меч)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/sword-scabbard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/sword-scabbard.webp",
+      "finalFile": "icons/items/attachments/sword_scabbard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/sword_scabbard.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ножны (меч)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "greatsword_scabbard",
+      "name": "Ножны (двуруч.)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/greatsword-scabbard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/greatsword-scabbard.webp",
+      "finalFile": "icons/items/attachments/greatsword_scabbard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/greatsword_scabbard.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ножны (двуруч.)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "axe_loop",
+      "name": "Петля (топор)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/axe-loop.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/axe-loop.webp",
+      "finalFile": "icons/items/attachments/axe_loop.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/axe_loop.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Петля (топор)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "crossbow_hook",
+      "name": "Крюк (арбалет)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/crossbow-hook.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/crossbow-hook.webp",
+      "finalFile": "icons/items/attachments/crossbow_hook.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/crossbow_hook.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Крюк (арбалет)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "bow_sling",
+      "name": "Перевязь (лук)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/bow-sling.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/bow-sling.webp",
+      "finalFile": "icons/items/attachments/bow_sling.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/bow_sling.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Перевязь (лук)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "arrow_quiver",
+      "name": "Колчан (стрелы)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/arrow-quiver.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/arrow-quiver.webp",
+      "finalFile": "icons/items/attachments/arrow_quiver.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/arrow_quiver.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Колчан (стрелы)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "bolt_pouch",
+      "name": "Подсумок (болты)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/bolt-pouch.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/bolt-pouch.webp",
+      "finalFile": "icons/items/attachments/bolt_pouch.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/bolt_pouch.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Подсумок (болты)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "potion_bandolier",
+      "name": "Бандольер (зелья)",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/potion-bandolier.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/potion-bandolier.webp",
+      "finalFile": "icons/items/attachments/potion_bandolier.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/potion_bandolier.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Бандольер (зелья)",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "large_bandolier",
+      "name": "Бандольер большой",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/large-bandolier.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/large-bandolier.webp",
+      "finalFile": "icons/items/attachments/large_bandolier.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/large_bandolier.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Бандольер большой",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "chest_pocket",
+      "name": "Нагрудный карман",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/chest-pocket.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/chest-pocket.webp",
+      "finalFile": "icons/items/attachments/chest_pocket.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/chest_pocket.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Нагрудный карман",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "utility_strap",
+      "name": "Разгрузочная стропа",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/utility-strap.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/utility-strap.webp",
+      "finalFile": "icons/items/attachments/utility_strap.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/utility_strap.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Разгрузочная стропа",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spear_frog",
+      "name": "Чехол для копья",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/spear-frog.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/spear-frog.webp",
+      "finalFile": "icons/items/attachments/spear_frog.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/spear_frog.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Чехол для копья",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "shield_hook",
+      "name": "Крюк для щита",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/shield-hook.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/shield-hook.webp",
+      "finalFile": "icons/items/attachments/shield_hook.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/shield_hook.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Крюк для щита",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wand_loop",
+      "name": "Петля для жезла",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/wand-loop.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/wand-loop.webp",
+      "finalFile": "icons/items/attachments/wand_loop.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/wand_loop.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Петля для жезла",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "grenade_loop",
+      "name": "Кольца под метательное",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/grenade-loop.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/grenade-loop.webp",
+      "finalFile": "icons/items/attachments/grenade_loop.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/grenade_loop.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кольца под метательное",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "telescoping_quiver",
+      "name": "Телескопический колчан",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/telescoping-quiver.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/telescoping-quiver.webp",
+      "finalFile": "icons/items/attachments/telescoping_quiver.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/telescoping_quiver.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Телескопический колчан",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "side_pouch",
+      "name": "Боковой подсумок",
+      "catalog": "attachments",
+      "type": "attachments",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/attachments/side-pouch.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/attachments/side-pouch.webp",
+      "finalFile": "icons/items/attachments/side_pouch.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/attachments/side_pouch.webp",
+      "sourceSheetSlug": "2026-06-18-utility-attachments",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Боковой подсумок",
+      "notes": [
+        "Promoted utility attachment candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "rope_belt",
+      "name": "Верёвочный пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/rope-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/rope-belt.webp",
+      "finalFile": "icons/items/belts/rope_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/rope_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Верёвочный пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "leather_belt",
+      "name": "Кожаный пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/leather-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/leather-belt.webp",
+      "finalFile": "icons/items/belts/leather_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/leather_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Кожаный пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "soldier_belt",
+      "name": "Солдатский пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/soldier-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/soldier-belt.webp",
+      "finalFile": "icons/items/belts/soldier_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/soldier_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Солдатский пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "tactical_belt",
+      "name": "Тактический пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/tactical-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/tactical-belt.webp",
+      "finalFile": "icons/items/belts/tactical_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/tactical_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Тактический пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "explorer_girdle",
+      "name": "Пояс следопыта",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/explorer-girdle.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/explorer-girdle.webp",
+      "finalFile": "icons/items/belts/explorer_girdle.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/explorer_girdle.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Пояс следопыта",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_belt",
+      "name": "Митрильный пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/mithril-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/mithril-belt.webp",
+      "finalFile": "icons/items/belts/mithril_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/mithril_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Митрильный пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "siege_belt",
+      "name": "Осадный пояс",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/siege-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/siege-belt.webp",
+      "finalFile": "icons/items/belts/siege_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/siege_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Осадный пояс",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "runners_light_harness",
+      "name": "Облегчённая портупея бегуна",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/runners-light-harness.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/runners-light-harness.webp",
+      "finalFile": "icons/items/belts/runners_light_harness.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/runners_light_harness.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Облегчённая портупея бегуна",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "darkiron_chain_belt",
+      "name": "Цепной пояс из тёмного железа",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/darkiron-chain-belt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/darkiron-chain-belt.webp",
+      "finalFile": "icons/items/belts/darkiron_chain_belt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/darkiron_chain_belt.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Цепной пояс из тёмного железа",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "orichalcum_girdle",
+      "name": "Пояс Орихалка",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/orichalcum-girdle.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/orichalcum-girdle.webp",
+      "finalFile": "icons/items/belts/orichalcum_girdle.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/orichalcum_girdle.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Пояс Орихалка",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "astral_command_girdle",
+      "name": "Астральная портупея командора",
+      "catalog": "belts",
+      "type": "belts",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/belts/astral-command-girdle.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/belts/astral-command-girdle.webp",
+      "finalFile": "icons/items/belts/astral_command_girdle.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/belts/astral_command_girdle.webp",
+      "sourceSheetSlug": "2026-06-18-utility-belts",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "4x3"
+      },
+      "sourcePrompt": "Астральная портупея командора",
+      "notes": [
+        "Promoted belt candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hip_pouch",
+      "name": "Поясная сумка",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/hip-pouch.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/hip-pouch.webp",
+      "finalFile": "icons/items/backpacks/hip_pouch.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/hip_pouch.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Поясная сумка",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "small_sack",
+      "name": "Небольшой мешок",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/small-sack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/small-sack.webp",
+      "finalFile": "icons/items/backpacks/small_sack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/small_sack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Небольшой мешок",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "leather_satchel",
+      "name": "Кожаная сумка",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/leather-satchel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/leather-satchel.webp",
+      "finalFile": "icons/items/backpacks/leather_satchel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/leather_satchel.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Кожаная сумка",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "travelers_pack",
+      "name": "Дорожный ранец",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/travelers-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/travelers-pack.webp",
+      "finalFile": "icons/items/backpacks/travelers_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/travelers_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Дорожный ранец",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "soldier_pack",
+      "name": "Солдатский ранец",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/soldier-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/soldier-pack.webp",
+      "finalFile": "icons/items/backpacks/soldier_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/soldier_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Солдатский ранец",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hunters_bag",
+      "name": "Охотничья сума",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/hunters-bag.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/hunters-bag.webp",
+      "finalFile": "icons/items/backpacks/hunters_bag.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/hunters_bag.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Охотничья сума",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "large_backpack",
+      "name": "Большой рюкзак",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/large-backpack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/large-backpack.webp",
+      "finalFile": "icons/items/backpacks/large_backpack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/large_backpack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Большой рюкзак",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "frame_pack",
+      "name": "Рамный рюкзак",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/frame-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/frame-pack.webp",
+      "finalFile": "icons/items/backpacks/frame_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/frame_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Рамный рюкзак",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "alchemist_satchel",
+      "name": "Сумка алхимика",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/alchemist-satchel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/alchemist-satchel.webp",
+      "finalFile": "icons/items/backpacks/alchemist_satchel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/alchemist_satchel.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Сумка алхимика",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_pack",
+      "name": "Митрильный рюкзак",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/mithril-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/mithril-pack.webp",
+      "finalFile": "icons/items/backpacks/mithril_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/mithril_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Митрильный рюкзак",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "caravan_master_pack",
+      "name": "Рюкзак караванного бариши",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/caravan-master-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/caravan-master-pack.webp",
+      "finalFile": "icons/items/backpacks/caravan_master_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/caravan_master_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Рюкзак караванного бариши",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "beast_load_frame",
+      "name": "Вьючная рама для зверя",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/beast-load-frame.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/beast-load-frame.webp",
+      "finalFile": "icons/items/backpacks/beast_load_frame.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/beast_load_frame.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Вьючная рама для зверя",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "void_satchel",
+      "name": "Сумка Пустоты",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/void-satchel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/void-satchel.webp",
+      "finalFile": "icons/items/backpacks/void_satchel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/void_satchel.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Сумка Пустоты",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "planar_satchel",
+      "name": "Планарная сумка",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/planar-satchel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/planar-satchel.webp",
+      "finalFile": "icons/items/backpacks/planar_satchel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/planar_satchel.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Планарная сумка",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "demiplane_pack",
+      "name": "Рюкзак малой демиплоскости",
+      "catalog": "backpacks",
+      "type": "backpacks",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/backpacks/demiplane-pack.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/backpacks/demiplane-pack.webp",
+      "finalFile": "icons/items/backpacks/demiplane_pack.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/backpacks/demiplane_pack.webp",
+      "sourceSheetSlug": "2026-06-18-utility-backpacks",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Рюкзак малой демиплоскости",
+      "notes": [
+        "Promoted backpack candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "flint_tools",
+      "name": "Кремнёвые инструменты",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/flint-tools.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/flint-tools.webp",
+      "finalFile": "icons/items/tools/flint_tools.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/flint_tools.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Кремнёвые инструменты",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "iron_hammer",
+      "name": "Железный молот",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/iron-hammer.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/iron-hammer.webp",
+      "finalFile": "icons/items/tools/iron_hammer.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/iron_hammer.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Железный молот",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mortar_pestle",
+      "name": "Ступка и пестик",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/mortar-pestle.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/mortar-pestle.webp",
+      "finalFile": "icons/items/tools/mortar_pestle.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/mortar_pestle.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Ступка и пестик",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "cooking_pot",
+      "name": "Котелок",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/cooking-pot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/cooking-pot.webp",
+      "finalFile": "icons/items/tools/cooking_pot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/cooking_pot.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Котелок",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "pickaxe_iron",
+      "name": "Железная кирка",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/pickaxe-iron.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/pickaxe-iron.webp",
+      "finalFile": "icons/items/tools/pickaxe_iron.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/pickaxe_iron.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Железная кирка",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hunter_butcher_kit",
+      "name": "Набор разделки туши",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/hunter-butcher-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/hunter-butcher-kit.webp",
+      "finalFile": "icons/items/tools/hunter_butcher_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/hunter_butcher_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Набор разделки туши",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "steel_hammer",
+      "name": "Стальной молот",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/steel-hammer.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/steel-hammer.webp",
+      "finalFile": "icons/items/tools/steel_hammer.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/steel_hammer.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Стальной молот",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "alch_kit",
+      "name": "Алхимический набор",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/alch-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/alch-kit.webp",
+      "finalFile": "icons/items/tools/alch_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/alch_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Алхимический набор",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "master_tools",
+      "name": "Инструменты мастера",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/master-tools.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/master-tools.webp",
+      "finalFile": "icons/items/tools/master_tools.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/master_tools.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Инструменты мастера",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "pickaxe_steel",
+      "name": "Стальная кирка",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/pickaxe-steel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/pickaxe-steel.webp",
+      "finalFile": "icons/items/tools/pickaxe_steel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/pickaxe_steel.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Стальная кирка",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "field_butcher_roll",
+      "name": "Скрутка полевого мясника",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/field-butcher-roll.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/field-butcher-roll.webp",
+      "finalFile": "icons/items/tools/field_butcher_roll.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/field_butcher_roll.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Скрутка полевого мясника",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "dwarven_hammer",
+      "name": "Гномий молот",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/dwarven-hammer.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/dwarven-hammer.webp",
+      "finalFile": "icons/items/tools/dwarven_hammer.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/dwarven_hammer.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Гномий молот",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "grand_alch_kit",
+      "name": "Большая алхим. лаб.",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/grand-alch-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/grand-alch-kit.webp",
+      "finalFile": "icons/items/tools/grand_alch_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/grand_alch_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Большая алхим. лаб.",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "travel_anvil_kit",
+      "name": "Дорожная наковальня в ящике",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/travel-anvil-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/travel-anvil-kit.webp",
+      "finalFile": "icons/items/tools/travel_anvil_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/travel_anvil_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Дорожная наковальня в ящике",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fold_sawhorse_pair",
+      "name": "Пара складных козёл",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/fold-sawhorse-pair.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/fold-sawhorse-pair.webp",
+      "finalFile": "icons/items/tools/fold_sawhorse_pair.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/fold_sawhorse_pair.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-low-mid",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Пара складных козёл",
+      "notes": [
+        "Promoted low/mid tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "bronze_brazier_set",
+      "name": "Бронзовый жаровенный набор",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/bronze-brazier-set.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/bronze-brazier-set.webp",
+      "finalFile": "icons/items/tools/bronze_brazier_set.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/bronze_brazier_set.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Бронзовый жаровенный набор",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "portable_smith_kit",
+      "name": "Переносная кузница",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/portable-smith-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/portable-smith-kit.webp",
+      "finalFile": "icons/items/tools/portable_smith_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/portable_smith_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Переносная кузница",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "folding_alchemy_bench",
+      "name": "Складной алхимический стол",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/folding-alchemy-bench.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/folding-alchemy-bench.webp",
+      "finalFile": "icons/items/tools/folding_alchemy_bench.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/folding_alchemy_bench.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Складной алхимический стол",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "field_kitchen_cart",
+      "name": "Полевая кухня на салазках",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/field-kitchen-cart.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/field-kitchen-cart.webp",
+      "finalFile": "icons/items/tools/field_kitchen_cart.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/field_kitchen_cart.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Полевая кухня на салазках",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "deep_drill_brace",
+      "name": "Шахтёрский бурильный станок",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/deep-drill-brace.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/deep-drill-brace.webp",
+      "finalFile": "icons/items/tools/deep_drill_brace.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/deep_drill_brace.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Шахтёрский бурильный станок",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "master_artisans_cart",
+      "name": "Стол ремесленника на колёсах",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/master-artisans-cart.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/master-artisans-cart.webp",
+      "finalFile": "icons/items/tools/master_artisans_cart.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/master_artisans_cart.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Стол ремесленника на колёсах",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wagon_forge",
+      "name": "Кузница на колёсах",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/wagon-forge.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/wagon-forge.webp",
+      "finalFile": "icons/items/tools/wagon_forge.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/wagon_forge.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Кузница на колёсах",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "steam_evaporator_kit",
+      "name": "Паровая перегонная установка",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/steam-evaporator-kit.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/steam-evaporator-kit.webp",
+      "finalFile": "icons/items/tools/steam_evaporator_kit.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/steam_evaporator_kit.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Паровая перегонная установка",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "tunnel_jack_system",
+      "name": "Комплект туннельных лесов",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/tunnel-jack-system.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/tunnel-jack-system.webp",
+      "finalFile": "icons/items/tools/tunnel_jack_system.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/tunnel_jack_system.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Комплект туннельных лесов",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "siege_anvil_cart",
+      "name": "Осадная переносная кузница",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/siege-anvil-cart.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/siege-anvil-cart.webp",
+      "finalFile": "icons/items/tools/siege_anvil_cart.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/siege_anvil_cart.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Осадная переносная кузница",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "alchemical_caravan_lab",
+      "name": "Караванная алхимлаборатория",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/alchemical-caravan-lab.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/alchemical-caravan-lab.webp",
+      "finalFile": "icons/items/tools/alchemical_caravan_lab.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/alchemical_caravan_lab.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Караванная алхимлаборатория",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "runic_fold_forge",
+      "name": "Руническая складная горн-тень",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/runic-fold-forge.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/runic-fold-forge.webp",
+      "finalFile": "icons/items/tools/runic_fold_forge.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/runic_fold_forge.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Руническая складная горн-тень",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "starforge_manifest",
+      "name": "Проявитель звёздной кузницы",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/starforge-manifest.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/starforge-manifest.webp",
+      "finalFile": "icons/items/tools/starforge_manifest.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/starforge_manifest.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Проявитель звёздной кузницы",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "worldroot_workshop_seed",
+      "name": "Семя мастерской Мирового Корня",
+      "catalog": "tools",
+      "type": "tools",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/tools/worldroot-workshop-seed.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/tools/worldroot-workshop-seed.webp",
+      "finalFile": "icons/items/tools/worldroot_workshop_seed.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/tools/worldroot_workshop_seed.webp",
+      "sourceSheetSlug": "2026-06-18-utility-tools-high",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x3"
+      },
+      "sourcePrompt": "Семя мастерской Мирового Корня",
+      "notes": [
+        "Promoted high-tier tool candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "leather_waterskin",
+      "name": "Кожаная фляга",
+      "catalog": "consumables",
+      "type": "consumables",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/consumables/leather-waterskin.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/consumables/leather-waterskin.webp",
+      "finalFile": "icons/items/consumables/leather_waterskin.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/consumables/leather_waterskin.webp",
+      "sourceSheetSlug": "2026-06-18-utility-consumable-vessels",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x1"
+      },
+      "sourcePrompt": "Кожаная фляга",
+      "notes": [
+        "Promoted drink vessel candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "iron_canteen",
+      "name": "Железная фляга",
+      "catalog": "consumables",
+      "type": "consumables",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/consumables/iron-canteen.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/consumables/iron-canteen.webp",
+      "finalFile": "icons/items/consumables/iron_canteen.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/consumables/iron_canteen.webp",
+      "sourceSheetSlug": "2026-06-18-utility-consumable-vessels",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x1"
+      },
+      "sourcePrompt": "Железная фляга",
+      "notes": [
+        "Promoted drink vessel candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ranger_gourd",
+      "name": "Бурдюк следопыта",
+      "catalog": "consumables",
+      "type": "consumables",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/consumables/ranger-gourd.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/consumables/ranger-gourd.webp",
+      "finalFile": "icons/items/consumables/ranger_gourd.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/consumables/ranger_gourd.webp",
+      "sourceSheetSlug": "2026-06-18-utility-consumable-vessels",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x1"
+      },
+      "sourcePrompt": "Бурдюк следопыта",
+      "notes": [
+        "Promoted drink vessel candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    }
+  ]
+}

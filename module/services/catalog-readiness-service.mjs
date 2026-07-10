@@ -1,4 +1,10 @@
 import {
+  ARMOR_BODY_SLOT_KEYS,
+  ARMOR_CLASS_KEYS,
+  isShieldArmorSlot,
+  normalizeArmorClass,
+} from "../constants/armor-profiles.mjs";
+import {
   ARMORS,
   ATTACHMENTS,
   BACKPACKS,
@@ -29,6 +35,7 @@ import {
 import { validateItemData } from "./content-validation-service.mjs";
 
 const FULL_TIER_SET = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const ARMOR_COVERAGE_SAMPLE_LIMIT = 40;
 
 const CATALOGS = Object.freeze([
   { id: "materials", label: "Materials", type: "material", rows: MATERIALS, converter: materialToItemData, expectedTiers: FULL_TIER_SET },
@@ -79,6 +86,10 @@ function rowTier(row, tierField = "tier") {
 
 function sortedUnique(values) {
   return [...new Set(values)].sort((a, b) => Number(a) - Number(b));
+}
+
+function armorClassKey(row = {}) {
+  return normalizeArmorClass(row.armorClass, "medium");
 }
 
 function validateRawRow(row, key, catalog) {
@@ -140,6 +151,89 @@ function coverageFindings(rows, catalog) {
   return findings;
 }
 
+function armorClassCoverageFindings(rows, catalog) {
+  const findings = [];
+  const bodyCoverage = new Set();
+  const shieldCoverage = new Set();
+  const variantsBySource = new Map();
+
+  for (const row of Object.values(rows ?? {})) {
+    if (!row || typeof row !== "object") continue;
+    const tier = rowTier(row, catalog.tierField);
+    if (!Number.isFinite(tier) || tier < 1 || tier > 10) continue;
+
+    const cls = armorClassKey(row);
+    const slot = String(row.slot ?? "");
+    if (isShieldArmorSlot(slot)) {
+      shieldCoverage.add(`${tier}:${cls}`);
+    } else if (ARMOR_BODY_SLOT_KEYS.includes(slot)) {
+      bodyCoverage.add(`${tier}:${cls}:${slot}`);
+    }
+
+    if (row.variantOf) {
+      if (!variantsBySource.has(row.variantOf)) variantsBySource.set(row.variantOf, new Set());
+      variantsBySource.get(row.variantOf).add(cls);
+    }
+  }
+
+  const missingBody = [];
+  const missingShields = [];
+  for (const tier of FULL_TIER_SET) {
+    for (const cls of ARMOR_CLASS_KEYS) {
+      for (const slot of ARMOR_BODY_SLOT_KEYS) {
+        const key = `${tier}:${cls}:${slot}`;
+        if (!bodyCoverage.has(key)) missingBody.push(key);
+      }
+      const shieldKey = `${tier}:${cls}`;
+      if (!shieldCoverage.has(shieldKey)) missingShields.push(shieldKey);
+    }
+  }
+
+  if (missingBody.length) {
+    findings.push(finding(
+      "warn",
+      "armor-class-body-coverage-gap",
+      "Armor catalog should cover every tier, armor class, and body equipment slot before the content patch.",
+      { scope: "catalog", catalog: catalog.id },
+      {
+        missingCount: missingBody.length,
+        sample: missingBody.slice(0, ARMOR_COVERAGE_SAMPLE_LIMIT),
+      },
+    ));
+  }
+
+  if (missingShields.length) {
+    findings.push(finding(
+      "warn",
+      "armor-class-shield-coverage-gap",
+      "Shield catalog should cover light, medium, and heavy shield options for every tier.",
+      { scope: "catalog", catalog: catalog.id },
+      {
+        missingCount: missingShields.length,
+        sample: missingShields.slice(0, ARMOR_COVERAGE_SAMPLE_LIMIT),
+      },
+    ));
+  }
+
+  const thinVariantSources = [...variantsBySource.entries()]
+    .filter(([, classes]) => classes.size < ARMOR_CLASS_KEYS.length - 1)
+    .map(([sourceId, classes]) => ({ sourceId, variants: [...classes].sort() }));
+  if (thinVariantSources.length) {
+    findings.push(finding(
+      "info",
+      "armor-class-thin-variant-source",
+      "Some armor source rows do not currently expand into the full alternate class set.",
+      { scope: "catalog", catalog: catalog.id },
+      {
+        count: thinVariantSources.length,
+        sample: thinVariantSources.slice(0, ARMOR_COVERAGE_SAMPLE_LIMIT),
+      },
+    ));
+  }
+
+  return findings;
+}
+
 function spellSchoolFindings() {
   const findings = [];
   for (const schoolId of Object.keys(SPELL_SCHOOLS ?? {})) {
@@ -191,6 +285,7 @@ function auditCatalog(catalog) {
   }
 
   findings.push(...coverageFindings(rows, catalog));
+  if (catalog.type === "armor") findings.push(...armorClassCoverageFindings(rows, catalog));
   findings.push(...convertedFindings);
 
   return {

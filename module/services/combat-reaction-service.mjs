@@ -7,6 +7,7 @@ import {
   normalizeAttackDamageType,
 } from "./combat-attack-profile-service.mjs";
 import { buildCombatChatCard, joinCombatHtml } from "./combat-chat-service.mjs";
+import { playAttackVfx } from "./combat-vfx-service.mjs";
 import { isShieldBlockableDamageType } from "./damage-type-service.mjs";
 import {
   consumePreparedReaction,
@@ -202,6 +203,15 @@ export async function applyPreparedCombatReaction({
       reason: "attack-cancelled",
     });
   }
+
+  await playAttackVfx({
+    attacker: defender,
+    target: attacker,
+    targetToken: attackerToken,
+    result: reactionResult,
+    label: profile.label,
+    source: "combat-reaction",
+  });
 
   const attackHtml = await formatAttackChatHtml({
     label: profile.label,

@@ -57,94 +57,28 @@
 
     {{!-- Силуэт человечка --}}
     <div class="ih-figure-wrap {{bodyHud.cssClass}}">
-      {{!-- Голова --}}
-      {{#each zones}}{{#if (eq key "head")}}
-      <div class="{{partClass}}" title="{{tooltip}}">
-        <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-        <div class="ih-fig-dots">
-          {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-          {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-          {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-          {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-          {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
+      {{#each bodyHud.figureRows}}
+      <div class="{{rowClass}}">
+        {{#each parts}}
+        {{#if gap}}
+        <div class="{{gapClass}}"></div>
+        {{else}}
+        <div class="{{partClass}}" title="{{tooltip}}" data-body-part="{{key}}">
+          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
+          <span class="ih-fig-label">{{miniLabel}}</span>
+          <span class="ih-fig-hp">{{hpLabel}}</span>
+          {{#if hasDots}}
+          <div class="ih-fig-dots">
+            {{#each dots}}
+            <span class="ih-fig-dot {{cssClass}}" title="{{label}} {{valueLabel}}"></span>
+            {{/each}}
+          </div>
+          {{/if}}
         </div>
+        {{/if}}
+        {{/each}}
       </div>
-      {{/if}}{{/each}}
-
-      {{!-- Руки + Торс --}}
-      <div class="ih-fig-row">
-        {{#each zones}}{{#if (eq key "leftArm")}}
-        <div class="{{partClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-            {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-
-        {{#each zones}}{{#if (eq key "torso")}}
-        <div class="{{partClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-            {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-
-        {{#each zones}}{{#if (eq key "rightArm")}}
-        <div class="{{partClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-            {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-      </div>
-
-      {{!-- Живот --}}
-      {{#each zones}}{{#if (eq key "abdomen")}}
-      <div class="{{partClass}}" title="{{tooltip}}">
-        <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-        <div class="ih-fig-dots">
-          {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-          {{#if trauma.majorBleeding}}<span class="ih-fig-dot dot-major"></span>{{/if}}
-          {{#if trauma.minorBleeding}}<span class="ih-fig-dot dot-minor"></span>{{/if}}
-        </div>
-      </div>
-      {{/if}}{{/each}}
-
-      {{!-- Ноги --}}
-      <div class="ih-fig-row">
-        {{#each zones}}{{#if (eq key "leftLeg")}}
-        <div class="{{partClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-        <div class="ih-fig-gap"></div>
-        {{#each zones}}{{#if (eq key "rightLeg")}}
-        <div class="{{partClass}}" title="{{tooltip}}">
-          <div class="ih-fig-fill" data-ih-style-height-pct="{{pct}}"></div>
-          <div class="ih-fig-dots">
-            {{#if trauma.destroyed}}<span class="ih-fig-dot dot-destroyed"></span>{{/if}}
-            {{#if trauma.fracture}}<span class="ih-fig-dot dot-fracture"></span>{{/if}}
-            {{#if trauma.splinted}}<span class="ih-fig-dot dot-splinted"></span>{{/if}}
-          </div>
-        </div>
-        {{/if}}{{/each}}
-      </div>
+      {{/each}}
     </div>{{!-- .ih-figure-wrap --}}
 
     {{!-- Ресурс-бары + быстрые слоты --}}

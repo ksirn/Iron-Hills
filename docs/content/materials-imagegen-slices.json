@@ -1,0 +1,2667 @@
+{
+  "ok": true,
+  "label": "Iron Hills materials imagegen slice plan",
+  "generatedAt": "2026-06-18T21:06:25.565958+00:00",
+  "dryRun": false,
+  "summary": {
+    "total": 98,
+    "promotable": 98,
+    "written": 98,
+    "skippedExisting": 0,
+    "blockers": 0
+  },
+  "source": {
+    "plan": "docs/content/materials-imagegen-slice-plan.json",
+    "outputSize": 1024,
+    "outputRoot": "art-candidates/items"
+  },
+  "blockers": [],
+  "items": [
+    {
+      "id": "copper_ore",
+      "name": "Медная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/copper-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/copper-ore.webp",
+      "finalFile": "icons/items/materials/copper_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/copper_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Медная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "copper_ingot",
+      "name": "Медный слиток",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/copper-ingot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/copper-ingot.webp",
+      "finalFile": "icons/items/materials/copper_ingot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/copper_ingot.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Медный слиток",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "tin_ore",
+      "name": "Оловянная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/tin-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/tin-ore.webp",
+      "finalFile": "icons/items/materials/tin_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/tin_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Оловянная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "bronze_ingot",
+      "name": "Бронзовый слиток",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/bronze-ingot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/bronze-ingot.webp",
+      "finalFile": "icons/items/materials/bronze_ingot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/bronze_ingot.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Бронзовый слиток",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "iron_ore",
+      "name": "Железная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/iron-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/iron-ore.webp",
+      "finalFile": "icons/items/materials/iron_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/iron_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Железная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "iron_ingot",
+      "name": "Железный слиток",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/iron-ingot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/iron-ingot.webp",
+      "finalFile": "icons/items/materials/iron_ingot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/iron_ingot.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Железный слиток",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "steel_ingot",
+      "name": "Стальной слиток",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/steel-ingot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/steel-ingot.webp",
+      "finalFile": "icons/items/materials/steel_ingot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/steel_ingot.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Стальной слиток",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hardened_steel",
+      "name": "Закалённая сталь",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/hardened-steel.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/hardened-steel.webp",
+      "finalFile": "icons/items/materials/hardened_steel.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/hardened_steel.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Закалённая сталь",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_ore",
+      "name": "Митрильная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/mithril-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/mithril-ore.webp",
+      "finalFile": "icons/items/materials/mithril_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/mithril_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Митрильная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_ingot",
+      "name": "Митрильный слиток",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/mithril-ingot.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/mithril-ingot.webp",
+      "finalFile": "icons/items/materials/mithril_ingot.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/mithril_ingot.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Митрильный слиток",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "dark_iron_ore",
+      "name": "Тёмная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/dark-iron-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/dark-iron-ore.webp",
+      "finalFile": "icons/items/materials/dark_iron_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/dark_iron_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Тёмная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "dark_iron",
+      "name": "Тёмное железо",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/dark-iron.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/dark-iron.webp",
+      "finalFile": "icons/items/materials/dark_iron.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/dark_iron.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Тёмное железо",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "starmetal_ore",
+      "name": "Звёздная руда",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/starmetal-ore.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/starmetal-ore.webp",
+      "finalFile": "icons/items/materials/starmetal_ore.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/starmetal_ore.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Звёздная руда",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "starmetal",
+      "name": "Звёздный металл",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/starmetal.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/starmetal.webp",
+      "finalFile": "icons/items/materials/starmetal.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/starmetal.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Звёздный металл",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "orichalcum",
+      "name": "Орихалк",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/orichalcum.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/orichalcum.webp",
+      "finalFile": "icons/items/materials/orichalcum.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/orichalcum.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Орихалк",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "adamantium",
+      "name": "Адамантий",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/adamantium.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/adamantium.webp",
+      "finalFile": "icons/items/materials/adamantium.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/adamantium.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Адамантий",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "pine_wood",
+      "name": "Сосновая доска",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/pine-wood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/pine-wood.webp",
+      "finalFile": "icons/items/materials/pine_wood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/pine_wood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Сосновая доска",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "oak_wood",
+      "name": "Дубовая доска",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/oak-wood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/oak-wood.webp",
+      "finalFile": "icons/items/materials/oak_wood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/oak_wood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Дубовая доска",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hardwood",
+      "name": "Твёрдая древесина",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/hardwood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/hardwood.webp",
+      "finalFile": "icons/items/materials/hardwood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/hardwood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Твёрдая древесина",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ironwood",
+      "name": "Железное дерево",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/ironwood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/ironwood.webp",
+      "finalFile": "icons/items/materials/ironwood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/ironwood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-metals-woods",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Железное дерево",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spirit_wood",
+      "name": "Древесина духов",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/spirit-wood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/spirit-wood.webp",
+      "finalFile": "icons/items/materials/spirit_wood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/spirit_wood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Древесина духов",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ebony",
+      "name": "Чёрное дерево",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/ebony.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/ebony.webp",
+      "finalFile": "icons/items/materials/ebony.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/ebony.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Чёрное дерево",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "eternal_wood",
+      "name": "Вечное дерево",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/eternal-wood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/eternal-wood.webp",
+      "finalFile": "icons/items/materials/eternal_wood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/eternal_wood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Вечное дерево",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "world_tree",
+      "name": "Мировое дерево",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/world-tree.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/world-tree.webp",
+      "finalFile": "icons/items/materials/world_tree.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/world_tree.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Мировое дерево",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sun_oak_board",
+      "name": "Доска солнечного дуба",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/sun-oak-board.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/sun-oak-board.webp",
+      "finalFile": "icons/items/materials/sun_oak_board.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/sun_oak_board.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Доска солнечного дуба",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "genesis_timber",
+      "name": "Брус генезиса",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/genesis-timber.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/genesis-timber.webp",
+      "finalFile": "icons/items/materials/genesis_timber.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/genesis_timber.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Брус генезиса",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "animal_hide",
+      "name": "Шкура зверя",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/animal-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/animal-hide.webp",
+      "finalFile": "icons/items/materials/animal_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/animal_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шкура зверя",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "tanned_leather",
+      "name": "Выделанная кожа",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/tanned-leather.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/tanned-leather.webp",
+      "finalFile": "icons/items/materials/tanned_leather.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/tanned_leather.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Выделанная кожа",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "thick_hide",
+      "name": "Толстая шкура",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/thick-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/thick-hide.webp",
+      "finalFile": "icons/items/materials/thick_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/thick_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Толстая шкура",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "scale_hide",
+      "name": "Чешуйчатая шкура",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/scale-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/scale-hide.webp",
+      "finalFile": "icons/items/materials/scale_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/scale_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Чешуйчатая шкура",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "drake_scale",
+      "name": "Чешуя дрейка",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/drake-scale.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/drake-scale.webp",
+      "finalFile": "icons/items/materials/drake_scale.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/drake_scale.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Чешуя дрейка",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "drake_hide",
+      "name": "Кожа дрейка",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/drake-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/drake-hide.webp",
+      "finalFile": "icons/items/materials/drake_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/drake_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кожа дрейка",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "warg_pelt",
+      "name": "Шкура варга",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/warg-pelt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/warg-pelt.webp",
+      "finalFile": "icons/items/materials/warg_pelt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/warg_pelt.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шкура варга",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wyvern_hide",
+      "name": "Шкура виверны",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/wyvern-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/wyvern-hide.webp",
+      "finalFile": "icons/items/materials/wyvern_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/wyvern_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шкура виверны",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "dragon_hide",
+      "name": "Кожа дракона",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/dragon-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/dragon-hide.webp",
+      "finalFile": "icons/items/materials/dragon_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/dragon_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кожа дракона",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "hydra_hide",
+      "name": "Шкура гидры",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/hydra-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/hydra-hide.webp",
+      "finalFile": "icons/items/materials/hydra_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/hydra_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шкура гидры",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "leviathan_hide",
+      "name": "Шкура Левиафана",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/leviathan-hide.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/leviathan-hide.webp",
+      "finalFile": "icons/items/materials/leviathan_hide.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/leviathan_hide.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шкура Левиафана",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "raw_fiber",
+      "name": "Сырое волокно",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/raw-fiber.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/raw-fiber.webp",
+      "finalFile": "icons/items/materials/raw_fiber.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/raw_fiber.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Сырое волокно",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "cloth",
+      "name": "Ткань",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/cloth.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/cloth.webp",
+      "finalFile": "icons/items/materials/cloth.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/cloth.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ткань",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fine_cloth",
+      "name": "Тонкая ткань",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/fine-cloth.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/fine-cloth.webp",
+      "finalFile": "icons/items/materials/fine_cloth.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/fine_cloth.webp",
+      "sourceSheetSlug": "2026-06-18-materials-hides-fabrics",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Тонкая ткань",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "silk",
+      "name": "Шёлк",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/silk.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/silk.webp",
+      "finalFile": "icons/items/materials/silk.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/silk.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Шёлк",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spider_silk",
+      "name": "Паучий шёлк",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/spider-silk.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/spider-silk.webp",
+      "finalFile": "icons/items/materials/spider_silk.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/spider_silk.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Паучий шёлк",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "moonweave",
+      "name": "Лунное волокно",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/moonweave.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/moonweave.webp",
+      "finalFile": "icons/items/materials/moonweave.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/moonweave.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Лунное волокно",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "shadowweave",
+      "name": "Теневое волокно",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/shadowweave.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/shadowweave.webp",
+      "finalFile": "icons/items/materials/shadowweave.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/shadowweave.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Теневое волокно",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "starthread",
+      "name": "Звёздная нить",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/starthread.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/starthread.webp",
+      "finalFile": "icons/items/materials/starthread.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/starthread.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Звёздная нить",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "void_weave",
+      "name": "Ткань Пустоты",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/void-weave.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/void-weave.webp",
+      "finalFile": "icons/items/materials/void_weave.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/void_weave.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ткань Пустоты",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aurora_thread",
+      "name": "Нить Авроры",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/aurora-thread.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/aurora-thread.webp",
+      "finalFile": "icons/items/materials/aurora_thread.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/aurora_thread.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Нить Авроры",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "genesis_weave",
+      "name": "Полотно генезиса",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/genesis-weave.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/genesis-weave.webp",
+      "finalFile": "icons/items/materials/genesis_weave.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/genesis_weave.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Полотно генезиса",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "stone",
+      "name": "Камень",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/stone.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/stone.webp",
+      "finalFile": "icons/items/materials/stone.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/stone.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Камень",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "flint",
+      "name": "Кремень",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/flint.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/flint.webp",
+      "finalFile": "icons/items/materials/flint.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/flint.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кремень",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "coal",
+      "name": "Уголь",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/coal.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/coal.webp",
+      "finalFile": "icons/items/materials/coal.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/coal.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Уголь",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "quartz",
+      "name": "Кварц",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/quartz.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/quartz.webp",
+      "finalFile": "icons/items/materials/quartz.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/quartz.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кварц",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "granite",
+      "name": "Гранит",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/granite.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/granite.webp",
+      "finalFile": "icons/items/materials/granite.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/granite.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Гранит",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "obsidian",
+      "name": "Обсидиан",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/obsidian.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/obsidian.webp",
+      "finalFile": "icons/items/materials/obsidian.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/obsidian.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Обсидиан",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ruby",
+      "name": "Рубин",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/ruby.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/ruby.webp",
+      "finalFile": "icons/items/materials/ruby.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/ruby.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Рубин",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sapphire",
+      "name": "Сапфир",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/sapphire.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/sapphire.webp",
+      "finalFile": "icons/items/materials/sapphire.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/sapphire.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Сапфир",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "diamond",
+      "name": "Алмаз",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/diamond.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/diamond.webp",
+      "finalFile": "icons/items/materials/diamond.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/diamond.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Алмаз",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mana_crystal",
+      "name": "Мана-кристалл",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/mana-crystal.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/mana-crystal.webp",
+      "finalFile": "icons/items/materials/mana_crystal.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/mana_crystal.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Мана-кристалл",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aeon_geode",
+      "name": "Жеода эона",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/aeon-geode.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/aeon-geode.webp",
+      "finalFile": "icons/items/materials/aeon_geode.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/aeon_geode.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Жеода эона",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "void_crystal",
+      "name": "Кристалл Пустоты",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/void-crystal.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/void-crystal.webp",
+      "finalFile": "icons/items/materials/void_crystal.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/void_crystal.webp",
+      "sourceSheetSlug": "2026-06-18-materials-textiles-minerals",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кристалл Пустоты",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "star_shard",
+      "name": "Осколок звезды",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/star-shard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/star-shard.webp",
+      "finalFile": "icons/items/materials/star_shard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/star_shard.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Осколок звезды",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "star_heart",
+      "name": "Сердце звезды",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/star-heart.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/star-heart.webp",
+      "finalFile": "icons/items/materials/star_heart.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/star_heart.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Сердце звезды",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "herb_common",
+      "name": "Обычная трава",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/herb-common.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/herb-common.webp",
+      "finalFile": "icons/items/materials/herb_common.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/herb_common.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Обычная трава",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "herb_healing",
+      "name": "Целебный лист",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/herb-healing.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/herb-healing.webp",
+      "finalFile": "icons/items/materials/herb_healing.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/herb_healing.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Целебный лист",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mushroom_bog",
+      "name": "Болотный гриб",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/mushroom-bog.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/mushroom-bog.webp",
+      "finalFile": "icons/items/materials/mushroom_bog.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/mushroom_bog.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Болотный гриб",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "root_bitter",
+      "name": "Горький корень",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/root-bitter.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/root-bitter.webp",
+      "finalFile": "icons/items/materials/root_bitter.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/root_bitter.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Горький корень",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "poison_fang",
+      "name": "Ядовитый клык",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/poison-fang.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/poison-fang.webp",
+      "finalFile": "icons/items/materials/poison_fang.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/poison_fang.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Ядовитый клык",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "flower_moon",
+      "name": "Лунный цветок",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/flower-moon.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/flower-moon.webp",
+      "finalFile": "icons/items/materials/flower_moon.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/flower_moon.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Лунный цветок",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "monster_gland",
+      "name": "Железа монстра",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/monster-gland.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/monster-gland.webp",
+      "finalFile": "icons/items/materials/monster_gland.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/monster_gland.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Железа монстра",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "venom_sac",
+      "name": "Мешок с ядом",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/venom-sac.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/venom-sac.webp",
+      "finalFile": "icons/items/materials/venom_sac.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/venom_sac.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Мешок с ядом",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spirit_bloom",
+      "name": "Цветок духов",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/spirit-bloom.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/spirit-bloom.webp",
+      "finalFile": "icons/items/materials/spirit_bloom.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/spirit_bloom.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Цветок духов",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "phoenix_feather",
+      "name": "Перо феникса",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/phoenix-feather.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/phoenix-feather.webp",
+      "finalFile": "icons/items/materials/phoenix_feather.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/phoenix_feather.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Перо феникса",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "giant_heart",
+      "name": "Сердце великана",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/giant-heart.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/giant-heart.webp",
+      "finalFile": "icons/items/materials/giant_heart.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/giant_heart.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Сердце великана",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "dragon_blood",
+      "name": "Кровь дракона",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/dragon-blood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/dragon-blood.webp",
+      "finalFile": "icons/items/materials/dragon_blood.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/dragon_blood.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кровь дракона",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "abyss_lichen",
+      "name": "Лишайник Бездны",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/abyss-lichen.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/abyss-lichen.webp",
+      "finalFile": "icons/items/materials/abyss_lichen.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/abyss_lichen.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Лишайник Бездны",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "god_tears",
+      "name": "Слёзы богов",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/god-tears.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/god-tears.webp",
+      "finalFile": "icons/items/materials/god_tears.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/god_tears.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Слёзы богов",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "rope",
+      "name": "Верёвка",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/rope.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/rope.webp",
+      "finalFile": "icons/items/materials/rope.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/rope.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Верёвка",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "forge_coal",
+      "name": "Кузнечный кокс",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/forge-coal.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/forge-coal.webp",
+      "finalFile": "icons/items/materials/forge_coal.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/forge_coal.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кузнечный кокс",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "glass",
+      "name": "Стекло",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/glass.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/glass.webp",
+      "finalFile": "icons/items/materials/glass.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/glass.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Стекло",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "oil_flask",
+      "name": "Масло (фляга)",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/oil-flask.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/oil-flask.webp",
+      "finalFile": "icons/items/materials/oil_flask.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/oil_flask.webp",
+      "sourceSheetSlug": "2026-06-18-materials-reagents-supplies",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Масло (фляга)",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mana_stone",
+      "name": "Мана-камень",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/mana-stone.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/mana-stone.webp",
+      "finalFile": "icons/items/materials/mana_stone.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/mana_stone.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Мана-камень",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "enchant_dust",
+      "name": "Пыль зачарования",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/enchant-dust.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/enchant-dust.webp",
+      "finalFile": "icons/items/materials/enchant_dust.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/enchant_dust.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Пыль зачарования",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "artisans_resin",
+      "name": "Мастерская смола",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/artisans-resin.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/artisans-resin.webp",
+      "finalFile": "icons/items/materials/artisans_resin.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/artisans_resin.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Мастерская смола",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "soul_essence",
+      "name": "Эссенция души",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/soul-essence.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/soul-essence.webp",
+      "finalFile": "icons/items/materials/soul_essence.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/soul_essence.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Эссенция души",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "planar_clip",
+      "name": "Планарная скоба",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/planar-clip.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/planar-clip.webp",
+      "finalFile": "icons/items/materials/planar_clip.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/planar_clip.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Планарная скоба",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "arcane_mesh",
+      "name": "Моток арканной проволоки",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/arcane-mesh.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/arcane-mesh.webp",
+      "finalFile": "icons/items/materials/arcane_mesh.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/arcane_mesh.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Моток арканной проволоки",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "relic_shard",
+      "name": "Осколок реликта",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/relic-shard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/relic-shard.webp",
+      "finalFile": "icons/items/materials/relic_shard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/relic_shard.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Осколок реликта",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "epoch_seed",
+      "name": "Семя эпохи",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/epoch-seed.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/epoch-seed.webp",
+      "finalFile": "icons/items/materials/epoch_seed.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/epoch_seed.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Семя эпохи",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "beast_sinew_spool",
+      "name": "Жильё зверя",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/beast-sinew-spool.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/beast-sinew-spool.webp",
+      "finalFile": "icons/items/materials/beast_sinew_spool.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/beast_sinew_spool.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Жильё зверя",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "small_pelt_uncured",
+      "name": "Небольшая шкура (сырая)",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/small-pelt-uncured.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/small-pelt-uncured.webp",
+      "finalFile": "icons/items/materials/small_pelt_uncured.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/small_pelt_uncured.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Небольшая шкура (сырая)",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fang_shard",
+      "name": "Осколок клыка",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/fang-shard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/fang-shard.webp",
+      "finalFile": "icons/items/materials/fang_shard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/fang_shard.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Осколок клыка",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wisp_moth_powder",
+      "name": "Пыльца ночных мотыльков",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/wisp-moth-powder.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/wisp-moth-powder.webp",
+      "finalFile": "icons/items/materials/wisp_moth_powder.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/wisp_moth_powder.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Пыльца ночных мотыльков",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "serpent_sac_mild",
+      "name": "Слабая змеиная желчь",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/serpent-sac-mild.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/serpent-sac-mild.webp",
+      "finalFile": "icons/items/materials/serpent_sac_mild.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/serpent_sac_mild.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Слабая змеиная желчь",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "bristle_keg_rings",
+      "name": "Кольца из щетины кабана",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/bristle-keg-rings.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/bristle-keg-rings.webp",
+      "finalFile": "icons/items/materials/bristle_keg_rings.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/bristle_keg_rings.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 3,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Кольца из щетины кабана",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "avian_keel_bone",
+      "name": "Киль птицеящера",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/avian-keel-bone.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/avian-keel-bone.webp",
+      "finalFile": "icons/items/materials/avian_keel_bone.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/avian_keel_bone.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 2,
+        "col": 4,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Киль птицеящера",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "alpha_musk_gland",
+      "name": "Железа вожака",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/alpha-musk-gland.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/alpha-musk-gland.webp",
+      "finalFile": "icons/items/materials/alpha_musk_gland.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/alpha_musk_gland.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 0,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Железа вожака",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wyvern_sinew_filament",
+      "name": "Жилье виверны",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/wyvern-sinew-filament.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/wyvern-sinew-filament.webp",
+      "finalFile": "icons/items/materials/wyvern_sinew_filament.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/wyvern_sinew_filament.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 1,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Жилье виверны",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "predator_resin_mass",
+      "name": "Смоляная пробка хищника",
+      "catalog": "materials",
+      "type": "materials",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/materials/predator-resin-mass.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/materials/predator-resin-mass.webp",
+      "finalFile": "icons/items/materials/predator_resin_mass.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/materials/predator_resin_mass.webp",
+      "sourceSheetSlug": "2026-06-18-materials-arcane-harvest",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "sourceCell": {
+        "row": 3,
+        "col": 2,
+        "grid": "5x4"
+      },
+      "sourcePrompt": "Смоляная пробка хищника",
+      "notes": [
+        "Promoted material candidate."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    }
+  ]
+}

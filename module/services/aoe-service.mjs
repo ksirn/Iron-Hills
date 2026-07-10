@@ -15,6 +15,7 @@ import { calculateHitChance } from "./combat-hit-context-service.mjs";
 import { applyHitEffects, healActorBodyPart } from "./hit-effect-service.mjs";
 import { actorsAreAllies } from "./disposition-service.mjs";
 import { isHealingDamageType } from "./damage-type-service.mjs";
+import { playAoeVfx } from "./combat-vfx-service.mjs";
 import {
   BODY_ZONE_KEYS,
   buildAoeTargetZonePolicy,
@@ -1102,6 +1103,14 @@ export async function applyAoeDamage({ attacker, targets, baseDamage, skillKey,
     aoeType: resolvedAoeConfig.type,
   });
   attachAoeSummary(results, summary);
+  await playAoeVfx({
+    attacker,
+    results,
+    label,
+    damageType,
+    aoeType: resolvedAoeConfig.type,
+    isUtility: false,
+  });
 
   if (createChat && globalThis.ChatMessage?.create && typeof globalThis.renderTemplate === "function") {
     const content = await renderTemplate(AOE_CHAT_TEMPLATE, buildAoeChatData({
@@ -1206,6 +1215,7 @@ export async function applyAoeUtilityEffect({
     const targetRef = filtered[index];
     const target = getAoeTargetActor(targetRef);
     if (!target) continue;
+    const targetToken = getAoeTargetToken(targetRef);
     const zoneDetails = resolveAoeTargetZoneDetails(zonePolicy, targetRef);
     const resolvedTargetZone =
       zoneDetails.zone
@@ -1238,6 +1248,7 @@ export async function applyAoeUtilityEffect({
       index,
       actorId: target.id,
       actorUuid: target.uuid,
+      tokenId: targetToken?.id ?? targetToken?.document?.id ?? null,
       name: target.name,
       ally: attacker ? actorsAreAllies(attacker, target) : false,
       targetPolicy: policyResult.policy,
@@ -1253,6 +1264,11 @@ export async function applyAoeUtilityEffect({
       healed,
       condition,
       line,
+      metrics: {
+        distanceFromOrigin: getAoeMetric(targetRef, "distanceFromOrigin", null),
+        projectionFromOrigin: getAoeMetric(targetRef, "projectionFromOrigin", null),
+        sideFromOrigin: getAoeMetric(targetRef, "sideFromOrigin", null),
+      },
     });
 
     if (resolvedAoeConfig.type === "chain") currentAmount *= (resolvedAoeConfig.chainDecay ?? 1);
@@ -1272,6 +1288,14 @@ export async function applyAoeUtilityEffect({
     aoeType: resolvedAoeConfig.type,
   });
   attachAoeSummary(results, summary);
+  await playAoeVfx({
+    attacker,
+    results,
+    label,
+    damageType: wantsAlliedAoeTargets(effect) ? "healing" : "magical",
+    aoeType: resolvedAoeConfig.type,
+    isUtility: true,
+  });
 
   if (createChat && globalThis.ChatMessage?.create) {
     const chatData = buildAoeChatData({

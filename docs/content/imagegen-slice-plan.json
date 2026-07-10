@@ -1,0 +1,230 @@
+{
+  "label": "Iron Hills imagegen preview slice plan",
+  "outDir": "art-candidates/items",
+  "outputSize": 1024,
+  "webpQuality": 92,
+  "sheets": [
+    {
+      "slug": "2026-06-18-armor-helmets",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "grid": "3x2",
+      "catalog": "armor",
+      "status": "preview-candidate",
+      "notes": ["Sliced from sheet, use visual QA before promotion."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "preview_padded_arming_cap", "name": "Padded arming cap", "prompt": "padded arming cap" },
+        { "row": 0, "col": 1, "id": "preview_reinforced_leather_hood", "name": "Reinforced leather hood", "prompt": "reinforced leather hood" },
+        { "row": 0, "col": 2, "id": "chainmail_coif_candidate", "name": "Chain coif candidate", "prompt": "chain coif", "finalFile": "icons/items/armor/chainmail_coif.webp" },
+        { "row": 1, "col": 0, "id": "plate_helm_candidate", "name": "Steel sallet candidate", "prompt": "steel sallet helmet", "finalFile": "icons/items/armor/plate_helm.webp" },
+        { "row": 1, "col": 1, "id": "darkiron_helm_candidate", "name": "Darkiron great helm candidate", "prompt": "darkiron great helm", "finalFile": "icons/items/armor/darkiron_helm.webp" },
+        { "row": 1, "col": 2, "id": "mithril_helm_candidate", "name": "Mithril open-face helm candidate", "prompt": "mithril open-face helm", "finalFile": "icons/items/armor/mithril_helm.webp" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-armor-arms-hands",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "grid": "3x2",
+      "catalog": "armor",
+      "status": "preview-candidate",
+      "notes": ["Sliced from sheet, use visual QA before promotion."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "preview_leather_bracers", "name": "Leather bracers", "prompt": "leather bracer pair" },
+        { "row": 0, "col": 1, "id": "preview_studded_vambraces", "name": "Studded leather vambraces", "prompt": "studded leather vambraces" },
+        { "row": 0, "col": 2, "id": "chain_sleeves_candidate", "name": "Chain sleeves candidate", "prompt": "chain sleeves", "finalFile": "icons/items/armor/chain_sleeves.webp" },
+        { "row": 1, "col": 0, "id": "plate_arms_candidate", "name": "Plate gauntlets candidate", "prompt": "steel plate gauntlets", "finalFile": "icons/items/armor/plate_arms.webp" },
+        { "row": 1, "col": 1, "id": "preview_darkiron_heavy_bracers", "name": "Darkiron heavy bracers", "prompt": "darkiron heavy bracers" },
+        { "row": 1, "col": 2, "id": "preview_mithril_duelist_gloves", "name": "Mithril duelist gloves", "prompt": "mithril duelist gloves" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-armor-legs-feet",
+      "file": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "grid": "3x2",
+      "catalog": "armor",
+      "status": "preview-candidate",
+      "notes": ["Sliced from sheet, use visual QA before promotion."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "leather_boots_candidate", "name": "Leather travel boots candidate", "prompt": "soft leather travel boots", "finalFile": "icons/items/armor/leather_boots.webp" },
+        { "row": 0, "col": 1, "id": "preview_ranger_boots", "name": "Reinforced ranger boots", "prompt": "reinforced ranger boots" },
+        { "row": 0, "col": 2, "id": "chain_leggings_candidate", "name": "Chain chausses candidate", "prompt": "chain chausses", "finalFile": "icons/items/armor/chain_leggings.webp" },
+        { "row": 1, "col": 0, "id": "plate_legs_candidate", "name": "Steel greaves candidate", "prompt": "steel greaves and sabatons", "finalFile": "icons/items/armor/plate_legs.webp" },
+        { "row": 1, "col": 1, "id": "darkiron_legs_candidate", "name": "Darkiron leg plates candidate", "prompt": "darkiron heavy leg plates", "finalFile": "icons/items/armor/darkiron_legs.webp" },
+        { "row": 1, "col": 2, "id": "mithril_legs_candidate", "name": "Mithril greaves candidate", "prompt": "mithril light greaves", "finalFile": "icons/items/armor/mithril_legs.webp" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-clothing-robes",
+      "file": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "grid": "3x2",
+      "catalog": "clothing",
+      "status": "preview-candidate",
+      "notes": ["No current final clothing catalog target; keep as design candidates."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "linen_travel_tunic", "name": "Linen travel tunic", "prompt": "linen travel tunic" },
+        { "row": 0, "col": 1, "id": "weathered_ranger_cloak", "name": "Weathered ranger cloak", "prompt": "weathered ranger cloak" },
+        { "row": 0, "col": 2, "id": "padded_gambeson_jacket", "name": "Padded gambeson jacket", "prompt": "padded gambeson jacket" },
+        { "row": 1, "col": 0, "id": "scholar_robe", "name": "Scholar robe", "prompt": "scholar robe with belt pouches" },
+        { "row": 1, "col": 1, "id": "noble_court_doublet", "name": "Noble court doublet", "prompt": "noble court doublet" },
+        { "row": 1, "col": 2, "id": "arcane_battlemage_robe", "name": "Arcane battlemage robe", "prompt": "arcane battlemage robe" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-npc-archetypes",
+      "file": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "grid": "3x2",
+      "catalog": "npcs",
+      "status": "preview-candidate",
+      "notes": ["Selected cells are promoted as NPC actor token sources under icons/tokens/npc."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "frontier_blacksmith_merchant", "name": "Frontier blacksmith merchant", "prompt": "frontier blacksmith merchant" },
+        { "row": 0, "col": 1, "id": "village_healer", "name": "Village healer", "prompt": "tired village healer" },
+        { "row": 0, "col": 2, "id": "caravan_guard_captain", "name": "Caravan guard captain", "prompt": "armored caravan guard captain" },
+        { "row": 1, "col": 0, "id": "arcane_scholar", "name": "Arcane scholar", "prompt": "silver-robed arcane scholar" },
+        { "row": 1, "col": 1, "id": "fence_trader", "name": "Fence trader", "prompt": "suspicious fence trader" },
+        { "row": 1, "col": 2, "id": "noble_envoy", "name": "Noble envoy", "prompt": "weathered noble envoy" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-monster-archetypes",
+      "file": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "grid": "3x2",
+      "catalog": "monsters",
+      "status": "preview-candidate",
+      "notes": ["Selected close matches are promoted as monster actor token sources under icons/tokens/monsters."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "cave_goblin_raider", "name": "Cave goblin raider", "prompt": "cave goblin raider" },
+        { "row": 0, "col": 1, "id": "ironbound_skeleton_soldier", "name": "Ironbound skeleton soldier", "prompt": "ironbound skeleton soldier" },
+        { "row": 0, "col": 2, "id": "swamp_ghoul", "name": "Swamp ghoul", "prompt": "swamp ghoul" },
+        { "row": 1, "col": 0, "id": "stonehide_ogre_brute", "name": "Stonehide ogre brute", "prompt": "stonehide ogre brute" },
+        { "row": 1, "col": 1, "id": "wyvern_hatchling", "name": "Wyvern hatchling", "prompt": "wyvern hatchling" },
+        { "row": 1, "col": 2, "id": "corrupted_forest_wisp", "name": "Corrupted forest wisp", "prompt": "corrupted forest wisp spirit" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-schools",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "grid": "4x2",
+      "catalog": "spell-schools",
+      "status": "preview-candidate",
+      "notes": ["School identity direction; do not promote over individual spells without review."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "school_fire", "name": "Fire school identity", "prompt": "fire school ember core" },
+        { "row": 0, "col": 1, "id": "school_ice", "name": "Ice school identity", "prompt": "ice school frost crystal" },
+        { "row": 0, "col": 2, "id": "school_lightning", "name": "Lightning school identity", "prompt": "lightning school thunderstone" },
+        { "row": 0, "col": 3, "id": "school_shadow", "name": "Shadow school identity", "prompt": "shadow school void shard" },
+        { "row": 1, "col": 0, "id": "school_light", "name": "Light school identity", "prompt": "light school radiant reliquary sigil" },
+        { "row": 1, "col": 1, "id": "school_earth", "name": "Earth school identity", "prompt": "earth school ironroot stone" },
+        { "row": 1, "col": 2, "id": "school_mind", "name": "Mind school identity", "prompt": "mind school thought prism" },
+        { "row": 1, "col": 3, "id": "school_summon", "name": "Summon school identity", "prompt": "summon school binding gate" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-offensive",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "grid": "4x2",
+      "catalog": "spells",
+      "status": "candidate",
+      "notes": ["Promotable spell candidates, sliced from preview sheet."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "fire_bolt", "name": "Fire bolt", "prompt": "fire bolt", "finalFile": "icons/items/spells/fire_bolt.webp" },
+        { "row": 0, "col": 1, "id": "ice_shard", "name": "Ice shard", "prompt": "ice shard", "finalFile": "icons/items/spells/ice_shard.webp" },
+        { "row": 0, "col": 2, "id": "lightning_bolt_spell", "name": "Lightning ray", "prompt": "lightning ray", "finalFile": "icons/items/spells/lightning_bolt_spell.webp" },
+        { "row": 0, "col": 3, "id": "shadow_bolt", "name": "Shadow needle", "prompt": "shadow needle", "finalFile": "icons/items/spells/shadow_bolt.webp" },
+        { "row": 1, "col": 0, "id": "sunlance", "name": "Sunlance", "prompt": "sunlance holy beam", "finalFile": "icons/items/spells/sunlance.webp" },
+        { "row": 1, "col": 1, "id": "tectonic_spear", "name": "Tectonic spear", "prompt": "tectonic spear earth strike", "finalFile": "icons/items/spells/tectonic_spear.webp" },
+        { "row": 1, "col": 2, "id": "mind_lance", "name": "Mind lance", "prompt": "mind lance psychic strike", "finalFile": "icons/items/spells/mind_lance.webp" },
+        { "row": 1, "col": 3, "id": "void_judgement", "name": "Void judgement", "prompt": "void judgement aimed head strike", "finalFile": "icons/items/spells/void_judgement.webp" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-aoe-geometry",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "grid": "4x2",
+      "catalog": "spell-aoe",
+      "status": "preview-candidate",
+      "notes": ["AoE visual vocabulary; use to guide per-spell art and UI cues."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "aoe_cone_blast", "name": "Cone blast", "prompt": "cone blast fire fan" },
+        { "row": 0, "col": 1, "id": "aoe_circle_blast", "name": "Circle blast", "prompt": "circle blast impact ring" },
+        { "row": 0, "col": 2, "id": "aoe_ray_line", "name": "Ray line", "prompt": "ray line lightning lance" },
+        { "row": 0, "col": 3, "id": "aoe_rect_wall", "name": "Rect wall", "prompt": "rect wall of ice" },
+        { "row": 1, "col": 0, "id": "aoe_chain", "name": "Chain jumps", "prompt": "chain lightning jumps" },
+        { "row": 1, "col": 1, "id": "aoe_nova", "name": "Nova", "prompt": "nova frost burst" },
+        { "row": 1, "col": 2, "id": "aoe_shards", "name": "Shards barrage", "prompt": "shards barrage" },
+        { "row": 1, "col": 3, "id": "aoe_aimed_target_zone", "name": "Aimed target zone", "prompt": "aimed target-zone holy sigil" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-support-control",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "grid": "4x2",
+      "catalog": "spells",
+      "status": "candidate-needs-qa",
+      "notes": ["Some cells may need regeneration because support effects can drift toward face-like silhouettes."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "healing_wave", "name": "Healing wave", "prompt": "healing wave light nova", "finalFile": "icons/items/spells/healing_wave.webp" },
+        { "row": 0, "col": 1, "id": "sanctuary_ring", "name": "Sanctuary ring", "prompt": "sanctuary ring protective circle", "finalFile": "icons/items/spells/sanctuary_ring.webp" },
+        { "row": 0, "col": 2, "id": "warding_sigil", "name": "Warding sigil", "prompt": "warding sigil buff", "finalFile": "icons/items/spells/warding_sigil.webp" },
+        { "row": 0, "col": 3, "id": "haste_spell", "name": "Haste", "prompt": "haste mind thread", "finalFile": "icons/items/spells/haste_spell.webp" },
+        { "row": 1, "col": 0, "id": "slow_spell", "name": "Slow", "prompt": "slow mind snare", "finalFile": "icons/items/spells/slow_spell.webp" },
+        { "row": 1, "col": 1, "id": "fear", "name": "Fear", "prompt": "fear shadow veil", "finalFile": "icons/items/spells/fear.webp" },
+        { "row": 1, "col": 2, "id": "ironroot_grasp", "name": "Ironroot grasp", "prompt": "earth root grapple", "finalFile": "icons/items/spells/ironroot_grasp.webp" },
+        { "row": 1, "col": 3, "id": "gate_lock", "name": "Gate lock", "prompt": "gate lock summon binding circle", "finalFile": "icons/items/spells/gate_lock.webp" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-magical-items",
+      "file": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "grid": "4x2",
+      "catalog": "magic-items",
+      "status": "preview-candidate",
+      "notes": ["Inventory/trader design candidates; final item catalog mapping is not decided yet."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "novice_spell_scroll", "name": "Novice spell scroll", "prompt": "novice spell scroll" },
+        { "row": 0, "col": 1, "id": "masterwork_grimoire", "name": "Masterwork grimoire", "prompt": "masterwork grimoire" },
+        { "row": 0, "col": 2, "id": "ember_focus_wand", "name": "Ember focus wand", "prompt": "carved wooden wand with ember focus" },
+        { "row": 0, "col": 3, "id": "ironwood_crystal_staff", "name": "Ironwood crystal staff", "prompt": "ironwood staff with crystal cage" },
+        { "row": 1, "col": 0, "id": "mana_stone_setting", "name": "Mana stone in brass setting", "prompt": "mana stone in brass setting" },
+        { "row": 1, "col": 1, "id": "spell_focus_ring", "name": "Spell focus ring", "prompt": "spell focus ring" },
+        { "row": 1, "col": 2, "id": "rune_casting_rod", "name": "Rune casting rod", "prompt": "rune-inscribed casting rod" },
+        { "row": 1, "col": 3, "id": "spell_catalyst_vial", "name": "Spell catalyst vial", "prompt": "alchemist spell catalyst vial" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-high-tier-destruction",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "grid": "4x2",
+      "catalog": "spells",
+      "status": "candidate",
+      "notes": ["Promotable high-tier spell candidates, sliced from preview sheet."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "volcanic_burst", "name": "Volcanic burst", "prompt": "volcanic burst", "finalFile": "icons/items/spells/volcanic_burst.webp" },
+        { "row": 0, "col": 1, "id": "sunforge_cataclysm", "name": "Sunforge cataclysm", "prompt": "sunforge cataclysm", "finalFile": "icons/items/spells/sunforge_cataclysm.webp" },
+        { "row": 0, "col": 2, "id": "whiteout_field", "name": "Whiteout field", "prompt": "whiteout field", "finalFile": "icons/items/spells/whiteout_field.webp" },
+        { "row": 0, "col": 3, "id": "absolute_zero", "name": "Absolute zero", "prompt": "absolute zero", "finalFile": "icons/items/spells/absolute_zero.webp" },
+        { "row": 1, "col": 0, "id": "storm_crown", "name": "Storm crown", "prompt": "storm crown", "finalFile": "icons/items/spells/storm_crown.webp" },
+        { "row": 1, "col": 1, "id": "worldbolt", "name": "Worldbolt", "prompt": "worldbolt", "finalFile": "icons/items/spells/worldbolt.webp" },
+        { "row": 1, "col": 2, "id": "nightfall_zone", "name": "Nightfall zone", "prompt": "nightfall zone", "finalFile": "icons/items/spells/nightfall_zone.webp" },
+        { "row": 1, "col": 3, "id": "death_whisper", "name": "Death whisper", "prompt": "death whisper", "finalFile": "icons/items/spells/death_whisper.webp" }
+      ]
+    },
+    {
+      "slug": "2026-06-18-spell-high-tier-utility",
+      "file": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "grid": "4x2",
+      "catalog": "spells",
+      "status": "candidate",
+      "notes": ["Promotable high-tier utility/control/summon candidates, sliced from preview sheet."],
+      "cells": [
+        { "row": 0, "col": 0, "id": "heavenfall", "name": "Heavenfall", "prompt": "heavenfall holy impact", "finalFile": "icons/items/spells/heavenfall.webp" },
+        { "row": 0, "col": 1, "id": "martyr_aegis", "name": "Martyr aegis", "prompt": "martyr aegis radiant protection", "finalFile": "icons/items/spells/martyr_aegis.webp" },
+        { "row": 0, "col": 2, "id": "mountain_collapse", "name": "Mountain collapse", "prompt": "mountain collapse earth impact", "finalFile": "icons/items/spells/mountain_collapse.webp" },
+        { "row": 0, "col": 3, "id": "worldroot_verdict", "name": "Worldroot verdict", "prompt": "worldroot verdict binding roots", "finalFile": "icons/items/spells/worldroot_verdict.webp" },
+        { "row": 1, "col": 0, "id": "thought_storm", "name": "Thought storm", "prompt": "thought storm psychic circle", "finalFile": "icons/items/spells/thought_storm.webp" },
+        { "row": 1, "col": 1, "id": "absolute_command", "name": "Absolute command", "prompt": "absolute command psychic domination sigil", "finalFile": "icons/items/spells/absolute_command.webp" },
+        { "row": 1, "col": 2, "id": "avatar_pact", "name": "Avatar pact", "prompt": "avatar pact summoning gate", "finalFile": "icons/items/spells/avatar_pact.webp" },
+        { "row": 1, "col": 3, "id": "astral_binding_circle", "name": "Astral binding circle", "prompt": "astral binding circle", "finalFile": "icons/items/spells/astral_binding_circle.webp" }
+      ]
+    }
+  ]
+}

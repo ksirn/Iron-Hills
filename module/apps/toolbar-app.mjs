@@ -18,6 +18,7 @@ const TOOLS = [
   { key:"openTravelManager", label:"Время",     icon:"⏳",  gm:true,  sec:"gm"    },
   { key:"openPartyManager",  label:"Группы",    icon:"👥",  gm:true,  sec:"gm"    },
   { key:"openCombatManager", label:"Бой",       icon:"🗡",  gm:true,  sec:"gm"    },
+  { key:"openCombatDirector", label:"Director", icon:"◉",  gm:true,  sec:"gm"    },
   { key:"openWorldTools",    label:"World",     icon:"🌍",  gm:true,  sec:"gm"    },
   { key:"openWeather",       label:"Погода",    icon:"🌤",  gm:true,  sec:"gm"    },
 ];

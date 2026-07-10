@@ -396,15 +396,25 @@ export function buildSpellChoicePayload(spell = {}, {
 
   if (friendlyFireMode !== undefined || friendlyFire !== undefined) {
     const mode = resolveAoeFriendlyFireMode(friendlyFireMode, friendlyFire, "off");
-    const enabled = friendlyFire !== undefined ? Boolean(friendlyFire) : mode === "on";
-    chosen.friendlyFire = enabled;
+    const enabled = friendlyFire !== undefined
+      ? Boolean(friendlyFire)
+      : mode === "on"
+        ? true
+        : mode === "off"
+          ? false
+          : undefined;
+
+    if (enabled === undefined) delete chosen.friendlyFire;
+    else chosen.friendlyFire = enabled;
     chosen.friendlyFireMode = mode;
     if (chosen.aoe && typeof chosen.aoe === "object") {
-      chosen.aoe = {
+      const aoe = {
         ...chosen.aoe,
-        friendlyFire: enabled,
         friendlyFireMode: mode,
       };
+      if (enabled === undefined) delete aoe.friendlyFire;
+      else aoe.friendlyFire = enabled;
+      chosen.aoe = aoe;
     }
   }
 

@@ -193,7 +193,7 @@ function assignBodyContext(context, actor) {
 
   if (actor.type !== "character" && actor.type !== "npc") {
     context.medicalTriage = null;
-    context.bodyHud = { visible: false, hasBodyMap: false, parts: [], partMap: {}, chips: [], hasChips: false };
+    context.bodyHud = { visible: false, hasBodyMap: false, parts: [], partMap: {}, figureRows: [], sheetFigureRows: [], chips: [], hasChips: false };
     context.zones = [];
     return;
   }

@@ -895,6 +895,121 @@ function getAttackArmorDurability(result = {}) {
   };
 }
 
+function formatAttackImpactNumber(value, {
+  prefix = "",
+  fallback = "0",
+} = {}) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return `${prefix}${Math.max(0, Math.round(parsed))}`;
+}
+
+function formatAttackLayerDurability(layer = null) {
+  if (!layer || layer.durabilityAfter === undefined || layer.durabilityAfter === null) return "";
+  return `${layer.durabilityAfter}/${layer.durabilityMax ?? "?"}`;
+}
+
+function buildAttackImpactTrack(result = {}) {
+  const segments = [];
+  if (!result?.hit) {
+    segments.push({
+      label: "Roll",
+      value: `${result.effectiveRoll ?? 0}/${result.threshold ?? 0}`,
+      note: result.locationLabel || "",
+      className: "is-miss",
+    });
+    segments.push({
+      label: "Outcome",
+      value: result.isAnticrit ? "Anticrit" : "Miss",
+      note: Number(result.failDegree ?? 0) > 0 ? `fail ${result.failDegree}` : "",
+      className: result.isAnticrit ? "is-break" : "is-miss",
+    });
+    return { segments, className: "is-miss" };
+  }
+
+  segments.push({
+    label: "Raw",
+    value: formatAttackImpactNumber(result.rawDamage),
+    note: `base ${result.baseDamage ?? 0}`,
+    className: "is-raw",
+  });
+
+  const shield = result.shieldBlock;
+  if (shield?.triggered) {
+    const shieldLayer = result.shieldLayer ?? null;
+    segments.push({
+      label: "Shield",
+      value: shield.success
+        ? formatAttackImpactNumber(shield.shieldReduction ?? shield.absorbed, { prefix: "-" })
+        : "failed",
+      note: shield.success
+        ? joinAttackParts([shield.tierLabel, formatAttackLayerDurability(shieldLayer)])
+        : joinAttackParts([`block ${shield.blockRoll}`, shield.note]),
+      className: shield.success
+        ? (shield.broken ? "is-break" : "is-shield")
+        : "is-miss",
+    });
+  }
+
+  if (!result.targetIsMonster && (result.armorItem || Number(result.reduction ?? 0) > 0)) {
+    segments.push({
+      label: "Armor",
+      value: Number(result.reduction ?? 0) > 0
+        ? formatAttackImpactNumber(result.reduction, { prefix: "-" })
+        : "0",
+      note: joinAttackParts([
+        result.armorItem?.name ?? "none",
+        Number(result.armorPenetration ?? 0) > 0 ? `pierce ${result.armorPenetration}` : "",
+        Number(result.techPenetration ?? 0) > 0 ? `tech ${result.techPenetration}` : "",
+        formatAttackLayerDurability(result.armorLayer),
+      ]),
+      className: result.armorLayer?.broken ? "is-break" : "is-armor",
+    });
+  } else if (result.targetIsMonster && Number(result.reduction ?? 0) > 0) {
+    segments.push({
+      label: "Armor",
+      value: formatAttackImpactNumber(result.reduction, { prefix: "-" }),
+      note: "natural",
+      className: "is-armor",
+    });
+  }
+
+  segments.push({
+    label: "Body",
+    value: Number(result.finalDamage ?? 0) > 0
+      ? formatAttackImpactNumber(result.finalDamage, { prefix: "-" })
+      : "0",
+    note: joinAttackParts([
+      result.locationLabel,
+      result.overflowDamage ? `overflow ${result.overflowDamage}` : "",
+    ]),
+    className: result.targetKilled
+      ? "is-kill"
+      : Number(result.finalDamage ?? 0) > 0
+        ? "is-body"
+        : "is-absorbed",
+  });
+
+  if (result.targetKilled) {
+    segments.push({
+      label: "Outcome",
+      value: "Down",
+      note: "",
+      className: "is-kill",
+    });
+  }
+
+  return {
+    segments,
+    className: joinAttackParts([
+      result.targetKilled ? "is-kill" : "",
+      Number(result.finalDamage ?? 0) > 0 ? "has-body-damage" : "is-absorbed",
+      shield?.success ? "has-shield" : "",
+      Number(result.reduction ?? 0) > 0 ? "has-armor" : "",
+    ], " "),
+  };
+}
+
 function buildAttackStatus(result = {}) {
   if (result.hit) {
     return {
@@ -1165,6 +1280,7 @@ export function buildAttackChatData({
     rollRows: buildAttackRollRows(result, rollDesc),
     damageRows: buildAttackDamageRows({ result, overflowLabel, armorDur }),
     noticeRows: buildAttackNoticeRows(result),
+    impactTrack: buildAttackImpactTrack(result),
     result,
     rollDesc,
     overflowLabel,

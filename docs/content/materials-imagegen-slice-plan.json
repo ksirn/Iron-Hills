@@ -1,0 +1,1244 @@
+{
+  "label": "Iron Hills materials imagegen slice plan",
+  "outDir": "art-candidates/items",
+  "outputSize": 1024,
+  "webpQuality": 92,
+  "sheets": [
+    {
+      "slug": "2026-06-18-materials-metals-woods",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-metals-woods.png",
+      "status": "candidate",
+      "catalog": "materials",
+      "notes": [
+        "Generated built-in imagegen sheet for ores, ingots, and wood materials."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "copper_ore",
+          "name": "Медная руда",
+          "catalog": "materials",
+          "prompt": "Медная руда",
+          "finalFile": "icons/items/materials/copper_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "copper_ingot",
+          "name": "Медный слиток",
+          "catalog": "materials",
+          "prompt": "Медный слиток",
+          "finalFile": "icons/items/materials/copper_ingot.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "tin_ore",
+          "name": "Оловянная руда",
+          "catalog": "materials",
+          "prompt": "Оловянная руда",
+          "finalFile": "icons/items/materials/tin_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "bronze_ingot",
+          "name": "Бронзовый слиток",
+          "catalog": "materials",
+          "prompt": "Бронзовый слиток",
+          "finalFile": "icons/items/materials/bronze_ingot.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "iron_ore",
+          "name": "Железная руда",
+          "catalog": "materials",
+          "prompt": "Железная руда",
+          "finalFile": "icons/items/materials/iron_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "iron_ingot",
+          "name": "Железный слиток",
+          "catalog": "materials",
+          "prompt": "Железный слиток",
+          "finalFile": "icons/items/materials/iron_ingot.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "steel_ingot",
+          "name": "Стальной слиток",
+          "catalog": "materials",
+          "prompt": "Стальной слиток",
+          "finalFile": "icons/items/materials/steel_ingot.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "hardened_steel",
+          "name": "Закалённая сталь",
+          "catalog": "materials",
+          "prompt": "Закалённая сталь",
+          "finalFile": "icons/items/materials/hardened_steel.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "mithril_ore",
+          "name": "Митрильная руда",
+          "catalog": "materials",
+          "prompt": "Митрильная руда",
+          "finalFile": "icons/items/materials/mithril_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "mithril_ingot",
+          "name": "Митрильный слиток",
+          "catalog": "materials",
+          "prompt": "Митрильный слиток",
+          "finalFile": "icons/items/materials/mithril_ingot.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "dark_iron_ore",
+          "name": "Тёмная руда",
+          "catalog": "materials",
+          "prompt": "Тёмная руда",
+          "finalFile": "icons/items/materials/dark_iron_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "dark_iron",
+          "name": "Тёмное железо",
+          "catalog": "materials",
+          "prompt": "Тёмное железо",
+          "finalFile": "icons/items/materials/dark_iron.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "starmetal_ore",
+          "name": "Звёздная руда",
+          "catalog": "materials",
+          "prompt": "Звёздная руда",
+          "finalFile": "icons/items/materials/starmetal_ore.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "starmetal",
+          "name": "Звёздный металл",
+          "catalog": "materials",
+          "prompt": "Звёздный металл",
+          "finalFile": "icons/items/materials/starmetal.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "orichalcum",
+          "name": "Орихалк",
+          "catalog": "materials",
+          "prompt": "Орихалк",
+          "finalFile": "icons/items/materials/orichalcum.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "adamantium",
+          "name": "Адамантий",
+          "catalog": "materials",
+          "prompt": "Адамантий",
+          "finalFile": "icons/items/materials/adamantium.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "pine_wood",
+          "name": "Сосновая доска",
+          "catalog": "materials",
+          "prompt": "Сосновая доска",
+          "finalFile": "icons/items/materials/pine_wood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "oak_wood",
+          "name": "Дубовая доска",
+          "catalog": "materials",
+          "prompt": "Дубовая доска",
+          "finalFile": "icons/items/materials/oak_wood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "id": "hardwood",
+          "name": "Твёрдая древесина",
+          "catalog": "materials",
+          "prompt": "Твёрдая древесина",
+          "finalFile": "icons/items/materials/hardwood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "id": "ironwood",
+          "name": "Железное дерево",
+          "catalog": "materials",
+          "prompt": "Железное дерево",
+          "finalFile": "icons/items/materials/ironwood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-materials-hides-fabrics",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-hides-fabrics.png",
+      "status": "candidate",
+      "catalog": "materials",
+      "notes": [
+        "Generated built-in imagegen sheet for advanced woods, hides, leather, and basic cloth."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "spirit_wood",
+          "name": "Древесина духов",
+          "catalog": "materials",
+          "prompt": "Древесина духов",
+          "finalFile": "icons/items/materials/spirit_wood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "ebony",
+          "name": "Чёрное дерево",
+          "catalog": "materials",
+          "prompt": "Чёрное дерево",
+          "finalFile": "icons/items/materials/ebony.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "eternal_wood",
+          "name": "Вечное дерево",
+          "catalog": "materials",
+          "prompt": "Вечное дерево",
+          "finalFile": "icons/items/materials/eternal_wood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "world_tree",
+          "name": "Мировое дерево",
+          "catalog": "materials",
+          "prompt": "Мировое дерево",
+          "finalFile": "icons/items/materials/world_tree.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "sun_oak_board",
+          "name": "Доска солнечного дуба",
+          "catalog": "materials",
+          "prompt": "Доска солнечного дуба",
+          "finalFile": "icons/items/materials/sun_oak_board.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "genesis_timber",
+          "name": "Брус генезиса",
+          "catalog": "materials",
+          "prompt": "Брус генезиса",
+          "finalFile": "icons/items/materials/genesis_timber.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "animal_hide",
+          "name": "Шкура зверя",
+          "catalog": "materials",
+          "prompt": "Шкура зверя",
+          "finalFile": "icons/items/materials/animal_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "tanned_leather",
+          "name": "Выделанная кожа",
+          "catalog": "materials",
+          "prompt": "Выделанная кожа",
+          "finalFile": "icons/items/materials/tanned_leather.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "thick_hide",
+          "name": "Толстая шкура",
+          "catalog": "materials",
+          "prompt": "Толстая шкура",
+          "finalFile": "icons/items/materials/thick_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "scale_hide",
+          "name": "Чешуйчатая шкура",
+          "catalog": "materials",
+          "prompt": "Чешуйчатая шкура",
+          "finalFile": "icons/items/materials/scale_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "drake_scale",
+          "name": "Чешуя дрейка",
+          "catalog": "materials",
+          "prompt": "Чешуя дрейка",
+          "finalFile": "icons/items/materials/drake_scale.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "drake_hide",
+          "name": "Кожа дрейка",
+          "catalog": "materials",
+          "prompt": "Кожа дрейка",
+          "finalFile": "icons/items/materials/drake_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "warg_pelt",
+          "name": "Шкура варга",
+          "catalog": "materials",
+          "prompt": "Шкура варга",
+          "finalFile": "icons/items/materials/warg_pelt.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "wyvern_hide",
+          "name": "Шкура виверны",
+          "catalog": "materials",
+          "prompt": "Шкура виверны",
+          "finalFile": "icons/items/materials/wyvern_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "dragon_hide",
+          "name": "Кожа дракона",
+          "catalog": "materials",
+          "prompt": "Кожа дракона",
+          "finalFile": "icons/items/materials/dragon_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "hydra_hide",
+          "name": "Шкура гидры",
+          "catalog": "materials",
+          "prompt": "Шкура гидры",
+          "finalFile": "icons/items/materials/hydra_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "leviathan_hide",
+          "name": "Шкура Левиафана",
+          "catalog": "materials",
+          "prompt": "Шкура Левиафана",
+          "finalFile": "icons/items/materials/leviathan_hide.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "raw_fiber",
+          "name": "Сырое волокно",
+          "catalog": "materials",
+          "prompt": "Сырое волокно",
+          "finalFile": "icons/items/materials/raw_fiber.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "id": "cloth",
+          "name": "Ткань",
+          "catalog": "materials",
+          "prompt": "Ткань",
+          "finalFile": "icons/items/materials/cloth.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "id": "fine_cloth",
+          "name": "Тонкая ткань",
+          "catalog": "materials",
+          "prompt": "Тонкая ткань",
+          "finalFile": "icons/items/materials/fine_cloth.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-materials-textiles-minerals",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-textiles-minerals.png",
+      "status": "candidate",
+      "catalog": "materials",
+      "notes": [
+        "Generated built-in imagegen sheet for advanced textiles, stones, gems, and crystals."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "silk",
+          "name": "Шёлк",
+          "catalog": "materials",
+          "prompt": "Шёлк",
+          "finalFile": "icons/items/materials/silk.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "spider_silk",
+          "name": "Паучий шёлк",
+          "catalog": "materials",
+          "prompt": "Паучий шёлк",
+          "finalFile": "icons/items/materials/spider_silk.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "moonweave",
+          "name": "Лунное волокно",
+          "catalog": "materials",
+          "prompt": "Лунное волокно",
+          "finalFile": "icons/items/materials/moonweave.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "shadowweave",
+          "name": "Теневое волокно",
+          "catalog": "materials",
+          "prompt": "Теневое волокно",
+          "finalFile": "icons/items/materials/shadowweave.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "starthread",
+          "name": "Звёздная нить",
+          "catalog": "materials",
+          "prompt": "Звёздная нить",
+          "finalFile": "icons/items/materials/starthread.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "void_weave",
+          "name": "Ткань Пустоты",
+          "catalog": "materials",
+          "prompt": "Ткань Пустоты",
+          "finalFile": "icons/items/materials/void_weave.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "aurora_thread",
+          "name": "Нить Авроры",
+          "catalog": "materials",
+          "prompt": "Нить Авроры",
+          "finalFile": "icons/items/materials/aurora_thread.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "genesis_weave",
+          "name": "Полотно генезиса",
+          "catalog": "materials",
+          "prompt": "Полотно генезиса",
+          "finalFile": "icons/items/materials/genesis_weave.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "stone",
+          "name": "Камень",
+          "catalog": "materials",
+          "prompt": "Камень",
+          "finalFile": "icons/items/materials/stone.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "flint",
+          "name": "Кремень",
+          "catalog": "materials",
+          "prompt": "Кремень",
+          "finalFile": "icons/items/materials/flint.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "coal",
+          "name": "Уголь",
+          "catalog": "materials",
+          "prompt": "Уголь",
+          "finalFile": "icons/items/materials/coal.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "quartz",
+          "name": "Кварц",
+          "catalog": "materials",
+          "prompt": "Кварц",
+          "finalFile": "icons/items/materials/quartz.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "granite",
+          "name": "Гранит",
+          "catalog": "materials",
+          "prompt": "Гранит",
+          "finalFile": "icons/items/materials/granite.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "obsidian",
+          "name": "Обсидиан",
+          "catalog": "materials",
+          "prompt": "Обсидиан",
+          "finalFile": "icons/items/materials/obsidian.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "ruby",
+          "name": "Рубин",
+          "catalog": "materials",
+          "prompt": "Рубин",
+          "finalFile": "icons/items/materials/ruby.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "sapphire",
+          "name": "Сапфир",
+          "catalog": "materials",
+          "prompt": "Сапфир",
+          "finalFile": "icons/items/materials/sapphire.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "diamond",
+          "name": "Алмаз",
+          "catalog": "materials",
+          "prompt": "Алмаз",
+          "finalFile": "icons/items/materials/diamond.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "mana_crystal",
+          "name": "Мана-кристалл",
+          "catalog": "materials",
+          "prompt": "Мана-кристалл",
+          "finalFile": "icons/items/materials/mana_crystal.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "id": "aeon_geode",
+          "name": "Жеода эона",
+          "catalog": "materials",
+          "prompt": "Жеода эона",
+          "finalFile": "icons/items/materials/aeon_geode.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "id": "void_crystal",
+          "name": "Кристалл Пустоты",
+          "catalog": "materials",
+          "prompt": "Кристалл Пустоты",
+          "finalFile": "icons/items/materials/void_crystal.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-materials-reagents-supplies",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-reagents-supplies.png",
+      "status": "candidate",
+      "catalog": "materials",
+      "notes": [
+        "Generated built-in imagegen sheet for alchemical reagents and craft supplies."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "star_shard",
+          "name": "Осколок звезды",
+          "catalog": "materials",
+          "prompt": "Осколок звезды",
+          "finalFile": "icons/items/materials/star_shard.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "star_heart",
+          "name": "Сердце звезды",
+          "catalog": "materials",
+          "prompt": "Сердце звезды",
+          "finalFile": "icons/items/materials/star_heart.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "herb_common",
+          "name": "Обычная трава",
+          "catalog": "materials",
+          "prompt": "Обычная трава",
+          "finalFile": "icons/items/materials/herb_common.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "herb_healing",
+          "name": "Целебный лист",
+          "catalog": "materials",
+          "prompt": "Целебный лист",
+          "finalFile": "icons/items/materials/herb_healing.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "mushroom_bog",
+          "name": "Болотный гриб",
+          "catalog": "materials",
+          "prompt": "Болотный гриб",
+          "finalFile": "icons/items/materials/mushroom_bog.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "root_bitter",
+          "name": "Горький корень",
+          "catalog": "materials",
+          "prompt": "Горький корень",
+          "finalFile": "icons/items/materials/root_bitter.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "poison_fang",
+          "name": "Ядовитый клык",
+          "catalog": "materials",
+          "prompt": "Ядовитый клык",
+          "finalFile": "icons/items/materials/poison_fang.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "flower_moon",
+          "name": "Лунный цветок",
+          "catalog": "materials",
+          "prompt": "Лунный цветок",
+          "finalFile": "icons/items/materials/flower_moon.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "monster_gland",
+          "name": "Железа монстра",
+          "catalog": "materials",
+          "prompt": "Железа монстра",
+          "finalFile": "icons/items/materials/monster_gland.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "venom_sac",
+          "name": "Мешок с ядом",
+          "catalog": "materials",
+          "prompt": "Мешок с ядом",
+          "finalFile": "icons/items/materials/venom_sac.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "spirit_bloom",
+          "name": "Цветок духов",
+          "catalog": "materials",
+          "prompt": "Цветок духов",
+          "finalFile": "icons/items/materials/spirit_bloom.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "phoenix_feather",
+          "name": "Перо феникса",
+          "catalog": "materials",
+          "prompt": "Перо феникса",
+          "finalFile": "icons/items/materials/phoenix_feather.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "giant_heart",
+          "name": "Сердце великана",
+          "catalog": "materials",
+          "prompt": "Сердце великана",
+          "finalFile": "icons/items/materials/giant_heart.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "dragon_blood",
+          "name": "Кровь дракона",
+          "catalog": "materials",
+          "prompt": "Кровь дракона",
+          "finalFile": "icons/items/materials/dragon_blood.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "abyss_lichen",
+          "name": "Лишайник Бездны",
+          "catalog": "materials",
+          "prompt": "Лишайник Бездны",
+          "finalFile": "icons/items/materials/abyss_lichen.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "god_tears",
+          "name": "Слёзы богов",
+          "catalog": "materials",
+          "prompt": "Слёзы богов",
+          "finalFile": "icons/items/materials/god_tears.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "rope",
+          "name": "Верёвка",
+          "catalog": "materials",
+          "prompt": "Верёвка",
+          "finalFile": "icons/items/materials/rope.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "forge_coal",
+          "name": "Кузнечный кокс",
+          "catalog": "materials",
+          "prompt": "Кузнечный кокс",
+          "finalFile": "icons/items/materials/forge_coal.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 3,
+          "id": "glass",
+          "name": "Стекло",
+          "catalog": "materials",
+          "prompt": "Стекло",
+          "finalFile": "icons/items/materials/glass.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 4,
+          "id": "oil_flask",
+          "name": "Масло (фляга)",
+          "catalog": "materials",
+          "prompt": "Масло (фляга)",
+          "finalFile": "icons/items/materials/oil_flask.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-materials-arcane-harvest",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-materials-arcane-harvest.png",
+      "status": "candidate",
+      "catalog": "materials",
+      "notes": [
+        "Generated built-in imagegen sheet for arcane utility materials and monster harvest loot. Last two cells are intentionally empty."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "mana_stone",
+          "name": "Мана-камень",
+          "catalog": "materials",
+          "prompt": "Мана-камень",
+          "finalFile": "icons/items/materials/mana_stone.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "enchant_dust",
+          "name": "Пыль зачарования",
+          "catalog": "materials",
+          "prompt": "Пыль зачарования",
+          "finalFile": "icons/items/materials/enchant_dust.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "artisans_resin",
+          "name": "Мастерская смола",
+          "catalog": "materials",
+          "prompt": "Мастерская смола",
+          "finalFile": "icons/items/materials/artisans_resin.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "soul_essence",
+          "name": "Эссенция души",
+          "catalog": "materials",
+          "prompt": "Эссенция души",
+          "finalFile": "icons/items/materials/soul_essence.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "planar_clip",
+          "name": "Планарная скоба",
+          "catalog": "materials",
+          "prompt": "Планарная скоба",
+          "finalFile": "icons/items/materials/planar_clip.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "arcane_mesh",
+          "name": "Моток арканной проволоки",
+          "catalog": "materials",
+          "prompt": "Моток арканной проволоки",
+          "finalFile": "icons/items/materials/arcane_mesh.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "relic_shard",
+          "name": "Осколок реликта",
+          "catalog": "materials",
+          "prompt": "Осколок реликта",
+          "finalFile": "icons/items/materials/relic_shard.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "epoch_seed",
+          "name": "Семя эпохи",
+          "catalog": "materials",
+          "prompt": "Семя эпохи",
+          "finalFile": "icons/items/materials/epoch_seed.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "beast_sinew_spool",
+          "name": "Жильё зверя",
+          "catalog": "materials",
+          "prompt": "Жильё зверя",
+          "finalFile": "icons/items/materials/beast_sinew_spool.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "small_pelt_uncured",
+          "name": "Небольшая шкура (сырая)",
+          "catalog": "materials",
+          "prompt": "Небольшая шкура (сырая)",
+          "finalFile": "icons/items/materials/small_pelt_uncured.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "fang_shard",
+          "name": "Осколок клыка",
+          "catalog": "materials",
+          "prompt": "Осколок клыка",
+          "finalFile": "icons/items/materials/fang_shard.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "wisp_moth_powder",
+          "name": "Пыльца ночных мотыльков",
+          "catalog": "materials",
+          "prompt": "Пыльца ночных мотыльков",
+          "finalFile": "icons/items/materials/wisp_moth_powder.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "serpent_sac_mild",
+          "name": "Слабая змеиная желчь",
+          "catalog": "materials",
+          "prompt": "Слабая змеиная желчь",
+          "finalFile": "icons/items/materials/serpent_sac_mild.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "bristle_keg_rings",
+          "name": "Кольца из щетины кабана",
+          "catalog": "materials",
+          "prompt": "Кольца из щетины кабана",
+          "finalFile": "icons/items/materials/bristle_keg_rings.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "avian_keel_bone",
+          "name": "Киль птицеящера",
+          "catalog": "materials",
+          "prompt": "Киль птицеящера",
+          "finalFile": "icons/items/materials/avian_keel_bone.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "alpha_musk_gland",
+          "name": "Железа вожака",
+          "catalog": "materials",
+          "prompt": "Железа вожака",
+          "finalFile": "icons/items/materials/alpha_musk_gland.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "wyvern_sinew_filament",
+          "name": "Жилье виверны",
+          "catalog": "materials",
+          "prompt": "Жилье виверны",
+          "finalFile": "icons/items/materials/wyvern_sinew_filament.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "predator_resin_mass",
+          "name": "Смоляная пробка хищника",
+          "catalog": "materials",
+          "prompt": "Смоляная пробка хищника",
+          "finalFile": "icons/items/materials/predator_resin_mass.webp",
+          "notes": [
+            "Promoted material candidate."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1109,15 +1109,19 @@ export function endCombat({ silent = false } = {}) {
 
 export function buildCombatParticipantsFromRefs(refs = []) {
   const result = [];
-  const addedActorIds = new Set();
+  const addedParticipantKeys = new Set();
 
   for (const ref of refs) {
     const extra = ref?.combatData ?? ref?.data ?? ref ?? {};
     const participant = buildCombatParticipant(ref, extra);
     if (!participant) continue;
-    if (addedActorIds.has(participant.actorId)) continue;
+    const key = participant.tokenUuid
+      || participant.tokenId
+      || participant.actorUuid
+      || participant.actorId;
+    if (key && addedParticipantKeys.has(key)) continue;
 
-    addedActorIds.add(participant.actorId);
+    if (key) addedParticipantKeys.add(key);
     result.push(participant);
   }
 

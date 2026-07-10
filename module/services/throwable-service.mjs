@@ -10,6 +10,7 @@ import {
   resolveSingleAttack,
 } from "./combat-attack-service.mjs";
 import { createCombatChatMessage, joinCombatHtml } from "./combat-chat-service.mjs";
+import { playAttackVfx } from "./combat-vfx-service.mjs";
 import {
   isShieldBlockableDamageType,
   normalizeDamageType,
@@ -262,6 +263,13 @@ export async function useThrowableItem({
     target: targetActor,
     result: attackResult,
     effect: throwableEffect,
+  });
+  await playAttackVfx({
+    attacker: actor,
+    target: targetActor,
+    result: attackResult,
+    label,
+    source: "throwable",
   });
 
   const attackHtml = await formatAttackChatHtml({

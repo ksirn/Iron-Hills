@@ -1,0 +1,992 @@
+{
+  "label": "Iron Hills utility gear imagegen slice plan",
+  "outDir": "art-candidates/items",
+  "outputSize": 1024,
+  "webpQuality": 92,
+  "sheets": [
+    {
+      "slug": "2026-06-18-utility-attachments",
+      "grid": "5x4",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-attachments.png",
+      "status": "candidate",
+      "catalog": "attachments",
+      "notes": [
+        "Utility gear replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "knife_sheath",
+          "name": "Ножны (нож)",
+          "catalog": "attachments",
+          "prompt": "Ножны (нож)",
+          "finalFile": "icons/items/attachments/knife_sheath.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "sword_scabbard",
+          "name": "Ножны (меч)",
+          "catalog": "attachments",
+          "prompt": "Ножны (меч)",
+          "finalFile": "icons/items/attachments/sword_scabbard.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "greatsword_scabbard",
+          "name": "Ножны (двуруч.)",
+          "catalog": "attachments",
+          "prompt": "Ножны (двуруч.)",
+          "finalFile": "icons/items/attachments/greatsword_scabbard.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "axe_loop",
+          "name": "Петля (топор)",
+          "catalog": "attachments",
+          "prompt": "Петля (топор)",
+          "finalFile": "icons/items/attachments/axe_loop.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "crossbow_hook",
+          "name": "Крюк (арбалет)",
+          "catalog": "attachments",
+          "prompt": "Крюк (арбалет)",
+          "finalFile": "icons/items/attachments/crossbow_hook.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "bow_sling",
+          "name": "Перевязь (лук)",
+          "catalog": "attachments",
+          "prompt": "Перевязь (лук)",
+          "finalFile": "icons/items/attachments/bow_sling.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "arrow_quiver",
+          "name": "Колчан (стрелы)",
+          "catalog": "attachments",
+          "prompt": "Колчан (стрелы)",
+          "finalFile": "icons/items/attachments/arrow_quiver.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "bolt_pouch",
+          "name": "Подсумок (болты)",
+          "catalog": "attachments",
+          "prompt": "Подсумок (болты)",
+          "finalFile": "icons/items/attachments/bolt_pouch.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "potion_bandolier",
+          "name": "Бандольер (зелья)",
+          "catalog": "attachments",
+          "prompt": "Бандольер (зелья)",
+          "finalFile": "icons/items/attachments/potion_bandolier.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "large_bandolier",
+          "name": "Бандольер большой",
+          "catalog": "attachments",
+          "prompt": "Бандольер большой",
+          "finalFile": "icons/items/attachments/large_bandolier.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "chest_pocket",
+          "name": "Нагрудный карман",
+          "catalog": "attachments",
+          "prompt": "Нагрудный карман",
+          "finalFile": "icons/items/attachments/chest_pocket.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "utility_strap",
+          "name": "Разгрузочная стропа",
+          "catalog": "attachments",
+          "prompt": "Разгрузочная стропа",
+          "finalFile": "icons/items/attachments/utility_strap.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "spear_frog",
+          "name": "Чехол для копья",
+          "catalog": "attachments",
+          "prompt": "Чехол для копья",
+          "finalFile": "icons/items/attachments/spear_frog.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "shield_hook",
+          "name": "Крюк для щита",
+          "catalog": "attachments",
+          "prompt": "Крюк для щита",
+          "finalFile": "icons/items/attachments/shield_hook.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "wand_loop",
+          "name": "Петля для жезла",
+          "catalog": "attachments",
+          "prompt": "Петля для жезла",
+          "finalFile": "icons/items/attachments/wand_loop.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 0,
+          "id": "grenade_loop",
+          "name": "Кольца под метательное",
+          "catalog": "attachments",
+          "prompt": "Кольца под метательное",
+          "finalFile": "icons/items/attachments/grenade_loop.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 1,
+          "id": "telescoping_quiver",
+          "name": "Телескопический колчан",
+          "catalog": "attachments",
+          "prompt": "Телескопический колчан",
+          "finalFile": "icons/items/attachments/telescoping_quiver.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        },
+        {
+          "row": 3,
+          "col": 2,
+          "id": "side_pouch",
+          "name": "Боковой подсумок",
+          "catalog": "attachments",
+          "prompt": "Боковой подсумок",
+          "finalFile": "icons/items/attachments/side_pouch.webp",
+          "notes": [
+            "Promoted utility attachment candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-utility-belts",
+      "grid": "4x3",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-belts.png",
+      "status": "candidate",
+      "catalog": "belts",
+      "notes": [
+        "Belt replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "rope_belt",
+          "name": "Верёвочный пояс",
+          "catalog": "belts",
+          "prompt": "Верёвочный пояс",
+          "finalFile": "icons/items/belts/rope_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "leather_belt",
+          "name": "Кожаный пояс",
+          "catalog": "belts",
+          "prompt": "Кожаный пояс",
+          "finalFile": "icons/items/belts/leather_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "soldier_belt",
+          "name": "Солдатский пояс",
+          "catalog": "belts",
+          "prompt": "Солдатский пояс",
+          "finalFile": "icons/items/belts/soldier_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "tactical_belt",
+          "name": "Тактический пояс",
+          "catalog": "belts",
+          "prompt": "Тактический пояс",
+          "finalFile": "icons/items/belts/tactical_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "explorer_girdle",
+          "name": "Пояс следопыта",
+          "catalog": "belts",
+          "prompt": "Пояс следопыта",
+          "finalFile": "icons/items/belts/explorer_girdle.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "mithril_belt",
+          "name": "Митрильный пояс",
+          "catalog": "belts",
+          "prompt": "Митрильный пояс",
+          "finalFile": "icons/items/belts/mithril_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "siege_belt",
+          "name": "Осадный пояс",
+          "catalog": "belts",
+          "prompt": "Осадный пояс",
+          "finalFile": "icons/items/belts/siege_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "runners_light_harness",
+          "name": "Облегчённая портупея бегуна",
+          "catalog": "belts",
+          "prompt": "Облегчённая портупея бегуна",
+          "finalFile": "icons/items/belts/runners_light_harness.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "darkiron_chain_belt",
+          "name": "Цепной пояс из тёмного железа",
+          "catalog": "belts",
+          "prompt": "Цепной пояс из тёмного железа",
+          "finalFile": "icons/items/belts/darkiron_chain_belt.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "orichalcum_girdle",
+          "name": "Пояс Орихалка",
+          "catalog": "belts",
+          "prompt": "Пояс Орихалка",
+          "finalFile": "icons/items/belts/orichalcum_girdle.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "astral_command_girdle",
+          "name": "Астральная портупея командора",
+          "catalog": "belts",
+          "prompt": "Астральная портупея командора",
+          "finalFile": "icons/items/belts/astral_command_girdle.webp",
+          "notes": [
+            "Promoted belt candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-utility-backpacks",
+      "grid": "5x3",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-backpacks.png",
+      "status": "candidate",
+      "catalog": "backpacks",
+      "notes": [
+        "Backpack replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "hip_pouch",
+          "name": "Поясная сумка",
+          "catalog": "backpacks",
+          "prompt": "Поясная сумка",
+          "finalFile": "icons/items/backpacks/hip_pouch.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "small_sack",
+          "name": "Небольшой мешок",
+          "catalog": "backpacks",
+          "prompt": "Небольшой мешок",
+          "finalFile": "icons/items/backpacks/small_sack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "leather_satchel",
+          "name": "Кожаная сумка",
+          "catalog": "backpacks",
+          "prompt": "Кожаная сумка",
+          "finalFile": "icons/items/backpacks/leather_satchel.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "travelers_pack",
+          "name": "Дорожный ранец",
+          "catalog": "backpacks",
+          "prompt": "Дорожный ранец",
+          "finalFile": "icons/items/backpacks/travelers_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "soldier_pack",
+          "name": "Солдатский ранец",
+          "catalog": "backpacks",
+          "prompt": "Солдатский ранец",
+          "finalFile": "icons/items/backpacks/soldier_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "hunters_bag",
+          "name": "Охотничья сума",
+          "catalog": "backpacks",
+          "prompt": "Охотничья сума",
+          "finalFile": "icons/items/backpacks/hunters_bag.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "large_backpack",
+          "name": "Большой рюкзак",
+          "catalog": "backpacks",
+          "prompt": "Большой рюкзак",
+          "finalFile": "icons/items/backpacks/large_backpack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "frame_pack",
+          "name": "Рамный рюкзак",
+          "catalog": "backpacks",
+          "prompt": "Рамный рюкзак",
+          "finalFile": "icons/items/backpacks/frame_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "alchemist_satchel",
+          "name": "Сумка алхимика",
+          "catalog": "backpacks",
+          "prompt": "Сумка алхимика",
+          "finalFile": "icons/items/backpacks/alchemist_satchel.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "mithril_pack",
+          "name": "Митрильный рюкзак",
+          "catalog": "backpacks",
+          "prompt": "Митрильный рюкзак",
+          "finalFile": "icons/items/backpacks/mithril_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "caravan_master_pack",
+          "name": "Рюкзак караванного бариши",
+          "catalog": "backpacks",
+          "prompt": "Рюкзак караванного бариши",
+          "finalFile": "icons/items/backpacks/caravan_master_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "beast_load_frame",
+          "name": "Вьючная рама для зверя",
+          "catalog": "backpacks",
+          "prompt": "Вьючная рама для зверя",
+          "finalFile": "icons/items/backpacks/beast_load_frame.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "void_satchel",
+          "name": "Сумка Пустоты",
+          "catalog": "backpacks",
+          "prompt": "Сумка Пустоты",
+          "finalFile": "icons/items/backpacks/void_satchel.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "planar_satchel",
+          "name": "Планарная сумка",
+          "catalog": "backpacks",
+          "prompt": "Планарная сумка",
+          "finalFile": "icons/items/backpacks/planar_satchel.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "demiplane_pack",
+          "name": "Рюкзак малой демиплоскости",
+          "catalog": "backpacks",
+          "prompt": "Рюкзак малой демиплоскости",
+          "finalFile": "icons/items/backpacks/demiplane_pack.webp",
+          "notes": [
+            "Promoted backpack candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-utility-tools-low-mid",
+      "grid": "5x3",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-tools-low-mid.png",
+      "status": "candidate",
+      "catalog": "tools",
+      "notes": [
+        "Low/mid tier tool replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "flint_tools",
+          "name": "Кремнёвые инструменты",
+          "catalog": "tools",
+          "prompt": "Кремнёвые инструменты",
+          "finalFile": "icons/items/tools/flint_tools.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "iron_hammer",
+          "name": "Железный молот",
+          "catalog": "tools",
+          "prompt": "Железный молот",
+          "finalFile": "icons/items/tools/iron_hammer.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "mortar_pestle",
+          "name": "Ступка и пестик",
+          "catalog": "tools",
+          "prompt": "Ступка и пестик",
+          "finalFile": "icons/items/tools/mortar_pestle.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "cooking_pot",
+          "name": "Котелок",
+          "catalog": "tools",
+          "prompt": "Котелок",
+          "finalFile": "icons/items/tools/cooking_pot.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "pickaxe_iron",
+          "name": "Железная кирка",
+          "catalog": "tools",
+          "prompt": "Железная кирка",
+          "finalFile": "icons/items/tools/pickaxe_iron.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "hunter_butcher_kit",
+          "name": "Набор разделки туши",
+          "catalog": "tools",
+          "prompt": "Набор разделки туши",
+          "finalFile": "icons/items/tools/hunter_butcher_kit.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "steel_hammer",
+          "name": "Стальной молот",
+          "catalog": "tools",
+          "prompt": "Стальной молот",
+          "finalFile": "icons/items/tools/steel_hammer.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "alch_kit",
+          "name": "Алхимический набор",
+          "catalog": "tools",
+          "prompt": "Алхимический набор",
+          "finalFile": "icons/items/tools/alch_kit.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "master_tools",
+          "name": "Инструменты мастера",
+          "catalog": "tools",
+          "prompt": "Инструменты мастера",
+          "finalFile": "icons/items/tools/master_tools.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "pickaxe_steel",
+          "name": "Стальная кирка",
+          "catalog": "tools",
+          "prompt": "Стальная кирка",
+          "finalFile": "icons/items/tools/pickaxe_steel.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "field_butcher_roll",
+          "name": "Скрутка полевого мясника",
+          "catalog": "tools",
+          "prompt": "Скрутка полевого мясника",
+          "finalFile": "icons/items/tools/field_butcher_roll.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "dwarven_hammer",
+          "name": "Гномий молот",
+          "catalog": "tools",
+          "prompt": "Гномий молот",
+          "finalFile": "icons/items/tools/dwarven_hammer.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "grand_alch_kit",
+          "name": "Большая алхим. лаб.",
+          "catalog": "tools",
+          "prompt": "Большая алхим. лаб.",
+          "finalFile": "icons/items/tools/grand_alch_kit.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "travel_anvil_kit",
+          "name": "Дорожная наковальня в ящике",
+          "catalog": "tools",
+          "prompt": "Дорожная наковальня в ящике",
+          "finalFile": "icons/items/tools/travel_anvil_kit.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 4,
+          "id": "fold_sawhorse_pair",
+          "name": "Пара складных козёл",
+          "catalog": "tools",
+          "prompt": "Пара складных козёл",
+          "finalFile": "icons/items/tools/fold_sawhorse_pair.webp",
+          "notes": [
+            "Promoted low/mid tool candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-utility-tools-high",
+      "grid": "5x3",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-tools-high.png",
+      "status": "candidate",
+      "catalog": "tools",
+      "notes": [
+        "High tier tool replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "bronze_brazier_set",
+          "name": "Бронзовый жаровенный набор",
+          "catalog": "tools",
+          "prompt": "Бронзовый жаровенный набор",
+          "finalFile": "icons/items/tools/bronze_brazier_set.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "portable_smith_kit",
+          "name": "Переносная кузница",
+          "catalog": "tools",
+          "prompt": "Переносная кузница",
+          "finalFile": "icons/items/tools/portable_smith_kit.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "folding_alchemy_bench",
+          "name": "Складной алхимический стол",
+          "catalog": "tools",
+          "prompt": "Складной алхимический стол",
+          "finalFile": "icons/items/tools/folding_alchemy_bench.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 3,
+          "id": "field_kitchen_cart",
+          "name": "Полевая кухня на салазках",
+          "catalog": "tools",
+          "prompt": "Полевая кухня на салазках",
+          "finalFile": "icons/items/tools/field_kitchen_cart.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 4,
+          "id": "deep_drill_brace",
+          "name": "Шахтёрский бурильный станок",
+          "catalog": "tools",
+          "prompt": "Шахтёрский бурильный станок",
+          "finalFile": "icons/items/tools/deep_drill_brace.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 0,
+          "id": "master_artisans_cart",
+          "name": "Стол ремесленника на колёсах",
+          "catalog": "tools",
+          "prompt": "Стол ремесленника на колёсах",
+          "finalFile": "icons/items/tools/master_artisans_cart.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 1,
+          "id": "wagon_forge",
+          "name": "Кузница на колёсах",
+          "catalog": "tools",
+          "prompt": "Кузница на колёсах",
+          "finalFile": "icons/items/tools/wagon_forge.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 2,
+          "id": "steam_evaporator_kit",
+          "name": "Паровая перегонная установка",
+          "catalog": "tools",
+          "prompt": "Паровая перегонная установка",
+          "finalFile": "icons/items/tools/steam_evaporator_kit.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 3,
+          "id": "tunnel_jack_system",
+          "name": "Комплект туннельных лесов",
+          "catalog": "tools",
+          "prompt": "Комплект туннельных лесов",
+          "finalFile": "icons/items/tools/tunnel_jack_system.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 1,
+          "col": 4,
+          "id": "siege_anvil_cart",
+          "name": "Осадная переносная кузница",
+          "catalog": "tools",
+          "prompt": "Осадная переносная кузница",
+          "finalFile": "icons/items/tools/siege_anvil_cart.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "id": "alchemical_caravan_lab",
+          "name": "Караванная алхимлаборатория",
+          "catalog": "tools",
+          "prompt": "Караванная алхимлаборатория",
+          "finalFile": "icons/items/tools/alchemical_caravan_lab.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "id": "runic_fold_forge",
+          "name": "Руническая складная горн-тень",
+          "catalog": "tools",
+          "prompt": "Руническая складная горн-тень",
+          "finalFile": "icons/items/tools/runic_fold_forge.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "id": "starforge_manifest",
+          "name": "Проявитель звёздной кузницы",
+          "catalog": "tools",
+          "prompt": "Проявитель звёздной кузницы",
+          "finalFile": "icons/items/tools/starforge_manifest.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "id": "worldroot_workshop_seed",
+          "name": "Семя мастерской Мирового Корня",
+          "catalog": "tools",
+          "prompt": "Семя мастерской Мирового Корня",
+          "finalFile": "icons/items/tools/worldroot_workshop_seed.webp",
+          "notes": [
+            "Promoted high-tier tool candidate."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "2026-06-18-utility-consumable-vessels",
+      "grid": "3x1",
+      "file": "docs/content/generated-image-sheets/2026-06-18-utility-consumable-vessels.png",
+      "status": "candidate",
+      "catalog": "consumables",
+      "notes": [
+        "Drink vessel replacements generated from built-in imagegen sheet."
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": 0,
+          "id": "leather_waterskin",
+          "name": "Кожаная фляга",
+          "catalog": "consumables",
+          "prompt": "Кожаная фляга",
+          "finalFile": "icons/items/consumables/leather_waterskin.webp",
+          "notes": [
+            "Promoted drink vessel candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 1,
+          "id": "iron_canteen",
+          "name": "Железная фляга",
+          "catalog": "consumables",
+          "prompt": "Железная фляга",
+          "finalFile": "icons/items/consumables/iron_canteen.webp",
+          "notes": [
+            "Promoted drink vessel candidate."
+          ]
+        },
+        {
+          "row": 0,
+          "col": 2,
+          "id": "ranger_gourd",
+          "name": "Бурдюк следопыта",
+          "catalog": "consumables",
+          "prompt": "Бурдюк следопыта",
+          "finalFile": "icons/items/consumables/ranger_gourd.webp",
+          "notes": [
+            "Promoted drink vessel candidate."
+          ]
+        }
+      ]
+    }
+  ]
+}

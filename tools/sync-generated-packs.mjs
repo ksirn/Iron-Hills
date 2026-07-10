@@ -227,19 +227,25 @@ function actorDocEnvelope(data, existing, context, itemIds, { touch = false } = 
   const userId = context.userId;
   const id = existing?._id ?? data._id ?? stableId(`${context.packName}:${bestiaryIdFromActor(data) || data.name}`);
   const systemVersion = context.systemVersion;
+  const existingToken = clonePlain(existing?.prototypeToken ?? {});
+  const tokenImg = data.img ?? existingToken?.texture?.src ?? "icons/svg/mystery-man.svg";
   return {
     ...clonePlain(data),
     _id: id,
     items: itemIds,
-    prototypeToken: clonePlain(existing?.prototypeToken ?? {
-      name: data.name,
-      displayName: 20,
-      actorLink: false,
-      disposition: -1,
-      texture: { src: data.img ?? "icons/svg/mystery-man.svg" },
-      width: 1,
-      height: 1,
-    }),
+    prototypeToken: {
+      name: existingToken.name ?? data.name,
+      displayName: existingToken.displayName ?? 20,
+      actorLink: existingToken.actorLink ?? false,
+      disposition: existingToken.disposition ?? (data.type === "npc" ? 0 : -1),
+      width: existingToken.width ?? 1,
+      height: existingToken.height ?? 1,
+      ...existingToken,
+      texture: {
+        ...(existingToken.texture ?? {}),
+        src: tokenImg,
+      },
+    },
     effects: clonePlain(existing?.effects ?? data.effects ?? []),
     folder: existing?.folder ?? null,
     sort: Number(existing?.sort ?? data.sort ?? 0),
@@ -340,10 +346,30 @@ function indexEmbeddedItems(embeddedMap = new Map()) {
   const byName = new Map();
   for (const { doc } of embeddedMap.values()) {
     const catalogId = catalogIdFromData(doc);
-    if (catalogId && !byCatalogId.has(catalogId)) byCatalogId.set(catalogId, doc);
-    if (doc.name && !byName.has(doc.name)) byName.set(doc.name, doc);
+    if (catalogId) {
+      if (!byCatalogId.has(catalogId)) byCatalogId.set(catalogId, []);
+      byCatalogId.get(catalogId).push(doc);
+    }
+    if (doc.name) {
+      if (!byName.has(doc.name)) byName.set(doc.name, []);
+      byName.get(doc.name).push(doc);
+    }
   }
   return { byCatalogId, byName };
+}
+
+function takeEmbeddedMatch(embeddedIndex, { catalogId = "", name = "" } = {}, usedIds = new Set()) {
+  const pools = [];
+  if (catalogId) pools.push(embeddedIndex.byCatalogId.get(String(catalogId)) ?? []);
+  if (name) pools.push(embeddedIndex.byName.get(String(name)) ?? []);
+  for (const pool of pools) {
+    const match = pool.find(doc => doc?._id && !usedIds.has(doc._id));
+    if (match?._id) {
+      usedIds.add(match._id);
+      return match;
+    }
+  }
+  return null;
 }
 
 function buildGeneratedData(spec) {
@@ -449,14 +475,16 @@ async function syncActorPack({ db, spec, context, apply }) {
       expectedActorIds.add(actorId);
       const existingEmbedded = embedded.get(actorId) ?? new Map();
       const embeddedIndex = indexEmbeddedItems(existingEmbedded);
+      const usedEmbeddedIds = new Set();
       const itemIds = [];
       const desiredEmbeddedKeys = new Set();
 
       for (const [idx, itemData] of (data.items ?? []).entries()) {
         const catalogId = catalogIdFromData(itemData);
-        const existingItem = (catalogId ? embeddedIndex.byCatalogId.get(catalogId) : null)
-          ?? embeddedIndex.byName.get(itemData.name)
-          ?? null;
+        const existingItem = takeEmbeddedMatch(embeddedIndex, {
+          catalogId,
+          name: itemData.name,
+        }, usedEmbeddedIds);
         const itemId = existingItem?._id ?? stableId(`${actorId}:${catalogId || itemData.name}:${idx}`);
         itemIds.push(itemId);
         desiredEmbeddedKeys.add(actorItemKey(actorId, itemId));

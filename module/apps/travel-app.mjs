@@ -123,6 +123,82 @@ const ACTIVITIES = [
 // Неактивная группа — минимальный расход (сидят в городе)
 const IDLE_RATES = { satiety: 0.5, hydration: 1 };
 
+function clampPct(value, max) {
+  const safeMax = Math.max(1, Number(max) || 1);
+  return Math.max(0, Math.min(100, Math.round((Number(value) || 0) / safeMax * 100)));
+}
+
+function fmtNumber(value, digits = 1) {
+  const num = Number(value) || 0;
+  return Number(num.toFixed(digits)).toString();
+}
+
+function fmtDelta(value, digits = 1) {
+  const num = Number(value) || 0;
+  if (Math.abs(num) < 0.01) return "0";
+  return `${num > 0 ? "+" : ""}${fmtNumber(num, digits)}`;
+}
+
+function formatDurationLabel(hours, mins) {
+  const h = Math.max(0, Number(hours) || 0);
+  const m = Math.max(0, Number(mins) || 0);
+  if (h <= 0 && m <= 0) return "0м";
+  if (h <= 0) return `${m}м`;
+  if (m <= 0) return `${h}ч`;
+  return `${h}ч ${m}м`;
+}
+
+function getActivityTone(key) {
+  return ({
+    rest: "recover",
+    sleep: "recover",
+    meditate: "arcane",
+    walk: "travel",
+    ride: "travel",
+    work: "labor",
+    combat: "danger",
+  })[key] ?? "neutral";
+}
+
+function buildActivityView(activity, activeKey) {
+  const hints = [];
+  if (activity.energyCost) hints.push(`энергия -${fmtNumber(activity.energyCost)}/ч`);
+  if (activity.energyRegen) hints.push(`энергия +${Math.round(activity.energyRegen * 100)}%/ч`);
+  if (activity.energyMaxRegen) hints.push(`резерв +${Math.round(activity.energyMaxRegen * 100)}%/ч`);
+  if (activity.manaRegen) hints.push(`мана +${Math.round(activity.manaRegen * 100)}%/ч`);
+  hints.push(`еда -${fmtNumber(activity.satiety)}/ч`);
+  hints.push(`вода -${fmtNumber(activity.hydration)}/ч`);
+
+  return {
+    ...activity,
+    isActive: activity.key === activeKey,
+    tone: getActivityTone(activity.key),
+    costHint: hints.join(" · "),
+  };
+}
+
+function getResourceTone(pct) {
+  if (pct <= 15) return "is-danger";
+  if (pct <= 35) return "is-warn";
+  if (pct >= 85) return "is-good";
+  return "is-stable";
+}
+
+function buildResourceRow({ key, icon, label, value, max, delta, pct, fillClass }) {
+  const numericDelta = Number(delta) || 0;
+  return {
+    key,
+    icon,
+    label,
+    valueText: `${fmtNumber(value)}/${fmtNumber(max)}`,
+    deltaText: fmtDelta(numericDelta),
+    deltaClass: numericDelta > 0 ? "pos" : numericDelta < 0 ? "neg" : "muted",
+    pct,
+    tone: getResourceTone(pct),
+    fillClass,
+  };
+}
+
 function getHungerState(pct) {
   if (pct <= 0)    return { label:"☠ Голодная смерть",    color:"#ef4444", enPenalty:20 };
   if (pct <= 0.1)  return { label:"😵 Крайнее истощение", color:"#f87171", enPenalty:10 };
@@ -154,8 +230,8 @@ class IronHillsTravelApp extends Application {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes:   ["iron-hills", "travel-app"],
-      width:     580,
-      height:    580,
+      width:     760,
+      height:    720,
       resizable: true,
       title:     "⏳ Менеджер времени"
     });
@@ -187,6 +263,9 @@ class IronHillsTravelApp extends Application {
 
     const members  = this._getTargetMembers();
     const act      = ACTIVITIES.find(a => a.key === this._activity) ?? ACTIVITIES[2];
+    const totalHours = this._hours + (this._mins / 60);
+    const activities = ACTIVITIES.map(activity => buildActivityView(activity, this._activity));
+    const activeActivity = activities.find(activity => activity.key === act.key) ?? activities[0];
     // В режиме привала каждый актор может иметь свою активность
 
     const preview  = members.map(actor => {
@@ -200,8 +279,6 @@ class IronHillsTravelApp extends Application {
       const mnVal  = Number(res.mana?.value     ?? 50);
       const mnMax  = Number(res.mana?.max       ?? 50);
 
-      // Дробные часы: часы + минуты
-      const totalHours = this._hours + (this._mins / 60);
       // В режиме привала — индивидуальная активность для каждого актора
       const actorActKey = this._campMode
         ? (this._campActivities[actor.id] ?? "rest")
@@ -217,7 +294,7 @@ class IronHillsTravelApp extends Application {
       // Если baseMax не записан — считаем что max и есть baseMax
       const enBaseMax = Number(res.energy?.baseMax > 0 ? res.energy.baseMax : enMax);
       const enCurMax  = Number(res.energy?.max     ?? enMax);
-      const enResult  = calcEnergyRegen(enVal, enCurMax, enBaseMax, act, totalHours);
+      const enResult  = calcEnergyRegen(enVal, enCurMax, enBaseMax, actEff, totalHours);
       const newEn     = enResult.newEn;
       const newEnMax  = enResult.newEnMax;
       const enDelta   = enResult.enDelta;   // изменение текущей (может быть <0 при сбросе)
@@ -233,6 +310,14 @@ class IronHillsTravelApp extends Application {
 
       const hunger = getHungerState(newSat / satMax);
       const thirst = getThirstState(newHyd / hydMax);
+      const satPct = clampPct(newSat, satMax);
+      const hydPct = clampPct(newHyd, hydMax);
+      const enPct  = clampPct(newEn, newEnMax);
+      const mnPct  = clampPct(newMn, mnMax);
+      const statusChips = [];
+      if (hunger) statusChips.push({ label: hunger.label, tone: "is-warn" });
+      if (thirst) statusChips.push({ label: thirst.label, tone: "is-warn" });
+      if (newEnMax < enCurMax) statusChips.push({ label: `усталость ${fmtDelta(newEnMax - enCurMax)}`, tone: "is-danger" });
 
       return {
         actorId: actor.id,
@@ -254,14 +339,22 @@ class IronHillsTravelApp extends Application {
         hydDelta:    +(-hydCost).toFixed(2),
         mnFull:      (mnVal >= mnMax),
         enFull:      (enVal >= enCurMax && enCurMax >= enBaseMax),
-        satPct: Math.round(newSat / Math.max(1,satMax) * 100),
-        hydPct: Math.round(newHyd / Math.max(1,hydMax) * 100),
-        enPct:  Math.round(enVal  / Math.max(1,enCurMax) * 100),
+        satPct,
+        hydPct,
+        enPct,
+        mnPct,
         enCost: (enDelta < 0 && !actEff.energyRegen) ? 1 : 0,
         enCostFmt: enDelta < 0 ? Math.abs(enDelta).toFixed(1) : "0",
         hungerLabel: hunger?.label ?? "",
         thirstLabel: thirst?.label ?? "",
-        hasWarning:  !!(hunger || thirst),
+        hasWarning:  statusChips.length > 0,
+        statusChips,
+        resourceRows: [
+          buildResourceRow({ key: "satiety", icon: "🍖", label: "Сытость", value: newSat, max: satMax, delta: -satCost, pct: satPct, fillClass: "satiety" }),
+          buildResourceRow({ key: "hydration", icon: "💧", label: "Вода", value: newHyd, max: hydMax, delta: -hydCost, pct: hydPct, fillClass: "water" }),
+          buildResourceRow({ key: "energy", icon: "⚡", label: "Энергия", value: newEn, max: newEnMax, delta: newEn - enVal, pct: enPct, fillClass: "energy" }),
+          buildResourceRow({ key: "mana", icon: "✦", label: "Мана", value: newMn, max: mnMax, delta: newMn - mnVal, pct: mnPct, fillClass: "mana" }),
+        ],
       };
     });
 
@@ -273,21 +366,33 @@ class IronHillsTravelApp extends Application {
         location: g.location, localHours: g.localHours ?? 0,
         memberCount: (g.memberIds ?? []).length
       }));
+    const warningCount = preview.filter(row => row.hasWarning).length;
 
     return {
       groups,
       groupId:     group?.id ?? "",
       groupLabel:  group?.label ?? "Все персонажи",
       groupColor:  group?.color ?? "#5b9cf6",
+      groupLocation: group?.location ?? "без позиции",
       hours:       this._hours,
       mins:        this._mins,
+      durationLabel: formatDurationLabel(this._hours, this._mins),
+      totalHours:  fmtNumber(totalHours, 2),
       activity:    this._activity,
-      activities:  ACTIVITIES,
+      activeActivity,
+      activities,
       campMode:    this._campMode,
       preview,
       hasMembers:  preview.length > 0,
+      warningCount,
+      hasWarnings: warningCount > 0,
       otherGroups,
       hasOtherGroups: otherGroups.length > 0,
+      partySummary: {
+        memberCount: preview.length,
+        warningCount,
+        otherGroupCount: otherGroups.length,
+      },
     };
   }
 
@@ -297,13 +402,6 @@ class IronHillsTravelApp extends Application {
     // Выбор группы
     html.find("[data-group-select]").on("change", e => {
       this._groupId = e.currentTarget.value || null;
-      this.render(false);
-    });
-
-    // Ползунок часов
-    html.find("[data-hours-input]").on("input", e => {
-      this._hours = Math.max(0, Math.min(72, parseInt(e.currentTarget.value) || 0));
-      html.find("[data-hours-label]").text(this._hours);
       this.render(false);
     });
 
@@ -345,8 +443,6 @@ class IronHillsTravelApp extends Application {
       html.find("[data-mins-label]").text(this._mins);
       this.render(false);
     });
-
-    html.find("[data-apply-time]").on("click", () => this._applyTime(false));
 
     // Переключение режима привала
     html.find("[data-toggle-camp]").on("click", () => {
@@ -467,7 +563,7 @@ class IronHillsTravelApp extends Application {
       };
       // Записываем baseMax при первом снижении максимума
       if (!res.energy?.baseMax || res.energy.baseMax <= 0) {
-        upd["system.resources.energy.baseMax"] = enMax;
+        upd["system.resources.energy.baseMax"] = enM;
       }
 
       // Накладываем состояние "без сознания"

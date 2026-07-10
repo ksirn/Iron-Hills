@@ -27,6 +27,18 @@
     {{/each}}
   </div>
 
+  {{#if attack.impactTrack.segments.length}}
+  <div class="ih-attack-impact-track {{attack.impactTrack.className}}">
+    {{#each attack.impactTrack.segments}}
+    <div class="ih-attack-impact-segment {{className}}">
+      <span>{{label}}</span>
+      <b>{{value}}</b>
+      {{#if note}}<small>{{note}}</small>{{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
   {{#if attack.rollRows.length}}
   <div class="ih-attack-section">
     <div class="ih-attack-section-title">Бросок</div>

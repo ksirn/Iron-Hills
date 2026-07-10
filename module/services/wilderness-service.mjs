@@ -770,10 +770,20 @@ export function monsterRowToActorData(row) {
   );
   const ar = row.armor ?? {};
   const poolKey = String(row.lootPool ?? row.lootTable ?? "").trim();
+  const img = row.img ?? "icons/svg/mystery-man.svg";
   return {
     name: row.label,
     type: "monster",
-    img: row.img ?? "icons/svg/mystery-man.svg",
+    img,
+    prototypeToken: {
+      name: row.label,
+      displayName: 20,
+      actorLink: false,
+      disposition: -1,
+      texture: { src: img },
+      width: 1,
+      height: 1,
+    },
     items: buildMonsterHarvestEmbeddedItemData(poolKey),
     system: {
       combat: row.combat,

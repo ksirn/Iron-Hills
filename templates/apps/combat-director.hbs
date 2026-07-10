@@ -1,0 +1,241 @@
+<section class="ih-combat-director">
+  <header class="ih-combat-director__header">
+    <div>
+      <h2>Combat Director</h2>
+      <p>{{eventCount}} events · {{combatParticipantCount}} participants · {{combatPendingCount}} pending</p>
+    </div>
+    <div class="ih-combat-director__actions">
+      <button type="button" class="ih-combat-director__tool {{vfxStateClass}}" data-action="toggle-combat-vfx" title="Toggle combat VFX">
+        {{vfxLabel}}
+      </button>
+      <button type="button" class="ih-combat-director__tool" data-action="clear-combat-events" title="Clear combat event log">
+        Clear
+      </button>
+    </div>
+  </header>
+
+  <section class="ih-combat-director__panel">
+    <div class="ih-combat-director__combat-state {{#if combatActive}}is-active{{else}}is-idle{{/if}}">
+      <div>
+        <strong>{{#if combatActive}}Combat active{{else}}Free mode{{/if}}</strong>
+        <span>Round {{combatRound}} · turn {{combatTurn}} · scope {{activeScopeLabel}} ({{activeScopeCount}})</span>
+      </div>
+      <div>
+        <strong>{{sourceName}}</strong>
+        <span>acting source</span>
+      </div>
+    </div>
+
+    {{#if hasGmControl}}
+    <div class="ih-combat-director__scope-strip">
+      {{#each gmControl.scopeRows}}
+      <span class="{{tone}}" title="{{hint}}"><b>{{count}}</b>{{label}}</span>
+      {{/each}}
+    </div>
+
+    <div class="ih-combat-director__control-grid">
+      <label>Scope
+        <select name="director-scope" data-control-field="scope">
+          {{#each scopes}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}} · {{count}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>Action
+        <select name="director-action-item" data-control-field="item">
+          <option value="">Equipped / unarmed</option>
+          {{#each actionItems}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}} · {{detail}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>Hand
+        <select name="director-hand" data-control-field="hand">
+          <option value="rightHand" {{#if handRightSelected}}selected{{/if}}>Right hand</option>
+          <option value="leftHand" {{#if handLeftSelected}}selected{{/if}}>Left hand</option>
+        </select>
+      </label>
+
+      <label>Target zone
+        <select name="director-target-zone" data-control-field="targetZone">
+          <option value="">Item/default</option>
+          {{#each targetBodyParts}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>Zone mode
+        <select name="director-zone-mode" data-control-field="zoneMode">
+          {{#each targetZoneModes}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>Friendly fire
+        <select name="director-friendly-fire" data-control-field="friendlyFire">
+          {{#each friendlyFireModes}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>Time
+        <select name="director-time-preset" data-control-field="time">
+          {{#each timePresets}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label class="ih-combat-director__check">
+        <input type="checkbox" name="director-skip-time" data-control-field="skipTime" {{#if skipTimeCost}}checked{{/if}}>
+        <span>GM instant</span>
+      </label>
+
+      <label class="ih-combat-director__check">
+        <input type="checkbox" name="director-aimed" data-control-field="aimed" {{#if aimed}}checked{{/if}}>
+        <span>Aimed</span>
+      </label>
+    </div>
+
+    <div class="ih-combat-director__live-actions">
+      <button type="button" class="is-primary" data-action="quick-action">Attack / cast</button>
+      <button type="button" data-action="prepare-combat">Prepare combat</button>
+      <button type="button" data-action="refresh-action-economy">Seconds + pending</button>
+      <button type="button" data-action="sync-trauma">Sync trauma</button>
+      <button type="button" data-action="recover-after-combat">After combat</button>
+      <button type="button" data-action="advance-time">Advance time</button>
+    </div>
+
+    <div class="ih-combat-director__recovery-grid">
+      <label>Resource
+        <select name="director-resource-key" data-control-field="resourceKey">
+          {{#each resourcePresets}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label>Mode
+        <select name="director-resource-mode" data-control-field="resourceMode">
+          {{#each resourceModes}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label>Value
+        <input type="number" min="0" name="director-resource-value" data-control-field="resourceValue" value="{{resourceValue}}">
+      </label>
+      <button type="button" data-action="apply-resource">Apply resource</button>
+
+      <label>Body part
+        <select name="director-body-part" data-control-field="bodyPart">
+          {{#each bodyParts}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label>HP amount
+        <input type="number" min="1" name="director-body-amount" data-control-field="bodyAmount" value="{{bodyAmount}}">
+      </label>
+      <button type="button" data-action="heal-body">Heal part</button>
+      <button type="button" class="is-danger" data-action="damage-body">Damage part</button>
+
+      <label>Effect
+        <select name="director-condition-key" data-control-field="conditionKey">
+          {{#each conditionPresets}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}} · {{valueKind}}</option>
+          {{/each}}
+        </select>
+      </label>
+      <label>Effect value
+        <input type="number" min="1" name="director-condition-value" data-control-field="conditionValue" value="{{conditionValue}}">
+      </label>
+      <button type="button" data-action="apply-condition">Apply effect</button>
+      <button type="button" data-action="clear-conditions">Clear effects</button>
+    </div>
+
+    <div class="ih-combat-director__recovery-actions">
+      <button type="button" class="is-primary" data-action="restore-all">Restore all</button>
+      <button type="button" data-action="restore-vitals">HP/Mana/Energy</button>
+      <button type="button" data-action="repair-gear">Repair gear</button>
+      <button type="button" data-action="short-rest">Short rest</button>
+      <button type="button" data-action="full-rest">Full rest</button>
+      <button type="button" data-action="revive">Revive</button>
+      <button type="button" data-action="tick-conditions">Tick conditions</button>
+      <button type="button" data-action="reset-seconds">Reset seconds</button>
+      <button type="button" data-action="clear-pending">Clear pending</button>
+      <button type="button" class="is-danger" data-action="defeat">Defeat</button>
+    </div>
+    {{else}}
+    <div class="ih-combat-director__empty is-compact">
+      <strong>GM Control API is not ready</strong>
+      <span>Open World Tools once after the system is ready, then return here.</span>
+    </div>
+    {{/if}}
+  </section>
+
+  <nav class="ih-combat-director__quick">
+    <button type="button" data-action="open-combat-hud">Combat HUD</button>
+    <button type="button" data-action="open-combat-manager">Combat Manager</button>
+    <button type="button" data-action="open-world-tools">GM Tools</button>
+  </nav>
+
+  {{#if eventStatRows.length}}
+    <section class="ih-combat-director__event-stats">
+      {{#each eventStatRows as |row|}}
+        <span class="{{row.className}}">
+          <b>{{row.value}}</b>
+          <em>{{row.label}}</em>
+        </span>
+      {{/each}}
+    </section>
+  {{/if}}
+
+  {{#if hasEvents}}
+    <ol class="ih-combat-director__events">
+      {{#each events as |event|}}
+        <li class="ih-combat-director-event {{event.toneClass}} {{event.typeClass}}">
+          <div class="ih-combat-director-event__top">
+            <div class="ih-combat-director-event__title">
+              <strong>{{event.title}}</strong>
+              <span>{{event.statusLabel}}</span>
+            </div>
+            <div class="ih-combat-director-event__time">
+              {{#if event.roundLabel}}<span>{{event.roundLabel}}</span>{{/if}}
+              <span>{{event.timeLabel}}</span>
+            </div>
+          </div>
+
+          <div class="ih-combat-director-event__meta">
+            {{#if event.actorName}}<span>{{event.actorName}}</span>{{/if}}
+            {{#if event.targetName}}<span class="ih-combat-director-event__arrow">to</span><span>{{event.targetName}}</span>{{/if}}
+          </div>
+
+          {{#if event.summary}}
+            <div class="ih-combat-director-event__summary">{{event.summary}}</div>
+          {{/if}}
+
+          {{#if event.chips.length}}
+            <div class="ih-combat-director-event__chips">
+              {{#each event.chips as |chip|}}
+                <span class="ih-combat-director-chip {{chip.className}}">
+                  <b>{{chip.label}}</b>
+                  <span>{{chip.value}}</span>
+                </span>
+              {{/each}}
+            </div>
+          {{/if}}
+        </li>
+      {{/each}}
+    </ol>
+  {{else}}
+    <div class="ih-combat-director__empty">
+      <strong>No combat events yet</strong>
+      <span>Attacks, spells, reactions and AoE effects will appear here after they resolve.</span>
+    </div>
+  {{/if}}
+</section>

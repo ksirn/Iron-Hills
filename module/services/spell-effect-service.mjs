@@ -5,7 +5,12 @@ import {
   resolveAoeFriendlyFireMode,
 } from "./aoe-policy-service.mjs";
 import { buildCombatRows } from "./combat-chat-service.mjs";
+import {
+  buildUtilityCombatEvent,
+  recordCombatEvent,
+} from "./combat-event-service.mjs";
 import { formatAttackChatHtml, resolveSingleAttack } from "./combat-attack-service.mjs";
+import { playAttackVfx } from "./combat-vfx-service.mjs";
 import { isShieldBlockableDamageType, normalizeDamageType } from "./damage-type-service.mjs";
 import { addOrExtendActorCondition, isActorSummoned } from "./condition-service.mjs";
 import { applyHitEffects, healActorBodyPart } from "./hit-effect-service.mjs";
@@ -338,6 +343,14 @@ export async function applySingleTargetSpellDamage({
     return { ok: false, result: null, attackHtml: "", effectHtml: "", html: "" };
   }
 
+  await playAttackVfx({
+    attacker: caster,
+    target,
+    result,
+    label,
+    source: "spell-effect",
+  });
+
   const attackHtml = renderHtml && typeof globalThis.renderTemplate === "function"
     ? await formatAttackChatHtml({
       label,
@@ -489,6 +502,22 @@ export async function applySingleTargetSpellUtilityEffect({
   let extraHtml = "";
 
   if (!target) return { ok: false, handled: false, html: "", effectType: type };
+  const label = item?.name ?? effect?.label ?? effect?.name ?? "Заклинание";
+  const finish = (payload) => {
+    if (payload?.ok && payload?.handled !== false) {
+      recordCombatEvent(buildUtilityCombatEvent({
+        caster,
+        target,
+        label,
+        effectType: payload.effectType ?? type,
+        effect,
+        outcome: payload,
+        power,
+        targetPart,
+      }));
+    }
+    return payload;
+  };
 
   const appendHitEffect = async () => {
     if (!effect?.applyCondition) return false;
@@ -499,12 +528,12 @@ export async function applySingleTargetSpellUtilityEffect({
       effect,
     });
     extraHtml += outcome.html;
-    return true;
+    return outcome;
   };
 
   if (!type || effect?.special === "buff" || effect?.special === "debuff") {
     const handled = await appendHitEffect();
-    if (handled) return { ok: true, handled: true, html: extraHtml + rowsToHtml(rows), effectType: type };
+    if (handled) return finish({ ok: true, handled: true, html: extraHtml + rowsToHtml(rows), effectType: type, hitEffect: handled });
   }
 
   if (type === "summon") {
@@ -515,7 +544,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Длительность", `${summon.duration} сек.`],
       ["Размещение", summon.placed ? "токен создан" : (summon.created ? "актёр создан" : "недоступно вне Foundry")],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, summon };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, summon });
   }
 
   if (type === "banish") {
@@ -533,7 +562,7 @@ export async function applySingleTargetSpellUtilityEffect({
     } else {
       rows.push(["Результат", "цель слишком сильна, наложено оглушение"]);
     }
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, banish };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, banish });
   }
 
   if (type === "heal") {
@@ -545,7 +574,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено HP", healed],
       ["Текущее HP", result.newHP],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, heal: result };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, heal: result });
   }
 
   if (type === "restoreEnergy") {
@@ -556,7 +585,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено", restored],
       ["Энергия цели", next],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored, next } };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored, next } });
   }
 
   if (type === "restoreMana") {
@@ -567,13 +596,13 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Восстановлено", restored],
       ["Мана цели", next],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "mana", restored, next } };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "mana", restored, next } });
   }
 
   if (type === "curePoison") {
     await target.update({ "system.conditions.poison": 0 });
     rows.push(["Эффект", "Нейтрализация яда"]);
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "cureDisease") {
@@ -587,7 +616,7 @@ export async function applySingleTargetSpellUtilityEffect({
     } else {
       rows.push(["Эффект", "Активных болезней нет"]);
     }
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "stimulant") {
@@ -598,7 +627,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Энергия", `+${boost}`],
       ["Энергия цели", next],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored: boost, next } };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type, resource: { key: "energy", restored: boost, next } });
   }
 
   if (type === "stun") {
@@ -611,7 +640,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Оглушение"],
       ["Длительность", `${durationTurns} ход(а)`],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "disarm") {
@@ -635,7 +664,7 @@ export async function applySingleTargetSpellUtilityEffect({
         ["Результат", `Провал (${rollTotal(roll)} < ${threshold})`],
       );
     }
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "silence") {
@@ -648,7 +677,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Безмолвие"],
       ["Длительность", `${duration} сек.`],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "slow") {
@@ -661,7 +690,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Эффект", "Замедление"],
       ["Штраф инициативы", `-${penalty}`],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "fear") {
@@ -676,7 +705,7 @@ export async function applySingleTargetSpellUtilityEffect({
       ["Длительность", `${durationTurns} ход(а)`],
       ["Штрафы", "-3 атака, -3 защита"],
     );
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   if (type === "reserveDrain") {
@@ -713,7 +742,7 @@ export async function applySingleTargetSpellUtilityEffect({
         ["Осталось", next],
       );
     }
-    return { ok: true, handled: true, html: rowsToHtml(rows), effectType: type };
+    return finish({ ok: true, handled: true, html: rowsToHtml(rows), effectType: type });
   }
 
   return { ok: false, handled: false, html: "", effectType: type };

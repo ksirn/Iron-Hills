@@ -2165,3 +2165,127 @@
     inset 0 0 10px rgba(0,0,0,0.72),
     0 0 12px rgba(214,87,87,0.26);
 }
+
+/* ============================================================
+   Body silhouette — unified medical display pass
+   ============================================================ */
+
+.ih-figure-wrap {
+  position: relative;
+  min-width: 100px;
+}
+
+.ih-figure-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 8px 12px;
+  pointer-events: none;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 50% 32%, rgba(226, 190, 114, 0.13), transparent 46%),
+    radial-gradient(ellipse at 50% 68%, rgba(91, 128, 101, 0.12), transparent 58%);
+  filter: blur(9px);
+  opacity: 0.86;
+}
+
+.ih-figure-wrap .ih-fig-row {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.ih-figure-wrap .ih-fig-row.is-head,
+.ih-figure-wrap .ih-fig-row.is-abdomen,
+.ih-figure-wrap .ih-fig-row.is-legs {
+  justify-content: center;
+}
+
+.ih-figure-wrap .ih-fig-row.is-upper {
+  align-items: flex-start;
+}
+
+.ih-figure-wrap .ih-fig-part {
+  align-items: center;
+  justify-content: flex-end;
+  isolation: isolate;
+}
+
+.ih-figure-wrap .ih-fig-part::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.10), transparent 22%, transparent 72%, rgba(0,0,0,0.18)),
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,0.08), transparent 42%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.ih-fig-label,
+.ih-fig-hp {
+  position: relative;
+  z-index: 3;
+  max-width: 100%;
+  padding: 0 2px;
+  color: rgba(244, 232, 198, 0.86);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.92);
+  pointer-events: none;
+}
+
+.ih-fig-label {
+  margin-top: auto;
+  font-size: 7px;
+  letter-spacing: 0;
+}
+
+.ih-fig-hp {
+  margin-bottom: 2px;
+  font-size: 7px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
+}
+
+.ih-fig-arm .ih-fig-hp,
+.ih-fig-leg .ih-fig-hp {
+  font-size: 6px;
+}
+
+.ih-fig-dots {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ih-fig-dots .ih-fig-dot {
+  position: static;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 4px currentColor;
+}
+
+.ih-fig-part.is-dead .ih-fig-label,
+.ih-fig-part.is-dead .ih-fig-hp {
+  color: rgba(215, 187, 164, 0.48);
+}
+
+.ih-fig-part.is-vital.has-trauma:not(.is-dead)::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(226, 190, 114, 0.18);
+  box-shadow: 0 0 10px rgba(226, 190, 114, 0.12);
+}

@@ -54,6 +54,7 @@ import { IronHillsWorldJournalApp } from "./apps/world-journal-app.mjs";
 import { DISEASES } from "./constants/diseases.mjs";
 import { IronHillsCombatHudApp } from "./apps/combat-hud-app.mjs";
 import { IronHillsCombatManagerApp } from "./apps/combat-manager-app.mjs";
+import { IronHillsCombatDirectorApp } from "./apps/combat-director-app.mjs";
 
 import {
   getPersistentActor,
@@ -132,6 +133,14 @@ import {
   formatAssetAuditReport,
 } from "./services/content-asset-audit-service.mjs";
 import {
+  buildContentArtCockpitReport,
+  formatContentArtCockpitReport,
+} from "./services/content-art-cockpit-service.mjs";
+import {
+  buildSessionReadinessReport,
+  formatSessionReadinessReport,
+} from "./services/session-readiness-service.mjs";
+import {
   checkIronHillsContentReadiness,
   formatContentReadinessReport,
 } from "./services/content-readiness-service.mjs";
@@ -143,6 +152,10 @@ import {
   formatRuntimeSmokeReport,
   runIronHillsRuntimeSmoke,
 } from "./services/runtime-smoke-service.mjs";
+import {
+  buildWorldMapSituation,
+  getWorldMapSituationPoolStats,
+} from "./services/world-map-situation-generator-service.mjs";
 import {
   buildCombatChatCard,
   buildSystemDialogContent,
@@ -350,6 +363,68 @@ async function auditAssetsCommand(options = {}) {
   return report;
 }
 
+async function contentArtCockpitCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills content art cockpit.");
+    return null;
+  }
+
+  const report = await buildContentArtCockpitReport(options);
+  const text = formatContentArtCockpitReport(report, {
+    maxRows: options.maxRows ?? options.maxFindings ?? 24,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Content art cockpit");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const blockers = Number(report.summary?.blockers ?? 0);
+  const needs = Number(report.summary?.needsFinalArt ?? 0) + Number(report.summary?.actorNeedsFinalArt ?? 0);
+  const visualQa = Number(report.summary?.visualQaPending ?? 0);
+  if (blockers > 0) {
+    ui.notifications.error(`Iron Hills art cockpit: ${blockers} blockers, ${needs} replacements. Details in console.`);
+  } else if (needs > 0 || visualQa > 0) {
+    ui.notifications.warn(`Iron Hills art cockpit: ${needs} replacements, ${visualQa} visual QA, ${report.summary?.criticalVisualQaPending ?? 0} critical QA. Details in console.`);
+  } else {
+    ui.notifications.info("Iron Hills art cockpit OK.");
+  }
+
+  return report;
+}
+
+function sessionReadinessCommand(options = {}) {
+  if (!game.user?.isGM) {
+    ui.notifications.warn("Only GM can run Iron Hills session readiness.");
+    return null;
+  }
+
+  const report = buildSessionReadinessReport({
+    ...options,
+    checkRuntime: Boolean(options.checkRuntime ?? true),
+  });
+  const text = formatSessionReadinessReport(report, {
+    maxRows: options.maxRows ?? options.maxFindings ?? 24,
+  });
+
+  console.groupCollapsed?.("Iron Hills | Session readiness");
+  console.log(text);
+  console.log(report);
+  console.groupEnd?.();
+
+  const blockers = Number(report.summary?.blockers ?? 0);
+  const warnings = Number(report.summary?.warnings ?? 0);
+  if (blockers > 0) {
+    ui.notifications.error(`Iron Hills session readiness: ${blockers} blockers, ${warnings} warnings. Details in console.`);
+  } else if (warnings > 0) {
+    ui.notifications.warn(`Iron Hills session readiness: ${warnings} warnings. Details in console.`);
+  } else {
+    ui.notifications.info("Iron Hills session readiness OK.");
+  }
+
+  return report;
+}
+
 async function checkContentReadinessCommand(options = {}) {
   if (!game.user?.isGM) {
     ui.notifications.warn("Only GM can run Iron Hills content readiness checks.");
@@ -463,6 +538,16 @@ Hooks.once("init", () => {
     name: "Состояние боя Iron Hills",
     scope: "world", config: false, type: Object, default: {},
   });
+  game.settings.register("iron-hills-system", "combatVfxEnabled", {
+    name: "Combat VFX",
+    hint: "Show lightweight hit, armor, shield and area feedback over scene tokens.",
+    scope: "client", config: true, type: Boolean, default: true,
+  });
+  game.settings.register("iron-hills-system", "releaseQaState", {
+    name: "Release QA state",
+    hint: "Stores compact Release QA reports, pack plan state and weekend test progress.",
+    scope: "world", config: false, type: Object, default: {},
+  });
   game.settings.register("iron-hills-system", "currentWeather", {
     name: "Текущая погода",
     hint: "Активный погодный пресет",
@@ -470,6 +555,16 @@ Hooks.once("init", () => {
   });
   game.settings.register("iron-hills-system", "worldRegions", {
     name: "Регионы карты мира",
+    scope: "world", config: false, type: Object, default: {},
+  });
+  game.settings.register("iron-hills-system", "worldMapScenePrepState", {
+    name: "World Map scene prep packets",
+    hint: "Stores GM-approved scene prep packets created from World Map scene briefs.",
+    scope: "world", config: false, type: Object, default: {},
+  });
+  game.settings.register("iron-hills-system", "gmSituationState", {
+    name: "GM Situation state",
+    hint: "Stores generated GM situations, statuses and continuation history.",
     scope: "world", config: false, type: Object, default: {},
   });
 
@@ -604,10 +699,16 @@ Hooks.once("ready", async () => {
   game.ironHills.contentReadiness = checkContentReadinessCommand;
   game.ironHills.auditCatalogs = auditCatalogsCommand;
   game.ironHills.auditAssets = auditAssetsCommand;
+  game.ironHills.contentArtCockpit = contentArtCockpitCommand;
+  game.ironHills.artCockpit = contentArtCockpitCommand;
+  game.ironHills.sessionReadiness = sessionReadinessCommand;
+  game.ironHills.checkSessionReadiness = sessionReadinessCommand;
   game.ironHills.auditContentBalance = auditContentBalanceCommand;
   game.ironHills.contentBalance = auditContentBalanceCommand;
   game.ironHills.runRuntimeSmoke = runRuntimeSmokeCommand;
   game.ironHills.runtimeSmoke = runRuntimeSmokeCommand;
+  game.ironHills.buildWorldMapSituation = buildWorldMapSituation;
+  game.ironHills.getWorldMapSituationPoolStats = getWorldMapSituationPoolStats;
   void runWorldMigrations();
 
   // GM-команда: прошёл день после смерти — тикаем резерв
@@ -724,6 +825,7 @@ Hooks.once("ready", async () => {
   };
 
   game.ironHills.openCompactCombatHud = () => game.ironHills.openCombatHud({ compactMode: true });
+  game.ironHills.openCombatHUD = game.ironHills.openCombatHud;
 
   game.ironHills.toggleCombatHud = () => {
     const existing = game.ironHills?.apps?.combatHud;
@@ -1001,10 +1103,18 @@ game.ironHills.openWorldJournal = () => {
   return new IronHillsWorldJournalApp().render(true);
 };
 
-game.ironHills.openWorldMap = () => {
+game.ironHills.openWorldMap = (focus = {}) => {
   const existing = Object.values(ui.windows).find(w => w instanceof IronHillsWorldMapApp);
-  if (existing?.rendered) { existing.bringToTop?.(); return existing; }
-  return new IronHillsWorldMapApp().render(true);
+  if (existing?.rendered) {
+    if (focus && Object.keys(focus).length) existing.setMapFocus?.(focus, { render: true });
+    existing.bringToTop?.();
+    return existing;
+  }
+  return new IronHillsWorldMapApp({ initialFocus: focus }).render(true);
+};
+
+game.ironHills.openWorldMapLevel = (level = "region", focus = {}) => {
+  return game.ironHills.openWorldMap({ ...focus, level });
 };
 
 game.ironHills.openCraftWorkbenchWindow = (actor, opts = {}) => {
@@ -1109,6 +1219,29 @@ game.ironHills.openCombatManager = () => {
   app.close = async function(options = {}) {
     if (game.ironHills?.apps?.combatManager === app) {
       game.ironHills.apps.combatManager = null;
+    }
+    return originalClose(options);
+  };
+
+  app.render(true);
+  return app;
+};
+
+game.ironHills.openCombatDirector = () => {
+  const existing = game.ironHills.apps.combatDirector;
+  if (existing?.rendered) {
+    existing.render(true);
+    existing.bringToTop?.();
+    return existing;
+  }
+
+  const app = new IronHillsCombatDirectorApp();
+  game.ironHills.apps.combatDirector = app;
+
+  const originalClose = app.close.bind(app);
+  app.close = async function(options = {}) {
+    if (game.ironHills?.apps?.combatDirector === app) {
+      game.ironHills.apps.combatDirector = null;
     }
     return originalClose(options);
   };

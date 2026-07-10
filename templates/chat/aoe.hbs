@@ -26,6 +26,18 @@
     {{/each}}
   </div>
 
+  {{#if executionRows.length}}
+  <div class="ih-aoe-execution-grid">
+    {{#each executionRows}}
+    <div class="ih-aoe-execution {{className}}">
+      <span>{{label}}</span>
+      <b>{{value}}</b>
+      {{#if note}}<small>{{note}}</small>{{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
   {{#if noticeRows.length}}
   <div class="ih-aoe-notices">
     {{#each noticeRows}}
@@ -52,6 +64,17 @@
         </div>
         {{/if}}
         <div class="ih-aoe-result-outcome">{{outcome}}</div>
+        {{#if impactTrack.segments.length}}
+        <div class="ih-aoe-result-impact-track {{impactTrack.className}}">
+          {{#each impactTrack.segments}}
+          <div class="ih-aoe-result-impact-segment {{className}}">
+            <span>{{label}}</span>
+            <b>{{value}}</b>
+            {{#if note}}<small>{{note}}</small>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
         {{#if detailRows.length}}
         <div class="ih-aoe-result-details">
           {{#each detailRows}}

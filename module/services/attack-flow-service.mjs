@@ -23,6 +23,7 @@ import { isCombatActive } from "./combat-flow-service.mjs";
 import { applyHitEffects, buildHitEffect } from "./hit-effect-service.mjs";
 import { getWeatherSkillMod } from "./weather-service.mjs";
 import { actorsAreAllies } from "./disposition-service.mjs";
+import { playAttackVfx } from "./combat-vfx-service.mjs";
 import {
   buildCombatActionTargetPayload,
   getCombatTargetActor,
@@ -400,6 +401,14 @@ export async function performActorAttack({
       conditionChance,
       notes: effectNotes,
     }),
+  });
+  await playAttackVfx({
+    attacker: actor,
+    target: targetActor,
+    targetToken: targetTokenForRange,
+    result,
+    label,
+    source: "attack-flow",
   });
   const extraHtml = joinCombatHtml(
     buildCombatRows(extraRows, { className: "ih-attack-extra-rows" }),

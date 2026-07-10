@@ -192,6 +192,15 @@ function buildFigureRows(partMap) {
   ];
 }
 
+function buildSheetFigureRows(partMap) {
+  return [
+    { key: "head", rowClass: "ih-cs-fig-row is-head", parts: [partMap.head] },
+    { key: "upper", rowClass: "ih-cs-fig-row is-upper", parts: [partMap.leftArm, partMap.torso, partMap.rightArm] },
+    { key: "abdomen", rowClass: "ih-cs-fig-row is-abdomen", parts: [partMap.abdomen] },
+    { key: "legs", rowClass: "ih-cs-fig-row is-legs", parts: [partMap.leftLeg, { gap: true, gapClass: "ih-cs-fig-gap" }, partMap.rightLeg] },
+  ];
+}
+
 export function buildActorBodyHud(actor, { medicalTriage = null } = {}) {
   const summary = getActorBodyTraumaSummary(actor);
   const triage = medicalTriage ?? buildActorMedicalTriage(actor);
@@ -232,6 +241,7 @@ export function buildActorBodyHud(actor, { medicalTriage = null } = {}) {
     parts,
     partMap,
     figureRows: buildFigureRows(partMap),
+    sheetFigureRows: buildSheetFigureRows(partMap),
     urgentParts,
     hasUrgentParts: urgentParts.length > 0,
     issueCount: parts.filter(part => part.hasIssue).length,

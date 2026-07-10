@@ -90,6 +90,25 @@ function promptKey(catalog, id) {
   return `${catalog}:${id}`;
 }
 
+function catalogFromPromptRow(row, inferredCatalog) {
+  const explicit = String(row?.category ?? "").trim();
+  if (explicit) return explicit;
+  const type = String(row?.type ?? "").trim();
+  if (type === "material") return "materials";
+  if (type === "consumable") return "consumables";
+  if (type === "throwable") return "throwables";
+  if (type === "potion") return "potions";
+  if (type === "spell") return "spells";
+  if (type === "weapon") return "weapons";
+  if (type === "armor") return "armor";
+  if (type === "tool") return "tools";
+  if (type === "belt") return "belts";
+  if (type === "backpack") return "backpacks";
+  if (type === "attachment") return "attachments";
+  if (type === "food") return "food";
+  return String(inferredCatalog ?? "").trim();
+}
+
 function loadPromptOverrides(contentDir = DEFAULT_OUT_DIR) {
   const map = new Map();
   let files = [];
@@ -110,10 +129,14 @@ function loadPromptOverrides(contentDir = DEFAULT_OUT_DIR) {
 
     const inferredCatalog = inferCatalogFromFile(file);
     const negative = data?.negative ?? data?.negativePrompt ?? "";
-    for (const row of data?.items ?? []) {
-      const id = String(row?.id ?? "").trim();
+    const rows = [
+      ...(Array.isArray(data?.items) ? data.items : []),
+      ...(Array.isArray(data?.uniqueLoot) ? data.uniqueLoot : []),
+    ];
+    for (const row of rows) {
+      const id = String(row?.id ?? row?.catalogId ?? "").trim();
       if (!id || !row?.prompt) continue;
-      const catalog = String(row.category ?? inferredCatalog ?? "").trim();
+      const catalog = catalogFromPromptRow(row, inferredCatalog);
       const value = {
         prompt: row.prompt,
         negative: row.negative ?? negative,

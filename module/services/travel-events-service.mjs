@@ -164,6 +164,35 @@ function rollWeighted(table) {
   return table[table.length - 1];
 }
 
+const EVENT_TYPE_LABELS = {
+  combat: "Бой",
+  combat_hard: "Тяжёлый бой",
+  encounter_friendly: "Встреча",
+  loot: "Добыча",
+  resource: "Ресурс",
+  explore: "Исследование",
+  buff: "Бонус",
+  delay: "Задержка",
+  choice: "Выбор",
+  info: "Ориентир",
+  nothing: "Спокойно",
+};
+
+const TERRAIN_LABELS = {
+  road: "дорога",
+  plain: "равнина",
+  forest: "лес",
+  mountain: "горы",
+  swamp: "болото",
+  cliff: "скалы",
+  water: "вода",
+};
+
+function getTravelEventClass(type) {
+  const safeType = String(type ?? "unknown").replace(/[^a-z0-9_-]/gi, "");
+  return `ih-travel-event-card ih-travel-event-${safeType || "unknown"}`;
+}
+
 /**
  * Базовый шанс события на тайл (0..1).
  * Зависит от danger тайла и типа местности.
@@ -240,8 +269,13 @@ export async function presentTravelEvent(ev, stepNum, totalSteps) {
   };
 
   const icon = TYPE_ICONS[event.type] ?? "❓";
-  const danger = event.danger ?? 0;
+  const danger = event.danger ?? details.danger ?? 0;
   const dangerStars = danger > 0 ? " " + "⭐".repeat(danger) : "";
+  const eventClass = getTravelEventClass(event.type);
+  const terrainLabel = TERRAIN_LABELS[tile?.terrain] ?? tile?.terrain ?? "";
+  const coordLabel = Number.isFinite(tile?.col) && Number.isFinite(tile?.row)
+    ? `${tile.col}:${tile.row}`
+    : "";
 
   // Сообщение в чат для всех
   const playerMsg = buildCombatChatCard({
@@ -250,10 +284,16 @@ export async function presentTravelEvent(ev, stepNum, totalSteps) {
     icon,
     status: dangerStars.trim(),
     bodyHtml: buildCombatParagraphs([details.desc]),
+    rows: [
+      ["Тип", EVENT_TYPE_LABELS[event.type] ?? event.type ?? "событие"],
+      ["Местность", terrainLabel, Boolean(terrainLabel)],
+      ["Координаты", coordLabel, Boolean(coordLabel)],
+      ["Опасность", danger > 0 ? `${danger}/3` : "нет"],
+    ],
     notices: details.options?.length > 0
       ? [["Варианты", details.options.join(" · ")]]
       : [],
-    className: "ih-travel-event-card",
+    className: eventClass,
   });
 
   await ChatMessage.create({ content: playerMsg });
@@ -269,11 +309,14 @@ export async function presentTravelEvent(ev, stepNum, totalSteps) {
         statusClass: "is-warn",
         bodyHtml: buildCombatParagraphs([details.gm]),
         rows: [
+          ["Тип", EVENT_TYPE_LABELS[event.type] ?? event.type ?? "событие"],
+          ["Местность", terrainLabel, Boolean(terrainLabel)],
+          ["Координаты", coordLabel, Boolean(coordLabel)],
           ["Задержка", `+${details.delay}ч к пути`, Boolean(details.delay)],
           ["Награда", JSON.stringify(details.reward), Boolean(details.reward)],
           ["Бонус времени", `-${details.timeBonus}ч к пути`, Boolean(details.timeBonus)],
         ],
-        className: "ih-travel-event-card",
+        className: eventClass,
       }),
       whisper: ChatMessage.getWhisperRecipients("GM"),
     });

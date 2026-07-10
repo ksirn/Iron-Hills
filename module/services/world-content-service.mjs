@@ -1,5 +1,5 @@
 import { NAME_FIRST, NAME_LAST } from "../constants/names.mjs";
-import { NPC_SPECIALIZATIONS } from "../constants/npc-profiles.mjs";
+import { NPC_SPECIALIZATIONS, getNpcRoleImage } from "../constants/npc-profiles.mjs";
 import { SKILLS_FLAT } from "../constants/skills.mjs";
 import { normalizeSpellSchoolKey } from "../constants/spells-catalog.mjs";
 import { ARMORS, FOOD, MATERIALS, POTIONS, THROWABLES, TOOLS, WEAPONS } from "../constants/items-catalog.mjs";
@@ -1305,12 +1305,25 @@ export function buildNpcSystem(roleKey, tier, faction) {
 export function buildNpcActorData(roleKey, tier, faction = "", options = {}) {
   const resolvedRole = NPC_SPECIALIZATIONS[roleKey] ? roleKey : "villager";
   const profile = NPC_SPECIALIZATIONS[resolvedRole] ?? NPC_SPECIALIZATIONS.villager;
+  const system = buildNpcSystem(resolvedRole, tier, faction);
+  const name = options.name ?? `${profile.label} ${makeName()}`;
+  const img = options.img ?? getNpcRoleImage(resolvedRole, system.info?.tier ?? tier);
   return {
     roleKey: resolvedRole,
     data: {
-      name: options.name ?? `${profile.label} ${makeName()}`,
+      name,
       type: "npc",
-      system: buildNpcSystem(resolvedRole, tier, faction),
+      img,
+      prototypeToken: {
+        name,
+        displayName: 20,
+        actorLink: false,
+        disposition: resolvedRole === "bandit" ? -1 : 0,
+        texture: { src: img },
+        width: 1,
+        height: 1,
+      },
+      system,
     },
   };
 }
@@ -1328,12 +1341,25 @@ export function buildPoiNpcActorData(theme, tier, faction = "", options = {}) {
     guard: "Страж",
     mage: "Мистик",
   };
+  const system = buildNpcSystem(roleKey, tier, faction);
+  const name = options.name ?? `${labels[roleKey] ?? "NPC"} ${makeName()}`;
+  const img = options.img ?? getNpcRoleImage(roleKey, system.info?.tier ?? tier);
   return {
     roleKey,
     data: {
-      name: options.name ?? `${labels[roleKey] ?? "NPC"} ${makeName()}`,
+      name,
       type: "npc",
-      system: buildNpcSystem(roleKey, tier, faction),
+      img,
+      prototypeToken: {
+        name,
+        displayName: 20,
+        actorLink: false,
+        disposition: roleKey === "bandit" ? -1 : 0,
+        texture: { src: img },
+        width: 1,
+        height: 1,
+      },
+      system,
     },
   };
 }

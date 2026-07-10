@@ -36,6 +36,16 @@ function cb(tier) {
   };
 }
 
+export const MONSTER_TOKEN_IMAGES = Object.freeze({
+  briar_troll_bud: "systems/iron-hills-system/icons/tokens/monsters/briar_troll_bud.webp",
+  pitbone_horror: "systems/iron-hills-system/icons/tokens/monsters/pitbone_horror.webp",
+  wyvern_fledgling: "systems/iron-hills-system/icons/tokens/monsters/wyvern_fledgling.webp",
+});
+
+function monsterTokenImage(id, fallback) {
+  return MONSTER_TOKEN_IMAGES[id] ?? fallback;
+}
+
 export const MONSTER_BESTIARY = {
   // ── Тир 1 ──────────────────────────────────────
   ash_rot_mites: {
@@ -184,7 +194,7 @@ export const MONSTER_BESTIARY = {
     label: "Виверн‑птенец",
     tier: 4,
     hpPool: 86,
-    img: "icons/creatures/avian/drake-green.webp",
+    img: monsterTokenImage("wyvern_fledgling", "icons/creatures/avian/drake-green.webp"),
     lootPool: "apex_slice_t4",
     initiative: 11,
     energy: 20,
@@ -214,7 +224,7 @@ export const MONSTER_BESTIARY = {
     label: "Поросль шипастого тролля",
     tier: 4,
     hpPool: 92,
-    img: "icons/creatures/humanoids/giant-troll.webp",
+    img: monsterTokenImage("briar_troll_bud", "icons/creatures/humanoids/giant-troll.webp"),
     lootPool: "apex_slice_t4",
     initiative: 5,
     energy: 22,
@@ -340,7 +350,7 @@ export const MONSTER_BESTIARY = {
     label: "Костяная тварь ямы",
     tier: 7,
     hpPool: 188,
-    img: "icons/creatures/unholy/abomination.webp",
+    img: monsterTokenImage("pitbone_horror", "icons/creatures/unholy/abomination.webp"),
     lootPool: "beast_lord_t7",
     initiative: 5,
     energy: 22,

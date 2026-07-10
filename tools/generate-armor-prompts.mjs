@@ -73,6 +73,26 @@ function getObjectFragment(slot) {
   return map[slot] ?? "a single fantasy armor piece";
 }
 
+function isShieldSlot(slot) {
+  return slot === "leftHand" || slot === "rightHand" || slot === "shield";
+}
+
+function getArmorClassFragment(armorClass, slot) {
+  const shield = isShieldSlot(slot);
+  const map = {
+    light: shield
+      ? "light shield profile, small agile buckler or heater shield, slim solid face, quick straps"
+      : "light armor profile, flexible, low bulk, travel-ready, no movement restriction feel",
+    medium: shield
+      ? "medium shield profile, sturdy heater or kite shield, reinforced solid face, balanced weight"
+      : "medium armor profile, balanced protection and mobility, layered plates over padding",
+    heavy: shield
+      ? "heavy shield profile, broad tower or war shield, thick solid face, high durability, imposing mass"
+      : "heavy armor profile, dense protective plates, high durability, imposing mass, slower silhouette",
+  };
+  return map[armorClass] ?? map.medium;
+}
+
 function getArmorAffixFragment(affixes, slot) {
   if (!affixes) return "";
   const parts = [];
@@ -91,6 +111,11 @@ function getArmorAffixFragment(affixes, slot) {
 const TECH_TAGS = "isolated single object, transparent or plain dark background, centered, full item visible, armor catalog orthographic clarity, no human, no hands wearing it, sharp focus, high detail, painterly fantasy icon, soft rim light";
 
 const NEGATIVE_TAGS = "text, watermark, logo, signature, blurry, low quality, multiple separate armor sets, full suit spread out, human body, character wearing armor, cluttered background, nsfw";
+const SHIELD_NEGATIVE_TAGS = `${NEGATIVE_TAGS}, hole in center, cutout center, ring shield, donut shape, empty middle, broken missing center, transparent hole through shield`;
+
+function getNegativeTags(a) {
+  return isShieldSlot(a?.slot) ? SHIELD_NEGATIVE_TAGS : NEGATIVE_TAGS;
+}
 
 function getAspectInfo(gridW, gridH) {
   const w = Math.max(1, Number(gridW || 1));
@@ -113,11 +138,13 @@ function buildPrompt(a) {
   const { gridW, gridH } = slotGrid(a.slot);
   const aspect = getAspectInfo(gridW, gridH);
   const objFrag = getObjectFragment(a.slot);
+  const classFrag = getArmorClassFragment(a.armorClass, a.slot);
   const affixFrag = getArmorAffixFragment(a.affixes, a.slot);
   const namePart = a.label ? `Concept art for "${a.label}", ` : "";
 
   const base = [
     namePart + objFrag + ",",
+    classFrag + ",",
     `crafted from ${style.mat},`,
     `${style.mood}${affixFrag},`,
     `${aspect.orientation},`,
@@ -138,7 +165,7 @@ function escapeCsv(value) {
 function asCsv(rows) {
   const head = "id,name,tier,slot,gridW,gridH,aspect,resolution,prompt,negative";
   const body = rows.map((r) =>
-    [r.id, r.name, r.tier, r.slot, r.gridW, r.gridH, r.aspect, r.resolution, r.prompt, NEGATIVE_TAGS]
+    [r.id, r.name, r.tier, r.slot, r.gridW, r.gridH, r.aspect, r.resolution, r.prompt, r.negative]
       .map(escapeCsv)
       .join(","),
   ).join("\n");
@@ -161,6 +188,11 @@ function asMd(rows) {
     NEGATIVE_TAGS,
     "```",
     "",
+    "**Negative prompt (shield):**",
+    "```",
+    SHIELD_NEGATIVE_TAGS,
+    "```",
+    "",
   ];
   let lastTier = -1;
   for (const r of rows) {
@@ -170,12 +202,13 @@ function asMd(rows) {
     }
     const meta = `${r.slot}, ${r.gridW}×${r.gridH}, AR ${r.aspect}, ${r.resolution}`;
     lines.push(`### ${r.name} *(\`${r.id}\`, ${meta})*`, "", "```", r.prompt, "```", "");
+    if (r.negative !== NEGATIVE_TAGS) lines.push("Negative:", "", "```", r.negative, "```", "");
   }
   return lines.join("\n");
 }
 
 function asJson(rows) {
-  return JSON.stringify({ negative: NEGATIVE_TAGS, items: rows }, null, 2);
+  return JSON.stringify({ negative: NEGATIVE_TAGS, shieldNegative: SHIELD_NEGATIVE_TAGS, items: rows }, null, 2);
 }
 
 function buildRows() {
@@ -193,6 +226,7 @@ function buildRows() {
         aspect: aspect.ar,
         resolution: aspect.resolution,
         prompt: buildPrompt(a),
+        negative: getNegativeTags(a),
       };
     })
     .sort((a, b) =>

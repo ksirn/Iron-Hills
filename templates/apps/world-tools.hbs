@@ -10,6 +10,7 @@
     <a class="ih-wt-tab" data-tab="quests">📜 Квесты</a>
     <a class="ih-wt-tab" data-tab="npc">👤 NPC</a>
     <a class="ih-wt-tab" data-tab="simulation">🌍 Симуляция</a>
+    <a class="ih-wt-tab" data-tab="release">✓ Release QA</a>
   </nav>
 
   {{!-- ══════════════════════════════════════════════════════ --}}
@@ -240,6 +241,14 @@
               <a class="ih-btn ih-btn-small" data-pick-faction>📋</a>
             </div>
           </label>
+          <div class="ih-wt-field-row">
+            <label>Колонка карты
+              <input type="number" name="poi-map-col" min="0" max="9" placeholder="авто">
+            </label>
+            <label>Ряд карты
+              <input type="number" name="poi-map-row" min="0" max="9" placeholder="авто">
+            </label>
+          </div>
         </div>
         <div class="ih-wt-actions">
           <a class="ih-btn ih-btn-primary" data-action="generate-poi">📍 Создать POI</a>
@@ -258,7 +267,438 @@
         <div class="ih-wt-actions">
           <a class="ih-btn" data-action="evolve-pois">🔄 Эволюция POI</a>
           <a class="ih-btn" data-action="cleanup-pois">🗑 Убрать рухнувшие</a>
+          <a class="ih-btn" data-action="map-pois">🧭 Привязать к карте</a>
         </div>
+      </div>
+
+      <div class="ih-wt-card ih-wt-card-wide ih-wt-session-prep">
+        <div class="ih-wt-card-title">🧭 Подготовка сессии и карты</div>
+        <div class="ih-wt-fields">
+          <div class="ih-wt-field-row">
+            <label>Регион
+              <select name="session-region">
+                {{#each regions}}
+                <option value="{{this}}">{{this}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Фокус POI
+              <select name="session-poi">
+                <option value="">— авто: главная угроза —</option>
+                {{#each pois}}
+                <option value="{{id}}">{{name}} · {{type}} т{{tier}} {{#if hasMap}}[{{mapCol}},{{mapRow}}]{{/if}}</option>
+                {{/each}}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn" data-action="materialize-first-session">🧱 Создать слой Iron Hills</a>
+          <a class="ih-btn ih-btn-primary" data-action="generate-first-session-brief">🧭 План первой сессии</a>
+          <a class="ih-btn" data-action="generate-first-session-runbook">🎲 GM runbook</a>
+          <a class="ih-btn" data-action="generate-first-session-qa">✓ QA слой</a>
+          <a class="ih-btn" data-action="generate-combat-qa">⚔ Combat QA</a>
+          <a class="ih-btn" data-action="run-combat-dry-run">▶ Combat dry-run</a>
+          <a class="ih-btn" data-action="materialize-combat-test-bench">🧪 Combat test bench</a>
+          <a class="ih-btn" data-action="generate-session-brief">📋 Session brief</a>
+          <a class="ih-btn" data-action="map-pois">🧭 Автопривязка POI</a>
+          <a class="ih-btn" data-action="open-world-map">🗺 Открыть карту</a>
+        </div>
+        {{#if firstSessionSummary}}
+        <div class="ih-wt-first-session-summary {{firstSessionSummary.tone}}">
+          <div>
+            <span>Регион</span>
+            <strong>{{firstSessionSummary.region}}</strong>
+            <em>{{firstSessionSummary.readiness}}% · {{firstSessionSummary.status}}</em>
+          </div>
+          <div>
+            <span>Сцены</span>
+            <strong>{{firstSessionSummary.sceneSlots}}</strong>
+            <em>маршрут первой игры</em>
+          </div>
+          <div>
+            <span>NPC</span>
+            <strong>{{firstSessionSummary.npcRoles}}</strong>
+            <em>роли для размещения</em>
+          </div>
+          <div>
+            <span>Торговля</span>
+            <strong>{{firstSessionSummary.merchantSlots}}</strong>
+            <em>якоря экономики</em>
+          </div>
+          <div>
+            <span>POI</span>
+            <strong>{{firstSessionSummary.mappedPois}}</strong>
+            <em>привязано к карте</em>
+          </div>
+        </div>
+        {{/if}}
+        {{#if hasFirstSessionRunbook}}
+        <div class="ih-wt-session-runbook {{firstSessionRunbook.tone}}">
+          <div class="ih-wt-session-runbook-head">
+            <strong>{{firstSessionRunbook.scorePct}}%</strong>
+            <span>{{firstSessionRunbook.statusLabel}}</span>
+            <em>блокеры {{firstSessionRunbook.blockers}} · ручные {{firstSessionRunbook.manualChecks}} · предупреждения {{firstSessionRunbook.warnings}}</em>
+          </div>
+          <div class="ih-wt-session-runbook-facts">
+            <div><strong>{{firstSessionRunbook.facts.settlements}}</strong><span>поселения</span></div>
+            <div><strong>{{firstSessionRunbook.facts.mappedPois}}/{{firstSessionRunbook.facts.pois}}</strong><span>POI на карте</span></div>
+            <div><strong>{{firstSessionRunbook.facts.merchants}}</strong><span>торговцы</span></div>
+            <div><strong>{{firstSessionRunbook.facts.merchantStockItems}}</strong><span>предметы в стоке</span></div>
+            <div><strong>{{firstSessionRunbook.facts.npcs}}</strong><span>NPC роли</span></div>
+            <div><strong>{{firstSessionRunbook.facts.quests}}</strong><span>квесты</span></div>
+          </div>
+          <div class="ih-wt-session-runbook-gates">
+            {{#each firstSessionRunbook.gates}}
+            <div class="ih-wt-session-gate {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}}</span>
+              <em>{{summary}}</em>
+              {{#if action}}<small>{{action}}</small>{{/if}}
+            </div>
+            {{/each}}
+          </div>
+          <div class="ih-wt-session-runbook-scenarios">
+            {{#each firstSessionRunbook.scenarios}}
+            <div class="ih-wt-session-scenario {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{map}}</span>
+              <em>{{systemsLabel}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{#if firstSessionRunbook.hasRisks}}
+          <div class="ih-wt-session-runbook-risks">
+            {{#each firstSessionRunbook.riskLines}}
+            <span>{{this}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if hasFirstSessionQa}}
+        <div class="ih-wt-session-qa {{firstSessionQa.tone}}">
+          <div class="ih-wt-session-qa-head">
+            <strong>{{firstSessionQa.scorePct}}%</strong>
+            <span>{{firstSessionQa.statusLabel}}</span>
+            <em>документы {{firstSessionQa.facts.foundDocuments}}/{{firstSessionQa.facts.documents}} · связи {{firstSessionQa.facts.linkedDocuments}}/{{firstSessionQa.facts.documents}} · API gaps {{firstSessionQa.facts.apiMissing}}</em>
+          </div>
+          <div class="ih-wt-session-qa-checks">
+            {{#each firstSessionQa.checks}}
+            <div class="ih-wt-session-qa-check {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{metric}}</span>
+              <em>{{summary}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{#if firstSessionQa.hasNextActions}}
+          <div class="ih-wt-session-qa-next">
+            {{#each firstSessionQa.nextActions}}
+            <span>{{this}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if hasCombatQa}}
+        <div class="ih-wt-combat-qa {{combatQa.tone}}">
+          <div class="ih-wt-combat-qa-head">
+            <strong>{{combatQa.scorePct}}%</strong>
+            <span>{{combatQa.statusLabel}}</span>
+            <em>API {{combatQa.facts.apiAvailable}}/{{combatQa.facts.apiTotal}} · механики {{combatQa.facts.mechanicOk}}/{{combatQa.facts.mechanicTotal}} · сценарии {{combatQa.facts.scenarioReady}}/{{combatQa.facts.scenarioTotal}}</em>
+          </div>
+          <div class="ih-wt-combat-qa-facts">
+            <div><strong>{{combatQa.facts.aoeShapes}}/{{combatQa.facts.aoeTypes}}</strong><span>AoE формы/типы</span></div>
+            <div><strong>{{combatQa.facts.targetableZones}}</strong><span>AoE зоны тела</span></div>
+            <div><strong>{{combatQa.facts.traumaParts}}</strong><span>зоны травм</span></div>
+            <div><strong>{{combatQa.facts.runtimeWarnings}}</strong><span>runtime warnings</span></div>
+          </div>
+          <div class="ih-wt-combat-qa-checks">
+            {{#each combatQa.checks}}
+            <div class="ih-wt-combat-qa-check {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{metric}}</span>
+              <em>{{summary}}</em>
+            </div>
+            {{/each}}
+          </div>
+          <div class="ih-wt-combat-qa-scenarios">
+            {{#each combatQa.scenarios}}
+            <div class="ih-wt-combat-qa-scenario {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{minutes}} мин · {{stepCount}} шага</span>
+              <em>{{summary}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{#if combatQa.hasNextActions}}
+          <div class="ih-wt-combat-qa-next">
+            {{#each combatQa.nextActions}}
+            <span>{{this}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if hasCombatDryRun}}
+        <div class="ih-wt-combat-dry-run {{combatDryRun.tone}}">
+          <div class="ih-wt-combat-dry-run-head">
+            <strong>{{combatDryRun.scorePct}}%</strong>
+            <span>{{combatDryRun.statusLabel}}</span>
+            <em>последний запуск: {{combatDryRun.lastRunLabel}} · smoke {{combatDryRun.facts.smokeErrors}}/{{combatDryRun.facts.smokeWarnings}} · sections {{combatDryRun.facts.sectionsDone}}/{{combatDryRun.facts.sectionsTotal}}</em>
+          </div>
+          <div class="ih-wt-combat-dry-run-facts">
+            <div><strong>{{combatDryRun.facts.expectedCasesOk}}/{{combatDryRun.facts.expectedCases}}</strong><span>expected cases</span></div>
+            <div><strong>{{combatDryRun.facts.sectionBlockers}}</strong><span>section blockers</span></div>
+            <div><strong>{{combatDryRun.facts.sectionWarnings}}</strong><span>section warnings</span></div>
+            <div><strong>{{combatDryRun.facts.manualScenarios}}</strong><span>manual scenarios</span></div>
+          </div>
+          <div class="ih-wt-combat-dry-run-sections">
+            {{#each combatDryRun.sectionRows}}
+            <div class="ih-wt-combat-dry-run-section {{tone}}">
+              <strong>{{id}}</strong>
+              <span>{{statusLabel}} · {{metric}}</span>
+              <em>{{summary}}</em>
+            </div>
+            {{/each}}
+          </div>
+          <div class="ih-wt-combat-dry-run-cases">
+            {{#each combatDryRun.expectedCases}}
+            <div class="ih-wt-combat-dry-run-case {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{layer}} · {{autoSection}} · {{statusLabel}}</span>
+              <em>{{expected}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{#if combatDryRun.hasNextActions}}
+          <div class="ih-wt-combat-dry-run-next">
+            {{#each combatDryRun.nextActions}}
+            <span>{{this}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if hasCombatTestBench}}
+        <div class="ih-wt-combat-test-bench {{combatTestBench.tone}}">
+          <div class="ih-wt-combat-test-bench-head">
+            <strong>{{combatTestBench.scorePct}}%</strong>
+            <span>{{combatTestBench.statusLabel}}</span>
+            <em>actors {{combatTestBench.facts.actorsReady}}/{{combatTestBench.facts.actorsTotal}} · items {{combatTestBench.facts.itemsReady}}/{{combatTestBench.facts.itemsTotal}} · tokens {{combatTestBench.facts.tokensReady}}/{{combatTestBench.facts.tokensTotal}}</em>
+          </div>
+          <div class="ih-wt-combat-test-bench-facts">
+            <div><strong>{{combatTestBench.facts.actorsReady}}/{{combatTestBench.facts.actorsTotal}}</strong><span>actors</span></div>
+            <div><strong>{{combatTestBench.facts.itemsReady}}/{{combatTestBench.facts.itemsTotal}}</strong><span>items</span></div>
+            <div><strong>{{combatTestBench.facts.tokensReady}}/{{combatTestBench.facts.tokensTotal}}</strong><span>scene tokens</span></div>
+            <div><strong>{{combatTestBench.facts.scenarios}}</strong><span>manual checks</span></div>
+          </div>
+          <div class="ih-wt-combat-test-bench-actors">
+            {{#each combatTestBench.actorRows}}
+            <div class="ih-wt-combat-test-bench-actor {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{role}}</span>
+              <em>{{summary}}</em>
+            </div>
+            {{/each}}
+          </div>
+          <div class="ih-wt-combat-test-bench-scene {{combatTestBench.sceneRow.tone}}">
+            <strong>{{combatTestBench.sceneRow.label}}</strong>
+            <span>{{combatTestBench.sceneRow.statusLabel}} · tokens {{combatTestBench.sceneRow.tokenReady}}/{{combatTestBench.sceneRow.tokenTotal}}</span>
+            <em>{{combatTestBench.sceneRow.summary}}</em>
+          </div>
+          <div class="ih-wt-combat-test-bench-scenarios">
+            {{#each combatTestBench.scenarioRows}}
+            <div class="ih-wt-combat-test-bench-scenario {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{statusLabel}} · {{actor}}</span>
+              <em>{{expected}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{#if combatTestBench.hasNextActions}}
+          <div class="ih-wt-combat-test-bench-next">
+            {{#each combatTestBench.nextActions}}
+            <span>{{this}}</span>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{#if hasGmControl}}
+        <div class="ih-wt-gm-control {{gmControl.tone}}">
+          <div class="ih-wt-gm-control-head">
+            <strong>GM</strong>
+            <span>{{gmControl.statusLabel}}</span>
+            <em>bench {{gmControl.benchCount}} · targets {{gmControl.targetCount}} · combat {{gmControl.participantCount}} · pending {{gmControl.pendingCount}} · time {{gmControl.worldTimeLabel}}</em>
+          </div>
+          <div class="ih-wt-gm-control-scopes">
+            {{#each gmControl.scopeRows}}
+            <span class="{{tone}}" title="{{hint}}"><b>{{count}}</b>{{label}}</span>
+            {{/each}}
+          </div>
+          <div class="ih-wt-gm-control-toolbar">
+            <label>Цели
+              <select name="gm-control-scope">
+                {{#each gmControl.scopes}}
+                <option value="{{id}}">{{label}} · {{count}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Время
+              <select name="gm-time-preset">
+                {{#each gmControl.timePresets}}
+                <option value="{{id}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <a class="ih-btn" data-gm-action="advance-time">Сдвинуть время</a>
+            <a class="ih-btn" data-gm-action="open-combat-hud">Combat HUD</a>
+            <a class="ih-btn" data-gm-action="open-combat-director">Director</a>
+            <a class="ih-btn" data-gm-action="open-combat-manager">Manager</a>
+            <a class="ih-btn" data-gm-action="open-inventory">Инвентарь</a>
+            <a class="ih-btn" data-gm-action="open-world-map">Карта</a>
+          </div>
+          <div class="ih-wt-gm-control-presets">
+            <a class="ih-btn ih-btn-primary" data-gm-action="prepare-combat">Подготовить бой</a>
+            <a class="ih-btn" data-gm-action="recover-after-combat">После боя</a>
+            <a class="ih-btn" data-gm-action="refresh-action-economy">Секунды + pending</a>
+            <a class="ih-btn" data-gm-action="sync-trauma">Синхр. травмы</a>
+          </div>
+          <div class="ih-wt-gm-control-actions">
+            <a class="ih-btn ih-btn-primary" data-gm-action="restore-all">Восстановить всё</a>
+            <a class="ih-btn" data-gm-action="restore-vitals">HP/Mana/Energy</a>
+            <a class="ih-btn" data-gm-action="repair-gear">Ремонт</a>
+            <a class="ih-btn" data-gm-action="clear-conditions">Очистить эффекты</a>
+            <a class="ih-btn" data-gm-action="short-rest">Короткий отдых</a>
+            <a class="ih-btn" data-gm-action="full-rest">Полный отдых</a>
+            <a class="ih-btn" data-gm-action="revive">Оживить</a>
+            <a class="ih-btn" data-gm-action="tick-conditions">Tick времени</a>
+            <a class="ih-btn" data-gm-action="reset-seconds">Сброс секунд</a>
+            <a class="ih-btn" data-gm-action="clear-pending">Очистить pending</a>
+            <a class="ih-btn ih-btn-danger" data-gm-action="defeat">Победить/убить</a>
+          </div>
+          <div class="ih-wt-gm-control-resource">
+            <label>Ресурс
+              <select name="gm-resource-key">
+                {{#each gmControl.resourcePresets}}
+                <option value="{{key}}" data-default-mode="{{defaultMode}}" data-default-value="{{defaultValue}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Режим
+              <select name="gm-resource-mode">
+                {{#each gmControl.resourceModes}}
+                <option value="{{id}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Значение
+              <input type="number" name="gm-resource-value" min="0" value="0">
+            </label>
+            <a class="ih-btn" data-gm-action="apply-resource">Применить</a>
+          </div>
+          <div class="ih-wt-gm-control-body">
+            <label>Зона тела
+              <select name="gm-body-part">
+                {{#each gmControl.bodyParts}}
+                <option value="{{key}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Сила
+              <input type="number" name="gm-body-amount" min="1" value="5">
+            </label>
+            <a class="ih-btn ih-btn-danger" data-gm-action="damage-body">Нанести урон</a>
+            <a class="ih-btn" data-gm-action="heal-body">Лечить</a>
+          </div>
+          <div class="ih-wt-gm-control-effect">
+            <label>Эффект
+              <select name="gm-condition-key">
+                {{#each gmControl.conditionPresets}}
+                <option value="{{key}}" data-default-value="{{value}}">{{label}} · {{valueKind}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Значение
+              <input type="number" name="gm-condition-value" min="1" value="1">
+            </label>
+            <a class="ih-btn" data-gm-action="apply-condition">Наложить</a>
+          </div>
+          <div class="ih-wt-gm-control-quick">
+            <label>Атака / заклинание
+              <select name="gm-action-item">
+                <option value="">Equipped/unarmed</option>
+                {{#each gmControl.actionItems}}
+                <option value="{{id}}">{{label}} · {{detail}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Рука
+              <select name="gm-action-hand">
+                <option value="rightHand">Right hand</option>
+                <option value="leftHand">Left hand</option>
+              </select>
+            </label>
+            <label>Зона
+              <select name="gm-action-target-zone">
+                <option value="">Item/default</option>
+                {{#each gmControl.bodyParts}}
+                <option value="{{key}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Режим зоны
+              <select name="gm-action-zone-mode">
+                {{#each gmControl.targetZoneModes}}
+                <option value="{{id}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label>Friendly fire
+              <select name="gm-action-friendly-fire">
+                {{#each gmControl.friendlyFireModes}}
+                <option value="{{id}}">{{label}}</option>
+                {{/each}}
+              </select>
+            </label>
+            <label class="ih-wt-gm-control-check">
+              <input type="checkbox" name="gm-action-skip-time" checked>
+              <span>GM instant</span>
+            </label>
+            <label class="ih-wt-gm-control-check">
+              <input type="checkbox" name="gm-action-aimed">
+              <span>Aimed</span>
+            </label>
+            <a class="ih-btn ih-btn-primary" data-gm-action="quick-action">Атаковать / каст</a>
+          </div>
+          <div class="ih-wt-gm-control-actors">
+            {{#if gmControl.hasActorRows}}
+            {{#each gmControl.actorRows}}
+            <div class="ih-wt-gm-control-actor {{tone}}">
+              <strong>{{name}}</strong>
+              <span>{{hpLabel}} · {{energyLabel}} · {{manaLabel}}</span>
+              <em>{{conditionsLabel}} · gear {{durabilityLabel}} · {{combatLabel}}</em>
+            </div>
+            {{/each}}
+            {{else}}
+            <div class="ih-wt-gm-control-empty">Выдели токены или выбери scope targets/combat/bench. Bench scope работает после создания IH Combat Test Bench.</div>
+            {{/if}}
+          </div>
+        </div>
+        {{/if}}
+        {{#if hasRegionPrepRows}}
+        <div class="ih-wt-region-readiness">
+          {{#each regionPrepRows}}
+          <div class="ih-wt-region-row {{tone}}">
+            <strong>{{region}}</strong>
+            <span>{{readiness}}% · {{status}}</span>
+            <em>пос. {{settlements}} · POI {{mappedPois}}/{{pois}} · торговцы {{merchants}} · угрозы {{highThreats}}</em>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
       </div>
 
     </div>
@@ -516,6 +956,687 @@
           {{/each}}
         </div>
         {{/if}}
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ih-wt-panel" data-panel="release">
+    <div class="ih-wt-grid">
+
+      <div class="ih-wt-card ih-wt-card-wide ih-wt-release-hero">
+        <div class="ih-wt-card-title">Release QA</div>
+        <div class="ih-wt-release-score">
+          <strong>{{releaseQa.scorePct}}%</strong>
+          <span>{{releaseQa.stageLabel}}</span>
+          <em>{{releaseQa.nextAction}}</em>
+        </div>
+        <div class="ih-wt-actions">
+          <a class="ih-btn ih-btn-primary" data-action="release-content-readiness">Content readiness</a>
+          <a class="ih-btn" data-action="release-art-cockpit">Art cockpit</a>
+          <a class="ih-btn" data-action="release-session-readiness">Session readiness</a>
+          <a class="ih-btn" data-action="release-pack-plan">Pack plan</a>
+          <a class="ih-btn" data-action="release-pipeline-dry-run">Pipeline dry-run</a>
+          <a class="ih-btn" data-action="release-runtime-smoke">Runtime smoke</a>
+          <a class="ih-btn" data-action="release-qa-report">Report to chat</a>
+        </div>
+        <div class="ih-wt-release-toolbelt">
+          <a class="ih-btn" data-action="release-open-tool" data-tool="combat-director">Combat Director</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="combat-hud">Combat HUD</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="combat-manager">Combat Manager</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="inventory">Inventory</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="map">World Map</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="map-region">Map: Region</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="map-local">Map: Local</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="map-encounter">Map: Encounter</a>
+          <a class="ih-btn" data-action="release-open-tool" data-tool="compendium">Compendium</a>
+        </div>
+      </div>
+
+      <div class="ih-wt-card ih-wt-card-wide ih-wt-situation-cockpit">
+        <div class="ih-wt-card-title">GM Situation Cockpit</div>
+        <div class="ih-wt-situation-form">
+          <label>
+            <span>Map level</span>
+            <select name="situation-level">
+              {{#each situationCockpit.levelOptions}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Terrain</span>
+            <select name="situation-terrain">
+              {{#each situationCockpit.terrainOptions}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Situation</span>
+            <select name="situation-kind">
+              {{#each situationCockpit.kindOptions}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Tier</span>
+            <select name="situation-tier">
+              {{#each situationCockpit.tierOptions}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Reroll mode</span>
+            <select name="situation-reroll-mode">
+              {{#each situationCockpit.rerollModeOptions}}
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </label>
+          <label>
+            <span>Label</span>
+            <input type="text" name="situation-label" value="{{situationCockpit.options.label}}" placeholder="Optional focus label">
+          </label>
+          <label>
+            <span>Seed lock</span>
+            <input type="text" name="situation-seed" value="{{situationCockpit.options.seedInput}}" placeholder="Blank = fresh roll">
+          </label>
+        </div>
+
+        <div class="ih-wt-situation-toolbar">
+          <div class="ih-wt-situation-pool">
+            <strong>{{situationCockpit.pool.total}}</strong>
+            <span>maps in pool</span>
+            <em>{{situationCockpit.pool.levelCount}} level / {{situationCockpit.pool.terrainCount}} terrain / {{situationCockpit.pool.kindCount}} kind</em>
+          </div>
+          <div class="ih-wt-actions">
+            <a class="ih-btn ih-btn-primary" data-action="situation-roll">Roll situation</a>
+            <a class="ih-btn" data-action="situation-roll-fresh">Fresh intro</a>
+            <a class="ih-btn" data-action="situation-roll-refresh">Refresh resolved</a>
+            <a class="ih-btn" data-action="situation-chat">Send GM card</a>
+            <a class="ih-btn" data-action="situation-prep">Save prep packet</a>
+            <a class="ih-btn" data-action="situation-journal">Create/update Journal</a>
+            <a class="ih-btn" data-action="situation-open-map">Open map layer</a>
+            <a class="ih-btn" data-action="situation-scene-transitions">Scene transitions</a>
+          </div>
+        </div>
+
+        {{#if situationCockpit.hasHistoryRows}}
+        <div class="ih-wt-situation-history">
+          <header>
+            <h4>Situation history</h4>
+            <span>Selected: {{situationCockpit.selectedHistoryTitle}}</span>
+          </header>
+          {{#each situationCockpit.historyRows}}
+          <div class="ih-wt-situation-history-row {{tone}} {{#if selected}}is-selected{{/if}} {{#if active}}is-active-record{{/if}}">
+            <div>
+              <strong>{{title}}</strong>
+              <span>{{statusLabel}} · t{{tier}} · {{kind}} · {{mapLabel}}</span>
+              <em>{{hook}}</em>
+              {{#if hasPrevious}}<small>from {{previousTitle}}</small>{{/if}}
+            </div>
+            <div class="ih-wt-situation-history-actions">
+              <a class="ih-btn" data-action="situation-load-record" data-situation-id="{{id}}">Load</a>
+              <a class="ih-btn ih-btn-primary" data-action="situation-continue-record" data-situation-id="{{id}}">Continue</a>
+              <a class="ih-btn" data-action="situation-set-status" data-situation-id="{{id}}" data-status="active">Active</a>
+              <a class="ih-btn" data-action="situation-set-status" data-situation-id="{{id}}" data-status="resolved">Done</a>
+              <a class="ih-btn" data-action="situation-set-status" data-situation-id="{{id}}" data-status="failed">Fail</a>
+              <a class="ih-btn" data-action="situation-set-status" data-situation-id="{{id}}" data-status="ignored">Ignore</a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        {{#if situationCockpit.hasSituation}}
+        <div class="ih-wt-actions ih-wt-actions-spaced ih-wt-situation-materialize-actions">
+          <a class="ih-btn ih-btn-primary" data-action="situation-prepare-kit">Prepare Scene Kit Folder</a>
+          <a class="ih-btn" data-action="situation-send-kit">Send Kit to Scene</a>
+          <a class="ih-btn" data-action="situation-place-pins">Place/Refresh Pins</a>
+          <a class="ih-btn" data-action="situation-place-tokens">Place/Refresh Tokens</a>
+          <a class="ih-btn" data-action="situation-validate-kit">Validate Scene Kit</a>
+          <a class="ih-btn" data-action="situation-finalize-kit">Finalize Scene Kit</a>
+          <a class="ih-btn" data-action="situation-play-mode">Play Mode</a>
+          <a class="ih-btn ih-btn-primary" data-action="situation-launch-encounter">Launch Encounter</a>
+          <a class="ih-btn" data-action="situation-materialize-quest">Create/update Quest</a>
+          <a class="ih-btn" data-action="situation-materialize-rumor">Append Rumor</a>
+          <a class="ih-btn" data-action="situation-materialize-container">Create Loot Container</a>
+          <a class="ih-btn" data-action="situation-materialize-npcs">Create/update NPCs</a>
+        </div>
+
+        {{#if situationCockpit.hasSceneKit}}
+        <div class="ih-wt-situation-kit">
+          <header>
+            <div>
+              <h4>Scene Kit Pipeline</h4>
+              <span>{{situationCockpit.sceneKit.name}}</span>
+            </div>
+            <em>{{situationCockpit.sceneKit.status}}{{#if situationCockpit.sceneKit.updatedLabel}} В· {{situationCockpit.sceneKit.updatedLabel}}{{/if}}</em>
+          </header>
+
+          <div class="ih-wt-situation-kit-stages">
+            {{#each situationCockpit.sceneKit.stageRows}}
+            <div class="ih-wt-situation-kit-stage {{tone}}">
+              <div>
+                <strong>{{label}}</strong>
+                <span>{{status}} В· {{count}} rows</span>
+                <em>{{summary}}</em>
+                {{#if hasSeed}}<small>{{seed}}</small>{{/if}}
+              </div>
+              <a class="ih-btn" data-action="situation-reroll-stage" data-stage="{{stage}}">Reroll layer</a>
+            </div>
+            {{/each}}
+          </div>
+
+          <div class="ih-wt-situation-kit-description">
+            {{#each situationCockpit.sceneKit.descriptionRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </div>
+
+          {{#if situationCockpit.sceneKit.hasNavigationRows}}
+          <div class="ih-wt-situation-kit-navigation">
+            <header>
+              <h4>Navigation route</h4>
+              <span>global / region / local / scene</span>
+            </header>
+            {{#each situationCockpit.sceneKit.navigationRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+
+          {{#if situationCockpit.sceneKit.hasSceneRows}}
+          <div class="ih-wt-situation-kit-scene">
+            {{#each situationCockpit.sceneKit.sceneRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+
+          {{#if situationCockpit.sceneKit.hasFolderRows}}
+          <div class="ih-wt-situation-kit-folders">
+            {{#each situationCockpit.sceneKit.folderRows}}
+            <div class="ih-wt-situation-kit-folder {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{name}}</span>
+              <em>{{count}} documents</em>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+
+          {{#if situationCockpit.sceneKit.hasEntityRows}}
+          <div class="ih-wt-situation-kit-entities">
+            {{#each situationCockpit.sceneKit.entityRows}}
+            <div class="ih-wt-situation-kit-entity {{tone}}">
+              <strong>{{kind}}</strong>
+              <span>{{name}}</span>
+              <em>{{status}}{{#if note}} В· {{note}}{{/if}}</em>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+        {{/if}}
+
+        <div class="ih-wt-situation-result {{situationCockpit.summary.tone}}">
+          {{#if situationCockpit.summary.mapAsset}}
+          <img class="ih-wt-situation-map" src="{{situationCockpit.summary.mapAsset}}" alt="{{situationCockpit.summary.mapLabel}}">
+          {{/if}}
+          <div class="ih-wt-situation-main">
+            <header>
+              <div>
+                <strong>{{situationCockpit.summary.title}}</strong>
+                <span>{{situationCockpit.summary.mapLabel}} · {{situationCockpit.summary.mapLevel}} / {{situationCockpit.summary.mapScale}}</span>
+              </div>
+              <em>seed {{situationCockpit.summary.seed}}</em>
+            </header>
+            <p>{{situationCockpit.summary.hook}}</p>
+            <div class="ih-wt-situation-stats">
+              <span>t{{situationCockpit.summary.tier}}</span>
+              <span>{{situationCockpit.summary.rerollMode}}</span>
+              <span>{{situationCockpit.summary.kind}}</span>
+              <span>{{situationCockpit.summary.terrain}}</span>
+              <span>{{situationCockpit.summary.monsterCount}} monsters</span>
+              <span>{{situationCockpit.summary.npcCount}} NPC</span>
+              <span>{{situationCockpit.summary.lootCount}} loot</span>
+              <span>{{situationCockpit.summary.clueCount}} clues</span>
+              <span>{{situationCockpit.summary.skillCount}} checks</span>
+              <span>{{situationCockpit.summary.questCount}} quest</span>
+              <span>{{situationCockpit.summary.rumorCount}} rumor</span>
+              <span>{{situationCockpit.summary.navigationCount}} route</span>
+              <span>{{situationCockpit.summary.blueprintCount}} anchors</span>
+              <span>{{situationCockpit.summary.hotspotCount}} hotspots</span>
+            </div>
+            {{#if situationCockpit.summary.hasPrevious}}
+            <p class="ih-wt-situation-previous">Previous resolved: {{situationCockpit.summary.previousTitle}}</p>
+            {{/if}}
+          </div>
+        </div>
+
+        {{#if situationCockpit.hasMaterializeRows}}
+        <div class="ih-wt-situation-materialize">
+          <h4>{{situationCockpit.materializeTitle}}</h4>
+          {{#each situationCockpit.materializeRows}}
+          <div class="ih-wt-situation-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{value}}</span>
+            {{#if note}}<em>{{note}}</em>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        <div class="ih-wt-situation-sections">
+          <section>
+            <h4>Navigation route</h4>
+            {{#each situationCockpit.navigationRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Scene blueprint</h4>
+            {{#each situationCockpit.sceneInstructionRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.sceneHotspotRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Quest and rumor</h4>
+            {{#each situationCockpit.questRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.rumorRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Placement</h4>
+            {{#each situationCockpit.placementRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Actors</h4>
+            {{#each situationCockpit.actorRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Loot and clues</h4>
+            {{#each situationCockpit.lootRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.clueRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.rewardRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+          <section>
+            <h4>Checks and twists</h4>
+            {{#each situationCockpit.skillRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.twistRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+            {{#each situationCockpit.consequenceRows}}
+            <div class="ih-wt-situation-row {{tone}}">
+              <strong>{{label}}</strong>
+              <span>{{value}}</span>
+              {{#if note}}<em>{{note}}</em>{{/if}}
+            </div>
+            {{/each}}
+          </section>
+        </div>
+        {{/if}}
+      </div>
+
+      {{#if hasReleaseQaHistoryRows}}
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Last QA runs</div>
+        <div class="ih-wt-release-history">
+          {{#each releaseQaHistoryRows}}
+          <div class="ih-wt-release-history-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{status}}</span>
+            <em>{{summary}}</em>
+            <small>{{timeLabel}}</small>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Release gates</div>
+        <div class="ih-wt-release-gates">
+          {{#each releaseQa.gates}}
+          <div class="ih-wt-release-gate {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{statusLabel}}</span>
+            <em>{{summary}}</em>
+            {{#if action}}<small>{{action}}</small>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+
+      {{#if releaseQa.hasSessionReadiness}}
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Session readiness</div>
+        <div class="ih-wt-session-summary">
+          <div>
+            <strong>{{releaseQa.sessionSummary.scorePct}}%</strong>
+            <span>{{releaseQa.sessionSummary.stage}}</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.sessionSummary.mapsMissing}}</strong>
+            <span>map archetypes missing</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.sessionSummary.monsterTierRowsOk}}/10</strong>
+            <span>monster tiers with loot</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.sessionSummary.npcTierRowsOk}}/10</strong>
+            <span>NPC generated tiers</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.sessionSummary.generatorRowsOk}}</strong>
+            <span>generator rows green</span>
+          </div>
+        </div>
+
+        <div class="ih-wt-session-next">
+          {{#each releaseQa.sessionNextActions}}
+          <div>{{this}}</div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-session-section-title">Map coverage</div>
+        <div class="ih-wt-session-grid">
+          {{#each releaseQa.sessionMapRows}}
+          <div class="ih-wt-session-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{level}} · {{found}} / {{required}}</span>
+            <em>{{note}}</em>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-session-section-title">Monster tiers</div>
+        <div class="ih-wt-session-grid">
+          {{#each releaseQa.sessionMonsterRows}}
+          <div class="ih-wt-session-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{count}} monsters · {{lootPools}} loot pools</span>
+            <em>{{note}}</em>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-session-section-title">NPC archetypes</div>
+        <div class="ih-wt-session-grid">
+          {{#each releaseQa.sessionNpcBandRows}}
+          <div class="ih-wt-session-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{count}} / {{roles}} roles</span>
+            <em>{{note}}</em>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-session-section-title">Generator smoke rows</div>
+        <div class="ih-wt-session-grid ih-wt-session-grid-wide">
+          {{#each releaseQa.sessionGeneratorRows}}
+          <div class="ih-wt-session-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{family}} · {{totalItems}} results</span>
+            <em>{{note}}</em>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-session-section-title">GM panel/API</div>
+        <div class="ih-wt-session-grid">
+          {{#each releaseQa.sessionGmRows}}
+          <div class="ih-wt-session-row {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{kind}}</span>
+            <em>{{note}}</em>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      {{#if releaseQa.hasArtCockpit}}
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Content art cockpit</div>
+        <div class="ih-wt-art-summary">
+          <div>
+            <strong>{{releaseQa.artSummary.overallFinalCoveragePct}}%</strong>
+            <span>overall final coverage</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.artSummary.visualQaPending}}</strong>
+            <span>visual QA pending</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.artSummary.criticalVisualQaPending}}</strong>
+            <span>critical utility/gear</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.artSummary.actorNeedsFinalArt}}</strong>
+            <span>NPC/monster tokens</span>
+          </div>
+        </div>
+
+        <div class="ih-wt-art-priorities">
+          {{#each releaseQa.artPriorityRows}}
+          <div class="ih-wt-art-priority {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{finalCoveragePct}}% final</span>
+            <em>{{needsFinalArt}} replace · {{visualQaPending}} QA · {{total}} total</em>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-art-catalogs">
+          {{#each releaseQa.artCatalogRows}}
+          <div class="ih-wt-art-catalog {{tone}}">
+            <strong>{{id}}</strong>
+            <span>{{priorityLabel}}</span>
+            <em>{{system}} / {{total}} system · {{needsFinalArt}} replace · {{visualQaPending}} QA</em>
+            <small>core {{core}} · generic {{generic}} · missing {{missing}} · missing files {{missingSystemFiles}}</small>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="ih-wt-art-actors">
+          {{#each releaseQa.artActorRows}}
+          <div class="ih-wt-art-actor {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{finalCoveragePct}}% final</span>
+            <em>{{system}} / {{total}} final · {{needsFinalArt}} need</em>
+          </div>
+          {{/each}}
+        </div>
+
+        {{#if releaseQa.hasArtBacklogRows}}
+        <div class="ih-wt-art-backlog">
+          {{#each releaseQa.artBacklogRows}}
+          <div class="ih-wt-art-backlog-row">
+            <strong>{{catalog}}/{{id}}</strong>
+            <span>{{name}}</span>
+            <em>{{currentImageClass}} · {{reviewReason}} · {{grid}} · {{targetFile}}</em>
+          </div>
+          {{/each}}
+          {{#each releaseQa.artActorBacklogRows}}
+          <div class="ih-wt-art-backlog-row">
+            <strong>{{type}}/{{id}}</strong>
+            <span>{{name}}</span>
+            <em>{{imageClass}} · tier {{tier}}</em>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+      {{/if}}
+
+      {{#if releaseQa.hasPackPlanRows}}
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Generated pack plan</div>
+        <div class="ih-wt-release-pack-plan">
+          {{#each releaseQa.packPlanRows}}
+          <div class="ih-wt-release-pack-row {{tone}}">
+            <strong>{{packName}}</strong>
+            <span>{{documentType}}</span>
+            <em>{{existing}} / {{expected}}</em>
+            <small>{{note}}</small>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      {{#if releaseQa.hasPipelineSteps}}
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Content pipeline dry-run</div>
+        <div class="ih-wt-release-pipeline">
+          {{#each releaseQa.pipelineSteps}}
+          <div class="ih-wt-release-step {{tone}}">
+            <strong>{{label}}</strong>
+            <span>{{status}} · {{mode}}</span>
+            {{#if reason}}<em>{{reason}}</em>{{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <div class="ih-wt-card ih-wt-card-wide">
+        <div class="ih-wt-card-title">Weekend manual test plan</div>
+        <div class="ih-wt-manual-summary {{releaseQa.manualSummary.tone}}">
+          <div>
+            <strong>{{releaseQa.manualSummary.progressPct}}%</strong>
+            <span>manual pass progress</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.manualSummary.pass}}/{{releaseQa.manualSummary.total}}</strong>
+            <span>passed</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.manualSummary.fail}}</strong>
+            <span>failed</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.manualSummary.blocked}}</strong>
+            <span>blocked</span>
+          </div>
+          <div>
+            <strong>{{releaseQa.manualSummary.completedMinutes}}/{{releaseQa.manualSummary.totalMinutes}}</strong>
+            <span>minutes covered</span>
+          </div>
+        </div>
+        <div class="ih-wt-release-manual-head">
+          <span>Next: {{releaseQa.manualSummary.nextScenarioTitle}}</span>
+          <a class="ih-btn" data-action="release-reset-manual">Reset manual statuses</a>
+        </div>
+        <div class="ih-wt-release-checklist">
+          {{#each releaseQa.manualSections}}
+          <section class="ih-wt-release-scenario {{tone}} {{#if done}}is-done{{/if}} {{#if failed}}is-failed{{/if}} {{#if blocked}}is-blocked{{/if}}">
+            <header>
+              <div>
+                <strong>{{title}}</strong>
+                <span>{{owner}} · {{minutes}} min · {{stepCount}} checks</span>
+              </div>
+              <em>{{statusLabel}}</em>
+            </header>
+            <div class="ih-wt-release-manual-status">
+              <a class="ih-btn {{#if done}}ih-btn-primary{{/if}}" data-action="release-set-manual" data-manual-id="{{id}}" data-status="pass">Pass</a>
+              <a class="ih-btn {{#if failed}}ih-btn-danger{{/if}}" data-action="release-set-manual" data-manual-id="{{id}}" data-status="fail">Fail</a>
+              <a class="ih-btn {{#if blocked}}ih-btn-danger{{/if}}" data-action="release-set-manual" data-manual-id="{{id}}" data-status="blocked">Blocked</a>
+              <a class="ih-btn" data-action="release-set-manual" data-manual-id="{{id}}" data-status="todo">Todo</a>
+            </div>
+            <ol>
+              {{#each steps}}
+              <li>{{this}}</li>
+              {{/each}}
+            </ol>
+            <p>{{pass}}</p>
+          </section>
+          {{/each}}
+        </div>
       </div>
 
     </div>

@@ -52,6 +52,31 @@ const SPELL_IMAGE_BY_SCHOOL = Object.freeze({
   summon: "systems/iron-hills-system/icons/items/spells/summon_skeleton.webp",
 });
 
+const SPELL_IMAGE_BY_ID = Object.freeze({
+  absolute_command: "systems/iron-hills-system/icons/items/spells/absolute_command.webp",
+  absolute_zero: "systems/iron-hills-system/icons/items/spells/absolute_zero.webp",
+  avatar_pact: "systems/iron-hills-system/icons/items/spells/avatar_pact.webp",
+  death_whisper: "systems/iron-hills-system/icons/items/spells/death_whisper.webp",
+  gate_lock: "systems/iron-hills-system/icons/items/spells/gate_lock.webp",
+  ironroot_grasp: "systems/iron-hills-system/icons/items/spells/ironroot_grasp.webp",
+  martyr_aegis: "systems/iron-hills-system/icons/items/spells/martyr_aegis.webp",
+  mind_lance: "systems/iron-hills-system/icons/items/spells/mind_lance.webp",
+  mountain_collapse: "systems/iron-hills-system/icons/items/spells/mountain_collapse.webp",
+  nightfall_zone: "systems/iron-hills-system/icons/items/spells/nightfall_zone.webp",
+  sanctuary_ring: "systems/iron-hills-system/icons/items/spells/sanctuary_ring.webp",
+  storm_crown: "systems/iron-hills-system/icons/items/spells/storm_crown.webp",
+  sunforge_cataclysm: "systems/iron-hills-system/icons/items/spells/sunforge_cataclysm.webp",
+  sunlance: "systems/iron-hills-system/icons/items/spells/sunlance.webp",
+  tectonic_spear: "systems/iron-hills-system/icons/items/spells/tectonic_spear.webp",
+  thought_storm: "systems/iron-hills-system/icons/items/spells/thought_storm.webp",
+  void_judgement: "systems/iron-hills-system/icons/items/spells/void_judgement.webp",
+  volcanic_burst: "systems/iron-hills-system/icons/items/spells/volcanic_burst.webp",
+  warding_sigil: "systems/iron-hills-system/icons/items/spells/warding_sigil.webp",
+  whiteout_field: "systems/iron-hills-system/icons/items/spells/whiteout_field.webp",
+  worldbolt: "systems/iron-hills-system/icons/items/spells/worldbolt.webp",
+  worldroot_verdict: "systems/iron-hills-system/icons/items/spells/worldroot_verdict.webp",
+});
+
 const BASE_SPELLS = {
 
   // ══════════════════════════════════════════════════════════
@@ -358,7 +383,7 @@ function supplementalSpell(row) {
     targetZoneMode: row.targetZoneMode ?? "",
     aoe: row.aoe ?? null,
     effect: row.effect ?? null,
-    img: row.img ?? SPELL_IMAGE_BY_SCHOOL[row.school] ?? SPELL_IMAGE_BY_SCHOOL.mind,
+    img: row.img ?? SPELL_IMAGE_BY_ID[row.id] ?? SPELL_IMAGE_BY_SCHOOL[row.school] ?? SPELL_IMAGE_BY_SCHOOL.mind,
   };
 }
 

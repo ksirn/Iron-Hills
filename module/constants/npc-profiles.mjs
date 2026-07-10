@@ -76,16 +76,7 @@ export const NPC_SPECIALIZATIONS = {
 /** Совместимость: старый импорт `NPC_ROLE_PROFILES`. */
 export const NPC_ROLE_PROFILES = NPC_SPECIALIZATIONS;
 
-const NPC_ROLE_IMAGES = Object.freeze({
-  villager: "icons/svg/mystery-man.svg",
-  guard: "icons/svg/mystery-man.svg",
-  bandit: "icons/svg/mystery-man.svg",
-  mage: "icons/svg/mystery-man.svg",
-  crafter: "icons/svg/mystery-man.svg",
-  hunter: "icons/svg/mystery-man.svg",
-  noble: "icons/svg/mystery-man.svg",
-  priest: "icons/svg/mystery-man.svg",
-});
+export const NPC_TOKEN_IMAGE_BASE = "systems/iron-hills-system/icons/tokens/npc";
 
 export const NPC_TIER_BANDS = Object.freeze([
   { id: "t1_3", label: "тир 1-3", tier: 2, tierRange: "1-3", faction: "frontier" },
@@ -93,8 +84,37 @@ export const NPC_TIER_BANDS = Object.freeze([
   { id: "t7_10", label: "тир 7-10", tier: 8, tierRange: "7-10", faction: "elite" },
 ]);
 
-export const NPC_PACK_ACTORS = Object.freeze(Object.fromEntries(
-  Object.entries(NPC_SPECIALIZATIONS).flatMap(([roleKey, profile]) =>
+export function resolveNpcTierBandIdForTier(tier) {
+  const t = Math.max(1, Math.min(10, Number(tier) || 1));
+  if (t <= 3) return "t1_3";
+  if (t <= 6) return "t4_6";
+  return "t7_10";
+}
+
+export function getNpcRoleImage(roleKey, tierOrBandId = 1) {
+  const specialization = NPC_SPECIALIZATIONS[roleKey] ? roleKey : "villager";
+  const rawBand = String(tierOrBandId ?? "").trim();
+  const bandId = NPC_TIER_BANDS.some((band) => band.id === rawBand)
+    ? rawBand
+    : resolveNpcTierBandIdForTier(tierOrBandId);
+  return `${NPC_TOKEN_IMAGE_BASE}/${specialization}_${bandId}.webp`;
+}
+
+export const NPC_EXACT_TIER_PREVIEW_ACTORS = Object.freeze([
+  { tier: 1, specialization: "villager", label: "Эшфордский проводник", faction: "ashford", sceneRole: "safe-guide" },
+  { tier: 2, specialization: "guard", label: "Ривергейтский страж", faction: "rivergate", sceneRole: "gate-guard" },
+  { tier: 3, specialization: "bandit", label: "Разбойник с западной дороги", faction: "outlaws", sceneRole: "road-threat" },
+  { tier: 4, specialization: "hunter", label: "Охотник Чёрного Бора", faction: "frontier", sceneRole: "wilderness-contact" },
+  { tier: 5, specialization: "crafter", label: "Копёрный кузнец", faction: "miners-guild", sceneRole: "repair-and-trade" },
+  { tier: 6, specialization: "mage", label: "Рудничный геомант", faction: "miners-guild", sceneRole: "arcane-support" },
+  { tier: 7, specialization: "priest", label: "Жрец дорожного святилища", faction: "temple", sceneRole: "healer" },
+  { tier: 8, specialization: "noble", label: "Интендант Железных Холмов", faction: "iron-hills", sceneRole: "quest-patron" },
+  { tier: 9, specialization: "guard", label: "Капитан северного перевала", faction: "iron-hills", sceneRole: "elite-guard" },
+  { tier: 10, specialization: "mage", label: "Архимаг старой крепости", faction: "old-iron-castle", sceneRole: "boss-caster" },
+]);
+
+function buildNpcBandPackEntries() {
+  return Object.entries(NPC_SPECIALIZATIONS).flatMap(([roleKey, profile]) =>
     NPC_TIER_BANDS.map((band) => {
       const id = `${roleKey}_${band.id}`;
       return [id, {
@@ -104,12 +124,37 @@ export const NPC_PACK_ACTORS = Object.freeze(Object.fromEntries(
         tier: band.tier,
         tierRange: band.tierRange,
         faction: band.faction,
-        img: NPC_ROLE_IMAGES[roleKey] ?? "icons/svg/mystery-man.svg",
+        img: getNpcRoleImage(roleKey, band.id),
         desc: `${profile.desc} Готовый NPC-архетип для быстрых сцен и тестов тира ${band.tierRange}.`,
       }];
     })
-  )
-));
+  );
+}
+
+function buildNpcExactTierPackEntries() {
+  return NPC_EXACT_TIER_PREVIEW_ACTORS.map((seed) => {
+    const roleKey = NPC_SPECIALIZATIONS[seed.specialization] ? seed.specialization : "villager";
+    const profile = NPC_SPECIALIZATIONS[roleKey];
+    const tier = Math.max(1, Math.min(10, Number(seed.tier) || 1));
+    const id = `${roleKey}_exact_t${tier}`;
+    return [id, {
+      id,
+      specialization: roleKey,
+      label: `${seed.label} (тир ${tier})`,
+      tier,
+      tierRange: `${tier}`,
+      faction: seed.faction ?? "iron-hills",
+      sceneRole: seed.sceneRole ?? "session-npc",
+      img: getNpcRoleImage(roleKey, tier),
+      desc: `${profile.desc} Точный NPC-архетип тира ${tier} для первой сессии Iron Hills, smoke-тестов и быстрой расстановки на картах.`,
+    }];
+  });
+}
+
+export const NPC_PACK_ACTORS = Object.freeze(Object.fromEntries([
+  ...buildNpcBandPackEntries(),
+  ...buildNpcExactTierPackEntries(),
+]));
 
 /**
  * Таблица останков простолюдина по ступени NPC (1–10).

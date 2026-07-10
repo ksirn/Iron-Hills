@@ -154,6 +154,10 @@ function toBatchItem(item, sequence) {
     resolution: item.resolution,
     targetFile: item.targetFile,
     targetImg: item.targetImg,
+    finalFile: item.finalFile ?? "",
+    finalImg: item.finalImg ?? "",
+    currentImg: item.currentImg ?? "",
+    replacementReasons: item.replacementReasons ?? [],
     promptSource: item.promptSource,
     prompt: item.prompt,
     negative: item.negative,
@@ -229,6 +233,8 @@ function toCsv(manifest) {
     "aspect",
     "resolution",
     "targetFile",
+    "finalFile",
+    "replacementReasons",
     "promptSource",
     "prompt",
     "negative",
@@ -265,6 +271,8 @@ function toMarkdown(manifest) {
       lines.push(`### ${item.sequence}. ${item.name} (\`${item.catalog}/${item.id}\`)`);
       lines.push("");
       lines.push(`- Target: \`${item.targetFile}\``);
+      if (item.finalFile) lines.push(`- Replaces after QA: \`${item.finalFile}\``);
+      if (item.replacementReasons?.length) lines.push(`- Replacement reasons: ${item.replacementReasons.join(", ")}`);
       lines.push(`- Grid: ${item.gridW}x${item.gridH}, ${item.aspect}, ${item.resolution}`);
       lines.push(`- Source: ${item.promptSource || "fallback"}`);
       lines.push("");

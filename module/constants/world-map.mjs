@@ -4,6 +4,184 @@
  * 10×10 тайлов, основной доход — добыча железа.
  */
 
+export const WORLD_MAP_LEVEL_ORDER = ["global", "region", "local", "encounter"];
+
+export const WORLD_MAP_LEVELS = {
+  global: {
+    id: "global",
+    label: "Глобальная",
+    shortLabel: "Мир",
+    scale: "страны, континенты, дальние торговые пути",
+    role: "стратегическая навигация между регионами и большими угрозами",
+    travelUnit: "дни и недели",
+    status: "atlas",
+  },
+  region: {
+    id: "region",
+    label: "Региональная",
+    shortLabel: "Регион",
+    scale: "долины, перевалы, поселения, дороги и опасные зоны",
+    role: "основной рабочий слой путешествий, A* маршрутов и travel events",
+    travelUnit: "часы и дни",
+    status: "active",
+  },
+  local: {
+    id: "local",
+    label: "Город / местность",
+    shortLabel: "Локация",
+    scale: "улицы, кварталы, лагерь, рудник, лесная чаща или руины",
+    role: "переход от маршрута к сценам, торговцам, POI и локальным событиям",
+    travelUnit: "минуты и часы",
+    status: "atlas",
+  },
+  encounter: {
+    id: "encounter",
+    label: "Дом / энкаунтер",
+    shortLabel: "Сцена",
+    scale: "отдельный дом, двор, поле боя, комната, засадная зона",
+    role: "точный слой Foundry Scene, токенов, укрытий, зон поражения и боя",
+    travelUnit: "секунды и раунды",
+    status: "atlas",
+  },
+};
+
+export const WORLD_MAP_STAGE_NODES = {
+  global: [
+    { id: "iron_hills", label: "Железные Холмы", kind: "стартовый регион", tone: "is-active" },
+    { id: "gray_marshes", label: "Серые Топи", kind: "южный рубеж", tone: "is-danger" },
+    { id: "northern_passes", label: "Северные перевалы", kind: "горная граница", tone: "is-cold" },
+    { id: "riverlands", label: "Речные земли", kind: "торговые пути", tone: "is-road" },
+  ],
+  encounter: [
+    { id: "approach", label: "Подход", kind: "вход в сцену", tone: "is-road" },
+    { id: "cover", label: "Укрытия", kind: "камни, стены, лес, мебель", tone: "is-active" },
+    { id: "hazards", label: "Опасности", kind: "ловушки, огонь, ямы, болото", tone: "is-danger" },
+    { id: "loot", label: "Добыча", kind: "контейнеры и интерактив", tone: "is-gold" },
+  ],
+};
+
+export const WORLD_MAP_ASSETS = {
+  ironHillsGlobalAtlas: "systems/iron-hills-system/icons/world/maps/iron-hills-global-atlas.png",
+  ironHillsRegion: "systems/iron-hills-system/icons/world/maps/iron-hills-region-map.webp",
+  rivergateCityLocal: "systems/iron-hills-system/icons/world/maps/rivergate-city-local.png",
+  ashfordVillageLocal: "systems/iron-hills-system/icons/world/maps/ashford-village-local.png",
+  kopernyPeakMiningLocal: "systems/iron-hills-system/icons/world/maps/koperny-peak-mining-local.png",
+  encounterHouseInterior: "systems/iron-hills-system/icons/world/maps/encounter-house-interior.png",
+  encounterMarketSquare: "systems/iron-hills-system/icons/world/maps/encounter-market-square.png",
+  encounterField: "systems/iron-hills-system/icons/world/maps/encounter-field.png",
+  encounterForest: "systems/iron-hills-system/icons/world/maps/encounter-forest.png",
+  encounterMineCave: "systems/iron-hills-system/icons/world/maps/encounter-mine-cave.png",
+};
+
+const WORLD_MAP_LOCAL_BACKDROPS_BY_LABEL = Object.freeze({
+  "Ривергейт": WORLD_MAP_ASSETS.rivergateCityLocal,
+  "Эшфорд": WORLD_MAP_ASSETS.ashfordVillageLocal,
+  "Копёрный Пик": WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+  "Глубокий Пласт": WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+});
+
+const WORLD_MAP_LOCAL_BACKDROPS_BY_TERRAIN = Object.freeze({
+  town: WORLD_MAP_ASSETS.rivergateCityLocal,
+  village: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  road: WORLD_MAP_ASSETS.rivergateCityLocal,
+  mine: WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+  dungeon: WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+  ruins: WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+  forest: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  plains: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  hills: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  swamp: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  river: WORLD_MAP_ASSETS.ashfordVillageLocal,
+  pass: WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+  mountains: WORLD_MAP_ASSETS.kopernyPeakMiningLocal,
+});
+
+const WORLD_MAP_ENCOUNTER_BACKDROPS_BY_LABEL = Object.freeze({
+  "Ривергейт": WORLD_MAP_ASSETS.encounterMarketSquare,
+  "Эшфорд": WORLD_MAP_ASSETS.encounterHouseInterior,
+  "Копёрный Пик": WORLD_MAP_ASSETS.encounterMineCave,
+  "Глубокий Пласт": WORLD_MAP_ASSETS.encounterMineCave,
+  "Чёрный Бор": WORLD_MAP_ASSETS.encounterForest,
+});
+
+const WORLD_MAP_ENCOUNTER_BACKDROPS_BY_TERRAIN = Object.freeze({
+  town: WORLD_MAP_ASSETS.encounterMarketSquare,
+  village: WORLD_MAP_ASSETS.encounterHouseInterior,
+  road: WORLD_MAP_ASSETS.encounterMarketSquare,
+  mine: WORLD_MAP_ASSETS.encounterMineCave,
+  dungeon: WORLD_MAP_ASSETS.encounterMineCave,
+  ruins: WORLD_MAP_ASSETS.encounterMineCave,
+  forest: WORLD_MAP_ASSETS.encounterForest,
+  plains: WORLD_MAP_ASSETS.encounterField,
+  hills: WORLD_MAP_ASSETS.encounterField,
+  river: WORLD_MAP_ASSETS.encounterForest,
+  swamp: WORLD_MAP_ASSETS.encounterForest,
+  pass: WORLD_MAP_ASSETS.encounterMineCave,
+  mountains: WORLD_MAP_ASSETS.encounterMineCave,
+});
+
+export const WORLD_MAP_BACKDROPS = Object.freeze({
+  global: Object.freeze({
+    default: WORLD_MAP_ASSETS.ironHillsGlobalAtlas,
+  }),
+  region: Object.freeze({
+    default: WORLD_MAP_ASSETS.ironHillsRegion,
+  }),
+  local: Object.freeze({
+    default: WORLD_MAP_ASSETS.ashfordVillageLocal,
+    byLabel: WORLD_MAP_LOCAL_BACKDROPS_BY_LABEL,
+    byTerrain: WORLD_MAP_LOCAL_BACKDROPS_BY_TERRAIN,
+  }),
+  encounter: Object.freeze({
+    default: WORLD_MAP_ASSETS.encounterField,
+    byLabel: WORLD_MAP_ENCOUNTER_BACKDROPS_BY_LABEL,
+    byTerrain: WORLD_MAP_ENCOUNTER_BACKDROPS_BY_TERRAIN,
+  }),
+});
+
+function normalizeBackdropLookup(value) {
+  return String(value ?? "").trim();
+}
+
+function resolveFromLookup(lookup = {}, value) {
+  const key = normalizeBackdropLookup(value);
+  if (!key) return null;
+  return lookup[key] ?? null;
+}
+
+export function resolveWorldMapBackdrop(level = "region", focus = {}) {
+  const levelKey = WORLD_MAP_BACKDROPS[level] ? level : "region";
+  const rules = WORLD_MAP_BACKDROPS[levelKey];
+  const label = focus?.label ?? focus?.name ?? "";
+  const terrain = focus?.terrain ?? "";
+  return (
+    resolveFromLookup(rules.byLabel, label) ??
+    resolveFromLookup(rules.byTerrain, terrain) ??
+    rules.default ??
+    WORLD_MAP_ASSETS.ironHillsRegion
+  );
+}
+
+export function listWorldMapBackdropAssets() {
+  return Object.values(WORLD_MAP_ASSETS);
+}
+
+export const TERRAIN_VISUALS = {
+  mountains: { className: "terrain-mountains", mark: "▲", color: "#5d6470" },
+  hills:     { className: "terrain-hills",     mark: "∧", color: "#6f6747" },
+  plains:    { className: "terrain-plains",    mark: "·", color: "#68734d" },
+  forest:    { className: "terrain-forest",    mark: "♣", color: "#36553e" },
+  swamp:     { className: "terrain-swamp",     mark: "≈", color: "#425742" },
+  river:     { className: "terrain-river",     mark: "≋", color: "#355a66" },
+  road:      { className: "terrain-road",      mark: "—", color: "#8a7652" },
+  pass:      { className: "terrain-pass",      mark: "◇", color: "#777064" },
+  ruins:     { className: "terrain-ruins",     mark: "▥", color: "#6c6258" },
+  dungeon:   { className: "terrain-dungeon",   mark: "◆", color: "#46424a" },
+  mine:      { className: "terrain-mine",      mark: "◈", color: "#5c5347" },
+  town:      { className: "terrain-town",      mark: "■", color: "#8b724e" },
+  village:   { className: "terrain-village",   mark: "□", color: "#79684b" },
+};
+
 export const TERRAIN_TYPES = {
   mountains: { label: "Горы",      icon: "⛰",  moveCost: 3, canDock: false },
   hills:     { label: "Холмы",     icon: "🏔",  moveCost: 2, canDock: false },

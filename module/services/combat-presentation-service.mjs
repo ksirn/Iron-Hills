@@ -308,6 +308,52 @@ function buildAoeNoticeRows(summary = {}) {
   ].filter(row => row.visible !== false);
 }
 
+function buildAoeExecutionRows(summary = {}, aoeConfig = {}) {
+  const totalTargets = num(summary.totalTargets, 0);
+  const candidates = num(summary.candidates, 0);
+  const selected = num(summary.selectedTargets ?? summary.resultCount, 0);
+  const hits = num(summary.hitCount, 0);
+  const misses = num(summary.missCount, 0);
+  const alliesSpared = num(summary.alliesSpared ?? summary.skippedByPolicy, 0);
+  const friendlyFireMode = normalizeAoeFriendlyFireMode(summary.friendlyFireMode ?? aoeConfig?.friendlyFireMode, "off");
+  const targetZoneMode = summary.targetZoneMode ?? aoeConfig?.targetZoneMode ?? "random";
+  const targetZone = summary.targetZone ?? aoeConfig?.targetZone ?? aoeConfig?.targetPart ?? "";
+  const zoneLabel = summary.targetZoneLabel || getAoeTargetZoneLabel(targetZone, targetZoneMode === "random" ? "random" : "");
+
+  return [
+    {
+      label: "Template",
+      value: totalTargets > 0 ? `${candidates}/${totalTargets}` : String(candidates),
+      note: totalTargets > 0 ? "eligible / inside" : "eligible targets",
+      className: candidates > 0 ? "is-active" : "is-empty",
+    },
+    {
+      label: "Resolution",
+      value: String(selected),
+      note: `${hits} hit / ${misses} miss`,
+      className: selected > 0 ? "is-hit" : "is-empty",
+    },
+    {
+      label: "Policy",
+      value: getAoeTargetPolicyLabel(summary.targetPolicy ?? "enemies"),
+      note: alliesSpared > 0 ? `${alliesSpared} spared` : "no skips",
+      className: alliesSpared > 0 ? "is-spared" : "is-muted",
+    },
+    {
+      label: "Friendly fire",
+      value: getAoeFriendlyFireModeLabel(friendlyFireMode),
+      note: getAoeFriendlyFireResolvedLabel(summary.friendlyFire),
+      className: summary.friendlyFireHit ? "is-danger" : summary.friendlyFireRisk ? "is-warn" : "is-safe",
+    },
+    {
+      label: "Hit zone",
+      value: zoneLabel || "random",
+      note: getAoeTargetZoneModeLabel(targetZoneMode),
+      className: targetZoneMode === "aimed" ? "is-aimed" : targetZone ? "is-zone" : "is-random",
+    },
+  ];
+}
+
 function buildAoeResultBadges(result = {}, {
   hit = true,
   ally = false,
@@ -408,6 +454,79 @@ function buildAoeResultDetailRows(result = {}, {
   ].filter(row => row.visible !== false);
 }
 
+function buildAoeImpactTrack(result = {}, {
+  hit = true,
+  isUtility = false,
+  damage = 0,
+  healed = 0,
+  amount = 0,
+  armor = 0,
+} = {}) {
+  const segments = [];
+  if (!hit) {
+    segments.push({
+      label: "Roll",
+      value: `${result.roll ?? "-"}/${result.threshold ?? "-"}`,
+      note: "",
+      className: "is-miss",
+    });
+    segments.push({
+      label: "Outcome",
+      value: "Miss",
+      note: result.zone ?? "",
+      className: "is-miss",
+    });
+    return { segments, className: "is-miss" };
+  }
+
+  if (isUtility) {
+    if (healed > 0) {
+      segments.push({ label: "Heal", value: `+${healed}`, note: result.zone ?? "", className: "is-heal" });
+    } else if (result.condition) {
+      segments.push({ label: "Effect", value: result.condition, note: result.zone ?? "", className: "is-effect" });
+    } else {
+      segments.push({ label: "Utility", value: amount > 0 ? String(amount) : "applied", note: result.zone ?? "", className: "is-effect" });
+    }
+    return { segments, className: "is-utility" };
+  }
+
+  segments.push({
+    label: "Raw",
+    value: result.rawDamage !== undefined ? String(result.rawDamage) : String(damage + armor),
+    note: result.margin ? `margin ${maybePlus(result.margin)}` : "",
+    className: "is-raw",
+  });
+
+  if (armor > 0) {
+    segments.push({
+      label: "Armor",
+      value: `-${armor}`,
+      note: "",
+      className: "is-armor",
+    });
+  }
+
+  segments.push({
+    label: "Body",
+    value: damage > 0 ? `-${damage}` : "0",
+    note: result.zone ?? "",
+    className: result.targetKilled ? "is-kill" : damage > 0 ? "is-body" : "is-absorbed",
+  });
+
+  if (result.targetKilled) {
+    segments.push({ label: "Outcome", value: "Down", note: "", className: "is-kill" });
+  }
+
+  return {
+    segments,
+    className: joinParts([
+      result.targetKilled ? "is-kill" : "",
+      damage > 0 ? "has-body-damage" : "is-absorbed",
+      armor > 0 ? "has-armor" : "",
+    ], " "),
+  };
+}
+
 export function buildAoeResultView(result = {}, { isUtility = false } = {}) {
   const hit = result.hit !== false;
   const ally = Boolean(result.ally);
@@ -429,6 +548,14 @@ export function buildAoeResultView(result = {}, { isUtility = false } = {}) {
   else if (hit && result.condition) outcome = result.condition;
 
   const detailRows = buildAoeResultDetailRows(result, { hasRoll, zone, armor });
+  const impactTrack = buildAoeImpactTrack(result, {
+    hit,
+    isUtility,
+    damage,
+    healed,
+    amount,
+    armor,
+  });
 
   return {
     ...result,
@@ -439,6 +566,7 @@ export function buildAoeResultView(result = {}, { isUtility = false } = {}) {
     sideLabel,
     name: result.name ?? "—",
     outcome,
+    impactTrack,
     badges: buildAoeResultBadges(result, { hit, ally, sideLabel, statusLabel }),
     detailRows,
     metaText: joinParts(detailRows.map(row => `${row.label}: ${row.value}`)),
@@ -508,6 +636,7 @@ export function buildAoeChatData({
       baseDamage,
       isUtility,
     }),
+    executionRows: buildAoeExecutionRows(resolvedSummary, resolvedAoeConfig),
     noticeRows: buildAoeNoticeRows(resolvedSummary),
     results: results.map(result => buildAoeResultView(result, { isUtility })),
     summary: resolvedSummary,

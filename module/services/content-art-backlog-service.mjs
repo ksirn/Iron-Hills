@@ -121,6 +121,45 @@ function tierMaterialWords(tier) {
   return "mythic godsteel, adamant core, reality-bending magical highlights";
 }
 
+function materialQualityWords(tier) {
+  const t = Math.max(1, Math.min(10, Math.round(numberOr(tier, 1))));
+  if (t <= 1) return "common raw low-tier reagent, rough practical gathering quality";
+  if (t <= 3) return "workshop-grade prepared material, cleaned and usable, modest fantasy craft";
+  if (t <= 5) return "refined guild-quality material, polished details and clear readable texture";
+  if (t <= 7) return "rare magical reagent, subtle glow, valuable but grounded fantasy material";
+  if (t <= 9) return "legendary crafting material, ornate luminous accents, heroic rarity";
+  return "mythic impossible reagent, restrained reality-bending aura, artifact-grade presence";
+}
+
+function hasAnyWord(text, words) {
+  return words.some(word => text.includes(word));
+}
+
+function materialObjectWords(row, itemData) {
+  const id = String(row?.id ?? itemData?.system?.catalogId ?? "").toLowerCase();
+  const name = String(row?.label ?? itemData?.name ?? id).toLowerCase();
+  const text = `${id} ${name}`;
+  if (hasAnyWord(text, ["ore"])) return "a single chunk of raw fantasy ore with stone matrix and metallic veins";
+  if (hasAnyWord(text, ["wood", "oak", "pine", "timber", "board", "root", "tree", "ironwood", "ebony"])) {
+    return "a bundle of fantasy timber, carved root, plank or rare wood sample";
+  }
+  if (hasAnyWord(text, ["ingot", "alloy", "steel", "adamantium", "mithril", "orichalcum", "starmetal", "dark_iron", "copper", "bronze", "iron", "tin"])) {
+    return "a single forged fantasy metal ingot or refined metal bar with stamped workshop marks";
+  }
+  if (hasAnyWord(text, ["hide", "pelt", "leather", "scale", "mesh"])) return "a folded fantasy hide, pelt, scale sheet or cured leather crafting material";
+  if (hasAnyWord(text, ["blood", "tears", "essence", "gland", "sac", "powder", "dust", "resin", "oil"])) {
+    return "a fantasy alchemical reagent vial, sealed pouch or organic harvest component";
+  }
+  if (hasAnyWord(text, ["crystal", "geode", "stone", "quartz", "ruby", "sapphire", "diamond", "obsidian", "shard", "relic"])) {
+    return "a single fantasy gem, crystal shard or mineral specimen with readable facets";
+  }
+  if (hasAnyWord(text, ["herb", "flower", "mushroom", "lichen", "bloom", "seed"])) return "a gathered fantasy botanical reagent bundle";
+  if (hasAnyWord(text, ["thread", "weave", "cloth", "silk", "fiber", "rope"])) return "a coiled fantasy textile material, thread spool, fabric fold or rope bundle";
+  if (hasAnyWord(text, ["bone", "fang", "feather", "heart", "sinew", "musk", "keel"])) return "a fantasy monster trophy material or preserved anatomical crafting component";
+  if (hasAnyWord(text, ["coal", "flint", "glass", "granite"])) return "a single practical fantasy mineral or workshop material";
+  return "a single fantasy crafting material with a specific readable silhouette";
+}
+
 function objectWords(type, row, itemData) {
   const system = itemData?.system ?? {};
   if (type === "weapon") {
@@ -145,7 +184,7 @@ function objectWords(type, row, itemData) {
   if (type === "spell") return `a magic spell icon for ${system.school ?? row.school ?? "arcane"} magic`;
   if (type === "throwable") return "a single fantasy throwable consumable weapon";
   if (type === "consumable") return "a compact fantasy utility consumable or medical supply";
-  if (type === "material") return "a single fantasy crafting material";
+  if (type === "material") return materialObjectWords(row, itemData);
   if (type === "armor") return "a single fantasy armor piece";
   if (type === "belt") return "a single fantasy utility belt";
   if (type === "backpack") return "a single fantasy backpack or pouch";
@@ -159,10 +198,11 @@ function buildFallbackPrompt(catalog, row, itemData) {
   const grid = aspectForGrid(system.gridW ?? row.gridW, system.gridH ?? row.gridH);
   const name = row.label ?? itemData?.name ?? row.id;
   const tier = system.tier ?? system.rank ?? row.tier ?? row.rank ?? 1;
+  const qualityWords = catalog.type === "material" ? materialQualityWords(tier) : tierMaterialWords(tier);
   const details = [
     `Concept "${name}"`,
     objectWords(catalog.type, row, itemData),
-    tierMaterialWords(tier),
+    qualityWords,
     grid.orientation,
     "single isolated fantasy RPG inventory icon",
     "centered",

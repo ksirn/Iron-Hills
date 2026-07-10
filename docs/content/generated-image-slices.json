@@ -1,0 +1,2505 @@
+{
+  "ok": true,
+  "label": "Iron Hills imagegen preview slice plan",
+  "generatedAt": "2026-06-18T20:02:38.499382+00:00",
+  "dryRun": false,
+  "summary": {
+    "total": 92,
+    "promotable": 43,
+    "written": 92,
+    "skippedExisting": 0,
+    "blockers": 0
+  },
+  "source": {
+    "plan": "docs/content/imagegen-slice-plan.json",
+    "outputSize": 1024,
+    "outputRoot": "art-candidates/items"
+  },
+  "blockers": [],
+  "items": [
+    {
+      "id": "preview_padded_arming_cap",
+      "name": "Padded arming cap",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-padded-arming-cap.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-padded-arming-cap.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "padded arming cap",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_reinforced_leather_hood",
+      "name": "Reinforced leather hood",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-reinforced-leather-hood.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-reinforced-leather-hood.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "reinforced leather hood",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "chainmail_coif_candidate",
+      "name": "Chain coif candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/chainmail-coif-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/chainmail-coif-candidate.webp",
+      "finalFile": "icons/items/armor/chainmail_coif.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/chainmail_coif.webp",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "chain coif",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "plate_helm_candidate",
+      "name": "Steel sallet candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/plate-helm-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/plate-helm-candidate.webp",
+      "finalFile": "icons/items/armor/plate_helm.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/plate_helm.webp",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "steel sallet helmet",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "darkiron_helm_candidate",
+      "name": "Darkiron great helm candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/darkiron-helm-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/darkiron-helm-candidate.webp",
+      "finalFile": "icons/items/armor/darkiron_helm.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/darkiron_helm.webp",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "darkiron great helm",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_helm_candidate",
+      "name": "Mithril open-face helm candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/mithril-helm-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/mithril-helm-candidate.webp",
+      "finalFile": "icons/items/armor/mithril_helm.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/mithril_helm.webp",
+      "sourceSheetSlug": "2026-06-18-armor-helmets",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-helmets.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "mithril open-face helm",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_leather_bracers",
+      "name": "Leather bracers",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-leather-bracers.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-leather-bracers.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "leather bracer pair",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_studded_vambraces",
+      "name": "Studded leather vambraces",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-studded-vambraces.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-studded-vambraces.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "studded leather vambraces",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "chain_sleeves_candidate",
+      "name": "Chain sleeves candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/chain-sleeves-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/chain-sleeves-candidate.webp",
+      "finalFile": "icons/items/armor/chain_sleeves.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/chain_sleeves.webp",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "chain sleeves",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "plate_arms_candidate",
+      "name": "Plate gauntlets candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/plate-arms-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/plate-arms-candidate.webp",
+      "finalFile": "icons/items/armor/plate_arms.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/plate_arms.webp",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "steel plate gauntlets",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_darkiron_heavy_bracers",
+      "name": "Darkiron heavy bracers",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-darkiron-heavy-bracers.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-darkiron-heavy-bracers.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "darkiron heavy bracers",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_mithril_duelist_gloves",
+      "name": "Mithril duelist gloves",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-mithril-duelist-gloves.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-mithril-duelist-gloves.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-arms-hands",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-arms-hands.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "mithril duelist gloves",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "leather_boots_candidate",
+      "name": "Leather travel boots candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/leather-boots-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/leather-boots-candidate.webp",
+      "finalFile": "icons/items/armor/leather_boots.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/leather_boots.webp",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "soft leather travel boots",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "preview_ranger_boots",
+      "name": "Reinforced ranger boots",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/preview-ranger-boots.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/preview-ranger-boots.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "reinforced ranger boots",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "chain_leggings_candidate",
+      "name": "Chain chausses candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/chain-leggings-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/chain-leggings-candidate.webp",
+      "finalFile": "icons/items/armor/chain_leggings.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/chain_leggings.webp",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "chain chausses",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "plate_legs_candidate",
+      "name": "Steel greaves candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/plate-legs-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/plate-legs-candidate.webp",
+      "finalFile": "icons/items/armor/plate_legs.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/plate_legs.webp",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "steel greaves and sabatons",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "darkiron_legs_candidate",
+      "name": "Darkiron leg plates candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/darkiron-legs-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/darkiron-legs-candidate.webp",
+      "finalFile": "icons/items/armor/darkiron_legs.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/darkiron_legs.webp",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "darkiron heavy leg plates",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mithril_legs_candidate",
+      "name": "Mithril greaves candidate",
+      "catalog": "armor",
+      "type": "armor",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/armor/mithril-legs-candidate.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/armor/mithril-legs-candidate.webp",
+      "finalFile": "icons/items/armor/mithril_legs.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/armor/mithril_legs.webp",
+      "sourceSheetSlug": "2026-06-18-armor-legs-feet",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-armor-legs-feet.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "mithril light greaves",
+      "notes": [
+        "Sliced from sheet, use visual QA before promotion."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "linen_travel_tunic",
+      "name": "Linen travel tunic",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/linen-travel-tunic.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/linen-travel-tunic.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "linen travel tunic",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "weathered_ranger_cloak",
+      "name": "Weathered ranger cloak",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/weathered-ranger-cloak.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/weathered-ranger-cloak.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "weathered ranger cloak",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "padded_gambeson_jacket",
+      "name": "Padded gambeson jacket",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/padded-gambeson-jacket.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/padded-gambeson-jacket.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "padded gambeson jacket",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "scholar_robe",
+      "name": "Scholar robe",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/scholar-robe.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/scholar-robe.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "scholar robe with belt pouches",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "noble_court_doublet",
+      "name": "Noble court doublet",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/noble-court-doublet.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/noble-court-doublet.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "noble court doublet",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "arcane_battlemage_robe",
+      "name": "Arcane battlemage robe",
+      "catalog": "clothing",
+      "type": "clothing",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/clothing/arcane-battlemage-robe.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/clothing/arcane-battlemage-robe.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-clothing-robes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-clothing-robes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "arcane battlemage robe",
+      "notes": [
+        "No current final clothing catalog target; keep as design candidates."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "frontier_blacksmith_merchant",
+      "name": "Frontier blacksmith merchant",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/frontier-blacksmith-merchant.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/frontier-blacksmith-merchant.webp",
+      "finalFile": "icons/tokens/npc/crafter_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/crafter_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "frontier blacksmith merchant",
+      "notes": [
+        "Promoted as crafter role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "village_healer",
+      "name": "Village healer",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/village-healer.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/village-healer.webp",
+      "finalFile": "icons/tokens/npc/villager_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/villager_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "tired village healer",
+      "notes": [
+        "Promoted as villager/priest role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "caravan_guard_captain",
+      "name": "Caravan guard captain",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/caravan-guard-captain.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/caravan-guard-captain.webp",
+      "finalFile": "icons/tokens/npc/guard_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/guard_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "armored caravan guard captain",
+      "notes": [
+        "Promoted as guard/hunter role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "arcane_scholar",
+      "name": "Arcane scholar",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/arcane-scholar.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/arcane-scholar.webp",
+      "finalFile": "icons/tokens/npc/mage_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/mage_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "silver-robed arcane scholar",
+      "notes": [
+        "Promoted as mage role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fence_trader",
+      "name": "Fence trader",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/fence-trader.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/fence-trader.webp",
+      "finalFile": "icons/tokens/npc/bandit_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/bandit_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "suspicious fence trader",
+      "notes": [
+        "Promoted as bandit role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "noble_envoy",
+      "name": "Noble envoy",
+      "catalog": "npcs",
+      "type": "npcs",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/npcs/noble-envoy.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/npcs/noble-envoy.webp",
+      "finalFile": "icons/tokens/npc/noble_t1_3.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/npc/noble_t1_3.webp",
+      "sourceSheetSlug": "2026-06-18-npc-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-npc-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "weathered noble envoy",
+      "notes": [
+        "Promoted as noble role portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "cave_goblin_raider",
+      "name": "Cave goblin raider",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/cave-goblin-raider.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/cave-goblin-raider.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "cave goblin raider",
+      "notes": [
+        "Monster portrait candidate retained for future bestiary replacement."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ironbound_skeleton_soldier",
+      "name": "Ironbound skeleton soldier",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/ironbound-skeleton-soldier.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/ironbound-skeleton-soldier.webp",
+      "finalFile": "icons/tokens/monsters/pitbone_horror.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/monsters/pitbone_horror.webp",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "ironbound skeleton soldier",
+      "notes": [
+        "Promoted as closest pitbone horror portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "swamp_ghoul",
+      "name": "Swamp ghoul",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/swamp-ghoul.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/swamp-ghoul.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "swamp ghoul",
+      "notes": [
+        "Monster portrait candidate retained for future bestiary replacement."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "stonehide_ogre_brute",
+      "name": "Stonehide ogre brute",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/stonehide-ogre-brute.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/stonehide-ogre-brute.webp",
+      "finalFile": "icons/tokens/monsters/briar_troll_bud.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/monsters/briar_troll_bud.webp",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "stonehide ogre brute",
+      "notes": [
+        "Promoted as closest briar troll bud portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "wyvern_hatchling",
+      "name": "Wyvern hatchling",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "promoted-token-source",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/wyvern-hatchling.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/wyvern-hatchling.webp",
+      "finalFile": "icons/tokens/monsters/wyvern_fledgling.webp",
+      "finalImg": "systems/iron-hills-system/icons/tokens/monsters/wyvern_fledgling.webp",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "wyvern hatchling",
+      "notes": [
+        "Promoted as wyvern fledgling portrait source."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "corrupted_forest_wisp",
+      "name": "Corrupted forest wisp",
+      "catalog": "monsters",
+      "type": "monsters",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/monsters/corrupted-forest-wisp.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/monsters/corrupted-forest-wisp.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-monster-archetypes",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-monster-archetypes.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "3x2"
+      },
+      "sourcePrompt": "corrupted forest wisp spirit",
+      "notes": [
+        "Monster portrait candidate retained for future bestiary replacement."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_fire",
+      "name": "Fire school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-fire.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-fire.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "fire school ember core",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_ice",
+      "name": "Ice school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-ice.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-ice.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "ice school frost crystal",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_lightning",
+      "name": "Lightning school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-lightning.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-lightning.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "lightning school thunderstone",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_shadow",
+      "name": "Shadow school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-shadow.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-shadow.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "shadow school void shard",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_light",
+      "name": "Light school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-light.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-light.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "light school radiant reliquary sigil",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_earth",
+      "name": "Earth school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-earth.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-earth.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "earth school ironroot stone",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_mind",
+      "name": "Mind school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-mind.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-mind.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "mind school thought prism",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "school_summon",
+      "name": "Summon school identity",
+      "catalog": "spell-schools",
+      "type": "spell-schools",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-schools/school-summon.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-schools/school-summon.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-schools",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-schools.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "summon school binding gate",
+      "notes": [
+        "School identity direction; do not promote over individual spells without review."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fire_bolt",
+      "name": "Fire bolt",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/fire-bolt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/fire-bolt.webp",
+      "finalFile": "icons/items/spells/fire_bolt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/fire_bolt.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "fire bolt",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ice_shard",
+      "name": "Ice shard",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/ice-shard.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/ice-shard.webp",
+      "finalFile": "icons/items/spells/ice_shard.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/ice_shard.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "ice shard",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "lightning_bolt_spell",
+      "name": "Lightning ray",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/lightning-bolt-spell.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/lightning-bolt-spell.webp",
+      "finalFile": "icons/items/spells/lightning_bolt_spell.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/lightning_bolt_spell.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "lightning ray",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "shadow_bolt",
+      "name": "Shadow needle",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/shadow-bolt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/shadow-bolt.webp",
+      "finalFile": "icons/items/spells/shadow_bolt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/shadow_bolt.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "shadow needle",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sunlance",
+      "name": "Sunlance",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/sunlance.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/sunlance.webp",
+      "finalFile": "icons/items/spells/sunlance.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/sunlance.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "sunlance holy beam",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "tectonic_spear",
+      "name": "Tectonic spear",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/tectonic-spear.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/tectonic-spear.webp",
+      "finalFile": "icons/items/spells/tectonic_spear.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/tectonic_spear.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "tectonic spear earth strike",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mind_lance",
+      "name": "Mind lance",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/mind-lance.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/mind-lance.webp",
+      "finalFile": "icons/items/spells/mind_lance.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/mind_lance.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "mind lance psychic strike",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "void_judgement",
+      "name": "Void judgement",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/void-judgement.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/void-judgement.webp",
+      "finalFile": "icons/items/spells/void_judgement.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/void_judgement.webp",
+      "sourceSheetSlug": "2026-06-18-spell-offensive",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-offensive.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "void judgement aimed head strike",
+      "notes": [
+        "Promotable spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_cone_blast",
+      "name": "Cone blast",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-cone-blast.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-cone-blast.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "cone blast fire fan",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_circle_blast",
+      "name": "Circle blast",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-circle-blast.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-circle-blast.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "circle blast impact ring",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_ray_line",
+      "name": "Ray line",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-ray-line.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-ray-line.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "ray line lightning lance",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_rect_wall",
+      "name": "Rect wall",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-rect-wall.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-rect-wall.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "rect wall of ice",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_chain",
+      "name": "Chain jumps",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-chain.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-chain.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "chain lightning jumps",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_nova",
+      "name": "Nova",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-nova.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-nova.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "nova frost burst",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_shards",
+      "name": "Shards barrage",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-shards.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-shards.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "shards barrage",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "aoe_aimed_target_zone",
+      "name": "Aimed target zone",
+      "catalog": "spell-aoe",
+      "type": "spell-aoe",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spell-aoe/aoe-aimed-target-zone.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spell-aoe/aoe-aimed-target-zone.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-spell-aoe-geometry",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-aoe-geometry.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "aimed target-zone holy sigil",
+      "notes": [
+        "AoE visual vocabulary; use to guide per-spell art and UI cues."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "healing_wave",
+      "name": "Healing wave",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/healing-wave.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/healing-wave.webp",
+      "finalFile": "icons/items/spells/healing_wave.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/healing_wave.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "healing wave light nova",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sanctuary_ring",
+      "name": "Sanctuary ring",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/sanctuary-ring.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/sanctuary-ring.webp",
+      "finalFile": "icons/items/spells/sanctuary_ring.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/sanctuary_ring.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "sanctuary ring protective circle",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "warding_sigil",
+      "name": "Warding sigil",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/warding-sigil.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/warding-sigil.webp",
+      "finalFile": "icons/items/spells/warding_sigil.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/warding_sigil.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "warding sigil buff",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "haste_spell",
+      "name": "Haste",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/haste-spell.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/haste-spell.webp",
+      "finalFile": "icons/items/spells/haste_spell.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/haste_spell.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "haste mind thread",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "slow_spell",
+      "name": "Slow",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/slow-spell.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/slow-spell.webp",
+      "finalFile": "icons/items/spells/slow_spell.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/slow_spell.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "slow mind snare",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "fear",
+      "name": "Fear",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/fear.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/fear.webp",
+      "finalFile": "icons/items/spells/fear.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/fear.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "fear shadow veil",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ironroot_grasp",
+      "name": "Ironroot grasp",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/ironroot-grasp.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/ironroot-grasp.webp",
+      "finalFile": "icons/items/spells/ironroot_grasp.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/ironroot_grasp.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "earth root grapple",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "gate_lock",
+      "name": "Gate lock",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate-needs-qa",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/gate-lock.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/gate-lock.webp",
+      "finalFile": "icons/items/spells/gate_lock.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/gate_lock.webp",
+      "sourceSheetSlug": "2026-06-18-spell-support-control",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-support-control.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "gate lock summon binding circle",
+      "notes": [
+        "Some cells may need regeneration because support effects can drift toward face-like silhouettes."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "novice_spell_scroll",
+      "name": "Novice spell scroll",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/novice-spell-scroll.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/novice-spell-scroll.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "novice spell scroll",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "masterwork_grimoire",
+      "name": "Masterwork grimoire",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/masterwork-grimoire.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/masterwork-grimoire.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "masterwork grimoire",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ember_focus_wand",
+      "name": "Ember focus wand",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/ember-focus-wand.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/ember-focus-wand.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "carved wooden wand with ember focus",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "ironwood_crystal_staff",
+      "name": "Ironwood crystal staff",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/ironwood-crystal-staff.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/ironwood-crystal-staff.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "ironwood staff with crystal cage",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mana_stone_setting",
+      "name": "Mana stone in brass setting",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/mana-stone-setting.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/mana-stone-setting.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "mana stone in brass setting",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spell_focus_ring",
+      "name": "Spell focus ring",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/spell-focus-ring.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/spell-focus-ring.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "spell focus ring",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "rune_casting_rod",
+      "name": "Rune casting rod",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/rune-casting-rod.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/rune-casting-rod.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "rune-inscribed casting rod",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "spell_catalyst_vial",
+      "name": "Spell catalyst vial",
+      "catalog": "magic-items",
+      "type": "magic-items",
+      "status": "preview-candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/magic-items/spell-catalyst-vial.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/magic-items/spell-catalyst-vial.webp",
+      "finalFile": "",
+      "finalImg": "",
+      "sourceSheetSlug": "2026-06-18-magical-items",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-magical-items.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "alchemist spell catalyst vial",
+      "notes": [
+        "Inventory/trader design candidates; final item catalog mapping is not decided yet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "volcanic_burst",
+      "name": "Volcanic burst",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/volcanic-burst.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/volcanic-burst.webp",
+      "finalFile": "icons/items/spells/volcanic_burst.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/volcanic_burst.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "volcanic burst",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "sunforge_cataclysm",
+      "name": "Sunforge cataclysm",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/sunforge-cataclysm.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/sunforge-cataclysm.webp",
+      "finalFile": "icons/items/spells/sunforge_cataclysm.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/sunforge_cataclysm.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "sunforge cataclysm",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "whiteout_field",
+      "name": "Whiteout field",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/whiteout-field.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/whiteout-field.webp",
+      "finalFile": "icons/items/spells/whiteout_field.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/whiteout_field.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "whiteout field",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "absolute_zero",
+      "name": "Absolute zero",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/absolute-zero.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/absolute-zero.webp",
+      "finalFile": "icons/items/spells/absolute_zero.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/absolute_zero.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "absolute zero",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "storm_crown",
+      "name": "Storm crown",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/storm-crown.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/storm-crown.webp",
+      "finalFile": "icons/items/spells/storm_crown.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/storm_crown.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "storm crown",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "worldbolt",
+      "name": "Worldbolt",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/worldbolt.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/worldbolt.webp",
+      "finalFile": "icons/items/spells/worldbolt.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/worldbolt.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "worldbolt",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "nightfall_zone",
+      "name": "Nightfall zone",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/nightfall-zone.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/nightfall-zone.webp",
+      "finalFile": "icons/items/spells/nightfall_zone.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/nightfall_zone.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "nightfall zone",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "death_whisper",
+      "name": "Death whisper",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/death-whisper.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/death-whisper.webp",
+      "finalFile": "icons/items/spells/death_whisper.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/death_whisper.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-destruction",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-destruction.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "death whisper",
+      "notes": [
+        "Promotable high-tier spell candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "heavenfall",
+      "name": "Heavenfall",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/heavenfall.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/heavenfall.webp",
+      "finalFile": "icons/items/spells/heavenfall.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/heavenfall.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "heavenfall holy impact",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "martyr_aegis",
+      "name": "Martyr aegis",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/martyr-aegis.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/martyr-aegis.webp",
+      "finalFile": "icons/items/spells/martyr_aegis.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/martyr_aegis.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "martyr aegis radiant protection",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "mountain_collapse",
+      "name": "Mountain collapse",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/mountain-collapse.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/mountain-collapse.webp",
+      "finalFile": "icons/items/spells/mountain_collapse.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/mountain_collapse.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "mountain collapse earth impact",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "worldroot_verdict",
+      "name": "Worldroot verdict",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/worldroot-verdict.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/worldroot-verdict.webp",
+      "finalFile": "icons/items/spells/worldroot_verdict.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/worldroot_verdict.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 0,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "worldroot verdict binding roots",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "thought_storm",
+      "name": "Thought storm",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/thought-storm.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/thought-storm.webp",
+      "finalFile": "icons/items/spells/thought_storm.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/thought_storm.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 0,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "thought storm psychic circle",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "absolute_command",
+      "name": "Absolute command",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/absolute-command.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/absolute-command.webp",
+      "finalFile": "icons/items/spells/absolute_command.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/absolute_command.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 1,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "absolute command psychic domination sigil",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "avatar_pact",
+      "name": "Avatar pact",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/avatar-pact.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/avatar-pact.webp",
+      "finalFile": "icons/items/spells/avatar_pact.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/avatar_pact.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 2,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "avatar pact summoning gate",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    },
+    {
+      "id": "astral_binding_circle",
+      "name": "Astral binding circle",
+      "catalog": "spells",
+      "type": "spells",
+      "status": "candidate",
+      "gridW": 1,
+      "gridH": 1,
+      "aspect": "1:1",
+      "resolution": "1024x1024",
+      "targetFile": "art-candidates/items/spells/astral-binding-circle.webp",
+      "targetImg": "systems/iron-hills-system/art-candidates/items/spells/astral-binding-circle.webp",
+      "finalFile": "icons/items/spells/astral_binding_circle.webp",
+      "finalImg": "systems/iron-hills-system/icons/items/spells/astral_binding_circle.webp",
+      "sourceSheetSlug": "2026-06-18-spell-high-tier-utility",
+      "sourceSheetFile": "docs/content/generated-image-sheets/2026-06-18-spell-high-tier-utility.png",
+      "sourceCell": {
+        "row": 1,
+        "col": 3,
+        "grid": "4x2"
+      },
+      "sourcePrompt": "astral binding circle",
+      "notes": [
+        "Promotable high-tier utility/control/summon candidates, sliced from preview sheet."
+      ],
+      "instructions": "Review visually before promotion. This candidate was sliced from a preview sheet, not generated as an isolated final asset."
+    }
+  ]
+}

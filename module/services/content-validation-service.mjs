@@ -110,6 +110,7 @@ const KNOWN_ITEM_TYPES = new Set([
 ]);
 
 const DAMAGE_RESISTANCE_TYPE_SET = new Set(DAMAGE_RESISTANCE_TYPE_KEYS);
+const GENERIC_ACTOR_IMAGE = "icons/svg/mystery-man.svg";
 
 const TRADE_ITEM_TYPES = new Set([
   "weapon",
@@ -609,6 +610,19 @@ function validateActorData(actorLike, context = {}) {
   };
   pushIf(findings, !String(actorData.name ?? "").trim(), "error", "missing-actor-name", "Actor is missing name.", actorContext);
   pushIf(findings, !String(actorData.type ?? "").trim(), "error", "missing-actor-type", "Actor is missing type.", actorContext);
+  const actorImg = String(actorData.img ?? "").trim();
+  const tokenImg = String(actorData.prototypeToken?.texture?.src ?? "").trim();
+  pushIf(findings, !actorImg, "warn", "missing-actor-img", "Actor is missing img.", actorContext);
+  pushIf(findings, actorImg === GENERIC_ACTOR_IMAGE, "info", "generic-actor-img", "Actor still uses the generic mystery-man image.", actorContext);
+  pushIf(
+    findings,
+    Boolean(actorImg && tokenImg && actorImg !== tokenImg),
+    "warn",
+    "actor-token-img-mismatch",
+    "Actor prototype token image does not match actor img.",
+    actorContext,
+    { actorImg, tokenImg }
+  );
   if (actorData.type === "monster") {
     validateDamageResistanceObject(actorData.system?.resources?.armor, actorContext, findings, {
       prefix: "monster-armor",

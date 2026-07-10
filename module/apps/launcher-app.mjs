@@ -15,6 +15,7 @@ const TOOLS = [
   { section:"GM",       key:"openTravelManager", label:"Время",     icon:"⏳",  gm:true  },
   { section:"GM",       key:"openPartyManager",  label:"Группы",    icon:"👥",  gm:true  },
   { section:"GM",       key:"openCombatManager", label:"Бой",       icon:"🗡",  gm:true  },
+  { section:"GM",       key:"openCombatDirector", label:"Director",  icon:"◉",  gm:true  },
   { section:"GM",       key:"openWorldTools",    label:"World",     icon:"🌍",  gm:true  },
 ];
 
